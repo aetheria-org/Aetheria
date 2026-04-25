@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 public class PlayerTagListener {
 
     private static final Pattern CHAT_PATTERN = Pattern.compile(
-            "^(.*\\s)([A-Za-z0-9_]{1,16})\\s*:\\s*(.+)$"
+            "^(.*\\s)([A-Za-z0-9_]{1,16})[^A-Za-z0-9_:]*\\s*:\\s*(.+)$"
     );
 
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)

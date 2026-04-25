@@ -1,0 +1,27 @@
+name: Send changelogs.md to Discord
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read changelogs.md
+        id: changelog
+        run: |
+          CONTENT=$(cat changelogs.md | sed ':a;N;$!ba;s/\n/\\n/g')
+          echo "content=$CONTENT" >> $GITHUB_OUTPUT
+
+      - name: Send to Discord
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d "{
+            \"content\": \"${{ github.event.release.tag_name }}**\\n\\n${{ steps.changelog.outputs.content }}\"
+          }" \
+          ${{ secrets.DISCORD_WEBHOOK_CHANGELOGS }}

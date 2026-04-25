@@ -1,0 +1,38 @@
+name: Send Push Info to Discord
+
+on:
+  push:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send to Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_PUSH }}
+          EVENT: ${{ toJson(github.event) }}
+          ACTOR: ${{ github.actor }}
+          REF: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          TIMESTAMP: ${{ github.event.head_commit.timestamp }}
+        run: |
+          COMMITS=$(jq -r '.commits[] | "• " + .message + " — " + .author.name' <<< "$EVENT" | paste -sd '\n' -)
+          PAYLOAD=$(jq -n \
+            --arg title "Push to \`$REF\`" \
+            --arg description "$COMMITS" \
+            --arg actor "$ACTOR" \
+            --arg url "https://github.com/$REPO/commit/$SHA" \
+            --arg timestamp "$TIMESTAMP" \
+            '{embeds: [{
+              title: $title,
+              description: $description,
+              color: 5763719,
+              fields: [
+                {name: "Pushed by", value: $actor, inline: true},
+                {name: "Commit", value: ("<" + $url + ">"), inline: true}
+              ],
+              timestamp: $timestamp
+            }]}')
+          curl -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK"
