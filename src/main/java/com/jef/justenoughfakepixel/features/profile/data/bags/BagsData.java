@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class BagsData {
 
-    public AccessoryBag accessoryBag;
-
+    public AccessoryData accessoryData;
+    public FishingData fishingData;
+    public QuiverData quiverData;
 }

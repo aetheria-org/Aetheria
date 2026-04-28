@@ -1,12 +1,13 @@
 package com.jef.justenoughfakepixel.features.profile.data.bags;
 
+import com.jef.justenoughfakepixel.features.profile.data.ItemData;
 import lombok.AllArgsConstructor;
 
 import java.util.List;
 
 @AllArgsConstructor
-public class AccessoryBag {
+public class AccessoryData {
 
-    public List<String> accessories;
+    public List<ItemData> accessories;
 
 }

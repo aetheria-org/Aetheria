@@ -1,11 +1,13 @@
 package com.jef.justenoughfakepixel.features.profile.data;
 
+import com.jef.justenoughfakepixel.features.profile.data.bags.BagsData;
 import com.jef.justenoughfakepixel.features.profile.data.base.BaseData;
 import com.jef.justenoughfakepixel.features.profile.data.dungeon.DungeonData;
 import com.jef.justenoughfakepixel.features.profile.data.inventory.InventoryData;
 import com.jef.justenoughfakepixel.features.profile.data.pets.PetsData;
 import com.jef.justenoughfakepixel.features.profile.data.skills.SkillsData;
 import com.jef.justenoughfakepixel.features.profile.data.slayer.SlayersData;
+import com.jef.justenoughfakepixel.features.profile.data.storage.StorageData;
 import com.jef.justenoughfakepixel.features.profile.data.wardrobe.WardrobeData;
 import lombok.AllArgsConstructor;
 
@@ -21,5 +23,7 @@ public class ProfileData {
     public SlayersData slayersData;
     public WardrobeData wardrobeData;
     public PetsData petsData;
+    public StorageData storageData;
+    public BagsData bagsData;
 
 }

@@ -1,14 +1,18 @@
 package com.jef.justenoughfakepixel.features.profile;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.jef.justenoughfakepixel.JefMod;
 import com.jef.justenoughfakepixel.core.JefConfig;
 import com.jef.justenoughfakepixel.features.profile.data.*;
 
 import java.util.*;
 
+import com.jef.justenoughfakepixel.features.profile.data.bags.AccessoryData;
 import com.jef.justenoughfakepixel.features.profile.data.bags.BagsData;
+import com.jef.justenoughfakepixel.features.profile.data.bags.FishingData;
+import com.jef.justenoughfakepixel.features.profile.data.bags.QuiverData;
+import com.jef.justenoughfakepixel.features.profile.data.bags.vars.Arrow;
+import com.jef.justenoughfakepixel.features.profile.data.bags.vars.Bait;
 import com.jef.justenoughfakepixel.features.profile.data.base.BaseData;
 import com.jef.justenoughfakepixel.features.profile.data.base.NetworthData;
 import com.jef.justenoughfakepixel.features.profile.data.base.Statistics;
@@ -24,12 +28,16 @@ import com.jef.justenoughfakepixel.features.profile.data.skills.SkillsData;
 import com.jef.justenoughfakepixel.features.profile.data.slayer.Slayer;
 import com.jef.justenoughfakepixel.features.profile.data.slayer.SlayerData;
 import com.jef.justenoughfakepixel.features.profile.data.slayer.SlayersData;
+import com.jef.justenoughfakepixel.features.profile.data.storage.ContainerData;
+import com.jef.justenoughfakepixel.features.profile.data.storage.StorageData;
 import com.jef.justenoughfakepixel.features.profile.data.wardrobe.WardrobeData;
 import com.jef.justenoughfakepixel.features.profile.data.wardrobe.WardrobeSet;
+import com.jef.justenoughfakepixel.features.profile.saving.SupabaseHandler;
 import com.jef.justenoughfakepixel.features.profile.vars.EquipmentSlot;
 import com.jef.justenoughfakepixel.features.profile.vars.ProfileMode;
 import com.jef.justenoughfakepixel.utils.ColorUtils;
 import com.jef.justenoughfakepixel.utils.RomanNumeralParser;
+import com.jef.justenoughfakepixel.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
 import net.minecraft.inventory.Container;
@@ -47,10 +55,32 @@ import java.io.IOException;
 
 public class ProfileParser {
 
+    public static void save(){
+        if(!parsing) {
+            JefMod.logger.info("[ProfileParser] Not Parsing cause one data is null");
+            JefMod.logger.info("[ProfileParser] Data: Inventory: " +
+                    (inventory[0] != null) + " | Skills: " + (skill[0] != null) +
+                    " | HOTM: "+ (mountain[0] != null) + " | Dungeon: " + (dungeonData[0] != null)
+                    + " | Slayer: " + (slayerData[0] != null) + " | Wardrobe: " + (wardrobeData[0] != null)
+                    + " | Pets: " + (petsData[0] != null) + " | Storage: " + (storageData[0] != null)
+            + " | Bags: " + (bagsData[0] != null));
+            return;
+        }
+        ProfileData profile = new ProfileData(base, inventory[0], skill[0], mountain[0],
+                dungeonData[0], slayerData[0],wardrobeData[0],petsData[0],storageData[0],
+                bagsData[0]);
+        profileData.put(base.playerName, profile);
+        writeToJson(profile);
+        SupabaseHandler.pushProfileAsync(base.playerName, profile);
+        parsing = false;
+        JefMod.logger.info("[ProfileParser] Saved profile: " + base.playerName);
+    }
+
     public static HashMap<String, ProfileData> profileData = new HashMap<>();
     public static String lastCachedProfile = "";
     public static boolean parsing = false;
     public static int windowID = -1;
+    public static Gson GSON = new Gson();
 
     public static final InventoryData[] inventory = new InventoryData[1];
     public static final SkillsData[] skill = new SkillsData[1];
@@ -59,12 +89,16 @@ public class ProfileParser {
     public static final SlayersData[] slayerData = new SlayersData[1];
     public static final WardrobeData[] wardrobeData = new WardrobeData[1];
     public static final PetsData[] petsData = new PetsData[1];
+    public static final StorageData[] storageData = new StorageData[1];
     public static final BagsData[] bagsData = new BagsData[1];
+    public static final FishingData[] fishingData = new FishingData[1];
     public static BaseData base;
+
+
     public static void parse(String player, Container container) {
         base = parseBasicInfo(container);
         if (base == null) return;
-        base.playerName = base.playerName + "-" + lastCachedProfile;
+        base.playerProfile = lastCachedProfile;
         parsing = true;
 
         Minecraft mc = Minecraft.getMinecraft();
@@ -144,11 +178,6 @@ public class ProfileParser {
                             HashMap<Integer,WardrobeSet> wardrobe = new HashMap<>();
                             GuiWaiter.waitForPaged("View Wardrobe", 2, 53, "Next Page", 48, "View Profile", chest -> wardrobe.putAll(parseWardrobe(chest)),
                                     prof6 -> {
-                                        if(wardrobe.isEmpty()){
-                                            JefMod.logger.info("[ProfileParser] WardrobeData was null for: " + base.playerName);
-                                            parsing = false;
-                                            return;
-                                        }
                                         JefMod.logger.info("[ProfileParser] WardrobeData parsed for: " + base.playerName);
                                         wardrobeData[0] = new WardrobeData(wardrobe);
 
@@ -160,16 +189,41 @@ public class ProfileParser {
                                         GuiWaiter.waitForPaged("View Pets",2,53,"Next Page",49,"View Profile",
                                                 chest -> pets.putAll(parsePets(chest)),
                                                 prof7 -> {
-                                                if(pets.isEmpty()){
-                                                    JefMod.logger.info("[ProfileParser] PetsData was null for: " + base.playerName);
-                                                    parsing = false;
-                                                    return;
-                                                }
                                                     JefMod.logger.info("[ProfileParser] PetsData parsed for: " + base.playerName);
                                                     petsData[0] = new PetsData(pets);
-                                                    save();
-                                        });
-                            });
+
+                                                    windowID = prof7.windowId;
+                                                    mc.playerController.windowClick(windowID,23,0,0,mc.thePlayer);
+
+                                                    // Storage
+                                                    GuiWaiter.waitFor("View Storage",2,-1,bags -> {
+                                                        windowID = bags.windowId;
+                                                        List<Integer> slotsToCheck = new ArrayList<>();
+
+                                                        for(int i = 0; i < 9;i++){
+                                                            ItemStack stack = bags.getSlot(i).getStack();
+                                                            if(stack == null)continue;
+                                                            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+                                                            if(name.equals("Blocked Page.")) continue;
+                                                            if(name.startsWith("Ender Chest")){
+                                                                slotsToCheck.add(i);
+                                                            }
+                                                        }
+                                                        for(int i = 18;i < 36;i++){
+                                                            ItemStack stack = bags.getSlot(i).getStack();
+                                                            if(stack == null)continue;
+                                                            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+                                                            if(name.equals("Empty Backpack slot")) continue;
+                                                            if(name.endsWith("Backpack")){
+                                                                slotsToCheck.add(i);
+                                                            }
+                                                        }
+
+                                                        List<ContainerData> containers = new ArrayList<>();
+                                                        parseNext(0, slotsToCheck, containers, windowID);
+                                                    });
+                                                });
+                                    });
                         });
                     });
                 });
@@ -177,21 +231,172 @@ public class ProfileParser {
         });
     }
 
-    public static void save(){
-        if(!parsing) {
-            JefMod.logger.info("[ProfileParser] Not Parsing cause one data is null");
-            JefMod.logger.info("[ProfileParser] Data: Inventory: " +
-                    (inventory[0] != null) + " | Skills: " + (skill[0] != null) +
-                    " | HOTM: "+ (mountain[0] != null) + " | Dungeon: " + (dungeonData[0] != null)
-                    + " | Slayer: " + (slayerData[0] != null) + " | Wardrobe: " + (wardrobeData[0] != null)
-                    + " | Pets: " + (petsData[0] != null));
+
+    private static void parseNext(int index, List<Integer> slotsToCheck, List<ContainerData> containers, int currentWindowId) {
+        if (index >= slotsToCheck.size()) {
+            if (containers.isEmpty()) {
+                JefMod.logger.info("[ProfileParser] StorageData was null for: " + base.playerName);
+                parsing = false;
+                return;
+            }
+            JefMod.logger.info("[ProfileParser] StorageData parsed for: " + base.playerName);
+            storageData[0] = new StorageData(containers);
+
+            Minecraft mc = Minecraft.getMinecraft();
+            mc.playerController.windowClick(currentWindowId,49,0,0,mc.thePlayer);
+
+
+            GuiWaiter.waitFor("View Profile",2,-1,prof -> {
+                windowID = prof.windowId;
+                mc.playerController.windowClick(windowID,39,0,0,mc.thePlayer);
+
+                GuiWaiter.waitFor("View Bags",2,-1,bags -> {
+                    windowID = bags.windowId;
+                    mc.playerController.windowClick(windowID,11,0,0,mc.thePlayer);
+                    GuiWaiter.waitFor("Show Contents",2,-6,"View Bags",fishing -> {
+                        fishingData[0] = parseFishing(fishing);
+                        JefMod.logger.info("[ProfileParser] FishingData parsed for: " + base.playerName);
+
+                     },bags1 -> {
+                        windowID = bags1.windowId;
+                        List<ItemData> accessories =  new ArrayList<>();
+                        mc.playerController.windowClick(windowID,15,0,0,mc.thePlayer);
+                        GuiWaiter.waitForPaged("Show Contents",2,-2,"Next Page",
+                                -6,"View Bags",accessory -> accessories.addAll(parseAccessory(accessory)),
+                                bags2 -> {
+                            AccessoryData accessoryData = new AccessoryData(accessories);
+                            JefMod.logger.info("[ProfileParser] AccessorryData parsed for: " + base.playerName);
+
+                            windowID = bags2.windowId;
+                            mc.playerController.windowClick(windowID,13,0,0,mc.thePlayer);
+                            GuiWaiter.waitFor("Show Contents",2,-6,"View Bags",quiver -> {
+                                QuiverData quiverData = parseQuiver(quiver);
+                                JefMod.logger.info("[ProfileParser] QuiverData parsed for: " + base.playerName);
+                                bagsData[0] = new BagsData(accessoryData,fishingData[0],quiverData);
+                            },bags3 -> {
+                                windowID = bags3.windowId;
+                                mc.playerController.windowClick(windowID,31,0,0,mc.thePlayer);
+                                save();
+                            });
+                        });
+                    });
+                });
+            });
             return;
         }
-        ProfileData profile = new ProfileData(base, inventory[0], skill[0],mountain[0], dungeonData[0],slayerData[0],wardrobeData[0],petsData[0]);
-        profileData.put(base.playerName, profile);
-        writeToJson(profile);
-        parsing = false;
-        JefMod.logger.info("[ProfileParser] Saved profile: " + base.playerName);
+
+        int slotToClick = slotsToCheck.get(index);
+        Minecraft mc = Minecraft.getMinecraft();
+        mc.playerController.windowClick(currentWindowId, slotToClick, 0, 0, mc.thePlayer);
+
+        String id = slotToClick <= 9 ? "echest-" + slotToClick : "bag-" + (slotToClick - 18);
+
+        GuiWaiter.waitFor("Show Contents", 2, -6, "View Storage",
+                storage -> {
+                    if (storage == null) {
+                        JefMod.logger.info("Empty Container: " + id);
+                        containers.add(new ContainerData(id, new HashMap<>()));
+
+                    } else {
+                        containers.add(parseStorage(id, storage));
+                    }
+                },
+                viewStorageChest -> parseNext(index + 1, slotsToCheck, containers, viewStorageChest.windowId)
+        );
+    }
+
+    private static QuiverData parseQuiver(ContainerChest container) {
+        EnumMap<Arrow,Integer> quiver = new EnumMap<>(Arrow.class);
+        if (container == null) return new QuiverData(quiver);
+
+        String title = ColorUtils.stripColor(
+                container.getLowerChestInventory().getDisplayName().getUnformattedText()
+        ).trim();
+        if (!title.equals("Show Contents")) return new QuiverData(quiver);
+
+        for(int i = 0; i < container.getLowerChestInventory().getSizeInventory();i++){
+            ItemStack stack = container.getLowerChestInventory().getStackInSlot(i);
+            if(stack == null)continue;
+            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            if(name.isEmpty() || name.equals("Go Back")) continue;
+
+            Arrow arrow = Arrow.getArrow(name);
+
+            if(arrow == null) continue;
+            int currentAmount = quiver.getOrDefault(arrow, 0);
+            quiver.put(arrow, currentAmount + stack.stackSize);
+
+        }
+        return new QuiverData(quiver);
+    }
+
+    private static Collection<? extends ItemData> parseAccessory(ContainerChest container) {
+        List<ItemData> accessory = new ArrayList<>();
+        if (container == null) return accessory;
+        String title = ColorUtils.stripColor(
+                container.getLowerChestInventory().getDisplayName().getUnformattedText()
+        ).trim();
+        if (!title.equals("Show Contents")) return accessory;
+
+        for(int i = 0; i < container.getLowerChestInventory().getSizeInventory();i++){
+            ItemStack stack = container.getLowerChestInventory().getStackInSlot(i);
+            if(stack == null)continue;
+            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            if(name.isEmpty() || name.equals("Go Back")) continue;
+            accessory.add(parseItemData(stack));
+        }
+        return accessory;
+    }
+
+    private static FishingData parseFishing(ContainerChest container) {
+        EnumMap<Bait,Integer> baits = new EnumMap<>(Bait.class);
+
+        if (container == null) return new FishingData(baits);
+        String title = ColorUtils.stripColor(
+                container.getLowerChestInventory().getDisplayName().getUnformattedText()
+        ).trim();
+        if (!title.equals("Show Contents")) return new FishingData(baits);
+
+        for(int i = 0; i < container.getLowerChestInventory().getSizeInventory();i++){
+            ItemStack stack = container.getLowerChestInventory().getStackInSlot(i);
+            if(stack == null)continue;
+            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            if(name.isEmpty() || name.equals("Go Back")) continue;
+
+            Bait bait = Bait.getBait(name);
+            if(name.endsWith("DIAMOND") || name.endsWith("BRONZE") ||
+                    name.endsWith("GOLD") || name.endsWith("SILVER")){
+                if(ItemUtils.getInternalName(stack).startsWith("common")){
+                    bait = Bait.OBF_COMMON;
+                }else {
+                    bait = Bait.OBF_UNCOMMON;
+                }
+            }
+            if(bait == null) continue;
+            int currentAmount = baits.getOrDefault(bait, 0);
+            baits.put(bait, currentAmount + stack.stackSize);
+
+        }
+        return new FishingData(baits);
+    }
+
+
+    public static ContainerData parseStorage(String id, ContainerChest storage) {
+        HashMap<Integer,ItemData> data = new HashMap<>();
+        if (storage == null) return new ContainerData(id, data);
+        String title = ColorUtils.stripColor(
+                storage.getLowerChestInventory().getDisplayName().getUnformattedText()
+        ).trim();
+        if (!title.equals("Show Contents")) return new ContainerData(id, data);
+
+        for(int i = 0; i < storage.getLowerChestInventory().getSizeInventory();i++){
+            ItemStack stack = storage.getLowerChestInventory().getStackInSlot(i);
+            if(stack == null)continue;
+            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            if(name.isEmpty() || name.equals("Go Back")) continue;
+            data.put(i, parseItemData(stack));
+        }
+        return new ContainerData(id,data);
     }
 
     public static HashMap<Integer, Pet> parsePets(ContainerChest container){
@@ -228,7 +433,7 @@ public class ProfileParser {
             petIndex++;
             List<String> slore = getLore(stack);
             boolean equipped = slore.contains("Click to despawn!");
-            set.put(petSlot,new Pet(itemToNBT(stack),page,equipped));
+            set.put(petSlot,new Pet(parseItemData(stack),page,equipped));
         }
         return set;
     }
@@ -286,25 +491,25 @@ public class ProfileParser {
             String lName = ColorUtils.stripColor(leggings.getDisplayName()).trim();
             String bName = ColorUtils.stripColor(boots.getDisplayName()).trim();
 
-            String helmString = "";
-            String chestString = "";
-            String legString = "";
-            String bootString = "";
+            ItemData helmData = null;
+            ItemData chestData = null;
+            ItemData legData = null;
+            ItemData bootData = null;
 
             if(!hName.startsWith("Slot ")){
-                helmString = itemToNBT(helm);
+                helmData = parseItemData(helm);
             }
             if(!cName.startsWith("Slot ")){
-                chestString = itemToNBT(chestplate);
+                chestData = parseItemData(chestplate);
             }
             if(!lName.startsWith("Slot ")){
-                legString = itemToNBT(leggings);
+                legData = parseItemData(leggings);
             }
             if(!bName.startsWith("Slot ")){
-                bootString = itemToNBT(boots);
+                bootData = parseItemData(boots);
             }
 
-            set.put(realSlot, new WardrobeSet(helmString, chestString, legString, bootString,
+            set.put(realSlot, new WardrobeSet(helmData, chestData, legData, bootData,
                     equippedSlot == realSlot));
         }
         return set;
@@ -395,20 +600,40 @@ public class ProfileParser {
 
         List<String> lore = getLore(skill);
         for(String line : lore){
-            if(line.startsWith("Healer")){
-                hLevel = RomanNumeralParser.parse(line.split(" ")[1].trim());
+            if(line.startsWith("Healer")) {
+                try {
+                    hLevel = RomanNumeralParser.parse(line.split(" ")[1].trim());
+                }catch (IllegalArgumentException e){
+                    hLevel = 0;
+                }
             }
             if(line.startsWith("Mage")){
-                mLevel = RomanNumeralParser.parse(line.split(" ")[1].trim());
+                try {
+                    mLevel = RomanNumeralParser.parse(line.split(" ")[1].trim());
+                }catch (IllegalArgumentException e){
+                    mLevel = 0;
+                }
             }
-            if(line.startsWith("Archer")){
-                aLevel = RomanNumeralParser.parse(line.split(" ")[1].trim());
+            if(line.startsWith("Archer")) {
+                try {
+                    aLevel = RomanNumeralParser.parse(line.split(" ")[1].trim());
+                }catch (IllegalArgumentException e){
+                    aLevel = 0;
+                }
             }
-            if(line.startsWith("Berserk")){
-                bLevel = RomanNumeralParser.parse(line.split(" ")[1].trim());
+            if(line.startsWith("Berserk")) {
+                try {
+                    bLevel = RomanNumeralParser.parse(line.split(" ")[1].trim());
+                }catch (IllegalArgumentException e){
+                    bLevel = 0;
+                }
             }
-            if(line.startsWith("Tank")){
-                tLevel = RomanNumeralParser.parse(line.split(" ")[1].trim());
+            if(line.startsWith("Tank")) {
+                try {
+                    tLevel = RomanNumeralParser.parse(line.split(" ")[1].trim());
+                }catch (IllegalArgumentException e){
+                    tLevel = 0;
+                }
             }
             if (line.contains("/") && !line.contains(" ")) {
                 try {
@@ -568,8 +793,8 @@ public class ProfileParser {
         ).trim();
         if (!title.equals("View Inventory")) return null;
 
-        HashMap<EquipmentSlot, String> armorData = new HashMap<>();
-        HashMap<Integer, String>       invData   = new HashMap<>();
+        HashMap<EquipmentSlot, ItemData> armorData = new HashMap<>();
+        HashMap<Integer, ItemData>       invData   = new HashMap<>();
 
         ItemStack helmet     = container.getSlot(2).getStack();
         ItemStack chestplate = container.getSlot(3).getStack();
@@ -580,34 +805,36 @@ public class ProfileParser {
         ItemStack belt       = container.getSlot(13).getStack();
         ItemStack gloves     = container.getSlot(14).getStack();
 
-        if (helmet     != null) armorData.put(EquipmentSlot.HELMET,     itemToNBT(helmet));
-        if (chestplate != null) armorData.put(EquipmentSlot.CHESTPLATE, itemToNBT(chestplate));
-        if (leggings   != null) armorData.put(EquipmentSlot.LEGGINGS,   itemToNBT(leggings));
-        if (boots      != null) armorData.put(EquipmentSlot.BOOTS,      itemToNBT(boots));
+        if (helmet     != null) armorData.put(EquipmentSlot.HELMET,     parseItemData(helmet));
+        if (chestplate != null) armorData.put(EquipmentSlot.CHESTPLATE, parseItemData(chestplate));
+        if (leggings   != null) armorData.put(EquipmentSlot.LEGGINGS,   parseItemData(leggings));
+        if (boots      != null) armorData.put(EquipmentSlot.BOOTS,      parseItemData(boots));
 
         if (necklace != null && !ColorUtils.stripColor(necklace.getDisplayName()).equals("Necklace"))
-            armorData.put(EquipmentSlot.NECKLACE, itemToNBT(necklace));
+            armorData.put(EquipmentSlot.NECKLACE, parseItemData(necklace));
         if (cloak    != null && !ColorUtils.stripColor(cloak.getDisplayName()).equals("Cloak"))
-            armorData.put(EquipmentSlot.CLOAK,    itemToNBT(cloak));
+            armorData.put(EquipmentSlot.CLOAK,    parseItemData(cloak));
         if (belt     != null && !ColorUtils.stripColor(belt.getDisplayName()).equals("Belt"))
-            armorData.put(EquipmentSlot.BELT,     itemToNBT(belt));
+            armorData.put(EquipmentSlot.BELT,     parseItemData(belt));
         if (gloves   != null && !ColorUtils.stripColor(gloves.getDisplayName()).equals("Gloves"))
-            armorData.put(EquipmentSlot.GLOVES,   itemToNBT(gloves));
+            armorData.put(EquipmentSlot.GLOVES,   parseItemData(gloves));
 
         for (int i = 0; i < 36; i++) {
             ItemStack stack = container.getSlot(i + 18).getStack();
-            if (stack != null) invData.put(i, itemToNBT(stack));
+            if (stack != null) invData.put(i, parseItemData(stack));
         }
 
         return new InventoryData(armorData, invData);
     }
 
-    public static String itemToNBT(ItemStack stack) {
-        if (stack == null) return "";
-        NBTTagCompound compound = new NBTTagCompound();
-        stack.writeToNBT(compound);
-        return compound.toString();
+    public static ItemData parseItemData(ItemStack stack) {
+        if (stack == null) return null;
+        String displayName = stack.getDisplayName();
+        String skyblockID = ItemUtils.getInternalName(stack);
+        List<String> lore = getLoreColored(stack);
+        return new ItemData(displayName, lore, skyblockID);
     }
+
 
     public static ItemStack itemFromNBT(String data) {
         try {
@@ -696,7 +923,7 @@ public class ProfileParser {
         if (level == -1) return null;
 
         return new BaseData(
-                playerName, level, profileAge, mode,
+                playerName, "",level, profileAge, mode,
                 (int) purse, (int) bank, bits,
                 new NetworthData((int) totalNetworth, (int) itemNetworth,
                         (int) armorNetworth, (int) petNetworth, (int) accessoriesNetworth),
@@ -712,6 +939,17 @@ public class ProfileParser {
         NBTTagList loreList = display.getTagList("Lore", 8);
         for (int i = 0; i < loreList.tagCount(); i++)
             lore.add(ColorUtils.stripColor(loreList.getStringTagAt(i)).trim());
+        return lore;
+    }
+
+    private static List<String> getLoreColored(ItemStack stack) {
+        List<String> lore = new ArrayList<>();
+        if (stack == null || !stack.hasTagCompound()) return lore;
+        NBTTagCompound display = stack.getTagCompound().getCompoundTag("display");
+        if (!display.hasKey("Lore", 9)) return lore;
+        NBTTagList loreList = display.getTagList("Lore", 8);
+        for (int i = 0; i < loreList.tagCount(); i++)
+            lore.add(loreList.getStringTagAt(i));
         return lore;
     }
 
@@ -852,14 +1090,13 @@ public class ProfileParser {
 
     public static void writeToJson(ProfileData data) {
         if (data == null) return;
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         File file = new File(JefConfig.configDirectory, "profile.json");
         if (!file.exists()) {
             try { file.createNewFile(); }
             catch (IOException e) { JefMod.logger.info("Error creating profile.json"); return; }
         }
         try (FileWriter writer = new FileWriter(file)) {
-            gson.toJson(data, writer);
+            GSON.toJson(data, writer);
             writer.flush();
         } catch (IOException e) {
             JefMod.logger.info("Error writing to profile.json");
