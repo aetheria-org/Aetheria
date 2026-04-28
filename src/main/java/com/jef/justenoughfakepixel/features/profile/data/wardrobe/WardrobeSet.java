@@ -1,13 +1,14 @@
 package com.jef.justenoughfakepixel.features.profile.data.wardrobe;
 
+import com.jef.justenoughfakepixel.features.profile.data.ItemData;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class WardrobeSet {
 
-    public String helmet;
-    public String chestplate;
-    public String leggings;
-    public String boots;
+    public ItemData helmet;
+    public ItemData chestplate;
+    public ItemData leggings;
+    public ItemData boots;
     public boolean equipped;
 }

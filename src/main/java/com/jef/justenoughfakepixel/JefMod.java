@@ -44,6 +44,7 @@ public class JefMod {
         JefConfig.init();
         JefRepo.init();
         logger = Logger.getLogger("[JEF] ");
+        loginAs("Diyansh");
         WaypointStorage.getInstance().initFile(JefConfig.configDirectory);
         InventoryButtonStorage.getInstance().initFile(JefConfig.configDirectory);
         DianaStats.getInstance().initFile(JefConfig.configDirectory);
@@ -53,6 +54,10 @@ public class JefMod {
         CurrentPetTracker.getInstance().initFile(JefConfig.configDirectory);
         TrophyFishStorage.getInstance().initFile(JefConfig.configDirectory);
         CapeManager.initialise(false);
+    }
+
+    public void loginAs(String username){
+        ((MixinMinecraft)Minecraft.getMinecraft()).setSession(new Session(username,username,"0","legacy"));
     }
 
 

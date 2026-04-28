@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class BaseData {
 
-    public String playerName;
+    public String playerName,playerProfile;
     public int currentLevel;
     public long profileAge;
     public ProfileMode currentMode;
