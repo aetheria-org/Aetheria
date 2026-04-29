@@ -1,6 +1,5 @@
 package com.jef.justenoughfakepixel.mixins;
 
-import com.jef.justenoughfakepixel.features.misc.SearchBar;
 import com.jef.justenoughfakepixel.utils.render.HighlightUtils;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Slot;
@@ -15,6 +14,6 @@ public class MixinGuiContainer_SearchHighlight {
     @Inject(method = "drawSlot", at = @At("RETURN"))
     public void drawSlot(Slot slot, CallbackInfo ci) {
         if (slot == null || slot.getStack() == null) return;
-        HighlightUtils.renderHighlight(slot.getStack(), slot.xDisplayPosition, slot.yDisplayPosition, SearchBar.getSearchText());
+        HighlightUtils.renderAllHighlights((GuiContainer) (Object) this, slot);
     }
 }
