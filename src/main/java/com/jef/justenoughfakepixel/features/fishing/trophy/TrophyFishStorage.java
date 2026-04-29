@@ -1,15 +1,14 @@
 package com.jef.justenoughfakepixel.features.fishing.trophy;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.jef.justenoughfakepixel.core.JefGsonBuilder;
+import com.jef.justenoughfakepixel.core.JefStorageManager;
 
 import java.io.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class TrophyFishStorage {
+public class TrophyFishStorage implements JefStorageManager.Managed, JefStorageManager.AutoSaveable {
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static TrophyFishStorage INSTANCE;
     private File file;
     private StoredData data = new StoredData();
@@ -22,27 +21,24 @@ public class TrophyFishStorage {
         return INSTANCE;
     }
 
+    @Override
     public void initFile(File configDir) {
         this.file = new File(configDir, "trophy_fish.json");
     }
 
+    @Override
     public void load() {
-        if (file == null || !file.exists()) return;
-        try (Reader r = new FileReader(file)) {
-            StoredData loaded = GSON.fromJson(r, StoredData.class);
-            if (loaded != null) data = loaded;
-        } catch (Exception e) {
-            System.err.println("[JEF/TrophyFish] Failed to load trophy_fish.json: " + e.getMessage());
-        }
+        StoredData loaded = JefStorageManager.loadSafe(file, StoredData.class, JefGsonBuilder.GSON);
+        if (loaded != null) data = loaded;
     }
 
     public void save() {
-        if (file == null) return;
-        try (Writer w = new FileWriter(file)) {
-            GSON.toJson(data, w);
-        } catch (Exception e) {
-            System.err.println("[JEF/TrophyFish] Failed to save trophy_fish.json: " + e.getMessage());
-        }
+        JefStorageManager.saveAtomic(file, data, JefGsonBuilder.GSON);
+    }
+
+    @Override
+    public void autoSave() {
+        save();
     }
 
     public Map<String, Map<String, Integer>> getFish() {

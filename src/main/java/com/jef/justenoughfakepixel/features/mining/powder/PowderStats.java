@@ -1,16 +1,15 @@
 package com.jef.justenoughfakepixel.features.mining.powder;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.jef.justenoughfakepixel.core.JefGsonBuilder;
+import com.jef.justenoughfakepixel.core.JefStorageManager;
 import lombok.Getter;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PowderStats {
+public class PowderStats implements JefStorageManager.Managed, JefStorageManager.AutoSaveable {
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static PowderStats INSTANCE;
     public final RateInfo gemstoneInfo = new RateInfo();
     public final RateInfo chestInfo = new RateInfo();
@@ -95,27 +94,24 @@ public class PowderStats {
         return tracking;
     }
 
+    @Override
     public void initFile(File configDir) {
         this.file = new File(configDir, "powder_stats.json");
     }
 
+    @Override
     public void load() {
-        if (file == null || !file.exists()) return;
-        try (Reader r = new FileReader(file)) {
-            PowderData loaded = GSON.fromJson(r, PowderData.class);
-            if (loaded != null) data = loaded;
-        } catch (Exception e) {
-            System.err.println("[JEF/Powder] Failed to load powder_stats.json: " + e.getMessage());
-        }
+        PowderData loaded = JefStorageManager.loadSafe(file, PowderData.class, JefGsonBuilder.GSON);
+        if (loaded != null) data = loaded;
     }
 
     public void save() {
-        if (file == null) return;
-        try (Writer w = new FileWriter(file)) {
-            GSON.toJson(data, w);
-        } catch (Exception e) {
-            System.err.println("[JEF/Powder] Failed to save powder_stats.json: " + e.getMessage());
-        }
+        JefStorageManager.saveAtomic(file, data, JefGsonBuilder.GSON);
+    }
+
+    @Override
+    public void autoSave() {
+        save();
     }
 
     public void reset() {

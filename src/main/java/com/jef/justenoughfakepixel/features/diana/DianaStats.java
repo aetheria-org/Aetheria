@@ -1,7 +1,7 @@
 package com.jef.justenoughfakepixel.features.diana;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.jef.justenoughfakepixel.core.JefGsonBuilder;
+import com.jef.justenoughfakepixel.core.JefStorageManager;
 import com.jef.justenoughfakepixel.utils.data.SkyblockData;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
@@ -10,10 +10,9 @@ import net.minecraft.util.StringUtils;
 
 import java.io.*;
 
-public class DianaStats {
+public class DianaStats implements JefStorageManager.Managed, JefStorageManager.AutoSaveable {
 
     private static final long INACTIVITY_LIMIT_MS = 90_000L;
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Minecraft mc = Minecraft.getMinecraft();
     private static DianaStats INSTANCE;
     public volatile String lastDropType = null;
@@ -74,27 +73,24 @@ public class DianaStats {
         return String.valueOf(coins);
     }
 
+    @Override
     public void initFile(File configDir) {
         this.file = new File(configDir, "diana_stats.json");
     }
 
+    @Override
     public void load() {
-        if (file == null || !file.exists()) return;
-        try (Reader r = new FileReader(file)) {
-            DianaData loaded = GSON.fromJson(r, DianaData.class);
-            if (loaded != null) data = loaded;
-        } catch (Exception e) {
-            System.err.println("[JEF/Diana] Failed to load diana_stats.json: " + e.getMessage());
-        }
+        DianaData loaded = JefStorageManager.loadSafe(file, DianaData.class, JefGsonBuilder.GSON);
+        if (loaded != null) data = loaded;
     }
 
     public void save() {
-        if (file == null) return;
-        try (Writer w = new FileWriter(file)) {
-            GSON.toJson(data, w);
-        } catch (Exception e) {
-            System.err.println("[JEF/Diana] Failed to save diana_stats.json: " + e.getMessage());
-        }
+        JefStorageManager.saveAtomic(file, data, JefGsonBuilder.GSON);
+    }
+
+    @Override
+    public void autoSave() {
+        save();
     }
 
     public void reset() {

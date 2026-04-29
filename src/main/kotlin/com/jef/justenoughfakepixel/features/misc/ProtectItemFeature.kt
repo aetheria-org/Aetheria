@@ -17,17 +17,62 @@ import net.minecraft.util.ChatComponentText
 import net.minecraft.util.EnumChatFormatting
 import net.minecraftforge.fml.common.eventhandler.EventPriority
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
+import net.minecraftforge.fml.common.gameevent.TickEvent
+import org.lwjgl.input.Keyboard
 
 
 @RegisterEvents
 class ProtectItemFeature {
 
-    private companion object {
+    companion object {
         private val mc = Minecraft.getMinecraft()
         private const val STAR_SIZE = 16
         private const val CLICK_OUTSIDE_WINDOW = -999
         private const val DROP_KEY_CLICK_TYPE = 4
         private const val SWAP_OFFHAND_CLICK_TYPE = 5
+
+        @JvmStatic
+        fun toggleProtection(stack: ItemStack) {
+            val uuid = ItemUtils.getItemUuid(stack)
+            if (uuid == null) {
+                notifyRaw("${EnumChatFormatting.RED}This item has no SkyBlock UUID and cannot be protected.")
+                return
+            }
+            if (ProtectedItemStorage.contains(uuid)) {
+                ProtectedItemStorage.remove(uuid)
+                notifyRaw("${EnumChatFormatting.YELLOW}${stack.displayName} ${EnumChatFormatting.GRAY}is no longer protected.")
+            } else {
+                ProtectedItemStorage.add(uuid)
+                notifyRaw("${EnumChatFormatting.GREEN}${stack.displayName} ${EnumChatFormatting.GRAY}is now protected!")
+            }
+        }
+
+        private fun notifyRaw(message: String) {
+            if (JefConfig.feature?.misc?.protectItem?.showChatNotifications != true) return
+            mc.thePlayer?.addChatMessage(ChatComponentText("${EnumChatFormatting.RED}[JEF] §r$message"))
+        }
+    }
+
+    private var keyWasDown = false
+
+    @SubscribeEvent
+    fun onClientTick(event: TickEvent.ClientTickEvent) {
+        if (event.phase != TickEvent.Phase.END) return
+        if (mc.thePlayer == null || mc.currentScreen != null) return
+
+        val key = JefConfig.feature?.misc?.protectItem?.protectionKey ?: return
+        if (key == Keyboard.KEY_NONE) return
+
+        val keyDown = Keyboard.isKeyDown(key)
+        if (keyDown && !keyWasDown) {
+            val held = mc.thePlayer.heldItem
+            if (held == null) {
+                notifyRaw("${EnumChatFormatting.RED}You are not holding an item!")
+            } else {
+                toggleProtection(held)
+            }
+        }
+        keyWasDown = keyDown
     }
 
 
@@ -163,18 +208,7 @@ class ProtectItemFeature {
         return ProtectedItemStorage.contains(uuid)
     }
 
-
     private fun notifyBlocked(displayName: String, action: String) {
-        if (!shouldShowNotifications()) return
-
-        mc.thePlayer?.addChatMessage(
-            ChatComponentText(
-                "${EnumChatFormatting.RED}[JEF] " + "${EnumChatFormatting.YELLOW}$displayName " + "${EnumChatFormatting.RED}is protected and cannot be $action!"
-            )
-        )
-    }
-
-    private fun shouldShowNotifications(): Boolean {
-        return JefConfig.feature?.misc?.protectItem?.showChatNotifications == true
+        notifyRaw("${EnumChatFormatting.YELLOW}$displayName ${EnumChatFormatting.RED}is protected and cannot be $action!")
     }
 }

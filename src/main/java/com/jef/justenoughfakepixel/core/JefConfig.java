@@ -1,7 +1,5 @@
 package com.jef.justenoughfakepixel.core;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.jef.justenoughfakepixel.core.config.command.JefCommand;
 import com.jef.justenoughfakepixel.core.config.editors.GuiPositionEditor;
 import com.jef.justenoughfakepixel.core.config.gui.GuiScreenElementWrapper;
@@ -43,7 +41,6 @@ import java.nio.file.Files;
 public class JefConfig {
 
     public static final KeyBinding openGuiKey = new KeyBinding("Open JEF GUI", Keyboard.KEY_P, "JustEnoughFakepixel");
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().excludeFieldsWithoutExposeAnnotation().create();
     public static Config feature;
     public static File configDirectory = new File("config/JustEnoughFakepixel");
     public static GuiScreen screenToOpen = null;
@@ -76,11 +73,8 @@ public class JefConfig {
 
     private static void loadConfig() {
         if (configFile.exists()) {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(configFile.toPath()), StandardCharsets.UTF_8))) {
-                feature = GSON.fromJson(reader, Config.class);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            // Uses shared loadSafe for consistent corruption handling
+            feature = JefStorageManager.loadSafe(configFile, Config.class, JefGsonBuilder.GSON_STRICT);
         }
         if (feature == null) {
             feature = new Config();
@@ -89,14 +83,8 @@ public class JefConfig {
     }
 
     public static void saveConfig() {
-        try {
-            if (!configFile.exists()) configFile.createNewFile();
-            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(configFile.toPath()), StandardCharsets.UTF_8))) {
-                writer.write(GSON.toJson(feature));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        // Uses shared saveAtomic — .tmp → verify → atomic rename, same as every other storage
+        JefStorageManager.saveAtomic(configFile, feature, JefGsonBuilder.GSON_STRICT);
     }
 
     public static void reloadRepo() {

@@ -1,7 +1,7 @@
 package com.jef.justenoughfakepixel.features.scoreboard;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.jef.justenoughfakepixel.core.JefGsonBuilder;
+import com.jef.justenoughfakepixel.core.JefStorageManager;
 import com.jef.justenoughfakepixel.init.RegisterInstance;
 import com.jef.justenoughfakepixel.utils.ColorUtils;
 import net.minecraft.client.Minecraft;
@@ -15,13 +15,13 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.io.*;
 
-public class MaxwellPowerSync {
+public class MaxwellPowerSync implements JefStorageManager.Managed, JefStorageManager.AutoSaveable {
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     @RegisterInstance
     private static MaxwellPowerSync INSTANCE;
     private File file = null;
     private PowerData data = new PowerData();
+
     private MaxwellPowerSync() {
     }
 
@@ -35,27 +35,24 @@ public class MaxwellPowerSync {
         return INSTANCE.data.power;
     }
 
+    @Override
     public void initFile(File configDir) {
         this.file = new File(configDir, "maxwell_power.json");
     }
 
+    @Override
     public void load() {
-        if (file == null || !file.exists()) return;
-        try (Reader r = new FileReader(file)) {
-            PowerData loaded = GSON.fromJson(r, PowerData.class);
-            if (loaded != null) data = loaded;
-        } catch (Exception e) {
-            System.err.println("[JEF/Maxwell] Failed to load maxwell_power.json: " + e.getMessage());
-        }
+        PowerData loaded = JefStorageManager.loadSafe(file, PowerData.class, JefGsonBuilder.GSON);
+        if (loaded != null) data = loaded;
     }
 
     private void save() {
-        if (file == null) return;
-        try (Writer w = new FileWriter(file)) {
-            GSON.toJson(data, w);
-        } catch (Exception e) {
-            System.err.println("[JEF/Maxwell] Failed to save maxwell_power.json: " + e.getMessage());
-        }
+        JefStorageManager.saveAtomic(file, data, JefGsonBuilder.GSON);
+    }
+
+    @Override
+    public void autoSave() {
+        save();
     }
 
     @SubscribeEvent

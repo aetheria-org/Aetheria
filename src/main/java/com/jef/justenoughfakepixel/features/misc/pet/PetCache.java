@@ -1,23 +1,20 @@
 package com.jef.justenoughfakepixel.features.misc.pet;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.jef.justenoughfakepixel.core.JefGsonBuilder;
+import com.jef.justenoughfakepixel.core.JefStorageManager;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import net.minecraft.client.Minecraft;
 
 import java.io.*;
 import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PetCache {
+public class PetCache implements JefStorageManager.Managed {
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final int MAX_ENTRIES = 200;
     private static PetCache INSTANCE;
     private final Map<String, CachedPet> pets = new LinkedHashMap<String, CachedPet>(16, 0.75f, true) {
@@ -38,31 +35,26 @@ public class PetCache {
 
     public static String normalizePetName(String name) {
         if (name == null) return "";
-
-        return name.replace("✦", "")   // remove skinned pet symbol
-                .replace("’", "'")  // normalize apostrophe
+        return name.replace("✦", "")
+                .replace("\u2019", "'")
                 .trim();
     }
 
+    @Override
     public void initFile(File configDir) {
         file = new File(configDir, "pet_cache.json");
     }
 
+    @Override
     public void load() {
-        if (file == null || !file.exists()) return;
-        try (Reader r = new FileReader(file)) {
-            Type type = new TypeToken<Map<String, CachedPet>>() {
-            }.getType();
-            Map<String, CachedPet> loaded = GSON.fromJson(r, type);
-            if (loaded != null) {
-                // sanitize corrupted § on load
-                for (CachedPet pet : loaded.values()) {
-                    if (pet.formattedName != null) pet.formattedName = pet.formattedName.replace("Â§", "§");
-                }
-                pets.putAll(loaded);
+        Type type = new TypeToken<Map<String, CachedPet>>() {}.getType();
+        Map<String, CachedPet> loaded = JefStorageManager.loadSafe(file, type, JefGsonBuilder.GSON);
+        if (loaded != null) {
+            // sanitize corrupted § on load
+            for (CachedPet pet : loaded.values()) {
+                if (pet.formattedName != null) pet.formattedName = pet.formattedName.replace("Â§", "§");
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            pets.putAll(loaded);
         }
     }
 
@@ -76,15 +68,7 @@ public class PetCache {
     }
 
     private void save() {
-        if (file == null) return;
-        try {
-            if (!file.exists()) file.createNewFile();
-            try (Writer w = new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8)) {
-                w.write(GSON.toJson(pets));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        JefStorageManager.saveAtomic(file, pets, JefGsonBuilder.GSON);
     }
 
     public void update(String baseName, String formattedName, String textureValue) {

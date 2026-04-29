@@ -12,6 +12,12 @@ import java.util.List;
 
 public class Mining {
 
+
+    @Expose
+    @ConfigOption(name = "Commission Highlight", desc = "Highlights completed commissions in green inside the Commissions menu")
+    @ConfigEditorBoolean
+    public boolean commissionHighlight = true;
+
     @Expose
     @Category(name = "Fetchur Overlay", desc = "Settings for the Fetchur item overlay")
     public FetchurConfig fetchur = new FetchurConfig();

@@ -242,7 +242,7 @@ public class ConfigEditor extends GuiElement {
         float opacityFactor = LerpUtils.sigmoidZeroOne(delta / 500f);
         RenderUtils.drawGradientRect(0, 0, 0, width, height, (int) (0x80 * opacityFactor) << 24 | 0x101010, (int) (0x90 * opacityFactor) << 24 | 0x101010);
 
-        int xSize = Math.min(scaledResolution.getScaledWidth() - 100 / scaledResolution.getScaleFactor(), 500);
+        int xSize = Math.min(scaledResolution.getScaledWidth() - 100 / scaledResolution.getScaleFactor(), 540);
         int ySize = Math.min(scaledResolution.getScaledHeight() - 100 / scaledResolution.getScaleFactor(), 400);
 
         int x = (scaledResolution.getScaledWidth() - xSize) / 2;
@@ -266,11 +266,11 @@ public class ConfigEditor extends GuiElement {
 
         FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
         TextRenderUtils.drawStringCenteredScaledMaxWidth("JustEnoughFakepixel" + EnumChatFormatting.RESET + ", config by " + EnumChatFormatting.DARK_PURPLE + "Moulberry", fr, x + xSize / 2f, y + 15, false, 200, 0xa0a0a0);
-        RenderUtils.drawFloatingRectDark(x + 4, y + 49 - 20, 140, ySize - 54 + 20, false);
+        RenderUtils.drawFloatingRectDark(x + 4, y + 49 - 20, 180, ySize - 54 + 20, false);
 
         int innerPadding = 20 / adjScaleFactor;
         int innerLeft = x + 4 + innerPadding;
-        int innerRight = x + 144 - innerPadding;
+        int innerRight = x + 184 - innerPadding;
         int innerTop = y + 49 + innerPadding;
         int innerBottom = y + ySize - 5 - innerPadding;
         Gui.drawRect(innerLeft, innerTop, innerLeft + 1, innerBottom, 0xff08080E); //Left
@@ -314,13 +314,13 @@ public class ConfigEditor extends GuiElement {
             } else {
                 catName = EnumChatFormatting.GRAY + cat.name;
             }
-            TextRenderUtils.drawStringCenteredScaledMaxWidth(catName, fr, x + 75, y + 70 + catY, false, 90, -1);
+            TextRenderUtils.drawStringCenteredScaledMaxWidth(catName, fr, x + 95, y + 70 + catY, false, 130, -1);
             catY += 15;
 
             if (isExpanded && hasSubcats) {
                 int subCount = cat.subcategories.size();
                 // Vertical line just right of the scrollbar, spanning exactly the subcategory rows
-                int lineX = innerLeft + 12;
+                int lineX = innerLeft + 11;
                 int lineTopY    = y + 70 + catY - 6;
                 int lineBottomY = y + 70 + catY + (subCount - 1) * 13 + 6;
                 Gui.drawRect(lineX, lineTopY, lineX + 1, lineBottomY, 0xff555555);
@@ -331,7 +331,7 @@ public class ConfigEditor extends GuiElement {
                     String subName = subSel
                             ? EnumChatFormatting.DARK_AQUA + "" + EnumChatFormatting.UNDERLINE + subEntry.getValue().name
                             : EnumChatFormatting.DARK_GRAY + subEntry.getValue().name;
-                    TextRenderUtils.drawStringCenteredScaledMaxWidth(subName, fr, x + 75, y + 70 + catY, false, 80, -1);
+                    TextRenderUtils.drawStringCenteredScaledMaxWidth(subName, fr, x + 95, y + 70 + catY, false, 120, -1);
                     catY += 13;
                 }
             }
@@ -359,11 +359,11 @@ public class ConfigEditor extends GuiElement {
 
         GlScissorStack.pop(scaledResolution);
 
-        TextRenderUtils.drawStringCenteredScaledMaxWidth("Categories", fr, x + 75, y + 44, false, 120, 0xa368ef);
+        TextRenderUtils.drawStringCenteredScaledMaxWidth("Categories", fr, x + 95, y + 44, false, 120, 0xa368ef);
 
-        RenderUtils.drawFloatingRectDark(x + 149, y + 29, xSize - 154, ySize - 34, false);
+        RenderUtils.drawFloatingRectDark(x + 189, y + 29, xSize - 194, ySize - 34, false);
 
-        innerLeft = x + 149 + innerPadding;
+        innerLeft = x + 189 + innerPadding;
         innerRight = x + xSize - 5 - innerPadding;
         innerBottom = y + ySize - 5 - innerPadding;
 
@@ -537,7 +537,7 @@ public class ConfigEditor extends GuiElement {
         int width = scaledResolution.getScaledWidth();
         int height = scaledResolution.getScaledHeight();
 
-        int xSize = Math.min(width - 100 / scaledResolution.getScaleFactor(), 500);
+        int xSize = Math.min(width - 100 / scaledResolution.getScaleFactor(), 540);
         int ySize = Math.min(height - 100 / scaledResolution.getScaleFactor(), 400);
 
         int x = (scaledResolution.getScaledWidth() - xSize) / 2;
@@ -548,7 +548,7 @@ public class ConfigEditor extends GuiElement {
         int innerPadding = 20 / adjScaleFactor;
         int innerTop = y + 49 + innerPadding;
         int innerBottom = y + ySize - 5 - innerPadding;
-        int innerLeft = x + 149 + innerPadding;
+        int innerLeft = x + 189 + innerPadding;
         int innerRight = x + xSize - 5 - innerPadding;
 
         int dist = innerBottom - innerTop - 12;
@@ -809,12 +809,12 @@ public class ConfigEditor extends GuiElement {
         ScaledResolution scaledResolution = new ScaledResolution(Minecraft.getMinecraft());
         int width = scaledResolution.getScaledWidth();
 
-        int xSize = Math.min(width - 100 / scaledResolution.getScaleFactor(), 500);
+        int xSize = Math.min(width - 100 / scaledResolution.getScaleFactor(), 540);
 
         int adjScaleFactor = Math.max(2, scaledResolution.getScaleFactor());
 
         int innerPadding = 20 / adjScaleFactor;
-        int innerWidth = xSize - 154 - innerPadding * 2;
+        int innerWidth = xSize - 194 - innerPadding * 2;
 
         if (Keyboard.getEventKeyState()) {
             String old = searchField.getText();

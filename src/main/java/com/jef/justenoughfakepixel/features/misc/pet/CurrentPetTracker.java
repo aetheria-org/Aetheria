@@ -1,7 +1,7 @@
 package com.jef.justenoughfakepixel.features.misc.pet;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.jef.justenoughfakepixel.core.JefGsonBuilder;
+import com.jef.justenoughfakepixel.core.JefStorageManager;
 import com.jef.justenoughfakepixel.init.RegisterInstance;
 import com.jef.justenoughfakepixel.utils.item.ItemUtils;
 import com.jef.justenoughfakepixel.utils.chat.ChatUtils;
@@ -17,14 +17,12 @@ import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.jef.justenoughfakepixel.features.misc.pet.PetCache.normalizePetName;
 
-public class CurrentPetTracker {
+public class CurrentPetTracker implements JefStorageManager.Managed {
 
     private static final Pattern SUMMONED = Pattern.compile("^You summoned your (.+)!$");
     private static final Pattern AUTOPET = Pattern.compile("^Autopet equipped your \\[Lvl \\d+\\] (.+)!$");
@@ -32,8 +30,6 @@ public class CurrentPetTracker {
 
     private static final String PETS_CONTAINER = "Pets";
     private static final String ACTIVE_LORE = "Click to despawn";
-
-    private static final Gson GSON = new GsonBuilder().create();
 
     @RegisterInstance
     private static CurrentPetTracker INSTANCE;
@@ -49,30 +45,19 @@ public class CurrentPetTracker {
         return INSTANCE;
     }
 
+    @Override
     public void initFile(File configDir) {
         file = new File(configDir, "current_pet.json");
     }
 
+    @Override
     public void load() {
-        if (file == null || !file.exists()) return;
-        try (Reader r = new FileReader(file)) {
-            String loaded = GSON.fromJson(r, String.class);
-            if (loaded != null) currentBaseName = loaded;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        String loaded = JefStorageManager.loadSafe(file, String.class, JefGsonBuilder.GSON);
+        if (loaded != null) currentBaseName = loaded;
     }
 
     private void save() {
-        if (file == null) return;
-        try {
-            if (!file.exists()) file.createNewFile();
-            try (Writer w = new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8)) {
-                w.write(GSON.toJson(currentBaseName));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        JefStorageManager.saveAtomic(file, currentBaseName, JefGsonBuilder.GSON);
     }
 
     @SubscribeEvent

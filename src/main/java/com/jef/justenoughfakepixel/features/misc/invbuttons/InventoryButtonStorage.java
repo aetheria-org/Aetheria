@@ -1,26 +1,24 @@
 package com.jef.justenoughfakepixel.features.misc.invbuttons;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.jef.justenoughfakepixel.core.JefGsonBuilder;
+import com.jef.justenoughfakepixel.core.JefStorageManager;
 import lombok.Getter;
 
 import java.io.*;
 import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InventoryButtonStorage {
+public class InventoryButtonStorage implements JefStorageManager.Managed, JefStorageManager.AutoSaveable {
 
     private static final InventoryButtonStorage INSTANCE = new InventoryButtonStorage();
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().excludeFieldsWithoutExposeAnnotation().create();
-    private static final Type TYPE = new TypeToken<List<InventoryButton>>() {
-    }.getType();
+    private static final Type TYPE = new TypeToken<List<InventoryButton>>() {}.getType();
+
     private File storageFile;
     @Getter
     private List<InventoryButton> buttons = new ArrayList<>();
+
     private InventoryButtonStorage() {
     }
 
@@ -44,35 +42,29 @@ public class InventoryButtonStorage {
         return list;
     }
 
+    @Override
     public void initFile(File configDir) {
         this.storageFile = new File(configDir, "invbuttons.json");
     }
 
+    @Override
     public void load() {
         if (storageFile == null || !storageFile.exists()) {
             buttons = createDefaults();
             save();
             return;
         }
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(Files.newInputStream(storageFile.toPath()), StandardCharsets.UTF_8))) {
-            List<InventoryButton> loaded = GSON.fromJson(r, TYPE);
-            buttons = loaded != null ? loaded : createDefaults();
-        } catch (Exception e) {
-            e.printStackTrace();
-            buttons = createDefaults();
-        }
+        List<InventoryButton> loaded = JefStorageManager.loadSafe(storageFile, TYPE, JefGsonBuilder.GSON_STRICT);
+        buttons = loaded != null ? loaded : createDefaults();
     }
 
     public void save() {
-        if (storageFile == null) return;
-        try {
-            if (!storageFile.exists()) storageFile.createNewFile();
-            try (BufferedWriter w = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(storageFile.toPath()), StandardCharsets.UTF_8))) {
-                w.write(GSON.toJson(buttons));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        JefStorageManager.saveAtomic(storageFile, buttons, JefGsonBuilder.GSON_STRICT);
+    }
+
+    @Override
+    public void autoSave() {
+        save();
     }
 
     public void setButtons(List<InventoryButton> b) {
