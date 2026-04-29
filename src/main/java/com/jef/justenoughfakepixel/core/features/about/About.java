@@ -8,12 +8,18 @@ public class About {
     @ConfigEditorVersionDisplay
     public transient Void currentVersion = null;
 
+    @ConfigOption(name = "Updates", desc = "Update the Mod Easily!")
+    @ConfigEditorAccordion(id = 2)
+    public boolean updateAccordion = false;
+
     @ConfigOption(name = "Update Mod", desc = "Update the JEF Mod to latest version")
-    @ConfigEditorButton(runnableId = "downloadMod",buttonText = "Download")
+    @ConfigEditorButton(runnableId = "downloadMod",buttonText = "Install")
+    @ConfigAccordionId(id = 2)
     public boolean downloadMod = false;
 
     @ConfigOption(name = "Update Mod & Shutdown", desc = "Update the JEF Mod to latest version and shutdown automatically, so you can start with latest version")
-    @ConfigEditorButton(runnableId = "downloadModS",buttonText = "Download")
+    @ConfigEditorButton(runnableId = "downloadModS",buttonText = "Install")
+    @ConfigAccordionId(id = 2)
     public boolean downloadModS = false;
 
     @ConfigOption(name = "Website", desc = "Visit the JEF website")
