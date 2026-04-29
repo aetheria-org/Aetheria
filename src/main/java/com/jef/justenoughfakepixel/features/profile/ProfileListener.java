@@ -24,7 +24,7 @@ public class ProfileListener {
     @SubscribeEvent
     public void onGuiOpen(GuiOpenEvent event) {
         if (event.gui == null) {
-            if(!ProfileParser.parsing) {
+            if(!ProfileParser.parsing && !ProfileParser.lastCachedProfile.isEmpty()) {
                 JefMod.logger.info("Refreshing Cache");
                 ProfileParser.lastCachedProfile = "";
                 return;
