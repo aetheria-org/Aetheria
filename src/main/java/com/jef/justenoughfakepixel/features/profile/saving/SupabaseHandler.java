@@ -14,7 +14,7 @@ import java.util.HashMap;
 
 public class SupabaseHandler {
 
-    private static final String API_URL = "https://cape-api-pi.vercel.app/profile";
+    private static final String API_URL = "https://cape-api.netlify.app/profile";
     public static final String MOD_SECRET = "a7c0e73c-3b0b-4789-8c80-741dd09ba1bc";
 
     private static final HashMap<String, Long> lastUploaded = new HashMap<>();
