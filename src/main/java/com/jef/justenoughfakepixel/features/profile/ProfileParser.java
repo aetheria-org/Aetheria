@@ -44,10 +44,8 @@ import com.jef.justenoughfakepixel.utils.ColorUtils;
 import com.jef.justenoughfakepixel.utils.RomanNumeralParser;
 import com.jef.justenoughfakepixel.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.init.Blocks;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ContainerChest;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTException;
@@ -193,7 +191,7 @@ public class ProfileParser {
                                         // Pets
                                         HashMap<Integer,Pet> pets = new HashMap<>();
                                         GuiWaiter.waitForPaged("View Pets",2,53,"Next Page",49,"View Profile",
-                                                chest -> pets.putAll(parsePets(chest)),
+                                                chest -> pets.putAll(parsePets(pets.size()-1,chest)),
                                                 prof7 -> {
                                                     JefMod.logger.info("[ProfileParser] PetsData parsed for: " + base.playerName);
                                                     petsData[0] = new PetsData(pets);
@@ -478,7 +476,7 @@ public class ProfileParser {
         return new ContainerData(id,data);
     }
 
-    public static HashMap<Integer, Pet> parsePets(ContainerChest container){
+    public static HashMap<Integer, Pet> parsePets(int startIndex,ContainerChest container){
         HashMap<Integer, Pet> set = new HashMap<>();
         if (container == null) return set;
         String title = ColorUtils.stripColor(
@@ -487,32 +485,18 @@ public class ProfileParser {
         if (!title.equals("View Pets")) return set;
 
         ItemStack pageItem = container.getSlot(53).getStack();
-        int add = -1;
         if(pageItem == null) return set;
-        if(pageItem.getItem() == Item.getItemFromBlock(Blocks.stained_glass_pane)){
-            pageItem = container.getSlot(45).getStack();
-            if(pageItem == null) return set;
-            add = 1;
-        }
-        int page = -1;
-        List<String> lore = getLore(pageItem);
-        for(String s : lore) {
-            if (s.startsWith("Page")) {
-                page = Integer.parseInt(s.replace("Page", "").trim());
-            }
-        }
-        page += add;
-        if(page < 0) return set;
+
         int petIndex = 0;
         for(int i = 10; i < 44;i++){
             if(i % 9 == 0 || (i + 1) % 9 == 0) continue;
             ItemStack stack = container.getSlot(i).getStack();
             if(stack == null)break;
-            int petSlot = petIndex + ((page -1)* 28);
+            int petSlot = petIndex + startIndex;
             petIndex++;
             List<String> slore = getLore(stack);
             boolean equipped = slore.contains("Click to despawn!");
-            set.put(petSlot,new Pet(parseItemData(stack),page,equipped));
+            set.put(petSlot,new Pet(parseItemData(stack),startIndex % 28,equipped));
         }
         return set;
     }
@@ -1160,16 +1144,16 @@ public class ProfileParser {
 
     public static void writeToJson(ProfileData data) {
         if (data == null) return;
-        File file = new File(JefConfig.configDirectory, "profile.json");
+        File file = new File(JefConfig.configDirectory, "profile.txt");
         if (!file.exists()) {
             try { file.createNewFile(); }
-            catch (IOException e) { JefMod.logger.info("Error creating profile.json"); return; }
+            catch (IOException e) { JefMod.logger.info("Error creating profile.txt"); return; }
         }
 
-        try (FileOutputStream fos = new FileOutputStream("output.bin")) {
+        try (FileOutputStream fos = new FileOutputStream(file)) {
             fos.write(ProfileCompressor.compressJSON(GSON.toJson(data)));
         } catch (Exception e) {
-            JefMod.logger.info("Error writing to profile.json");
+            JefMod.logger.info("Error writing to profile.txt");
         }
     }
 }
