@@ -2,6 +2,7 @@ package com.jef.justenoughfakepixel.features.profile.saving;
 
 import com.google.gson.JsonObject;
 import com.jef.justenoughfakepixel.JefMod;
+import com.jef.justenoughfakepixel.features.profile.ProfileCompressor;
 import com.jef.justenoughfakepixel.features.profile.ProfileParser;
 import com.jef.justenoughfakepixel.features.profile.data.ProfileData;
 
@@ -49,19 +50,17 @@ public class SupabaseHandler {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("x-mod-secret", MOD_SECRET);
-            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Content-Type", "application/octet-stream");
+            conn.setRequestProperty("x-player-name", playerName);
             conn.setDoOutput(true);
             conn.setConnectTimeout(8000);
             conn.setReadTimeout(15000);
+            String jsonBody = ProfileParser.GSON.toJson(data);
 
-            JsonObject payload = new JsonObject();
-            payload.addProperty("player_name", playerName);
-            payload.add("profile_data", ProfileParser.GSON.toJsonTree(data));
-
-            String jsonBody = ProfileParser.GSON.toJson(payload);
+            byte[] compressedData = ProfileCompressor.compressJSON(jsonBody);
 
             try (OutputStream os = conn.getOutputStream()) {
-                os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
+                os.write(compressedData);
             }
 
             int responseCode = conn.getResponseCode();

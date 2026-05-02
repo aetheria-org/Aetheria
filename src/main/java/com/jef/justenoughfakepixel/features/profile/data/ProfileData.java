@@ -2,6 +2,7 @@ package com.jef.justenoughfakepixel.features.profile.data;
 
 import com.jef.justenoughfakepixel.features.profile.data.bags.BagsData;
 import com.jef.justenoughfakepixel.features.profile.data.base.BaseData;
+import com.jef.justenoughfakepixel.features.profile.data.collection.CollectionsData;
 import com.jef.justenoughfakepixel.features.profile.data.dungeon.DungeonData;
 import com.jef.justenoughfakepixel.features.profile.data.inventory.InventoryData;
 import com.jef.justenoughfakepixel.features.profile.data.pets.PetsData;
@@ -25,5 +26,6 @@ public class ProfileData {
     public PetsData petsData;
     public StorageData storageData;
     public BagsData bagsData;
+    public CollectionsData collectionData;
 
 }

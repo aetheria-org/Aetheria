@@ -47,7 +47,7 @@ public class ItemUtils {
     public static String getInternalName(@Nullable ItemStack item) {
         if (item == null || !item.hasTagCompound()) return "";
         NBTTagCompound extra = item.getTagCompound().getCompoundTag("ExtraAttributes");
-        return extra.hasKey("id") ? extra.getString("id") : "";
+        return extra.hasKey("id") ? extra.getString("id").replace("PET_","") : "";
     }
 
     public static String getSkullTexture(@Nullable ItemStack item) {

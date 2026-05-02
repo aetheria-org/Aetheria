@@ -5,6 +5,7 @@ import com.jef.justenoughfakepixel.JefMod;
 import com.jef.justenoughfakepixel.core.JefConfig;
 import com.jef.justenoughfakepixel.features.profile.data.*;
 
+import java.io.FileOutputStream;
 import java.util.*;
 
 import com.jef.justenoughfakepixel.features.profile.data.bags.AccessoryData;
@@ -16,6 +17,10 @@ import com.jef.justenoughfakepixel.features.profile.data.bags.vars.Bait;
 import com.jef.justenoughfakepixel.features.profile.data.base.BaseData;
 import com.jef.justenoughfakepixel.features.profile.data.base.NetworthData;
 import com.jef.justenoughfakepixel.features.profile.data.base.Statistics;
+import com.jef.justenoughfakepixel.features.profile.data.collection.CollectionBase;
+import com.jef.justenoughfakepixel.features.profile.data.collection.CollectionData;
+import com.jef.justenoughfakepixel.features.profile.data.collection.CollectionType;
+import com.jef.justenoughfakepixel.features.profile.data.collection.CollectionsData;
 import com.jef.justenoughfakepixel.features.profile.data.dungeon.DungeonData;
 import com.jef.justenoughfakepixel.features.profile.data.dungeon.Floor;
 import com.jef.justenoughfakepixel.features.profile.data.dungeon.FloorData;
@@ -43,7 +48,6 @@ import net.minecraft.init.Blocks;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemSkull;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTException;
@@ -51,7 +55,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 
 public class ProfileParser {
@@ -64,13 +67,13 @@ public class ProfileParser {
                     " | HOTM: "+ (mountain[0] != null) + " | Dungeon: " + (dungeonData[0] != null)
                     + " | Slayer: " + (slayerData[0] != null) + " | Wardrobe: " + (wardrobeData[0] != null)
                     + " | Pets: " + (petsData[0] != null) + " | Storage: " + (storageData[0] != null)
-            + " | Bags: " + (bagsData[0] != null));
+            + " | Bags: " + (bagsData[0] != null) + " | Collection: " + (collectionData[0] != null));
             return;
         }
         if(base.playerProfile.isEmpty() || base.playerName.isEmpty()) return;
         ProfileData profile = new ProfileData(base, inventory[0], skill[0], mountain[0],
                 dungeonData[0], slayerData[0],wardrobeData[0],petsData[0],storageData[0],
-                bagsData[0]);
+                bagsData[0],collectionData[0]);
         profileData.put(base.playerName, profile);
         writeToJson(profile);
         SupabaseHandler.pushProfileAsync(base.playerName, profile);
@@ -94,6 +97,7 @@ public class ProfileParser {
     public static final StorageData[] storageData = new StorageData[1];
     public static final BagsData[] bagsData = new BagsData[1];
     public static final FishingData[] fishingData = new FishingData[1];
+    public static final CollectionsData[] collectionData = new CollectionsData[1];
     public static BaseData base;
 
 
@@ -278,7 +282,34 @@ public class ProfileParser {
                             },bags3 -> {
                                 windowID = bags3.windowId;
                                 mc.playerController.windowClick(windowID,31,0,0,mc.thePlayer);
-                                save();
+                                GuiWaiter.waitFor("View Profile",2,-1,prof2 -> {
+                                    windowID = prof2.windowId;
+                                    mc.playerController.windowClick(windowID,25,0,0,mc.thePlayer);
+                                    EnumMap<CollectionType, CollectionData> data = new EnumMap<>(CollectionType.class);
+                                    GuiWaiter.waitFor("View Farming Collections",2,2,"View Mining Collections",farming -> {
+                                        data.putAll(parseCollection(CollectionBase.FARMING,farming));
+                                    },mining -> {
+                                        windowID = mining.windowId;
+                                        data.putAll(parseCollection(CollectionBase.MINING,mining));
+                                        mc.playerController.windowClick(windowID,3,0,0,mc.thePlayer);
+                                        GuiWaiter.waitFor("View Combat Collections",2,4,"View Foraging Collections", combat -> {
+                                            data.putAll(parseCollection(CollectionBase.COMBAT,combat));
+                                        },foraging -> {
+                                            windowID = foraging.windowId;
+                                            data.putAll(parseCollection(CollectionBase.FORAGING,foraging));
+                                            mc.playerController.windowClick(windowID,5,0,0,mc.thePlayer);
+                                            GuiWaiter.waitFor("View Fishing Collections",2,6,"View Boss Collections",fishing -> {
+                                                data.putAll(parseCollection(CollectionBase.FISHING,fishing));
+                                            },boss -> {
+                                                windowID = boss.windowId;
+                                                data.putAll(parseCollection(CollectionBase.BOSS,boss));
+                                                collectionData[0] = new CollectionsData(data);
+                                                save();
+                                                mc.playerController.windowClick(windowID,48,0,0,mc.thePlayer);
+                                            });
+                                        });
+                                    });
+                                });
                             });
                         });
                     });
@@ -305,6 +336,52 @@ public class ProfileParser {
                 },
                 viewStorageChest -> parseNext(index + 1, slotsToCheck, containers, viewStorageChest.windowId)
         );
+    }
+
+    private static EnumMap<CollectionType,CollectionData> parseCollection(CollectionBase collectionBase, ContainerChest container) {
+        EnumMap<CollectionType,CollectionData> data = new EnumMap<>(CollectionType.class);
+        if (container == null) return data;
+
+        String title = ColorUtils.stripColor(
+                container.getLowerChestInventory().getDisplayName().getUnformattedText()
+        ).trim();
+        if (!title.startsWith("View") && !title.endsWith("Collections")) return data;
+
+        for(int i = 19;i < 44;i++){
+            if(i % 9 == 0 || (i + 1) % 9 == 0) continue;
+            ItemStack stack = container.getSlot(i).getStack();
+            if(stack == null || stack.getDisplayName().isEmpty()) continue;
+            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            CollectionType type = CollectionType.get(name);
+
+            if(type == null) continue;
+            String[] words = name.split(" ");
+            if(words.length < 2) continue;
+
+            int level = -1;
+            long curExp = -1,reqExp = -1;
+
+            try{
+                level = Integer.parseInt(words[words.length-1]);
+            } catch (NumberFormatException ignored) {}
+            if(level < 0) continue;
+
+            List<String> lore = getLore(stack);
+            if(lore.isEmpty()) continue;
+
+            for(String s : lore){
+                if (s.contains("/") && !s.contains(" ")) {
+                    try {
+                        String[] parts = s.split("/");
+                        curExp = parseRawNumber(parts[0]);
+                        reqExp = parseRawNumber(parts[1]);
+                    } catch (Exception ignored) {}
+                }
+            }
+            data.put(type,new CollectionData(level,curExp,reqExp));
+        }
+
+        return data;
     }
 
     private static QuiverData parseQuiver(ContainerChest container) {
@@ -1023,19 +1100,17 @@ public class ProfileParser {
         ).trim();
         if (!title.equals("View Skills")) return null;
 
-        int[] slots = {19,20,21,22,23,24,25,30,31,32};
-
-        for (int slot : slots) {
-            ItemStack stack = container.getSlot(slot).getStack();
+        for(Skill skill : Skill.values()){
+            ItemStack stack = container.getSlot(skill.slot).getStack();
             if (stack == null) continue;
-
             String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
             String[] words = name.split(" ");
-            Skill skill = Skill.get(words[0]);
-            if (skill == null) continue;
+            if(!skill.name.equalsIgnoreCase(words[0])) {
+                JefMod.logger.info("Wrong Slot for Skill: " + skill.name + " | " + skill.slot + " | " + words[0]);
+                continue;
+            }
             List<String> lore = getLore(stack);
             if (lore.isEmpty()) continue;
-
             int currentLevel = -1;
             long currentXp = 0L;
             long requiredXp = -1L;
@@ -1045,7 +1120,6 @@ public class ProfileParser {
                 currentLevel = RomanNumeralParser.parse(romanLevel);
                 JefMod.logger.info(skill.name() + " Level: " + currentLevel);
             }catch (IllegalArgumentException ignored) {}
-
             for (String line : lore) {
                 if (line.contains("/") && !line.contains(" ")) {
                     try {
@@ -1055,12 +1129,20 @@ public class ProfileParser {
                     } catch (Exception ignored) {
                     }
                 }
+                if(line.startsWith("OVERFLOW XP:")){
+                    int expIndex = lore.indexOf(line)+1;
+                    if(lore.size() <= expIndex) continue;
+                    String loreLine = lore.get(expIndex);
+                    String[] expWords = loreLine.split(" ");
+                    if(expWords.length < 2) continue;
+                    currentXp = parseRawNumber(expWords[1]);
+                    requiredXp = -1;
+                }
             }
-
             if (currentLevel < 0) continue;
-
             result.put(skill, new SkillData(skill, currentLevel, currentXp, requiredXp));
         }
+
         if(result.isEmpty()) return null;
         return new SkillsData(result);
     }
@@ -1083,10 +1165,10 @@ public class ProfileParser {
             try { file.createNewFile(); }
             catch (IOException e) { JefMod.logger.info("Error creating profile.json"); return; }
         }
-        try (FileWriter writer = new FileWriter(file)) {
-            GSON.toJson(data, writer);
-            writer.flush();
-        } catch (IOException e) {
+
+        try (FileOutputStream fos = new FileOutputStream("output.bin")) {
+            fos.write(ProfileCompressor.compressJSON(GSON.toJson(data)));
+        } catch (Exception e) {
             JefMod.logger.info("Error writing to profile.json");
         }
     }

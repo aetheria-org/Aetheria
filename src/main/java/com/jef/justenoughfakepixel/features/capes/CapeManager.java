@@ -2,6 +2,7 @@ package com.jef.justenoughfakepixel.features.capes;
 
 import com.jef.justenoughfakepixel.JefMod;
 import com.jef.justenoughfakepixel.core.JefConfig;
+import net.minecraft.client.Minecraft;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -18,18 +19,20 @@ public class CapeManager {
     public static HashMap<String,Cape> capes = new HashMap<>();
     public static HashMap<String,String> activeCapes = new HashMap<>();
 
-    private static final HashMap<String, Long> lastFetched = new HashMap<>();
+    private static Long lastFetched = 0L;
 
     private static long POLL_INTERVAL_MS = 900000;
 
     private static final String API_URL = "https://cape-api-pi.vercel.app";
     public static final String MOD_SECRET = "a7c0e73c-3b0b-4789-8c80-741dd09ba1bc";
 
+    public static String CLIENT_SIDE_CAPE_ID = "";
 
     public static void equipCape(String playerName, Cape cape) {
         activeCapes.put(playerName, cape.id);
-        lastFetched.put(playerName, System.currentTimeMillis());
+        lastFetched = System.currentTimeMillis();
 
+        CLIENT_SIDE_CAPE_ID = cape.id;
         new Thread(() -> {
             boolean success = pushCapeToAPI(playerName, cape.id);
             if (!success) {
@@ -41,7 +44,7 @@ public class CapeManager {
 
     public static void removeCape(String playerName) {
         activeCapes.put(playerName, "none");
-        lastFetched.put(playerName, System.currentTimeMillis());
+        lastFetched =  System.currentTimeMillis();
 
         new Thread(() -> {
             deleteCapeFromAPI(playerName);
@@ -51,18 +54,17 @@ public class CapeManager {
     public static void fetchCapeAsync(String playerName) {
         String existing = activeCapes.get(playerName);
         long now = System.currentTimeMillis();
-        Long lastFetch = lastFetched.get(playerName);
 
         boolean neverFetched = existing == null;
-        boolean pollDue = lastFetch != null
+        boolean pollDue = lastFetched != null
                 && !existing.equals("pending")
-                && (now - lastFetch) > POLL_INTERVAL_MS;
+                && (now - lastFetched) > POLL_INTERVAL_MS;
 
         if (!neverFetched && !pollDue) return;
 
         if (neverFetched) activeCapes.put(playerName, "pending");
 
-        lastFetched.put(playerName, now);
+        lastFetched = now;
 
         new Thread(() -> {
             String id = fetchIDFromAPI(playerName);
@@ -171,7 +173,13 @@ public class CapeManager {
 
     public static Cape getCapeForPlayer(String pl) {
         String capeID = activeCapes.get(pl);
-        if (capeID == null || capeID.equals("none") || capeID.equals("pending")) return null;
+        if (capeID == null || capeID.equals("pending")) return null;
+        if(capeID.equals("none")) {
+            if (pl.equals(Minecraft.getMinecraft().thePlayer.getGameProfile().getName())) {
+                return getCape(CLIENT_SIDE_CAPE_ID);
+            }
+            return null;
+        }
         Cape cape = capes.get(capeID);
         if (cape == null || !cape.isLoaded()) return null;
         return cape;
@@ -179,7 +187,7 @@ public class CapeManager {
 
     public static void initialise(boolean force) {
         if (!JefConfig.feature.cosmetics.capes.capesEnabled && !force) return;
-        POLL_INTERVAL_MS = JefConfig.feature.cosmetics.capes.reloadInterval * 1000L;
+        POLL_INTERVAL_MS = JefConfig.feature.cosmetics.capes.reloadInterval * 60000L;
         capes.clear();
 
         new Thread(CapeLoader::loadAllCapes, "CapeLoader-Init").start();
@@ -200,7 +208,7 @@ public class CapeManager {
     public static void reload() {
         capes.clear();
         activeCapes.clear();
-        lastFetched.clear();
+        lastFetched = 0L;
         initialise(true);
     }
 
