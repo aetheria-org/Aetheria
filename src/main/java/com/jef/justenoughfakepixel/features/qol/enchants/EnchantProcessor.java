@@ -30,8 +30,14 @@ public class EnchantProcessor {
     private static final Pattern ENCHANTMENT_PATTERN = Pattern.compile("(?<enchant>[A-Za-z][A-Za-z -]+) (?<levelNumeral>[IVXLCDM]+|\\d+)(?=, |$| [\\d,]+$)");
     private static final Pattern GREY_ENCHANT_PATTERN = Pattern.compile("^(Respiration|Aqua Affinity|Depth Strider|Efficiency).*");
     private static final String COMMA = ", ";
+    private static final String GRAY_COMMA = "§7" + COMMA;
+
+    // Layout mode constants
+    private static final int LAYOUT_SINGLE_LINE = 1;
+    private static final int LAYOUT_TWO_COLUMN = 0;
 
     private static final Map<String, EnchantMeta> BY_LORE = new HashMap<>();
+    private static final Map<Integer, String> MC_COLOR_CACHE = new HashMap<>();
     private static final Cache LORE_CACHE = new Cache();
     private static String lastLoadedJson = null;
 
@@ -173,19 +179,17 @@ public class EnchantProcessor {
     private int accountForAndRemoveGreyEnchants(List<String> tooltip, ItemStack item) {
         if (item == null || item.getEnchantmentTagList() == null || item.getEnchantmentTagList().tagCount() == 0)
             return -1;
-        int lastGreyEnchant = -1;
+
         int total = 0;
-        boolean removeGreyEnchants = true;
         for (int i = 1; total < 1 + item.getEnchantmentTagList().tagCount() && i < tooltip.size(); total++) {
             String line = tooltip.get(i);
             if (GREY_ENCHANT_PATTERN.matcher(line).matches()) {
-                lastGreyEnchant = i;
-                if (removeGreyEnchants) tooltip.remove(i);
+                tooltip.remove(i);
             } else {
                 i++;
             }
         }
-        return removeGreyEnchants ? -1 : lastGreyEnchant;
+        return -1;
     }
 
     private int correctTooltipWidth(int maxTooltipWidth) {
@@ -209,43 +213,43 @@ public class EnchantProcessor {
         List<String> out = new ArrayList<>();
         int layout = JefConfig.feature.qol.enchantParser.enchantLayout;
 
-        if (layout == 1 && enchants.size() > 1) {
+        if (layout == LAYOUT_SINGLE_LINE && enchants.size() > 1) {
             FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
-            int commaLength = fr.getStringWidth(grayComma());
+            int commaLength = fr.getStringWidth(GRAY_COMMA);
             int sum = 0;
             StringBuilder builder = new StringBuilder();
             for (FormattedEnchant enchant : enchants) {
                 if (sum + enchant.renderLength() > maxWidth && builder.length() > 0) {
-                    builder.delete(builder.length() - grayComma().length(), builder.length());
+                    removeTrailingComma(builder);
                     out.add(builder.toString());
                     builder = new StringBuilder();
                     sum = 0;
                 }
-                builder.append(enchant.formatted()).append(grayComma());
+                builder.append(enchant.formatted()).append(GRAY_COMMA);
                 sum += enchant.renderLength() + commaLength;
             }
-            if (builder.length() >= grayComma().length()) {
-                builder.delete(builder.length() - grayComma().length(), builder.length());
+            if (builder.length() >= GRAY_COMMA.length()) {
+                removeTrailingComma(builder);
                 out.add(builder.toString());
             }
             return out;
         }
 
-        if (layout == 0 && !hasLore) {
+        if (layout == LAYOUT_TWO_COLUMN && !hasLore) {
             StringBuilder builder = new StringBuilder();
             int i = 0;
             for (FormattedEnchant enchant : enchants) {
                 builder.append(enchant.formatted());
                 if (i % 2 == 0) {
-                    builder.append(grayComma());
+                    builder.append(GRAY_COMMA);
                 } else {
                     out.add(builder.toString());
                     builder = new StringBuilder();
                 }
                 i++;
             }
-            if (builder.length() >= grayComma().length()) {
-                builder.delete(builder.length() - grayComma().length(), builder.length());
+            if (builder.length() >= GRAY_COMMA.length()) {
+                removeTrailingComma(builder);
                 out.add(builder.toString());
             }
             return out;
@@ -258,9 +262,10 @@ public class EnchantProcessor {
         return out;
     }
 
-    private String grayComma() {
-        return "§7" + COMMA;
+    private void removeTrailingComma(StringBuilder builder) {
+        builder.delete(builder.length() - GRAY_COMMA.length(), builder.length());
     }
+
 
     private String formatColor(EnchantMeta meta, int level) {
         String color;
@@ -278,10 +283,22 @@ public class EnchantProcessor {
     }
 
     private String nearestMcColor(int argb) {
+        // Cache lookup - avoid expensive distance calculations
+        if (MC_COLOR_CACHE.containsKey(argb)) {
+            return MC_COLOR_CACHE.get(argb);
+        }
+
+        int bestIndex = findNearestColorIndex(argb);
+        String[] codes = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"};
+        String result = "§" + codes[bestIndex];
+        MC_COLOR_CACHE.put(argb, result);
+        return result;
+    }
+
+    private int findNearestColorIndex(int argb) {
         int r = (argb >> 16) & 255;
         int g = (argb >> 8) & 255;
         int b = argb & 255;
-        String[] codes = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"};
         int[] values = {0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA, 0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF};
         int best = 0;
         long bestDist = Long.MAX_VALUE;
@@ -295,7 +312,7 @@ public class EnchantProcessor {
                 best = i;
             }
         }
-        return "§" + codes[best];
+        return best;
     }
 
     private long sq(long x) {
@@ -357,6 +374,8 @@ public class EnchantProcessor {
         private final EnchantMeta meta;
         private final int level;
         private final List<String> lore = new ArrayList<>();
+        private String cachedFormatted = null;
+        private int cachedRenderLength = -1;
 
         private FormattedEnchant(EnchantMeta meta, int level) {
             this.meta = meta;
@@ -364,12 +383,18 @@ public class EnchantProcessor {
         }
 
         private String formatted() {
-            String lvl = JefConfig.feature.qol.romanNumerals ? Integer.toString(level) : toRoman(level);
-            return formatColor(meta, level) + meta.loreName + " " + lvl;
+            if (cachedFormatted == null) {
+                String lvl = JefConfig.feature.qol.romanNumerals ? Integer.toString(level) : toRoman(level);
+                cachedFormatted = formatColor(meta, level) + meta.loreName + " " + lvl;
+            }
+            return cachedFormatted;
         }
 
         private int renderLength() {
-            return Minecraft.getMinecraft().fontRendererObj.getStringWidth(formatted());
+            if (cachedRenderLength == -1) {
+                cachedRenderLength = Minecraft.getMinecraft().fontRendererObj.getStringWidth(formatted());
+            }
+            return cachedRenderLength;
         }
 
         @Override

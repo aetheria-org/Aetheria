@@ -56,8 +56,9 @@ public class CapeManager {
         long now = System.currentTimeMillis();
 
         boolean neverFetched = existing == null;
-        boolean pollDue = lastFetched != null
-                && !existing.equals("pending")
+        boolean pollDue = !neverFetched
+                && lastFetched != null
+                && !"pending".equals(existing)
                 && (now - lastFetched) > POLL_INTERVAL_MS;
 
         if (!neverFetched && !pollDue) return;
