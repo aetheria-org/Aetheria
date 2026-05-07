@@ -7,6 +7,8 @@ pluginManagement {
         maven("https://maven.architectury.dev/")
         maven("https://maven.fabricmc.net")
         maven("https://maven.minecraftforge.net/")
+        maven("https://maven.minecraftforge.net/")
+        maven("https://files.minecraftforge.net/maven/")
         maven("https://repo.spongepowered.org/maven/")
         maven("https://repo.essential.gg/repository/maven-releases/")
     }

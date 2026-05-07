@@ -3,7 +3,7 @@ import org.apache.commons.lang3.SystemUtils
 plugins {
     idea
     java
-    id("gg.essential.loom") version "0.10.0.+"
+    id("gg.essential.loom") version "0.10.0.5"
     kotlin("jvm") version "1.8.21"
     id("dev.architectury.architectury-pack200") version "0.1.3"
     id("com.github.johnrengelman.shadow") version "8.1.1"
@@ -63,6 +63,8 @@ sourceSets.main {
 repositories {
     mavenCentral()
     maven("https://repo.spongepowered.org/maven/")
+    maven("https://maven.minecraftforge.net/")
+    maven("https://files.minecraftforge.net/maven/")
     maven("https://repo.essential.gg/repository/maven-public/")
     maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1")
 }
