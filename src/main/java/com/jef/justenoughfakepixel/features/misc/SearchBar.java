@@ -3,6 +3,7 @@ package com.jef.justenoughfakepixel.features.misc;
 import com.jef.justenoughfakepixel.core.JefConfig;
 import com.jef.justenoughfakepixel.features.storage.StorageManager;
 import com.jef.justenoughfakepixel.init.RegisterEvents;
+import com.jef.justenoughfakepixel.utils.CalculatorUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
@@ -17,9 +18,6 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.util.*;
 
 @RegisterEvents
@@ -27,7 +25,6 @@ public class SearchBar {
 
     private static final Minecraft MC = Minecraft.getMinecraft();
 
-    private static final DecimalFormat CALC_FORMAT = new DecimalFormat("#,##0.##########");
     private static final Set<Character> CALC_SYMBOLS = new HashSet<>(Arrays.asList('+', '-', '*', '/', 'x', '(', ')'));
 
     private static final SearchBar INSTANCE = new SearchBar();
@@ -128,11 +125,7 @@ public class SearchBar {
         if (text == null || text.isEmpty()) return null;
         if (!text.equals(lastCalcInput)) {
             lastCalcInput = text;
-            try {
-                lastCalcResult = CALC_FORMAT.format(Calculator.calculate(text));
-            } catch (Calculator.CalculatorException ignored) {
-                lastCalcResult = null;
-            }
+            lastCalcResult = CalculatorUtils.calculateAndFormat(text);
         }
         return lastCalcResult == null ? null : "§e= §a" + lastCalcResult;
     }
@@ -225,217 +218,5 @@ public class SearchBar {
 
         searchBar.updateCursorCounter();
         drawSearchBar(searchBar, searchBar.getText());
-    }
-
-    public static class Calculator {
-
-        private static final String BINOPS = "+-*/x";
-        private static final String POSTOPS = "mkbts";
-        private static final String DIGITS = "0123456789";
-
-        public static BigDecimal calculate(String source) throws CalculatorException {
-            return evaluate(shuntingYard(lex(source.toLowerCase(Locale.ROOT))));
-        }
-
-        private static void readDigitsInto(Token token, String source, boolean decimals) {
-            int start = token.tokenStart + token.tokenLength;
-            for (int j = 0; j + start < source.length(); j++) {
-                int d = DIGITS.indexOf(source.charAt(j + start));
-                if (d == -1) return;
-                if (decimals) token.exponent--;
-                token.numericValue = token.numericValue * 10 + d;
-                token.tokenLength++;
-            }
-        }
-
-        public static List<Token> lex(String source) throws CalculatorException {
-            List<Token> tokens = new ArrayList<>();
-            for (int i = 0; i < source.length(); ) {
-                char c = source.charAt(i);
-                if (Character.isWhitespace(c)) {
-                    i++;
-                    continue;
-                }
-
-                Token t = new Token();
-                t.tokenStart = i;
-
-                if (BINOPS.indexOf(c) != -1) {
-                    t.tokenLength = 1;
-                    t.type = TokenType.BINOP;
-                    t.operatorValue = String.valueOf(c);
-                } else if (POSTOPS.indexOf(c) != -1) {
-                    t.tokenLength = 1;
-                    t.type = TokenType.POSTOP;
-                    t.operatorValue = String.valueOf(c);
-                } else if (c == ')') {
-                    t.tokenLength = 1;
-                    t.type = TokenType.RPAREN;
-                    t.operatorValue = ")";
-                } else if (c == '(') {
-                    t.tokenLength = 1;
-                    t.type = TokenType.LPAREN;
-                    t.operatorValue = "(";
-                } else if (c == '.') {
-                    t.tokenLength = 1;
-                    t.type = TokenType.NUMBER;
-                    readDigitsInto(t, source, true);
-                    if (t.tokenLength == 1) throw new CalculatorException("Invalid number literal", i, 1);
-                } else if (DIGITS.indexOf(c) != -1) {
-                    t.type = TokenType.NUMBER;
-                    readDigitsInto(t, source, false);
-                    if (i + t.tokenLength < source.length() && source.charAt(i + t.tokenLength) == '.') {
-                        t.tokenLength++;
-                        readDigitsInto(t, source, true);
-                    }
-                } else {
-                    throw new CalculatorException("Unknown character: " + c, i, 1);
-                }
-
-                tokens.add(t);
-                i += t.tokenLength;
-            }
-            return tokens;
-        }
-
-        private static int getPrecedence(Token t) throws CalculatorException {
-            switch (t.operatorValue) {
-                case "+":
-                case "-":
-                    return 0;
-                case "*":
-                case "/":
-                case "x":
-                    return 1;
-                default:
-                    throw new CalculatorException("Unknown operator " + t.operatorValue, t.tokenStart, t.tokenLength);
-            }
-        }
-
-        public static List<Token> shuntingYard(List<Token> tokens) throws CalculatorException {
-            Deque<Token> op = new ArrayDeque<>();
-            List<Token> out = new ArrayList<>();
-
-            for (Token t : tokens) {
-                switch (t.type) {
-                    case NUMBER:
-                    case POSTOP:
-                        out.add(t);
-                        break;
-                    case BINOP:
-                        int p = getPrecedence(t);
-                        while (!op.isEmpty() && op.peek().type != TokenType.LPAREN && getPrecedence(op.peek()) >= p)
-                            out.add(op.pop());
-                        op.push(t);
-                        break;
-                    case LPAREN:
-                        op.push(t);
-                        break;
-                    case RPAREN:
-                        while (true) {
-                            if (op.isEmpty())
-                                throw new CalculatorException("Unbalanced right parenthesis", t.tokenStart, t.tokenLength);
-                            Token l = op.pop();
-                            if (l.type == TokenType.LPAREN) break;
-                            out.add(l);
-                        }
-                        break;
-                }
-            }
-            while (!op.isEmpty()) {
-                Token l = op.pop();
-                if (l.type == TokenType.LPAREN)
-                    throw new CalculatorException("Unbalanced left parenthesis", l.tokenStart, l.tokenLength);
-                out.add(l);
-            }
-            return out;
-        }
-
-        public static BigDecimal evaluate(List<Token> rpn) throws CalculatorException {
-            Deque<BigDecimal> stack = new ArrayDeque<>();
-            try {
-                for (Token t : rpn) {
-                    switch (t.type) {
-                        case NUMBER:
-                            stack.push(new BigDecimal(t.numericValue).scaleByPowerOfTen(t.exponent));
-                            break;
-                        case BINOP: {
-                            BigDecimal r = stack.pop();
-                            BigDecimal l = stack.pop();
-                            switch (t.operatorValue) {
-                                case "x":
-                                case "*":
-                                    stack.push(l.multiply(r).setScale(2, RoundingMode.HALF_UP));
-                                    break;
-                                case "/":
-                                    try {
-                                        BigDecimal result = l.divide(r, 10, RoundingMode.HALF_UP).stripTrailingZeros();
-                                        stack.push(result.scale() < 2 ? result.setScale(2) : result);
-                                    } catch (ArithmeticException e) {
-                                        throw new CalculatorException("Division by zero", t.tokenStart, t.tokenLength);
-                                    }
-                                    break;
-                                case "+":
-                                    stack.push(l.add(r).setScale(2, RoundingMode.HALF_UP));
-                                    break;
-                                case "-":
-                                    stack.push(l.subtract(r).setScale(2, RoundingMode.HALF_UP));
-                                    break;
-                                default:
-                                    throw new CalculatorException("Unknown operator " + t.operatorValue, t.tokenStart, t.tokenLength);
-                            }
-                            break;
-                        }
-                        case POSTOP: {
-                            BigDecimal v = stack.pop();
-                            switch (t.operatorValue) {
-                                case "s":
-                                    stack.push(v.multiply(new BigDecimal(64)));
-                                    break;
-                                case "k":
-                                    stack.push(v.multiply(new BigDecimal(1_000)));
-                                    break;
-                                case "m":
-                                    stack.push(v.multiply(new BigDecimal(1_000_000)));
-                                    break;
-                                case "b":
-                                    stack.push(v.multiply(new BigDecimal(1_000_000_000)));
-                                    break;
-                                case "t":
-                                    stack.push(v.multiply(new BigDecimal("1000000000000")));
-                                    break;
-                                default:
-                                    throw new CalculatorException("Unknown postop " + t.operatorValue, t.tokenStart, t.tokenLength);
-                            }
-                            break;
-                        }
-                        default:
-                            throw new CalculatorException("Unexpected token", t.tokenStart, t.tokenLength);
-                    }
-                }
-                return stack.pop().stripTrailingZeros();
-            } catch (NoSuchElementException e) {
-                throw new CalculatorException("Unfinished expression", 0, 0);
-            }
-        }
-
-        public enum TokenType {NUMBER, BINOP, LPAREN, RPAREN, POSTOP}
-
-        public static class Token {
-            public TokenType type;
-            String operatorValue;
-            long numericValue;
-            int exponent, tokenStart, tokenLength;
-        }
-
-        public static class CalculatorException extends Exception {
-            int offset, length;
-
-            public CalculatorException(String message, int offset, int length) {
-                super(message);
-                this.offset = offset;
-                this.length = length;
-            }
-        }
     }
 }

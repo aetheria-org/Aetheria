@@ -22,5 +22,5 @@ public class SearchBarConfig {
     public boolean editSearchBarPosDummy = false;
 
     @Expose
-    public Position searchBarPos = new Position(0, -20, true, true);
+    public Position searchBarPos = new Position(0, -30, true, false);
 }
