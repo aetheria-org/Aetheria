@@ -265,11 +265,28 @@ public class ProfileParser {
                      },bags1 -> {
                         windowID = bags1.windowId;
                         List<ItemData> accessories =  new ArrayList<>();
+                        int mp = -1;
+                        ItemStack stack = bags1.getSlot(15).getStack();
+                        if(stack != null) {
+                            for(String s : getLore(stack)){
+                                if(s.startsWith("Magical Power:")){
+                                    String[] words = s.split(" ");
+                                    String mpText = words[words.length-1];
+                                    try{
+                                        mp = Integer.parseInt(mpText);
+                                    }catch(NumberFormatException ignored){}
+                                }
+                            }
+                        }
+                        if(mp < 0){
+                            return;
+                        }
                         mc.playerController.windowClick(windowID,15,0,0,mc.thePlayer);
+                        int finalMp = mp;
                         GuiWaiter.waitForPaged("Show Contents",2,-2,"Next Page",
                                 -6,"View Bags",accessory -> accessories.addAll(parseAccessory(accessory)),
                                 bags2 -> {
-                            AccessoryData accessoryData = new AccessoryData(accessories);
+                            AccessoryData accessoryData = new AccessoryData(accessories, finalMp);
                             JefMod.logger.info("[ProfileParser] AccessorryData parsed for: " + base.playerName);
 
                             windowID = bags2.windowId;

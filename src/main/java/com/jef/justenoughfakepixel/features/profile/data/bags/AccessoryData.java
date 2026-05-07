@@ -9,5 +9,5 @@ import java.util.List;
 public class AccessoryData {
 
     public List<ItemData> accessories;
-
+    public int magicalPower;
 }
