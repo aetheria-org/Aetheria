@@ -99,6 +99,7 @@ public class Config {
             case "openDungeonRoomOverlayEditor": JefConfig.openDungeonRoomOverlayEditor(); break;
             case "openItemInvincibilityEditor": JefConfig.openItemInvincibilityEditor(); break;
             case "openItemAbilityTimerEditor": JefConfig.openItemAbilityTimerEditor(); break;
+            case "openBpsEditor": JefConfig.openBpsEditor(); break;
             case "reloadCapes": CapeManager.reload(); break;
             case "openWebsite": openUrl("https://justenoughfakepixel.github.io"); break;
             case "openDiscord": openUrl("https://discord.gg/tdMFbmhFTb"); break;

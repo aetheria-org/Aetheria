@@ -15,4 +15,8 @@ public class Farming {
     @ConfigOption(name = "Lock Toggle Key", desc = "Keybind to toggle mouse lock on/off")
     @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
     public int lockMouseKey = Keyboard.KEY_NONE;
+
+    @Expose
+    @Category(name = "BPS Calculator", desc = "Blocks per second calculator for farming")
+    public BPSConfig bps = new BPSConfig();
 }
