@@ -72,6 +72,11 @@ public class Misc {
     public boolean signCalculator = true;
 
     @Expose
+    @ConfigOption(name = "Hoppity Highlight", desc = "Highlights new rabbit items in Hoppity's egg menu")
+    @ConfigEditorBoolean
+    public boolean hoppityHighlight = true;
+
+    @Expose
     @ConfigOption(name = "DVD", desc = "Description(yes)")
     @ConfigEditorBoolean
     public boolean dvdScreensaver = false;
@@ -81,4 +86,3 @@ public class Misc {
     @ConfigEditorSliderAnnotation(minValue = 50, maxValue = 300, minStep = 10)
     public int dvdSize = 80;
 }
-
