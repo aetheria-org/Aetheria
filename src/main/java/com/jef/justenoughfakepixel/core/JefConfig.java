@@ -23,6 +23,7 @@ import com.jef.justenoughfakepixel.features.scoreboard.CustomScoreboard;
 import com.jef.justenoughfakepixel.features.waypoints.WaypointGroupGui;
 import com.jef.justenoughfakepixel.repo.JefRepo;
 import com.jef.justenoughfakepixel.repo.RepoHandler;
+import com.jef.justenoughfakepixel.gui.JefOptionsGui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.settings.KeyBinding;
@@ -199,6 +200,10 @@ public class JefConfig {
 
     public static void openInvButtonEditor() {
         screenToOpen = new com.jef.justenoughfakepixel.features.misc.invbuttons.GuiInvButtonEditor();
+    }
+
+    public static void openOptionsGui() {
+        screenToOpen = new JefOptionsGui();
     }
 
     public static void openTrophyFishEditor() {

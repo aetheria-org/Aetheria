@@ -15,7 +15,7 @@ public class VersionChecker {
     private boolean notified = false;
 
     // Returns true if latest is a higher semver than current.
-    static boolean isNewer(String current, String latest) {
+    public static boolean isNewer(String current, String latest) {
         if (latest == null) return false;
         String[] c = current.replaceAll("[^0-9.]", "").split("\\.");
         String[] l = latest.replaceAll("[^0-9.]", "").split("\\.");
