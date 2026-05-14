@@ -20,7 +20,7 @@ Before you begin, make sure you have the following installed:
 2. Click **Fork** in the top-right corner.
 3. Leave all settings as default and click **Create fork**.
 
-![Fork the repo](docs/github-fork.png)
+![Fork the repo](github-fork.png)
 
 ---
 
@@ -62,8 +62,8 @@ If Gradle doesn't start automatically:
 1. Open the **Gradle** tab (elephant icon on the right sidebar).
 2. Click **Link Gradle Project** and select the `build.gradle.kts` file at the project root.
 
-![Gradle tab](docs/gradle-tab.png)
-![Gradle JVM setting](docs/gradle-tab2.png)
+![Gradle tab](gradle-tab.png)
+![Gradle JVM setting](gradle-tab2.png)
 
 ### Set the Gradle JVM to Java 21
 
@@ -72,8 +72,8 @@ If Gradle doesn't start automatically:
 3. Set **Gradle JVM** to your Java 21 JDK installation.
 4. Click **OK**.
 
-![Gradle JVM setting](docs/gradle-jvm1.png)
-![Gradle JVM setting](docs/gradle-jvm2.png)
+![Gradle JVM setting](gradle-jvm1.png)
+![Gradle JVM setting](gradle-jvm2.png)
 
 
 ## Step 5 — Run Gradle and Launch the Game
@@ -84,7 +84,7 @@ If Gradle doesn't start automatically:
 4. Click on Build
 4. Click the build task with the gear icon
 
-![run-configuration](docs/run-configuration.png)
+![run-configuration](run-configuration.png)
 
 This compiles the mod and produces a `.jar` in `build/libs/`. This is the file you'd drop into a Minecraft `mods/` folder to test the changes.
 
