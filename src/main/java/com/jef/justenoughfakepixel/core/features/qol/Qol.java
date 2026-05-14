@@ -1,9 +1,9 @@
 package com.jef.justenoughfakepixel.core.features.qol;
 
 import com.google.gson.annotations.Expose;
-import com.jef.justenoughfakepixel.core.config.gui.config.ConfigAnnotations.*;
-import com.jef.justenoughfakepixel.core.config.utils.Position;
-import com.jef.justenoughfakepixel.core.features.qol.*;
+import com.jef.justenoughfakepixel.core.config.gui.config.ConfigAnnotations.Category;
+import com.jef.justenoughfakepixel.core.config.gui.config.ConfigAnnotations.ConfigEditorBoolean;
+import com.jef.justenoughfakepixel.core.config.gui.config.ConfigAnnotations.ConfigOption;
 
 public class Qol {
 
@@ -70,4 +70,9 @@ public class Qol {
     @ConfigOption(name = "Confirm Disconnect", desc = "Makes you click twice to disconnect")
     @ConfigEditorBoolean
     public boolean confirmDisconnect = true;
+
+    @Expose
+    @ConfigOption(name = "Chat State Restore(Let me speak)", desc = "Restores your chat text when server closes chat")
+    @ConfigEditorBoolean
+    public boolean chatStateRestore = true;
 }
