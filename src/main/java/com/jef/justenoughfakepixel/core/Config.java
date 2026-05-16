@@ -10,6 +10,7 @@ import com.jef.justenoughfakepixel.core.features.dungeons.Dungeons;
 import com.jef.justenoughfakepixel.core.features.fishing.Fishing;
 import com.jef.justenoughfakepixel.core.features.misc.Misc;
 import com.jef.justenoughfakepixel.core.features.mining.Mining;
+import com.jef.justenoughfakepixel.core.features.overlays.Overlays;
 import com.jef.justenoughfakepixel.core.features.qol.Qol;
 import com.jef.justenoughfakepixel.core.features.waypoints.Waypoints;
 import com.jef.justenoughfakepixel.core.features.farming.Farming;
@@ -69,6 +70,10 @@ public class Config {
     @Expose
     @Category(name = "Fishing", desc = "Fishing features")
     public final Fishing fishing = new Fishing();
+
+    @Expose
+    @Category(name = "Overlays", desc = "Various Ovarlay features")
+    public final Overlays overlays = new Overlays();
 
     @Expose
     @Category(name = "Debug", desc = "Debug tools")

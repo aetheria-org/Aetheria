@@ -1,11 +1,14 @@
 package com.jef.justenoughfakepixel.features.profile.viewer.ui;
 
+import com.jef.justenoughfakepixel.core.JefConfig;
 import com.jef.justenoughfakepixel.core.config.gui.GuiTextures;
 import com.jef.justenoughfakepixel.features.capes.Cape;
 import com.jef.justenoughfakepixel.features.capes.CapeManager;
+import com.jef.justenoughfakepixel.features.profile.data.ProfileData;
 import com.jef.justenoughfakepixel.features.profile.viewer.PlayerProfile;
 import com.jef.justenoughfakepixel.features.profile.viewer.ProfileViewerAPI;
 import com.jef.justenoughfakepixel.features.profile.viewer.SkinManager;
+import com.jef.justenoughfakepixel.features.profile.viewer.ui.modules.BaseDataModule;
 import com.jef.justenoughfakepixel.utils.render.NineSliceUtils;
 import com.jef.justenoughfakepixel.utils.render.ResolutionUtils;
 import com.mojang.authlib.GameProfile;
@@ -27,10 +30,18 @@ public class ProfileViewerGUI extends GuiScreen {
 
     // UI Data
     private static final ResourceLocation CONTAINER_BG = GuiTextures.CAPES_UI;
+    private static float uiScale = 1f;
+    private static int page = 0;
+    private int boxW;
+    private int boxH;
+    private int boxX;
+    private int boxY;
+    private int pad10,pad25,pad2;
 
     // Player Data
-    public String activeProfile, username;
+    public String username;
     public PlayerProfile playerProfile;
+    public ProfileData activeProfileData;
     public AbstractClientPlayer playerModel;
 
     // State Trackers
@@ -39,7 +50,6 @@ public class ProfileViewerGUI extends GuiScreen {
 
     public ProfileViewerGUI(String username) {
         this.username = username;
-        this.activeProfile = "";
 
         new Thread(() -> {
             try {
@@ -53,7 +63,7 @@ public class ProfileViewerGUI extends GuiScreen {
                 }
 
                 if (this.playerProfile != null && this.playerProfile.profiles != null && !this.playerProfile.profiles.isEmpty()) {
-                    this.activeProfile = this.playerProfile.profiles.get(0).baseData.playerProfile;
+                    this.activeProfileData = this.playerProfile.profiles.get(0);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -65,12 +75,19 @@ public class ProfileViewerGUI extends GuiScreen {
     }
 
     @Override
+    public void initGui() {
+        super.initGui();
+        uiScale = JefConfig.feature.overlays.profileViewer.pvScale;
+    }
+
+    @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
 
-        int boxW = (int) ResolutionUtils.getXStatic(1200);
-        int boxH = (int)(boxW * 9/16.0);
-        int boxX = (this.width / 2) - (boxW / 2);
-        int boxY = (this.height / 2) - (boxH / 2);
+        boxW = (int) Math.min((Minecraft.getMinecraft().displayWidth * 95f)/100f,
+                ResolutionUtils.getXStatic((int)(1200 * uiScale)));
+        boxH = (int)(boxW * 9/16.0);
+        boxX = (this.width / 2) - (boxW / 2);
+        boxY = (this.height / 2) - (boxH / 2);
 
         NineSliceUtils.draw(CONTAINER_BG, boxX, boxY, boxW, boxH, 6, 18);
 
@@ -93,51 +110,58 @@ public class ProfileViewerGUI extends GuiScreen {
             drawString(fontRendererObj, text, centerX - (textWidth / 2), centerY - (fontRendererObj.FONT_HEIGHT / 2), 0xFFAAAAAA); // Gray
 
         } else {
-            drawString(fontRendererObj, this.playerProfile.player_name + " §8(Fetched)", boxX + 10, boxY + 10, 0xFF55FF55); // Green
-
-            int holeX = boxX + 10;
-            int holeY = boxY + 25;
-            int holeW = boxW / 6;
-            int holeH = (int) (holeW * 1.77777777778);
-            drawRect(holeX, holeY, holeX + holeW, holeY + holeH, 0xFF1A1A1A);
-
-            int scale = 65;
-            int playerX = holeX + (holeW / 2);
-            int playerY = (int) (holeY + (holeH / 2.0) + (scale * 0.9));
-
-            if(playerModel == null){
-                playerModel = new AbstractClientPlayer(mc.theWorld,
-                        new GameProfile(UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8)), username)) {
-
-                    @Override
-                    public ResourceLocation getLocationSkin() {
-                        return SkinManager.getSkin(username);
-                    }
-
-                    @Override
-                    public ResourceLocation getLocationCape() {
-                        Cape cape = CapeManager.getCapeForPlayer(username);
-                        return cape == null ? super.getLocationCape() : cape.resourceLocation;
-                    }
-                };
-
-                playerModel.posX = 9999999.0D;
-                playerModel.posY = 9999999.0D;
-                playerModel.posZ = 9999999.0D;
+            pad10 = (int) (10 * uiScale);
+            pad25 = (int) (25 * uiScale);
+            pad2 = (int) (2 * uiScale);
+            drawString(fontRendererObj, this.playerProfile.player_name + " §8(Fetched)", boxX + pad10, boxY + pad10, 0xFF55FF55); // Green
+            if (page == 0) {
+                drawPageZero(mouseX,mouseY);
             }
-
-            drawEntityOnScreenSmooth(playerX, playerY, scale, mouseX, mouseY, this.playerModel);
-
-            // TODO: Draw the rest of fetched profile UI
         }
 
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
-    /**
-     * Custom Entity Renderer that calculates exact mouse angles for buttery smooth tracking,
-     * identical to how the Vanilla Inventory GUI does it.
-     */
+    public void drawPageZero(int mouseX,int mouseY){
+        int holeX = boxX + pad10;
+        int holeY = boxY + pad25;
+        int holeW = boxW / 5;
+        int holeH = (int) (holeW * 1.77777777778);
+        int baseDataH = (boxY + boxH) - (holeY + holeH + pad2) - pad10;
+        drawRect(holeX, holeY, holeX + holeW, holeY + holeH, 0xFF1A1A1A);
+
+        int scale = (int) (65 * uiScale);
+        int playerX = holeX + (holeW / 2);
+        int playerY = (int) (holeY + (holeH / 2.0) + (scale * 0.9));
+
+        if (playerModel == null) {
+            playerModel = new AbstractClientPlayer(mc.theWorld,
+                    new GameProfile(UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8)), username)) {
+
+                @Override
+                public ResourceLocation getLocationSkin() {
+                    return SkinManager.getSkin(username);
+                }
+
+                @Override
+                public ResourceLocation getLocationCape() {
+                    Cape cape = CapeManager.getCapeForPlayer(username);
+                    return cape == null ? super.getLocationCape() : cape.resourceLocation;
+                }
+            };
+
+            playerModel.posX = 9999999.0D;
+            playerModel.posY = 9999999.0D;
+            playerModel.posZ = 9999999.0D;
+        }
+
+        drawEntityOnScreenSmooth(playerX, playerY, scale, mouseX, mouseY, this.playerModel);
+
+        // TODO: Draw the rest of fetched profile UI
+        BaseDataModule.draw(this.activeProfileData.baseData, holeX + holeW + 2,
+                holeY, (holeW *2), holeH, uiScale);
+    }
+
     public static void drawEntityOnScreenSmooth(int posX, int posY, int scale, float mouseX, float mouseY, EntityLivingBase ent) {
         GlStateManager.enableColorMaterial();
         GlStateManager.pushMatrix();
