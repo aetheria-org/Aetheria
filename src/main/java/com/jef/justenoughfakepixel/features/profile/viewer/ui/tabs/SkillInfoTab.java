@@ -6,9 +6,14 @@ import com.jef.justenoughfakepixel.features.profile.data.skills.Skill;
 import com.jef.justenoughfakepixel.features.profile.data.skills.SkillData;
 import com.jef.justenoughfakepixel.features.profile.viewer.ui.ProfileViewerGUI;
 import com.jef.justenoughfakepixel.features.profile.viewer.ui.util.StringDrawer;
+import com.jef.justenoughfakepixel.utils.render.ItemRenderUtils;
 import com.jef.justenoughfakepixel.utils.render.NineSliceUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 
 public class SkillInfoTab extends Tab {
@@ -28,8 +33,6 @@ public class SkillInfoTab extends Tab {
         float cardH = (height - (pad * (rows + 1))) / rows;
 
         int index = 0;
-
-        // 1. Draw Normal Skills
         for (Skill skill : Skill.values()) {
             int col = index % cols;
             int row = index / cols;
@@ -50,7 +53,6 @@ public class SkillInfoTab extends Tab {
             index++;
         }
 
-        // 2. Draw Custom Catacombs Skill
         int col = index % cols;
         int row = index / cols;
         float cX = xPos + pad + col * (cardW + pad);
@@ -66,7 +68,6 @@ public class SkillInfoTab extends Tab {
             cataReqXp = data.dungeonData.reqProgress;
         }
 
-        // Use Combat's color for Catacombs as requested
         drawSkillCard(mc, "Catacombs", cataLevel, cataCurXp, cataReqXp, Skill.COMBAT.skillColor.getRGB(), cX, cY, cardW, cardH);
     }
 
@@ -85,12 +86,18 @@ public class SkillInfoTab extends Tab {
         float radius = (h / 2f) - pad;
         float centerX = x + pad + radius;
         float centerY = y + (h / 2f);
-
         float thickness = ProfileViewerGUI.getScaledF(5);
-        drawRing(centerX, centerY, radius, thickness, 1.0f, 0x40FFFFFF);
 
+        // Draw Rings
+        drawRing(centerX, centerY, radius, thickness, 1.0f, 0x40FFFFFF);
         drawRing(centerX, centerY, radius, thickness, progress, ringColor);
 
+        // NEW: Draw Item Icon exactly in the center of the ring
+        ItemStack icon = getSkillItem(skillName);
+        int iconSize = (int) (radius * 1.3f);
+        ItemRenderUtils.renderItemIcon(mc, icon, (int) (centerX - iconSize / 2f), (int) (centerY - iconSize / 2f), iconSize);
+
+        // Draw Texts
         float textStartX = centerX + radius + pad + ProfileViewerGUI.getScaledF(4);
         float textYTop = y + pad + ProfileViewerGUI.getScaledF(2);
         float textYBottom = y + (h / 2f) + ProfileViewerGUI.getScaledF(1);
@@ -110,6 +117,23 @@ public class SkillInfoTab extends Tab {
         StringDrawer.drawString(lvlText, x + w - pad - lvlWidth, textYTop, textScale, false);
     }
 
+    private ItemStack getSkillItem(String skillName) {
+        switch (skillName.toLowerCase()) {
+            case "farming": return new ItemStack(Items.golden_hoe);
+            case "mining": return new ItemStack(Items.diamond_pickaxe);
+            case "combat": return new ItemStack(Items.iron_sword);
+            case "foraging": return new ItemStack(Item.getItemFromBlock(Blocks.sapling), 1, 3);
+            case "fishing": return new ItemStack(Items.fishing_rod);
+            case "enchanting": return new ItemStack(Item.getItemFromBlock(Blocks.enchanting_table));
+            case "alchemy": return new ItemStack(Items.brewing_stand);
+            case "runecrafting": return new ItemStack(Items.magma_cream);
+            case "social": return new ItemStack(Items.emerald);
+            case "taming": return new ItemStack(Items.bone);
+            case "carpentry": return new ItemStack(Item.getItemFromBlock(Blocks.crafting_table));
+            case "catacombs": return new ItemStack(Items.skull, 1, 1);
+            default: return new ItemStack(Items.paper);
+        }
+    }
 
     private void drawRing(float x, float y, float radius, float thickness, float progress, int hexColor) {
         float alpha = (float)(hexColor >> 24 & 255) / 255.0F;

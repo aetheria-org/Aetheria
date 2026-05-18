@@ -15,9 +15,7 @@ import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,6 +24,7 @@ public class ProfileViewerAPI {
 
     public static ConcurrentHashMap<String,Long> lastFetches = new ConcurrentHashMap<>();
     public static HashMap<String,PlayerProfile> profileHashMap = new HashMap<>();
+    public static List<String> cachedPlayerList = new ArrayList<>();
 
     public static final long FETCH_INTERVAL = 1800000;
     public static final String MOD_SECRET = "a7c0e73c-3b0b-4789-8c80-741dd09ba1bc";
@@ -58,6 +57,32 @@ public class ProfileViewerAPI {
         return t;
     });
 
+    public static void fetchPlayerListAsync() {
+        if (!cachedPlayerList.isEmpty()) return;
+        networkExecutor.execute(() -> {
+            try {
+                URL url = new URL("https://capeapi.qzz.io/game/players");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+                conn.setRequestProperty("x-mod-secret", MOD_SECRET);
+                conn.setRequestProperty("Accept", "application/json");
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(5000);
+
+                if (conn.getResponseCode() == 200) {
+                    String json = readResponse(conn);
+                    String[] players = gson.fromJson(json, String[].class);
+                    if (players != null) {
+                        cachedPlayerList = Arrays.asList(players);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
     public static PlayerProfile getData(String user){
         fetchFromAPI(user);
         return profileHashMap.getOrDefault(user,null);
@@ -85,7 +110,7 @@ public class ProfileViewerAPI {
     }
 
     public static PlayerProfile fetchUser(String username) throws Exception{
-        URL url = new URL("https://api.skyatlas.qzz.io/api/profile/" + username);
+        URL url = new URL("https://capeapi.qzz.io/game/profile/" + username);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");

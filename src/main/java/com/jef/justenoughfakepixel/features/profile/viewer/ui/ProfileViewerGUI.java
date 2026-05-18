@@ -7,13 +7,17 @@ import com.jef.justenoughfakepixel.features.profile.viewer.PlayerProfile;
 import com.jef.justenoughfakepixel.features.profile.viewer.ProfileViewerAPI;
 import com.jef.justenoughfakepixel.features.profile.viewer.ui.modules.PVButton;
 import com.jef.justenoughfakepixel.features.profile.viewer.ui.modules.PlayerModule;
+import com.jef.justenoughfakepixel.features.profile.viewer.ui.modules.SearchBar;
 import com.jef.justenoughfakepixel.features.profile.viewer.ui.tabs.*;
 import com.jef.justenoughfakepixel.features.profile.viewer.ui.util.StringDrawer;
 import com.jef.justenoughfakepixel.utils.render.NineSliceUtils;
 import com.jef.justenoughfakepixel.utils.render.ResolutionUtils;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.input.Keyboard;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -46,6 +50,7 @@ public class ProfileViewerGUI extends GuiScreen {
     // State Trackers
     public boolean isFetching = true;
     public boolean hasError = false;
+    public String errorMessage = "";
 
     // Dropdowns
     private boolean isDropdownOpen = false;
@@ -54,13 +59,15 @@ public class ProfileViewerGUI extends GuiScreen {
     private boolean isTabDropdownOpen = false;
     private int tabDropX, tabDropY, tabDropW, tabDropH, tabItemHeight;
 
-    // Buttons
+    // Buttons & Inputs
     public PVButton profileButton;
     public PVButton tabButton;
+    public SearchBar searchBar;
 
     public ProfileViewerGUI(String username) {
         this.username = username;
         uiScale = JefConfig.feature.overlays.profileViewer.pvScale * ResolutionUtils.getXStatic(1);
+        ProfileViewerAPI.fetchPlayerListAsync();
 
         new Thread(() -> {
             try {
@@ -78,6 +85,7 @@ public class ProfileViewerGUI extends GuiScreen {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                this.errorMessage = e.getMessage();
                 this.hasError = true;
             } finally {
                 this.isFetching = false;
@@ -100,6 +108,8 @@ public class ProfileViewerGUI extends GuiScreen {
     @Override
     public void initGui() {
         super.initGui();
+        Keyboard.enableRepeatEvents(true);
+
         profileButton = null;
         tabButton = null;
         isDropdownOpen = false;
@@ -110,6 +120,13 @@ public class ProfileViewerGUI extends GuiScreen {
         addTab(new SkillInfoTab());
         addTab(new DungeonInfoTab());
         addTab(new SlayerInfoTab());
+        addTab(new CollectionInfoTab());
+    }
+
+    @Override
+    public void onGuiClosed() {
+        super.onGuiClosed();
+        Keyboard.enableRepeatEvents(false);
     }
 
     @Override
@@ -125,21 +142,26 @@ public class ProfileViewerGUI extends GuiScreen {
 
         if (isFetching) {
             NineSliceUtils.draw(CONTAINER_BG, boxX, boxY, boxW, boxH, 6, 18);
-            String text = "Fetching data...";
+            String text = "Fetching data for " + this.username + "...";
             int textWidth = fontRendererObj.getStringWidth(text);
             drawString(fontRendererObj, text, centerX - (textWidth / 2), centerY - (fontRendererObj.FONT_HEIGHT / 2), 0xFFFFAA00);
 
+            updateAndDrawSearchBar(boxX + boxW, boxY, mouseX, mouseY);
+
         } else if (hasError) {
             NineSliceUtils.draw(CONTAINER_BG, boxX, boxY, boxW, boxH, 6, 18);
-            String text = "An error occurred while fetching!";
-            int textWidth = fontRendererObj.getStringWidth(text);
-            drawString(fontRendererObj, text, centerX - (textWidth / 2), centerY - (fontRendererObj.FONT_HEIGHT / 2), 0xFFFF5555);
+            String text = "An error occurred while fetching data for " +  this.username + "!";
+            drawCenteredString(fontRendererObj, text, centerX, centerY - (fontRendererObj.FONT_HEIGHT / 2), 0xFFFF5555);
+            drawCenteredString(fontRendererObj,this.errorMessage,centerX, centerY + (2*fontRendererObj.FONT_HEIGHT),0xFFFF5555);
+            updateAndDrawSearchBar(boxX + boxW, boxY, mouseX, mouseY);
 
         } else if (this.playerProfile == null) {
             NineSliceUtils.draw(CONTAINER_BG, boxX, boxY, boxW, boxH, 6, 18);
             String text = this.username + " (Not In Database)";
             int textWidth = fontRendererObj.getStringWidth(text);
             drawString(fontRendererObj, text, centerX - (textWidth / 2), centerY - (fontRendererObj.FONT_HEIGHT / 2), 0xFFAAAAAA);
+
+            updateAndDrawSearchBar(boxX + boxW, boxY, mouseX, mouseY);
 
         } else {
             int leftBoxWidth = drawBasicBG(mouseX, mouseY);
@@ -185,12 +207,14 @@ public class ProfileViewerGUI extends GuiScreen {
                 tabButton.displayString = tabName;
             }
 
+
             float lineY = tabY + tabH + getScaledF(8);
-            net.minecraft.client.gui.Gui.drawRect((int) (rightBoxX + getScaled(12)), (int) lineY, (int) (rightBoxX + boxW - getScaled(12)), (int) (lineY + Math.max(1, getScaledF(1))), new java.awt.Color(255, 255, 255, 40).getRGB());
+            Gui.drawRect((rightBoxX + getScaled(12)), (int) lineY, (rightBoxX + boxW - getScaled(12)), (int) (lineY + Math.max(1, getScaledF(1))), new java.awt.Color(255, 255, 255, 40).getRGB());
 
             float contentY = lineY + getScaledF(8);
             int contentH = (boxY + boxH) - (int)contentY - getScaled(12);
             tabs.get(tab).draw(rightBoxX, contentY, boxW, contentH, activeProfileData, mc);
+            updateAndDrawSearchBar(rightBoxX + boxW, boxY, mouseX, mouseY);
         }
 
         super.drawScreen(mouseX, mouseY, partialTicks);
@@ -201,6 +225,23 @@ public class ProfileViewerGUI extends GuiScreen {
         if (isTabDropdownOpen) {
             drawTabDropdown(mouseX, mouseY);
         }
+    }
+
+    private void updateAndDrawSearchBar(int rightEdgeX, int topEdgeY, int mouseX, int mouseY) {
+        int searchW = getScaled(300);
+        int searchH = getScaled(36);
+        int searchX = rightEdgeX - searchW - getScaled(12);
+        int searchY = topEdgeY + getScaled(12);
+
+        if (searchBar == null) {
+            searchBar = new SearchBar(searchX, searchY, searchW, searchH);
+        } else {
+            searchBar.x = searchX;
+            searchBar.y = searchY;
+            searchBar.width = searchW;
+            searchBar.height = searchH;
+        }
+        searchBar.draw(mouseX, mouseY, uiScale);
     }
 
     private void drawProfileDropdown(int mouseX, int mouseY) {
@@ -268,7 +309,36 @@ public class ProfileViewerGUI extends GuiScreen {
     }
 
     @Override
+    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+        if (searchBar != null && searchBar.isFocused) {
+            if (keyCode == Keyboard.KEY_ESCAPE) {
+                searchBar.isFocused = false;
+                return;
+            }
+            boolean pressedEnter = searchBar.keyTyped(typedChar, keyCode);
+
+            if (pressedEnter) {
+                String target = searchBar.text.trim();
+                if (!target.isEmpty()) {
+                    Minecraft.getMinecraft().displayGuiScreen(new ProfileViewerGUI(target));
+                }
+            }
+            return;
+        }
+
+        super.keyTyped(typedChar, keyCode);
+    }
+
+    @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+        if (searchBar != null) {
+            String suggestionClicked = searchBar.mouseClicked(mouseX, mouseY, mouseButton);
+            if (suggestionClicked != null) {
+                Minecraft.getMinecraft().displayGuiScreen(new ProfileViewerGUI(suggestionClicked));
+                return;
+            }
+        }
+
         if (mouseButton == 0) {
             if (isDropdownOpen) {
                 if (mouseX >= dropX && mouseX <= dropX + dropW && mouseY >= dropY && mouseY <= dropY + dropH) {
@@ -279,7 +349,7 @@ public class ProfileViewerGUI extends GuiScreen {
                         isDropdownOpen = false;
                         return;
                     }
-                } else if (!(mouseX >= profileButton.xPosition && mouseX <= profileButton.xPosition + profileButton.width &&
+                } else if (profileButton != null && !(mouseX >= profileButton.xPosition && mouseX <= profileButton.xPosition + profileButton.width &&
                         mouseY >= profileButton.yPosition && mouseY <= profileButton.yPosition + profileButton.height)) {
                     isDropdownOpen = false;
                 }
@@ -297,7 +367,7 @@ public class ProfileViewerGUI extends GuiScreen {
                         isTabDropdownOpen = false;
                         return;
                     }
-                } else if (!(mouseX >= tabButton.xPosition && mouseX <= tabButton.xPosition + tabButton.width &&
+                } else if (tabButton != null && !(mouseX >= tabButton.xPosition && mouseX <= tabButton.xPosition + tabButton.width &&
                         mouseY >= tabButton.yPosition && mouseY <= tabButton.yPosition + tabButton.height)) {
                     isTabDropdownOpen = false;
                 }
@@ -308,10 +378,10 @@ public class ProfileViewerGUI extends GuiScreen {
 
     @Override
     protected void actionPerformed(GuiButton button) {
-        if (button.id == profileButton.id) {
+        if (profileButton != null && button.id == profileButton.id) {
             isDropdownOpen = !isDropdownOpen;
             isTabDropdownOpen = false;
-        } else if (button.id == tabButton.id) {
+        } else if (tabButton != null && button.id == tabButton.id) {
             isTabDropdownOpen = !isTabDropdownOpen;
             isDropdownOpen = false;
         }
