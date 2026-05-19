@@ -3,6 +3,7 @@ package com.jef.justenoughfakepixel.core.features.debug;
 import com.google.gson.annotations.Expose;
 import com.jef.justenoughfakepixel.core.config.gui.config.ConfigAnnotations.*;
 import com.jef.justenoughfakepixel.core.features.debug.*;
+import org.lwjgl.input.Keyboard;
 
 public class Debug {
 
@@ -24,4 +25,14 @@ public class Debug {
     @ConfigOption(name = "Reload Repo", desc = "Re-fetch all data from the remote repo")
     @ConfigEditorButton(runnableId = "reloadRepo", buttonText = "Reload")
     public boolean reloadRepoButton = false;
+
+    @Expose
+    @ConfigOption(name = "Copy NBT Data", desc = "Copy the NBT data of hovered item using RCTRL")
+    @ConfigEditorBoolean
+    public boolean copyNBTData = false;
+
+    @Expose
+    @ConfigOption(name = "Copy NBT Key", desc = "The Key to copy NBT data using Copy NBT Data feature")
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_RCONTROL)
+    public int copyNBTKey = Keyboard.KEY_RCONTROL;
 }
