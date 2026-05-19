@@ -1,6 +1,5 @@
 package com.jef.justenoughfakepixel.features.profile.viewer.ui;
 
-import com.jef.justenoughfakepixel.core.JefConfig;
 import com.jef.justenoughfakepixel.core.config.gui.GuiTextures;
 import com.jef.justenoughfakepixel.core.config.utils.TextRenderUtils;
 import com.jef.justenoughfakepixel.features.profile.data.ProfileData;
@@ -12,7 +11,6 @@ import com.jef.justenoughfakepixel.features.profile.viewer.ui.modules.SearchBar;
 import com.jef.justenoughfakepixel.features.profile.viewer.ui.tabs.*;
 import com.jef.justenoughfakepixel.features.profile.viewer.ui.util.StringRenderUtils;
 import com.jef.justenoughfakepixel.utils.render.NineSliceUtils;
-import com.jef.justenoughfakepixel.utils.render.ResolutionUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
@@ -67,7 +65,7 @@ public class ProfileViewerGUI extends GuiScreen {
 
     public ProfileViewerGUI(String username) {
         this.username = username;
-        uiScale = JefConfig.feature.overlays.profileViewer.pvScale * ResolutionUtils.getXStatic(1);
+//        uiScale = JefConfig.feature.overlays.profileViewer.pvScale * ResolutionUtils.getXStatic(1);
         ProfileViewerAPI.fetchPlayerListAsync();
 
         new Thread(() -> {
@@ -116,7 +114,7 @@ public class ProfileViewerGUI extends GuiScreen {
         isDropdownOpen = false;
         isTabDropdownOpen = false;
         CONTAINER_BG = GuiTextures.storageBackground(1);
-        uiScale = JefConfig.feature.overlays.profileViewer.pvScale * ResolutionUtils.getXStatic(1);
+//        uiScale = JefConfig.feature.overlays.profileViewer.pvScale * ResolutionUtils.getXStatic(1);
         addTab(new BasicInfoTab());
         addTab(new SkillInfoTab());
         addTab(new DungeonInfoTab());
