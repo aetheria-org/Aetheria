@@ -36,7 +36,6 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
 import java.io.File;
-import com.jef.justenoughfakepixel.features.uptime.UptimeOverlay;
 
 public class JefConfig {
 
@@ -240,7 +239,7 @@ public class JefConfig {
 
     public static void openUptimeEditor() {
         if (feature == null) return;
-        UptimeOverlay overlay = UptimeOverlay.getInstance();
+        com.jef.justenoughfakepixel.features.misc.timer.UptimeOverlay overlay = com.jef.justenoughfakepixel.features.misc.timer.UptimeOverlay.getInstance();
         if (overlay == null) return;
         screenToOpen = new GuiPositionEditor(feature.misc.uptimeConfig.uptimePos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), JefConfig::saveConfig, JefConfig::saveConfig).withOverlayScale(feature.misc.uptimeConfig.uptimeScale).withParent(Minecraft.getMinecraft().currentScreen);
     }

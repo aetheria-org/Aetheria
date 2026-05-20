@@ -27,6 +27,11 @@ public class UptimeConfig {
     public float uptimeScale = 1f;
 
     @Expose
+    @ConfigOption(name = "Show When Expired", desc = "Keep the overlay visible with a 'Done!' label after the timer finishes")
+    @ConfigEditorBoolean
+    public boolean uptimeShowWhenExpired = true;
+
+    @Expose
     @ConfigOption(name = "Edit Overlay Position", desc = "Drag the timer overlay to reposition it")
     @ConfigEditorButton(runnableId = "openUptimeEditor", buttonText = "Edit")
     public boolean uptimeEditPosDummy = false;

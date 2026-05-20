@@ -17,6 +17,7 @@ public abstract class SimpleCommand extends CommandBase {
 
     public abstract String getName();
     public abstract String getUsage();
+
     public abstract void execute(ICommandSender sender, String[] args) throws CommandException;
 
     public List<String> getAliases() { return Collections.emptyList(); }
