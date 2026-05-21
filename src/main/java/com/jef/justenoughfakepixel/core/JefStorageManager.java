@@ -46,7 +46,8 @@ public enum JefStorageManager {
     MAXWELL_POWER  (MaxwellPowerSync.getInstance()),
     PET_CACHE      (PetCache.getInstance()),
     CURRENT_PET    (CurrentPetTracker.getInstance()),
-    TROPHY_FISH    (TrophyFishStorage.getInstance());
+    TROPHY_FISH    (TrophyFishStorage.getInstance()),
+    SLOT_BINDS     (com.jef.justenoughfakepixel.features.misc.slotbinds.SlotBindStorage.getInstance());
 
     // ─────────────────────────────────────────────────────────────────────────
 

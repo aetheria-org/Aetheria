@@ -87,7 +87,9 @@ public class Misc {
     public int dvdSize = 80;
 
     @Expose
+    @Category(name = "Slot Binds", desc = "Bind inventory slots to hotbar slots and swap them with shift-click; line color and bind key are customizable")
+    public SlotBindsConfig slotBinds = new SlotBindsConfig();
+
     @Category(name = "Timer", desc = "Countdown timer overlay & /jeftimer command")
     public UptimeConfig uptimeConfig = new UptimeConfig();
-
 }
