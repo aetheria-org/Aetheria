@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.core.features.overlays;
+package io.hamlook.aetheria.core.features.misc;
 
 import com.google.gson.annotations.Expose;
 import io.hamlook.aetheria.core.config.gui.config.ConfigAnnotations;

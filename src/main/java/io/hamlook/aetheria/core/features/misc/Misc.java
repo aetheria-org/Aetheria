@@ -90,4 +90,7 @@ public class Misc {
     @Category(name = "Timer", desc = "Countdown timer overlay & /ATHRtimer command")
     public UptimeConfig uptimeConfig = new UptimeConfig();
 
+    @Expose
+    @Category(name = "Item List", desc = "Settings for the Item List Overlay")
+    public ItemListConfig itemList = new ItemListConfig();
 }

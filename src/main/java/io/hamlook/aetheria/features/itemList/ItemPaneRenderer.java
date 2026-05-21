@@ -31,7 +31,7 @@ public class ItemPaneRenderer {
     private static final int FILTER_H= 20;
 
     private float getScale() {
-        return ATHRConfig.feature != null ? ATHRConfig.feature.overlays.itemList.itemListScale : 1.0f;
+        return ATHRConfig.feature != null ? ATHRConfig.feature.misc.itemList.itemListScale : 1.0f;
     }
 
     private int S() { return Math.max(16, (int)(24 * getScale())); }
@@ -113,7 +113,7 @@ public class ItemPaneRenderer {
         paneY = 0;
         paneH = screenH;
 
-        boolean useGlobalSearch = ATHRConfig.feature != null && ATHRConfig.feature.overlays.itemList.searchItemList;
+        boolean useGlobalSearch = ATHRConfig.feature != null && ATHRConfig.feature.misc.itemList.searchItemList;
         int searchH = useGlobalSearch ? 0 : 20;
         int searchPad = useGlobalSearch ? 0 : PAD;
 
@@ -151,7 +151,7 @@ public class ItemPaneRenderer {
 
         int mouseX = event.mouseX, mouseY = event.mouseY;
 
-        boolean useGlobalSearch = ATHRConfig.feature != null && ATHRConfig.feature.overlays.itemList.searchItemList;
+        boolean useGlobalSearch = ATHRConfig.feature != null && ATHRConfig.feature.misc.itemList.searchItemList;
 
         if (!useGlobalSearch) {
             int sbY = paneH - 20 - PAD;
@@ -398,7 +398,7 @@ public class ItemPaneRenderer {
             return;
         }
 
-        boolean useGlobalSearch = ATHRConfig.feature != null && ATHRConfig.feature.overlays.itemList.searchItemList;
+        boolean useGlobalSearch = ATHRConfig.feature != null && ATHRConfig.feature.misc.itemList.searchItemList;
         int searchH = useGlobalSearch ? 0 : 20;
         int searchPad = useGlobalSearch ? 0 : PAD;
 
@@ -469,7 +469,7 @@ public class ItemPaneRenderer {
         if (!(event.gui instanceof GuiContainer)) return;
         if (shouldntShow()) return;
 
-        boolean useGlobalSearch = ATHRConfig.feature != null && ATHRConfig.feature.overlays.itemList.searchItemList;
+        boolean useGlobalSearch = ATHRConfig.feature != null && ATHRConfig.feature.misc.itemList.searchItemList;
 
         if (!useGlobalSearch && searchField != null && searchField.isFocused() && Keyboard.getEventKeyState()) {
             char ch = Keyboard.getEventCharacter();

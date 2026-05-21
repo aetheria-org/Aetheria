@@ -6,11 +6,7 @@ import io.hamlook.aetheria.core.config.gui.config.ConfigAnnotations;
 public class Overlays {
 
     @Expose
-    @ConfigAnnotations.Category(name = "Profile Viewer", desc = "Settings for the profile viewer GUI")
-    public ProfileViewerConfig profileViewer = new ProfileViewerConfig();
-
-    @Expose
-    @ConfigAnnotations.Category(name = "Item List", desc = "Settings for the Item List Overlay")
-    public ItemListConfig itemList = new ItemListConfig();
-
+    @ConfigAnnotations.ConfigOption(name = "Scale", desc = "Adjust the overall scale of Profile Viewer")
+    @ConfigAnnotations.ConfigEditorSliderAnnotation(minValue = 0.5f,maxValue = 1.5f,minStep = 0.1f)
+    public float pvScale = 1f;
 }

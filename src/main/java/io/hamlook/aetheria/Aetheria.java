@@ -22,7 +22,7 @@ import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 
 import java.util.logging.Logger;
 
-@Mod(modid = Aetheria.MODID, name = Aetheria.NAME, version = Aetheria.VERSION, clientSideOnly = true, guiFactory = "io.hamlook.aetheria.ATHRGuiFactory")
+@Mod(modid = Aetheria.MODID, name = Aetheria.NAME, version = Aetheria.VERSION, clientSideOnly = true, guiFactory = "io.hamlook.aetheria.GuiFactory")
 public class Aetheria {
 
     public static final String MODID = "aetheria";
