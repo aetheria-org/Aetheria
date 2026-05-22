@@ -2,105 +2,109 @@ package io.hamlook.aetheria.features.misc.protect
 
 import io.hamlook.aetheria.command.SimpleCommand
 import io.hamlook.aetheria.init.RegisterCommand
+import io.hamlook.aetheria.utils.chat.ChatUtils
 import io.hamlook.aetheria.utils.item.ItemUtils
 import net.minecraft.client.Minecraft
 import net.minecraft.command.ICommandSender
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.util.BlockPos
-import net.minecraft.util.ChatComponentText
-import net.minecraft.util.EnumChatFormatting
 
 @RegisterCommand
 class ProtectItemCommand : SimpleCommand() {
 
-    private companion object {
+    companion object {
         private val mc = Minecraft.getMinecraft()
-        private const val PREFIX = "§b[ATHR] §r"
+
+        private const val PREFIX = "§b[ItemProtect] §r"
+
+        private val TAB_OPTIONS = listOf(
+            "list", "clear"
+        )
     }
 
-    override fun getName() = "ATHRprotect"
-    override fun getUsage() = "/ATHRprotect [list|clear]"
+    override fun getName() = "athrprotect"
+
+    override fun getAliases() = listOf(
+        "aetheriaprotect", "asmprotect", "jefprotect", "athrprotect"
+    )
+
+    override fun getUsage() = "/athrprotect [list|clear]"
 
     override fun execute(sender: ICommandSender, args: Array<String>) {
         val player = mc.thePlayer ?: return
 
-        if (args.isNotEmpty()) {
-            when (args[0].lowercase()) {
-                "list" -> handleListCommand(player)
-                "clear" -> handleClearCommand(player)
-                else -> showUsage(player)
-            }
+        when (args.firstOrNull()?.lowercase()) {
+            null -> toggleProtection(player)
+
+            "list" -> listProtected()
+
+            "clear" -> clearProtected()
+
+            else -> showUsage()
+        }
+    }
+
+    override fun addTabCompletionOptions(
+        sender: ICommandSender, args: Array<String>, pos: BlockPos
+    ): List<String> {
+        return if (args.size == 1) TAB_OPTIONS else emptyList()
+    }
+
+    private fun listProtected() {
+        val uuids = ProtectedItemStorage.protectedUuids
+
+        if (uuids.isEmpty()) {
+            msg("§eNo protected items.")
             return
         }
 
-        handleToggleProtection(player)
-    }
+        msg("§aProtected items (${uuids.size}):")
 
-    override fun addTabCompletionOptions(sender: ICommandSender, args: Array<String>, pos: BlockPos): List<String> {
-        return if (args.size == 1) listOf("list", "clear") else emptyList()
-    }
-
-
-    private fun handleListCommand(player: EntityPlayer) {
-        val uuids = ProtectedItemStorage.protectedUuids
-        if (uuids.isEmpty()) {
-            player.addChatMessage(ChatComponentText("$PREFIX${EnumChatFormatting.YELLOW}No protected items."))
-        } else {
-            player.addChatMessage(ChatComponentText("$PREFIX${EnumChatFormatting.GREEN}Protected items (${uuids.size}):"))
-            uuids.forEach { uuid ->
-                player.addChatMessage(ChatComponentText("  §7- $uuid"))
-            }
+        uuids.forEach {
+            ChatUtils.sendMessage(" §7- $it")
         }
     }
 
-    private fun handleClearCommand(player: EntityPlayer) {
+    private fun clearProtected() {
         val count = ProtectedItemStorage.protectedUuids.size
+
         ProtectedItemStorage.protectedUuids.clear()
         ProtectedItemStorage.save()
-        player.addChatMessage(
-            ChatComponentText("$PREFIX${EnumChatFormatting.GREEN}Cleared $count protected item(s).")
-        )
+
+        msg("§aCleared $count protected item(s).")
     }
 
-    private fun handleToggleProtection(player: EntityPlayer) {
+    private fun toggleProtection(player: EntityPlayer) {
         val held = player.heldItem
+
         if (held == null) {
-            player.addChatMessage(
-                ChatComponentText("$PREFIX${EnumChatFormatting.RED}You are not holding an item!")
-            )
+            msg("§cYou are not holding an item!")
             return
         }
 
         val uuid = ItemUtils.getItemUuid(held)
+
         if (uuid == null) {
-            player.addChatMessage(
-                ChatComponentText(
-                    "$PREFIX${EnumChatFormatting.RED}This item has no SkyBlock UUID and cannot be protected."
-                )
-            )
+            msg("§cThis item has no SkyBlock UUID and cannot be protected.")
             return
         }
 
         if (ProtectedItemStorage.contains(uuid)) {
             ProtectedItemStorage.remove(uuid)
-            player.addChatMessage(
-                ChatComponentText(
-                    "$PREFIX${EnumChatFormatting.YELLOW}${held.displayName} " + "${EnumChatFormatting.GRAY}is no longer protected."
-                )
-            )
+
+            msg("§e${held.displayName} §7is no longer protected.")
         } else {
             ProtectedItemStorage.add(uuid)
-            player.addChatMessage(
-                ChatComponentText(
-                    "$PREFIX${EnumChatFormatting.GREEN}${held.displayName} " + "${EnumChatFormatting.GRAY}is now protected!"
-                )
-            )
+
+            msg("§a${held.displayName} §7is now protected!")
         }
     }
 
-    private fun showUsage(player: EntityPlayer) {
-        player.addChatMessage(
-            ChatComponentText("$PREFIX${EnumChatFormatting.RED}Usage: ${getUsage()}")
-        )
+    private fun showUsage() {
+        msg("§cUsage: ${getUsage()}")
+    }
+
+    private fun msg(message: String) {
+        ChatUtils.sendMessage(PREFIX + message)
     }
 }
