@@ -64,7 +64,7 @@ public class ForgeRecipe extends Recipe {
             textY += 12;
         }
         if (recipeData.has("coins")) {
-            String c = "§7Coins: §6" + recipeData.get("coins").getAsInt();
+            String c = "§7Coins: §6" + String.format("%,d", recipeData.get("coins").getAsInt());
             fr.drawStringWithShadow(c, cx - fr.getStringWidth(c) / 2f, textY, 0xFFFFFF);
         }
 

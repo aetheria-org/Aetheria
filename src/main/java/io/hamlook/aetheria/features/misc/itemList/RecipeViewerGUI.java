@@ -6,6 +6,7 @@ import io.hamlook.aetheria.features.misc.itemList.recipe.RecipeFactory;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.input.Keyboard;
@@ -70,12 +71,16 @@ public class RecipeViewerGUI extends GuiScreen {
 
     @Override
     protected void keyTyped(char c, int key) throws IOException {
+        if (ItemPaneRenderer.INSTANCE != null) ItemPaneRenderer.INSTANCE.handleKeyInput();
         if (key == Keyboard.KEY_ESCAPE || key == mc.gameSettings.keyBindInventory.getKeyCode())
             mc.displayGuiScreen(null);
     }
 
     @Override
     protected void mouseClicked(int mx, int my, int btn) throws IOException {
+        if (ItemPaneRenderer.INSTANCE != null)
+            ItemPaneRenderer.INSTANCE.handleClick(width, height, mx, my, btn, null);
+
         computeBox();
         int contentX = boxX;
         int contentY = boxY + HEADER_H;
@@ -104,7 +109,16 @@ public class RecipeViewerGUI extends GuiScreen {
     public void handleMouseInput() throws IOException {
         super.handleMouseInput();
         int dw = Mouse.getEventDWheel();
-        if (dw != 0) { scrollY += dw > 0 ? -20 : 20; if (scrollY < 0) scrollY = 0; }
+        if (dw != 0) {
+            if (ItemPaneRenderer.INSTANCE != null) {
+                Minecraft mc = Minecraft.getMinecraft();
+                int mx = Mouse.getEventX() * width / mc.displayWidth;
+                int my = height - Mouse.getEventY() * height / mc.displayHeight - 1;
+                ItemPaneRenderer.INSTANCE.handleMouseInput(width, height, mx, my, null);
+            }
+            scrollY += dw > 0 ? -20 : 20;
+            if (scrollY < 0) scrollY = 0;
+        }
     }
 
 
@@ -133,9 +147,7 @@ public class RecipeViewerGUI extends GuiScreen {
 
             if (item.baseLore != null) {
                 int ly = boxY + 32;
-                // Removed the Math.min(item.baseLore.size(), 8) limit!
                 for (int i = 0; i < item.baseLore.size(); i++) {
-                    // Prevent text from overflowing out the bottom of the screen if it exceeds screen height
                     if (ly + 10 > boxY + boxH - NAV_H) break;
 
                     drawCenteredString(fontRendererObj, item.baseLore.get(i), cx, ly, 0xFFFFFF);
@@ -185,5 +197,7 @@ public class RecipeViewerGUI extends GuiScreen {
         }
 
         super.drawScreen(mx, my, pt);
+        if (ItemPaneRenderer.INSTANCE != null)
+            ItemPaneRenderer.INSTANCE.drawPane(width, height, mx, my);
     }
 }

@@ -25,6 +25,9 @@ import java.util.stream.Collectors;
 @RegisterEvents
 public class ItemPaneRenderer {
 
+    public static ItemPaneRenderer INSTANCE;
+    public ItemPaneRenderer() { INSTANCE = this; }
+
     private static final int COLUMNS = 8;
     private static final int PAD     = 4;
     private static final int NAV_H   = 22;
@@ -130,6 +133,10 @@ public class ItemPaneRenderer {
     @SubscribeEvent
     public void onDraw(GuiScreenEvent.DrawScreenEvent.Post event) {
         if (!(event.gui instanceof GuiContainer)) return;
+        drawPane(event.gui.width, event.gui.height, event.mouseX, event.mouseY);
+    }
+
+    public void drawPane(int screenW, int screenH, int mouseX, int mouseY) {
         Minecraft mc = Minecraft.getMinecraft();
 
         if (!ItemRegistry.preloadQueue.isEmpty()) {
@@ -146,10 +153,8 @@ public class ItemPaneRenderer {
             updateSearch(lastSearchText);
         }
 
-        computeGeometry(event.gui.width, event.gui.height);
+        computeGeometry(screenW, screenH);
         currentPage = Math.max(0, Math.min(currentPage, totalPages() - 1));
-
-        int mouseX = event.mouseX, mouseY = event.mouseY;
 
         boolean useGlobalSearch = ATHRConfig.feature != null && ATHRConfig.feature.misc.itemList.searchItemList;
 
@@ -379,17 +384,29 @@ public class ItemPaneRenderer {
         Minecraft mc = Minecraft.getMinecraft();
         int mouseX = Mouse.getEventX() * event.gui.width / mc.displayWidth;
         int mouseY = event.gui.height - Mouse.getEventY() * event.gui.height / mc.displayHeight - 1;
-
+        handleMouseInput(event.gui.width, event.gui.height, mouseX, mouseY, event);
+    }
+    public void handleMouseInput(int screenW, int screenH, int mouseX, int mouseY, GuiScreenEvent.MouseInputEvent.Pre event) {
+        if (shouldntShow()) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        computeGeometry(screenW, screenH);
         int dw = Mouse.getEventDWheel();
         if (dw != 0 && mouseX >= paneX && mouseX < paneX + paneW && mouseY >= paneY && mouseY < paneY + paneH) {
             if (dw > 0) currentPage = Math.max(0, currentPage - 1);
             else currentPage = Math.min(totalPages() - 1, currentPage + 1);
-            event.setCanceled(true);
+            if (event != null) event.setCanceled(true);
             return;
         }
 
         if (!Mouse.getEventButtonState()) return;
 if (Mouse.getEventButton() != 0 && Mouse.getEventButton() != 1) return;
+
+        handleClick(screenW, screenH, mouseX, mouseY, Mouse.getEventButton(), event);
+    }
+    public void handleClick(int screenW, int screenH, int mouseX, int mouseY, int btn, GuiScreenEvent.MouseInputEvent.Pre event) {
+        if (shouldntShow()) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        computeGeometry(screenW, screenH);
 
         if (mouseX < paneX || mouseX >= paneX + paneW || mouseY < paneY || mouseY >= paneY + paneH) {
             return;
@@ -399,12 +416,12 @@ if (Mouse.getEventButton() != 0 && Mouse.getEventButton() != 1) return;
         int prevX = paneX + PAD, nextX = paneX + paneW - PAD - navBtnW;
         if (mouseX >= prevX && mouseX < prevX + navBtnW && mouseY >= navY && mouseY < navY + NAV_H) {
             currentPage = Math.max(0, currentPage - 1);
-            event.setCanceled(true);
+            if (event != null) event.setCanceled(true);
             return;
         }
         if (mouseX >= nextX && mouseX < nextX + navBtnW && mouseY >= navY && mouseY < navY + NAV_H) {
             currentPage = Math.min(totalPages() - 1, currentPage + 1);
-            event.setCanceled(true);
+            if (event != null) event.setCanceled(true);
             return;
         }
 
@@ -421,19 +438,19 @@ if (Mouse.getEventButton() != 0 && Mouse.getEventButton() != 1) return;
             if (mouseX >= rarityX && mouseX < rarityX + btnWidth) {
                 rarityFilterIdx = (rarityFilterIdx + 1) % RARITIES.length;
                 updateSearch(useGlobalSearch ? SearchBar.getSearchText() : SearchBar.getStorageSearchText());
-                event.setCanceled(true);
+                if (event != null) event.setCanceled(true);
                 return;
             }
             if (mouseX >= typeX && mouseX < typeX + btnWidth) {
                 typeFilterIdx = (typeFilterIdx + 1) % TYPES.length;
                 updateSearch(useGlobalSearch ? SearchBar.getSearchText() : SearchBar.getStorageSearchText());
-                event.setCanceled(true);
+                if (event != null) event.setCanceled(true);
                 return;
             }
         }
 
         if (!useGlobalSearch && SearchBar.handleStorageMouseClick(searchField, mouseX, mouseY)) {
-            event.setCanceled(true);
+            if (event != null) event.setCanceled(true);
             return;
         }
 
@@ -449,12 +466,12 @@ if (Mouse.getEventButton() != 0 && Mouse.getEventButton() != 1) return;
                     int sx = dropDx + PAD + c * (S() + 2);
                     int sy = dropDy + PAD + r * (S() + 2);
                     if (mouseX >= sx && mouseX < sx + S() && mouseY >= sy && mouseY < sy + S()) {
-                        if (Mouse.getEventButton() == 1) {
+                        if (btn == 1) {
                             WikiPane.open(fam.members.get(i));
                         } else {
                             mc.displayGuiScreen(new RecipeViewerGUI(fam.members.get(i)));
                         }
-                        event.setCanceled(true);
+                        if (event != null) event.setCanceled(true);
                         return;
                     }
                 }
@@ -469,12 +486,12 @@ if (Mouse.getEventButton() != 0 && Mouse.getEventButton() != 1) return;
             int sx = gridX + (i % COLUMNS) * S(), sy = gridY + (i / COLUMNS) * S();
 
             if (mouseX >= sx && mouseX < sx + S() && mouseY >= sy && mouseY < sy + S()) {
-                if (Mouse.getEventButton() == 1) {
+                if (btn == 1) {
                     WikiPane.open(fam.representative());
                 } else if (!fam.hasDropdown() && fam.representative() != null) {
                     mc.displayGuiScreen(new RecipeViewerGUI(fam.representative()));
                 }
-                event.setCanceled(true);
+                if (event != null) event.setCanceled(true);
                 return;
             }
         }
@@ -492,7 +509,20 @@ if (Mouse.getEventButton() != 0 && Mouse.getEventButton() != 1) return;
             int key = Keyboard.getEventKey();
             if (SearchBar.handleStorageKeyTyped(searchField, ch, key)) {
                 updateSearch(SearchBar.getStorageSearchText());
-                event.setCanceled(true);
+                if (event != null) event.setCanceled(true);
+            }
+        }
+    }
+
+    //Called by RecipeViewerGUI so the item list search field still works while recipe is open.
+    public void handleKeyInput() {
+        if (shouldntShow()) return;
+        boolean useGlobalSearch = ATHRConfig.feature != null && ATHRConfig.feature.misc.itemList.searchItemList;
+        if (!useGlobalSearch && searchField != null && searchField.isFocused() && Keyboard.getEventKeyState()) {
+            char ch = Keyboard.getEventCharacter();
+            int key = Keyboard.getEventKey();
+            if (SearchBar.handleStorageKeyTyped(searchField, ch, key)) {
+                updateSearch(SearchBar.getStorageSearchText());
             }
         }
     }

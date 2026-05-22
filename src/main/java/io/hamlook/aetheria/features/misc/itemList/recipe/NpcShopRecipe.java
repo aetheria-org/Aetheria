@@ -149,7 +149,7 @@ public class NpcShopRecipe extends Recipe {
                     String[] cp = costArr.get(c).getAsString().split(":");
                     String rId = cp[0], cAmt = cp.length > 1 ? cp[1] : "1";
                     if (rId.equals("SKYBLOCK_COIN")) {
-                        tip.add("§7Cost: §6" + cAmt + " Coins");
+                        tip.add("§7Cost: §6" + String.format("%,d", Long.parseLong(cAmt)) + " Coins");
                     } else {
                         SkyblockItem costItem = RecipeUtils.resolve(rId);
                         if (costItem != null) tip.add("§7Cost: " + costItem.displayName + " §8x" + cAmt);
