@@ -112,6 +112,17 @@ public class SkyblockItem {
         }
         tag.setTag("ExtraAttributes", extra);
 
+        if (this.color != null && !this.color.isEmpty()) {
+            try {
+                int rgb = Integer.parseInt(this.color);
+                if ("minecraft:potion".equals(this.itemid)) {
+                    tag.setInteger("CustomPotionColor", rgb);
+                } else {
+                    display.setInteger("color", rgb);
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+
         if (this.enchanted) {
             tag.setTag("ench", new NBTTagList());
         }
