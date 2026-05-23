@@ -5,6 +5,7 @@ import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.features.qol.timers.ItemCooldowns;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.item.ItemUtils;
+import io.hamlook.aetheria.utils.RaycastUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.EntityPlayer;
@@ -35,60 +36,9 @@ public class GyroWandHelper {
     }
 
     private Vec3 getTargetPos(EntityPlayer player, float partialTicks) {
-        Vec3 eyes = player.getPositionEyes(partialTicks);
-        Vec3 look = player.getLookVec();
-        Vec3 end = eyes.addVector(look.xCoord * REACH, look.yCoord * REACH, look.zCoord * REACH);
-
-        double x = Math.floor(eyes.xCoord);
-        double y = Math.floor(eyes.yCoord);
-        double z = Math.floor(eyes.zCoord);
-
-        double dx = end.xCoord - eyes.xCoord;
-        double dy = end.yCoord - eyes.yCoord;
-        double dz = end.zCoord - eyes.zCoord;
-
-        double stepX = Math.signum(dx);
-        double stepY = Math.signum(dy);
-        double stepZ = Math.signum(dz);
-
-        double invDx = dx != 0 ? 1.0 / dx : Double.MAX_VALUE;
-        double invDy = dy != 0 ? 1.0 / dy : Double.MAX_VALUE;
-        double invDz = dz != 0 ? 1.0 / dz : Double.MAX_VALUE;
-
-        double tDeltaX = Math.abs(invDx * stepX);
-        double tDeltaY = Math.abs(invDy * stepY);
-        double tDeltaZ = Math.abs(invDz * stepZ);
-
-        double tMaxX = Math.abs((x + Math.max(stepX, 0) - eyes.xCoord) * invDx);
-        double tMaxY = Math.abs((y + Math.max(stepY, 0) - eyes.yCoord) * invDy);
-        double tMaxZ = Math.abs((z + Math.max(stepZ, 0) - eyes.zCoord) * invDz);
-
-        double endX = Math.floor(end.xCoord);
-        double endY = Math.floor(end.yCoord);
-        double endZ = Math.floor(end.zCoord);
-
-        for (int i = 0; i < 1000; i++) {
-            BlockPos pos = new BlockPos((int) x, (int) y, (int) z);
-            net.minecraft.block.Block block = Minecraft.getMinecraft().theWorld.getBlockState(pos).getBlock();
-
-            if (block != net.minecraft.init.Blocks.air) {
-                return new Vec3(x + 0.5, y + 1.0, z + 0.5);
-            }
-
-            if (x == endX && y == endY && z == endZ) return null;
-
-            if (tMaxX <= tMaxY && tMaxX <= tMaxZ) {
-                tMaxX += tDeltaX;
-                x += stepX;
-            } else if (tMaxY <= tMaxZ) {
-                tMaxY += tDeltaY;
-                y += stepY;
-            } else {
-                tMaxZ += tDeltaZ;
-                z += stepZ;
-            }
-        }
-        return null;
+        BlockPos hit = RaycastUtils.raycastBlock(player, partialTicks, REACH);
+        if (hit == null) return null;
+        return new Vec3(hit.getX() + 0.5, hit.getY() + 1.0, hit.getZ() + 0.5);
     }
 
     @SubscribeEvent

@@ -26,4 +26,9 @@ public class Mining {
     @Expose
     @Category(name = "/hotm Powder Display", desc = "Powder cost info on HOTM perk tooltips")
     public HotmPowderConfig hotmPowder = new HotmPowderConfig();
+
+    @Expose
+    @ConfigOption(name = "Pickobulus Preview", desc = "Shows a wireframe cube and block count preview for the Pickobulus ability blast radius")
+    @ConfigEditorBoolean
+    public boolean pickobulusPreview = false;
 }
