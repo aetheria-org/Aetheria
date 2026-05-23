@@ -40,6 +40,11 @@ public class Dungeons {
     public CaseOpeningConfig caseOpening = new CaseOpeningConfig();
 
     @Expose
+    @ConfigOption(name = "Hide Blessing Messages", desc = "Hides the 'DUNGEON BUFF! ... found a Blessing of ...' chat spam in dungeons")
+    @ConfigEditorBoolean
+    public boolean hideBlessingMessages = false;
+
+    @Expose
     public java.util.Map<String, Long> floorPbs = new java.util.HashMap<>();
 
     public long getPb(String key) { Long v = floorPbs.get(key); return v == null ? 0L : v; }
