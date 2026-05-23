@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.mining;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.RaycastUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
@@ -22,9 +23,10 @@ import java.awt.*;
 @RegisterEvents
 public class PickobulusPreview {
 
-    private static final String PICKOBULUS_ID = "PICKOBULUS";
     private static final int RADIUS = 3;
     private static final double REACH = 30.0;
+
+    private static final String PICKOBULUS_LORE_MARKER = "Ability: Pickobulus";
 
     private static final double PICKOBULUS_EYE_OFFSET = 0.53625;
 
@@ -42,7 +44,8 @@ public class PickobulusPreview {
 
     private static boolean isHoldingPickobulus() {
         Minecraft mc = Minecraft.getMinecraft();
-        return mc.thePlayer != null && PICKOBULUS_ID.equals(ItemUtils.getInternalName(mc.thePlayer.getHeldItem()));
+        if (mc.thePlayer == null) return false;
+        return ItemUtils.getLoreLines(mc.thePlayer.getHeldItem()).stream().anyMatch(line -> ColorUtils.stripColor(line).contains(PICKOBULUS_LORE_MARKER));
     }
 
     private static BlockPos raycast(EntityPlayer player) {
@@ -53,13 +56,13 @@ public class PickobulusPreview {
     }
 
     private boolean isEnabled() {
-        return ATHRConfig.feature != null && ATHRConfig.feature.mining.pickobulusPreview;
+        return ATHRConfig.feature == null || !ATHRConfig.feature.mining.pickobulusPreview;
     }
 
     @SubscribeEvent
     public void onTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        if (!isEnabled() || !isHoldingPickobulus() || onCooldown) {
+        if (isEnabled() || !isHoldingPickobulus() || onCooldown) {
             previewBox = null;
             return;
         }
@@ -76,6 +79,7 @@ public class PickobulusPreview {
             return;
         }
 
+        // 6×6×6 blast box centred on the hit block
         previewBox = new AxisAlignedBB(hit.getX() - RADIUS, hit.getY() - RADIUS, hit.getZ() - RADIUS, hit.getX() + RADIUS, hit.getY() + RADIUS, hit.getZ() + RADIUS);
 
         totalBlocks = 0;
@@ -100,10 +104,9 @@ public class PickobulusPreview {
         }
     }
 
-
     @SubscribeEvent
     public void onChat(ClientChatReceivedEvent event) {
-        if (!isEnabled()) return;
+        if (isEnabled()) return;
         String text = StringUtils.stripControlCodes(event.message.getFormattedText()).trim();
 
         if ("You used your Pickobulus Pickaxe Ability!".equals(text) || text.startsWith("Your Pickaxe ability is on cooldown for ")) {
@@ -115,7 +118,7 @@ public class PickobulusPreview {
 
     @SubscribeEvent
     public void onRenderWorld(RenderWorldLastEvent event) {
-        if (!isEnabled() || previewBox == null) return;
+        if (isEnabled() || previewBox == null) return;
 
         Color outline = onCooldown ? COLOR_COOLDOWN : COLOR_READY;
         Color fill = onCooldown ? COLOR_FILL_CD : COLOR_FILL;
