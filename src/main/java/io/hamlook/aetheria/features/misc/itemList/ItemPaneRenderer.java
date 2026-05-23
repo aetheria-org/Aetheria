@@ -102,10 +102,9 @@ public class ItemPaneRenderer {
     }
 
     private boolean shouldntShow() {
-        if (ATHRConfig.feature == null) return true;
-        if (!ATHRConfig.feature.misc.itemList.enabled) return true;
-        if(StorageManager.isOverlayActive()) return false;
-        return !ItemRegistry.isLoaded || ItemRegistry.familyRegistry.isEmpty();
+        return ATHRConfig.feature != null &&
+                ATHRConfig.feature.misc.itemList.enabled && !StorageManager.isOverlayActive() &&
+                !ItemRegistry.isLoaded && !ItemRegistry.familyRegistry.isEmpty();
     }
 
     private int totalPages() {
@@ -512,7 +511,7 @@ public class ItemPaneRenderer {
             int key = Keyboard.getEventKey();
             if (SearchBar.handleStorageKeyTyped(searchField, ch, key)) {
                 updateSearch(SearchBar.getStorageSearchText());
-                if (event != null) event.setCanceled(true);
+                event.setCanceled(true);
             }
         }
     }
