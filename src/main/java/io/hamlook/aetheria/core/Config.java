@@ -29,16 +29,16 @@ public class Config {
     public final About about = new About();
 
     @Expose
-    @Category(name = "Chat Utils", desc = "Chat compacting, timestamps, chat heads, copy & visual tweaks")
-    public final ChatConfig chat = new ChatConfig();
-
-    @Expose
     @Category(name = "Quality of life", desc = "QOL features")
     public final Qol qol = new Qol();
 
     @Expose
     @Category(name = "Scoreboard", desc = "Custom scoreboard panel")
     public final Scoreboard scoreboard = new Scoreboard();
+
+    @Expose
+    @Category(name = "Chat Utils", desc = "Chat compacting, timestamps, chat heads, copy & visual tweaks")
+    public final ChatConfig chat = new ChatConfig();
 
     @Expose
     @Category(name = "Misc", desc = "Misc features")
