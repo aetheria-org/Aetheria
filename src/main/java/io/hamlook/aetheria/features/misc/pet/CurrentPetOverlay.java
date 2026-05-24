@@ -2,10 +2,10 @@ package io.hamlook.aetheria.features.misc.pet;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.config.editors.ChromaColour;
-import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.init.RegisterEvents;
-import io.hamlook.aetheria.utils.item.ItemUtils;
+import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.data.SkyblockData;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.overlay.OverlayUtils;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
@@ -60,9 +60,7 @@ public class CurrentPetOverlay extends Overlay {
 
     @Override
     protected int getBaseWidth() {
-        Minecraft mc = Minecraft.getMinecraft();
-        String previewName = "§6[Lvl 100] Tiger";
-        return SKULL_SIZE + GAP + mc.fontRendererObj.getStringWidth(previewName) + PADDING * 2;
+        return SKULL_SIZE + GAP + Minecraft.getMinecraft().fontRendererObj.getStringWidth("§7[Lvl 100] §6Tiger") + PADDING * 2;
     }
 
     @Override
@@ -80,16 +78,13 @@ public class CurrentPetOverlay extends Overlay {
         ItemStack skullItem = null;
 
         if (preview) {
-            formattedName = "§6[Lvl 100] Tiger";
+            formattedName = "§7[Lvl 100] §6Tiger";
         } else {
-            String baseName = CurrentPetTracker.getInstance().getCurrentBaseName();
-            if (baseName.isEmpty()) return;
-
-            CachedPet cached = PetCache.getInstance().get(baseName);
-            formattedName = (cached != null && !cached.formattedName.isEmpty()) ? cached.formattedName : baseName;
-
-            if (cached != null && !cached.textureValue.isEmpty())
-                skullItem = ItemUtils.createSkullWithTexture(cached.textureValue);
+            if (!CurrentPetApi.hasPet()) return;
+            formattedName = CurrentPetApi.getDisplayName();
+            if (formattedName.isEmpty()) formattedName = CurrentPetApi.getColoredName();
+            String tex = CurrentPetApi.getTextureValue();
+            if (!tex.isEmpty()) skullItem = ItemUtils.createSkullWithTexture(tex);
         }
 
         float scale = getScale();

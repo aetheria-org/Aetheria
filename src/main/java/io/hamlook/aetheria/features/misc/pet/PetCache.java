@@ -1,13 +1,12 @@
 package io.hamlook.aetheria.features.misc.pet;
 
 import com.google.gson.reflect.TypeToken;
-import io.hamlook.aetheria.core.GsonBuilder;
-import io.hamlook.aetheria.core.StorageManager;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
+import io.hamlook.aetheria.core.StorageManager;
 import net.minecraft.client.Minecraft;
 
-import java.io.*;
+import java.io.File;
 import java.lang.reflect.Type;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -15,14 +14,16 @@ import java.util.UUID;
 
 public class PetCache implements StorageManager.Managed {
 
-    private static final int MAX_ENTRIES = 200;
+    private static final int MAX_ENTRIES = 500;
     private static PetCache INSTANCE;
+
     private final Map<String, CachedPet> pets = new LinkedHashMap<String, CachedPet>(16, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<String, CachedPet> eldest) {
             return size() > MAX_ENTRIES;
         }
     };
+
     private File file;
 
     private PetCache() {
@@ -35,32 +36,35 @@ public class PetCache implements StorageManager.Managed {
 
     public static String normalizePetName(String name) {
         if (name == null) return "";
-        return name.replace("✦", "")
-                .replace("\u2019", "'")
-                .trim();
+        return name.replace("✦", "").replace("’", "'").trim();
+    }
+
+    public static String makeKey(String rarityColor, String baseName, String skinTag) {
+        return rarityColor + baseName + (skinTag.isEmpty() ? "" : skinTag);
     }
 
     @Override
     public void initFile(File configDir) {
         file = new File(configDir, "pet_cache.json");
+        PetFileValidator.deleteIfLegacy(file);
     }
 
     @Override
     public void load() {
-        Type type = new TypeToken<Map<String, CachedPet>>() {}.getType();
-        Map<String, CachedPet> loaded = StorageManager.loadSafe(file, type, GsonBuilder.GSON);
-        if (loaded != null) {
-            // sanitize corrupted § on load
-            for (CachedPet pet : loaded.values()) {
-                if (pet.formattedName != null) pet.formattedName = pet.formattedName.replace("Â§", "§");
-            }
-            pets.putAll(loaded);
-        }
+        Type type = new TypeToken<Map<String, CachedPet>>() {
+        }.getType();
+        Map<String, CachedPet> loaded = PetFileValidator.load(file, type);
+        if (loaded == null) return;
+        loaded.forEach((key, pet) -> {
+            if (key == null || pet == null) return;
+            pet.sanitize();
+            pets.put(key, pet);
+        });
     }
 
     public void warmupTextures() {
         for (CachedPet pet : pets.values()) {
-            if (pet.textureValue == null || pet.textureValue.isEmpty()) continue;
+            if (pet.textureValue.isEmpty()) continue;
             GameProfile profile = new GameProfile(UUID.randomUUID(), "");
             profile.getProperties().put("textures", new Property("textures", pet.textureValue));
             Minecraft.getMinecraft().getSkinManager().loadProfileTextures(profile, null, false);
@@ -68,44 +72,52 @@ public class PetCache implements StorageManager.Managed {
     }
 
     private void save() {
-        StorageManager.saveAtomic(file, pets, GsonBuilder.GSON);
+        Map<String, CachedPet> toSave = new LinkedHashMap<>();
+        pets.forEach((k, v) -> {
+            if (k != null && v != null) toSave.put(k, v);
+        });
+        PetFileValidator.save(file, toSave);
     }
 
-    public void update(String baseName, String formattedName, String textureValue) {
+    private CachedPet getOrCreate(String key, String baseName) {
+        return pets.computeIfAbsent(key, k -> {
+            CachedPet p = new CachedPet();
+            p.baseName = baseName;
+            return p;
+        });
+    }
+
+    public void update(String baseName, int level, String rarityColor, String skinTag, String textureValue) {
         baseName = normalizePetName(baseName);
-
-        String starSuffix = "";
-        int starIndex = formattedName.indexOf("✦");
-        if (starIndex > 0) {
-            String before = formattedName.substring(0, starIndex);
-            if (before.length() >= 2 && before.charAt(before.length() - 2) == '§') {
-                starSuffix = " " + before.substring(before.length() - 2) + "✦";
-            } else {
-                starSuffix = " ✦";
-            }
-        }
-
-        formattedName = formattedName.replace("✦", "").trim();
-        if (!starSuffix.isEmpty()) formattedName = formattedName + starSuffix;
-
-        CachedPet existing = pets.get(baseName);
-        if (existing != null && existing.formattedName.equals(formattedName) && existing.textureValue.equals(textureValue))
-            return;
-
-        CachedPet pet = new CachedPet();
-        pet.baseName = baseName;
-        pet.formattedName = formattedName;
-        pet.textureValue = textureValue;
-        pets.put(baseName, pet);
+        if (baseName.isEmpty()) return;
+        String key = makeKey(rarityColor, baseName, skinTag);
+        CachedPet pet = getOrCreate(key, baseName);
+        pet.level = level;
+        pet.rarityColor = rarityColor;
+        pet.skinTag = skinTag;
+        if (textureValue != null && !textureValue.isEmpty()) pet.textureValue = textureValue;
+        pet.rebuildFormattedName();
         save();
     }
 
-    public CachedPet get(String baseName) {
-        return pets.get(normalizePetName(baseName));
+    public void updateFromChat(String baseName, int level, String rarityColor, String skinTag) {
+        baseName = normalizePetName(baseName);
+        if (baseName.isEmpty()) return;
+        String key = makeKey(rarityColor, baseName, skinTag);
+        CachedPet pet = getOrCreate(key, baseName);
+        if (!rarityColor.isEmpty()) pet.rarityColor = rarityColor;
+        if (level > 0) pet.level = level;
+        pet.skinTag = skinTag;
+        pet.rebuildFormattedName();
+        save();
     }
 
-    public boolean hasTexture(String baseName) {
-        CachedPet p = pets.get(normalizePetName(baseName));
-        return p != null && p.textureValue != null && !p.textureValue.isEmpty();
+    public CachedPet get(String key) {
+        return pets.get(key);
+    }
+
+    public boolean hasTexture(String key) {
+        CachedPet p = pets.get(key);
+        return p != null && !p.textureValue.isEmpty();
     }
 }
