@@ -3,6 +3,7 @@ package io.hamlook.aetheria.core;
 import com.google.gson.annotations.Expose;
 import io.hamlook.aetheria.core.config.gui.config.ConfigAnnotations.Category;
 import io.hamlook.aetheria.core.features.about.About;
+import io.hamlook.aetheria.core.features.chat.ChatConfig;
 import io.hamlook.aetheria.core.features.cosmetics.Cosmetics;
 import io.hamlook.aetheria.core.features.debug.Debug;
 import io.hamlook.aetheria.core.features.diana.Diana;
@@ -26,6 +27,10 @@ public class Config {
     @Expose
     @Category(name = "About", desc = "Links, credits & used software")
     public final About about = new About();
+
+    @Expose
+    @Category(name = "Chat Utils", desc = "Chat compacting, timestamps, chat heads, copy & visual tweaks")
+    public final ChatConfig chat = new ChatConfig();
 
     @Expose
     @Category(name = "Quality of life", desc = "QOL features")
