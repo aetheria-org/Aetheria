@@ -2,18 +2,7 @@ package io.hamlook.aetheria.core.config.gui;
 
 import net.minecraft.util.ResourceLocation;
 
-/**
- * Central registry for every static {@link ResourceLocation} used by ATHR's GUI / rendering code.
- * <p>
- * Rules:
- * <ul>
- *   <li>Static, unchanging texture paths belong here as {@code public static final} constants.</li>
- *   <li>Paths that are built at runtime from data (cape IDs, extra-icon names, …) must stay
- *       where the data lives – do <em>not</em> move them here.</li>
- *   <li>Minecraft / vanilla sound-event {@code ResourceLocation}s are not textures; leave them
- *       inline at the call-site.</li>
- * </ul>
- */
+
 public final class GuiTextures {
 
     public static final ResourceLocation DISCORD = new ResourceLocation("aetheria:discord.png");
@@ -56,18 +45,35 @@ public final class GuiTextures {
     public static final ResourceLocation PROTECT_ITEM_STAR = new ResourceLocation("aetheria", "textures/gui/protect_star.png");
     public static final ResourceLocation CAPES_UI = new ResourceLocation("aetheria", "textures/gui/capesUI.png");
     public static final ResourceLocation DVD_LOGO = new ResourceLocation("aetheria", "textures/dvd.png");
+
+    public static final int BETTER_CONTAINERS_STYLE_COUNT = 7;
+    public static final ResourceLocation BETTER_CONTAINERS_DYNAMIC = new ResourceLocation("aetheria", "dynamic/better_containers");
     public static final int STORAGE_STYLE_COUNT = 5;
+    private static final ResourceLocation[] BC_BG = new ResourceLocation[BETTER_CONTAINERS_STYLE_COUNT];
+    private static final ResourceLocation[] BC_SLOT = new ResourceLocation[BETTER_CONTAINERS_STYLE_COUNT];
     private static final ResourceLocation[] STORAGE_BG_TEXTURES = new ResourceLocation[STORAGE_STYLE_COUNT];
     private static final ResourceLocation[] STORAGE_SLOT_TEXTURES = new ResourceLocation[STORAGE_STYLE_COUNT];
 
     static {
+        for (int i = 0; i < BETTER_CONTAINERS_STYLE_COUNT; i++) {
+            int s = i + 1;
+            BC_BG[i] = new ResourceLocation("aetheria", "dynamic_54/style" + s + "/dynamic_54.png");
+            BC_SLOT[i] = new ResourceLocation("aetheria", "dynamic_54/style" + s + "/dynamic_54_slot_ctm.png");
+        }
         for (int i = 0; i < STORAGE_STYLE_COUNT; i++) {
             STORAGE_BG_TEXTURES[i] = new ResourceLocation("aetheria", "textures/gui/containers/style" + i + "_bg.png");
             STORAGE_SLOT_TEXTURES[i] = new ResourceLocation("aetheria", "textures/gui/containers/style" + i + "_slot.png");
         }
     }
-
     private GuiTextures() {
+    }
+
+    public static ResourceLocation betterContainersBg(int styleIndex) {
+        return BC_BG[Math.max(0, Math.min(styleIndex, BETTER_CONTAINERS_STYLE_COUNT - 1))];
+    }
+
+    public static ResourceLocation betterContainersSlot(int styleIndex) {
+        return BC_SLOT[Math.max(0, Math.min(styleIndex, BETTER_CONTAINERS_STYLE_COUNT - 1))];
     }
 
     /**

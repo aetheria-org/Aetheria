@@ -80,4 +80,8 @@ public class Qol {
     @ConfigOption(name = "Anvil Combine Helper", desc = "Highlights matching items in your inventory when one anvil slot is filled")
     @ConfigEditorBoolean
     public boolean anvilCombineHelper = true;
+
+    @Expose
+    @Category(name = "Better Containers", desc = "Improved Skyblock menus")
+    public BetterContainersConfig betterContainers = new BetterContainersConfig();
 }
