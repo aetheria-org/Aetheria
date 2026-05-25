@@ -1,5 +1,6 @@
 package io.hamlook.aetheria;
 
+import io.hamlook.aetheria.features.chatfilters.ChatFilterManager;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.StorageManager;
@@ -50,7 +51,7 @@ public class Aetheria {
         StorageManager.startAutoSave();
         SkyblockItemCache.getInstance().loadAsync();
         ItemRegistry.initialise();
-
+        ChatFilterManager.initialise();
         new CitManager();
         if (ATHRConfig.feature.misc.currentPet.showCurrentPet) PetCache.getInstance().warmupTextures();
 

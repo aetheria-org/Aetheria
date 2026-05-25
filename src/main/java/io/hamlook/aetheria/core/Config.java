@@ -113,6 +113,7 @@ public class Config {
             case "openItemAbilityTimerEditor": ATHRConfig.openItemAbilityTimerEditor(); break;
             case "openBpsEditor": ATHRConfig.openBpsEditor(); break;
             case "openUptimeEditor": ATHRConfig.openUptimeEditor(); break;
+            case "chatFiltersGUI": ATHRConfig.openChatFilterUI(); break;
             case "reloadCapes": CapeManager.reload(); break;
             case "openWebsite": openUrl("https://aetheria.github.io"); break;
             case "openDiscord": openUrl("https://discord.gg/tdMFbmhFTb"); break;

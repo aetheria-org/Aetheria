@@ -4,6 +4,7 @@ import io.hamlook.aetheria.command.Command;
 import io.hamlook.aetheria.core.config.editors.GuiPositionEditor;
 import io.hamlook.aetheria.core.config.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.config.gui.config.ConfigEditor;
+import io.hamlook.aetheria.features.chatfilters.ui.ChatFilterGUI;
 import io.hamlook.aetheria.features.diana.GuiDianaOverlayEditor;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.features.dungeons.overlays.DungeonBreakerOverlay;
@@ -254,6 +255,11 @@ public class ATHRConfig {
         UptimeOverlay overlay = UptimeOverlay.getInstance();
         if (overlay == null) return;
         screenToOpen = new GuiPositionEditor(feature.misc.uptimeConfig.uptimePos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::saveConfig, ATHRConfig::saveConfig).withOverlayScale(feature.misc.uptimeConfig.uptimeScale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void openChatFilterUI() {
+        if (feature == null) return;
+        screenToOpen = new ChatFilterGUI();
     }
 
     @SubscribeEvent

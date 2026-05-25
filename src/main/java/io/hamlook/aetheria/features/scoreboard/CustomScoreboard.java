@@ -65,7 +65,7 @@ public class CustomScoreboard extends Overlay {
     private static final Pattern SERVER_PATTERN   = Pattern.compile("\\s*\\d{2}/\\d{2}/\\d{2}.*");
     private static final Pattern SEASON_PATTERN   = Pattern.compile("\\s*(?:(?:Late|Early) )?(?:Spring|Summer|Autumn|Winter) \\d+.*");
     private static final Pattern TIME_PATTERN     = Pattern.compile("\\s*\\d+:\\d+(?:am|pm).*");
-    private static final Pattern PROFILE_TYPE_PATTERN = Pattern.compile("(?:Ironman|Stranded|Bingo|Classic)");
+    private static final Pattern PROFILE_TYPE_PATTERN = Pattern.compile("Ironman|Stranded|Bingo|Classic");
     private static final Pattern PURSE_PATTERN    = Pattern.compile("(?:Piggy|Purse): [\\d,.]+");
     private static final Pattern BANK_PATTERN     = Pattern.compile("Bank: .+");
     private static final Pattern BITS_PATTERN     = Pattern.compile("Bits: [\\d,.]+");
@@ -86,9 +86,7 @@ public class CustomScoreboard extends Overlay {
     }
 
     public static boolean isActive() {
-        return ATHRConfig.feature != null
-                && ATHRConfig.feature.scoreboard != null
-                && ATHRConfig.feature.scoreboard.enabled;
+        return ATHRConfig.feature != null && ATHRConfig.feature.scoreboard.enabled;
     }
 
     private static List<Integer> getLineOrder() {
@@ -239,14 +237,13 @@ public class CustomScoreboard extends Overlay {
                 northStarsRaw = l; claimed.add(l); continue;
             }
             if (heatRaw == null && HEAT_PATTERN.matcher(c).find()) {
-                heatRaw = l; claimed.add(l); continue;
+                heatRaw = l; claimed.add(l);
             }
         }
 
         // Build list of unclaimed lines in their original scoreboard order
         List<String> unknownLines = new ArrayList<>();
-        for (int ri = 0; ri < raw.size(); ri++) {
-            String l = raw.get(ri);
+        for (String l : raw) {
             if (claimed.contains(l)) continue;
             String c = ColorUtils.stripColor(l).trim();
             if (c.isEmpty() || WEBSITE_PATTERN.matcher(c).find()) continue;

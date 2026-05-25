@@ -5,6 +5,11 @@ import io.hamlook.aetheria.core.config.gui.config.ConfigAnnotations.*;
 
 public class ChatConfig {
 
+
+    // ── Chat Filters ──────────────────────────────────────────────────────
+    @Expose
+    @Category(name = "Chat Filters",desc = "Edit various parts of the Chat Filters Feature")
+    public final ChatFilterConfig chatFilterConfig = new  ChatFilterConfig();
     // ── Chat Compacting ──────────────────────────────────────────────────────
 
     @Expose
