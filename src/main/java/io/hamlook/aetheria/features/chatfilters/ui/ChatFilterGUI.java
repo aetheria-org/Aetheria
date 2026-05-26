@@ -46,7 +46,7 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
         boxX = (width - boxW) / 2;
         boxY = (height - boxH) / 2;
 
-        textScale = ResolutionUtils.getXStatic(1) * 1.8f * configScale();
+        textScale = ResolutionUtils.getXStatic(1) * 2.6f * configScale();
         cachedLayout = null;
         org.lwjgl.input.Keyboard.enableRepeatEvents(true);
         String prevSearch = searchField != null ? searchField.getText() : "";
@@ -228,7 +228,7 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
             String action = cf.action != null ? cf.action.name() : (cf.replace ? "REPLACE" : "CANCEL");
             String info = String.format("§7[%s] [%s] [%s]", cf.filterType.name, cf.filterCase.name(), action);
             TextRenderUtils.drawStringScaleAware(preview, boxX + getScaledX(32), curY + getScaledY(11), textScale * 1.1f, false);
-            TextRenderUtils.drawStringScaleAware(info, boxX + getScaledX(32), curY + getScaledY(29), textScale * 0.95f, false);
+            TextRenderUtils.drawStringScaleAware(info, boxX + getScaledX(32), curY + getScaledY(29), textScale * 0.85f, false);
             int btnY = curY + getScaledY(14);
 
             new CFButton(-1, boxX + boxW - rightPad - editW - delW - getScaledX(8), btnY, editW, btnH, "Edit", 0.2f, 0.7f, 0.2f).drawButton(mc, mouseX, mouseY);

@@ -94,7 +94,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         boxH = getScaledY(540);
         boxX = (width  - boxW) / 2;
         boxY = (height - boxH) / 2;
-        textScale = ResolutionUtils.getXStatic(1) * 1.8f * configScale();
+        textScale = ResolutionUtils.getXStatic(1) * 2.6f * configScale();
         cachedLeft = null;
         cachedRight = null;
         previewDirty = true;
@@ -361,12 +361,12 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
     private void drawSettingsPanel() {
         int sx = rx();
         GlStateManager.color(1f, 0.8f, 0.2f, 1f);
-        TextRenderUtils.drawStringScaleAware("Match Type:",     sx, secMatchY(),  textScale * 1.05f, false);
-        TextRenderUtils.drawStringScaleAware("Case:",           sx, secCaseY(),   textScale * 1.05f, false);
-        TextRenderUtils.drawStringScaleAware("Action:",         sx, secActionY(), textScale * 1.05f, false);
+        TextRenderUtils.drawStringScaleAware("Match Type:",     sx, secMatchY(),  textScale, false);
+        TextRenderUtils.drawStringScaleAware("Case:",           sx, secCaseY(),   textScale, false);
+        TextRenderUtils.drawStringScaleAware("Action:",         sx, secActionY(), textScale, false);
         GlStateManager.color(0.75f, 0.75f, 0.75f, 1f);
-        TextRenderUtils.drawStringScaleAware("Custom Test:",    sx, secCustomY(), textScale * 1.05f, false);
-        TextRenderUtils.drawStringScaleAware("§7Previews:",     sx, secPreviewY(), textScale * 1.05f, false);
+        TextRenderUtils.drawStringScaleAware("Custom Test:",    sx, secCustomY(), textScale, false);
+        TextRenderUtils.drawStringScaleAware("§7Previews:",     sx, secPreviewY(), textScale, false);
         GlStateManager.color(1f, 1f, 1f, 1f);
 
         drawTextField(customPreviewField, "Type a sentence to test...");
@@ -438,7 +438,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         int pY = layout.y - previewsScrollY;
         for (String line : cachedPreviewLines) {
             GlStateManager.color(0.75f, 0.75f, 0.75f, 1f);
-            TextRenderUtils.drawStringScaleAware(line, layout.x, pY, textScale * 0.95f, false);
+            TextRenderUtils.drawStringScaleAware(line, layout.x, pY, textScale * 0.85f, false);
             pY += layout.itemHeight;
         }
         stopScissor();
@@ -463,7 +463,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
             GlStateManager.color(0.22f, 0.22f, 0.22f, 1f);
             NineSliceUtils.draw(GuiTextures.storageBackground(1), layout.x, curY + getScaledY(3), itemW, getScaledY(32), 6, 18);
             GlStateManager.color(1f, 1f, 1f, 1f);
-            TextRenderUtils.drawCenteredStringScaleAware(word, layout.x + (itemW - delW - getScaledX(4)) / 2f, curY + getScaledY(19), textScale * 1.05f, false);
+            TextRenderUtils.drawCenteredStringScaleAware(word, layout.x + (itemW - delW - getScaledX(4)) / 2f, curY + getScaledY(19), textScale, false);
             new CFButton(-1, layout.x + itemW - delW - getScaledX(2), curY + getScaledY(7), delW, delH, "X", 0.8f, 0.2f, 0.2f).drawButton(mc, mouseX, mouseY);
             curY += layout.itemHeight;
         }
