@@ -18,21 +18,31 @@ jobs:
           SHA: ${{ github.sha }}
           TIMESTAMP: ${{ github.event.head_commit.timestamp }}
         run: |
-          COMMITS=$(jq -r '.commits[] | "• " + .message + " — " + .author.name' <<< "$EVENT" | paste -sd '\n' -)
+          COMMITS=$(jq -r '.commits[] | "• `\(.message)` — \(.author.name)"' <<< "$EVENT" | paste -sd '\n' -)
+          SHORT_SHA="${SHA:0:7}"
+          BUILD_URL="https://github.com/$REPO/actions/workflows/build.yml?query=branch%3A$REF+event%3Apush"
+          COMMIT_URL="https://github.com/$REPO/commit/$SHA"
           PAYLOAD=$(jq -n \
-            --arg title "Push to \`$REF\`" \
-            --arg description "$COMMITS" \
+            --arg commits "$COMMITS" \
             --arg actor "$ACTOR" \
-            --arg url "https://github.com/$REPO/commit/$SHA" \
+            --arg ref "$REF" \
+            --arg repo "$REPO" \
+            --arg short_sha "$SHORT_SHA" \
+            --arg commit_url "$COMMIT_URL" \
+            --arg build_url "$BUILD_URL" \
             --arg timestamp "$TIMESTAMP" \
             '{embeds: [{
-              title: $title,
-              description: $description,
-              color: 5763719,
+              author: {
+                name: ($actor + " pushed to " + $ref),
+                icon_url: ("https://github.com/" + $actor + ".png?size=32")
+              },
+              description: $commits,
+              color: 3447003,
               fields: [
-                {name: "Pushed by", value: $actor, inline: true},
-                {name: "Commit", value: ("<" + $url + ">"), inline: true}
+                {name: "Commit", value: ("[`" + $short_sha + "`](" + $commit_url + ")"), inline: true},
+                {name: "Build", value: ("[View Build](" + $build_url + ")"), inline: true}
               ],
+              footer: {text: "Aetheria Push Event"},
               timestamp: $timestamp
             }]}')
           curl -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK"
