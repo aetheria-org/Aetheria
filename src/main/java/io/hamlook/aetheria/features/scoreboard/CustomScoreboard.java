@@ -36,7 +36,7 @@ public class CustomScoreboard extends Overlay {
     // Re-parse every 4 client ticks (~200ms at 20 tps)
     private static final int PARSE_INTERVAL = 4;
 
-    // ── known line IDs (must match exampleText indices in Scoreboard.java) ───
+    // ── known line IDs ────────────────────────────────────────────────────────
     private static final int LINE_SERVER       = 0;
     private static final int LINE_TIME         = 1;
     private static final int LINE_PROFILE_TYPE = 2;
@@ -70,7 +70,7 @@ public class CustomScoreboard extends Overlay {
     private static final Pattern SERVER_PATTERN           = Pattern.compile("\\s*\\d{2}/\\d{2}/\\d{2}.*");
     private static final Pattern SEASON_PATTERN           = Pattern.compile("\\s*(?:(?:Late|Early) )?(?:Spring|Summer|Autumn|Winter) \\d+.*");
     private static final Pattern TIME_PATTERN             = Pattern.compile("\\s*\\d+:\\d+(?:am|pm).*");
-    private static final Pattern PROFILE_TYPE_PATTERN    = Pattern.compile("Ironman|Stranded|Bingo|Classic");
+    private static final Pattern PROFILE_TYPE_PATTERN     = Pattern.compile("Ironman|Stranded|Bingo|Classic");
     private static final Pattern PURSE_PATTERN            = Pattern.compile("(?:Piggy|Purse): [\\d,.]+");
     private static final Pattern BANK_PATTERN             = Pattern.compile("Bank: .+");
     private static final Pattern BITS_PATTERN             = Pattern.compile("Bits: [\\d,.]+");
@@ -86,7 +86,10 @@ public class CustomScoreboard extends Overlay {
 
     private List<String> cachedLines = new ArrayList<>();
 
-    private List<Integer> cachedLineOrder = null;
+    // Reused every render frame — avoids allocating a new ArrayList per frame
+    private final List<String> displayLines = new ArrayList<>();
+
+    private List<Integer> cachedLineOrder    = null;
     private List<?>       lastLineOrderSource = null;
 
     private int     lastRawHash = 0;
@@ -129,16 +132,6 @@ public class CustomScoreboard extends Overlay {
         return sb.toString().trim();
     }
 
-    private int xFor(String line, int boxW, int alignment) {
-        Minecraft mc = Minecraft.getMinecraft();
-        int w = mc.fontRendererObj.getStringWidth(line);
-        switch (alignment) {
-            case 1: return PAD_X + (boxW - PAD_X * 2 - w) / 2;
-            case 2: return boxW - PAD_X - w;
-            default: return PAD_X;
-        }
-    }
-
     // ── Overlay contract ──────────────────────────────────────────────────────
 
     @Override public Position getPosition()    { return ATHRConfig.feature.scoreboard.position; }
@@ -153,8 +146,8 @@ public class CustomScoreboard extends Overlay {
     }
 
     /**
-     * Returns body lines from cache. Title is intentionally excluded here —
-     * render fetches it fresh every frame so chroma animation stays smooth.
+     * Returns body lines from cache.
+     * Title is excluded — render prepends it fresh every frame for smooth chroma animation.
      * Preview mode always builds live so the config GUI shows current data.
      */
     @Override
@@ -195,8 +188,8 @@ public class CustomScoreboard extends Overlay {
     // ── parse + transform ─────────────────────────────────────────────────────
 
     /**
-     * Accepts the already-read raw lines so onTick and preview don't each
-     * make a redundant getScoreboardLines() call.
+     * Pure parse+transform. Accepts already-read raw lines so onTick and preview
+     * don't each make a redundant getScoreboardLines() call.
      * Title is NOT included in the output — render prepends it fresh every frame.
      */
     private List<String> buildLines(List<String> rawIn) {
@@ -210,10 +203,9 @@ public class CustomScoreboard extends Overlay {
         for (int i = 0; i < raw.size(); i++)
             stripped[i] = ColorUtils.stripColor(raw.get(i)).trim();
 
-        // Outside Skyblock — return vanilla lines as-is (no title prepended here either)
+        // Outside Skyblock — return vanilla lines as-is
         if (!SkyblockData.isOnSkyblock()) {
-            List<String> result = new ArrayList<>(raw);
-            return result;
+            return new ArrayList<>(raw);
         }
 
         boolean inDungeon = SkyblockData.isInDungeon();
@@ -420,40 +412,40 @@ public class CustomScoreboard extends Overlay {
         if (!preview && !extraGuard()) return;
         if (!preview && ATHRConfig.feature.scoreboard.hideOnTab && OverlayUtils.shouldHide()) return;
 
-        // Fetch title fresh every frame so chroma/rainbow animation plays smoothly.
-        // Body lines come from the cache updated by onTick.
+        // Title fetched fresh every frame so chroma/rainbow animation plays smoothly.
+        // Body lines come from the 4-tick cache.
         String title = SkyblockData.getScoreboardTitle();
         List<String> body = getLines(preview);
 
-        List<String> lines;
-        if (title != null && !title.isEmpty()) {
-            lines = new ArrayList<>(body.size() + 1);
-            lines.add(title);
-            lines.addAll(body);
-        } else {
-            lines = body;
-        }
+        // Reuse displayLines to avoid allocating a new ArrayList every frame
+        displayLines.clear();
+        if (title != null && !title.isEmpty()) displayLines.add(title);
+        displayLines.addAll(body);
 
-        if (lines.isEmpty()) return;
+        if (displayLines.isEmpty()) return;
 
         boolean down = Keyboard.isKeyDown(ATHRConfig.feature.debug.scoreboardDebugConfig.scoreboardDebugKey);
         if (down && !wasDown && ATHRConfig.feature.debug.scoreboardDebugConfig.scoreboardDebug)
             ChatUtils.sendMessage(CustomScoreboardAPI.toJson());
         wasDown = down;
 
-        Minecraft mc   = Minecraft.getMinecraft();
-        float scale    = getScale();
-        int lh         = LINE_HEIGHT + LINE_GAP;
-        int ss         = SUPERSAMPLE;
-        int alignment  = ATHRConfig.feature.scoreboard.lineAlignment;
-        int minWidth   = ATHRConfig.feature.scoreboard.minWidth;
+        Minecraft mc  = Minecraft.getMinecraft();
+        float scale   = getScale();
+        int lh        = LINE_HEIGHT + LINE_GAP;
+        int ss        = SUPERSAMPLE;
+        int alignment = ATHRConfig.feature.scoreboard.lineAlignment;
+        int minWidth  = ATHRConfig.feature.scoreboard.minWidth;
 
+        // Measure all lines once, cache widths for reuse during drawing
         int maxW = minWidth;
-        for (String line : lines)
-            maxW = Math.max(maxW, mc.fontRendererObj.getStringWidth(line));
+        int[] widths = new int[displayLines.size()];
+        for (int i = 0; i < displayLines.size(); i++) {
+            widths[i] = mc.fontRendererObj.getStringWidth(displayLines.get(i));
+            if (widths[i] > maxW) maxW = widths[i];
+        }
 
         int boxW = maxW + PAD_X * 2;
-        int boxH = lines.size() * lh + PAD_Y * 2 - LINE_GAP;
+        int boxH = displayLines.size() * lh + PAD_Y * 2 - LINE_GAP;
         lastW = boxW;
         lastH = boxH;
 
@@ -480,13 +472,17 @@ public class CustomScoreboard extends Overlay {
 
         int textY = PAD_Y;
         // Line 0 is always the title — centered
-        String firstLine = lines.get(0);
-        int titleX = (boxW - mc.fontRendererObj.getStringWidth(firstLine)) / 2;
-        mc.fontRendererObj.drawStringWithShadow(firstLine, titleX, textY, -1);
+        mc.fontRendererObj.drawStringWithShadow(displayLines.get(0), (boxW - widths[0]) / 2, textY, -1);
         textY += lh;
-        for (int i = 1; i < lines.size(); i++) {
-            String line = lines.get(i);
-            mc.fontRendererObj.drawStringWithShadow(line, xFor(line, boxW, alignment), textY, 0xFFFFFF);
+
+        for (int i = 1; i < displayLines.size(); i++) {
+            int lx;
+            switch (alignment) {
+                case 1:  lx = PAD_X + (boxW - PAD_X * 2 - widths[i]) / 2; break;
+                case 2:  lx = boxW - PAD_X - widths[i]; break;
+                default: lx = PAD_X; break;
+            }
+            mc.fontRendererObj.drawStringWithShadow(displayLines.get(i), lx, textY, 0xFFFFFF);
             textY += lh;
         }
 
