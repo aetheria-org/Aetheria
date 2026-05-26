@@ -51,7 +51,7 @@ public class PartyCommands {
         }
 
         switch (body) {
-            case "!ATHR":
+            case "!athr":
                 respond(getATHRVersion());
                 break;
             case "!burrows":
