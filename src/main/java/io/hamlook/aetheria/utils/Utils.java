@@ -99,7 +99,7 @@ public class Utils {
     }
 
     public static ScaledResolution pushGuiScale(int scale) {
-        if (guiScales.size() == 0) {
+        if (guiScales.isEmpty()) {
             if (Loader.isModLoaded("labymod")) {
                 GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projectionMatrixOld);
                 GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelviewMatrixOld);
@@ -107,7 +107,7 @@ public class Utils {
         }
 
         if (scale < 0) {
-            if (guiScales.size() > 0) {
+            if (!guiScales.isEmpty()) {
                 guiScales.pop();
             }
         } else {
@@ -118,7 +118,7 @@ public class Utils {
             }
         }
 
-        int newScale = guiScales.size() > 0 ? Math.max(0, Math.min(4, guiScales.peek())) : Minecraft.getMinecraft().gameSettings.guiScale;
+        int newScale = !guiScales.isEmpty() ? Math.max(0, Math.min(4, guiScales.peek())) : Minecraft.getMinecraft().gameSettings.guiScale;
         if (newScale == 0) newScale = Minecraft.getMinecraft().gameSettings.guiScale;
 
         int oldScale = Minecraft.getMinecraft().gameSettings.guiScale;
@@ -126,7 +126,7 @@ public class Utils {
         ScaledResolution scaledresolution = new ScaledResolution(Minecraft.getMinecraft());
         Minecraft.getMinecraft().gameSettings.guiScale = oldScale;
 
-        if (guiScales.size() > 0) {
+        if (!guiScales.isEmpty()) {
             GlStateManager.viewport(0, 0, Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
             GlStateManager.matrixMode(GL11.GL_PROJECTION);
             GlStateManager.loadIdentity();
@@ -167,5 +167,19 @@ public class Utils {
 
     public static void copyToClipboard(String str) {
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(str), null);
+    }
+
+    private static final char[] SUFFIXES = {'\0', 'k', 'M', 'B', 'T'};
+    public static String shortNumberFormat(double n, int iteration) {
+        if (n < 1000) {
+            if (iteration == 0) {
+                return String.valueOf((int) n);
+            }
+            double d = ((long) (n * 10)) / 10.0;
+            boolean isRound = (d * 10) % 10 == 0;
+            String number = isRound || d > 9.99 ? String.valueOf((int) d) : String.valueOf(d);
+            return number + SUFFIXES[iteration];
+        }
+        return shortNumberFormat(n / 1000.0, iteration + 1);
     }
 }

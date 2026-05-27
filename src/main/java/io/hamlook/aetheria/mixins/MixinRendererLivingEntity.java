@@ -1,20 +1,21 @@
 package io.hamlook.aetheria.mixins;
 
-// Ported from PolyPatcher
-
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
+import io.hamlook.aetheria.features.qol.DamageNameplates;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.RendererLivingEntity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.util.IChatComponent;
 import net.minecraftforge.common.MinecraftForge;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -25,6 +26,14 @@ public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> exte
 
     protected MixinRendererLivingEntity(RenderManager renderManager) {
         super(renderManager);
+    }
+
+    @Redirect(
+            method = "renderName(Lnet/minecraft/entity/EntityLivingBase;DDD)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/EntityLivingBase;getDisplayName()Lnet/minecraft/util/IChatComponent;")
+    )
+    public IChatComponent ATHR$renderName_getDisplayName(EntityLivingBase entity) {
+        return DamageNameplates.replaceName(entity);
     }
 
     @Inject(method = "canRenderName(Lnet/minecraft/entity/EntityLivingBase;)Z", at = @At("HEAD"), cancellable = true)
@@ -43,7 +52,7 @@ public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> exte
             )
     )
     private void ATHR$fireRenderEntityModelEvent(T entity, double x, double y, double z,
-                                                float entityYaw, float partialTicks, CallbackInfo ci) {
+                                                 float entityYaw, float partialTicks, CallbackInfo ci) {
         float limbSwing       = entity.limbSwing - entity.limbSwingAmount * (1.0F - partialTicks);
         float limbSwingAmount = entity.prevLimbSwingAmount + (entity.limbSwingAmount - entity.prevLimbSwingAmount) * partialTicks;
         float ageInTicks      = entity.ticksExisted + partialTicks;

@@ -14,4 +14,9 @@ public class DamageSplashesConfig {
     @ConfigOption(name = "Hide Non-Crit Splashes", desc = "Hides gray and fire-aspect damage numbers")
     @ConfigEditorBoolean
     public boolean hideNonCritSplashes = false;
+
+    @Expose
+    @ConfigOption(name = "Format Damage", desc = "Shortens large damage numbers (1234567 → 1.2M)")
+    @ConfigEditorBoolean
+    public boolean formatDamage = false;
 }
