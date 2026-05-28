@@ -10,9 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.StringUtils;
 import net.minecraft.util.Vec3;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -28,11 +26,8 @@ public class PickobulusPreview {
     private static final double PICKOBULUS_EYE_OFFSET = 0.53625;
 
     private static final Color COLOR_READY = new Color(255, 100, 200, 160);
-    private static final Color COLOR_COOLDOWN = new Color(255, 60, 60, 160);
     private static final Color COLOR_FILL = new Color(255, 100, 200, 30);
-    private static final Color COLOR_FILL_CD = new Color(255, 60, 60, 30);
 
-    private boolean onCooldown = false;
     private AxisAlignedBB previewBox = null;
 
     private boolean cachedIsHoldingPickobulus = false;
@@ -40,7 +35,7 @@ public class PickobulusPreview {
     private int tickCounter = 0;
 
     private boolean isEnabled() {
-        return ATHRConfig.feature != null && ATHRConfig.feature.mining.pickobulusPreview;
+        return ATHRConfig.feature == null || !ATHRConfig.feature.mining.pickobulusPreview;
     }
 
     private boolean isHoldingPickobulus() {
@@ -50,17 +45,15 @@ public class PickobulusPreview {
         int currentHash = System.identityHashCode(mc.thePlayer.getHeldItem());
         if (currentHash != lastHeldItemHash) {
             lastHeldItemHash = currentHash;
-            if (mc.thePlayer.getHeldItem() == null) {
-                cachedIsHoldingPickobulus = false;
-            } else {
+            if (mc.thePlayer.getHeldItem() != null) {
                 for (String line : ItemUtils.getLoreLines(mc.thePlayer.getHeldItem())) {
                     if (ColorUtils.stripColor(line).contains(PICKOBULUS_LORE_MARKER)) {
                         cachedIsHoldingPickobulus = true;
                         return true;
                     }
                 }
-                cachedIsHoldingPickobulus = false;
             }
+            cachedIsHoldingPickobulus = false;
         }
         return cachedIsHoldingPickobulus;
     }
@@ -79,7 +72,7 @@ public class PickobulusPreview {
         tickCounter++;
         if (tickCounter % 2 != 0) return;
 
-        if (!isEnabled() || !isHoldingPickobulus() || onCooldown) {
+        if (isEnabled() || !isHoldingPickobulus()) {
             previewBox = null;
             return;
         }
@@ -99,26 +92,24 @@ public class PickobulusPreview {
         previewBox = new AxisAlignedBB(hit.getX() - RADIUS, hit.getY() - RADIUS, hit.getZ() - RADIUS, hit.getX() + RADIUS + 1, hit.getY() + RADIUS + 1, hit.getZ() + RADIUS + 1);
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
-        if (!isEnabled()) return;
-        String text = StringUtils.stripControlCodes(event.message.getFormattedText()).trim();
-
-        if ("You used your Pickobulus Pickaxe Ability!".equals(text) || text.startsWith("Your Pickaxe ability is on cooldown for ")) {
-            onCooldown = true;
-        } else if ("Pickobulus is now available!".equals(text)) {
-            onCooldown = false;
-        }
-    }
+    // TODO: UNCOMMENT WHEN FAKEPIXEL ADDS Pickobulus is now available MESSAGE
+    // @SubscribeEvent
+    // public void onChat(ClientChatReceivedEvent event) {
+    //     if (!isEnabled()) return;
+    //     String text = StringUtils.stripControlCodes(event.message.getFormattedText()).trim();
+    //
+    //     if ("You used your Pickobulus Pickaxe Ability!".equals(text) || text.startsWith("Your Pickaxe ability is on cooldown for ")) {
+    //         onCooldown = true;
+    //     } else if ("Pickobulus is now available!".equals(text)) {
+    //         onCooldown = false;
+    //     }
+    // }
 
     @SubscribeEvent
     public void onRenderWorld(RenderWorldLastEvent event) {
-        if (!isEnabled() || previewBox == null) return;
+        if (isEnabled() || previewBox == null) return;
 
-        Color outline = onCooldown ? COLOR_COOLDOWN : COLOR_READY;
-        Color fill = onCooldown ? COLOR_FILL_CD : COLOR_FILL;
-
-        WorldRenderUtils.drawSelectionBox(previewBox, outline, 2f);
-        WorldRenderUtils.drawFilledBlock(previewBox, fill);
+        WorldRenderUtils.drawSelectionBox(previewBox, COLOR_READY, 2f);
+        WorldRenderUtils.drawFilledBlock(previewBox, COLOR_FILL);
     }
 }
