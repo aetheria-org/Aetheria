@@ -17,10 +17,10 @@ import java.util.List;
 public class CapeLoader {
 
     private static final String RAW_BASE =
-            "https://github.com/aetheria-org/aetheria-repo/main";
+            "https://github.com/aetheria-org/Aetheria-REPO/main";
 
     private static final String CONTENTS_API =
-            "https://api.github.com/repos/aetheria-org/aetheria-repo/contents/capes";
+            "https://api.github.com/repos/aetheria-org/Aetheria-REPO/contents/capes";
 
     public static void loadAllCapes() {
         Aetheria.logger.info("[CapeLoader] Starting cape load...");

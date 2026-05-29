@@ -330,7 +330,7 @@ public class ModInstaller {
 
             new Thread(() -> {
                 try {
-                    String modLinksUrl = "https://raw.githubusercontent.com/aetheria-org/aetheria-repo/refs/heads/main/data/modLinks.json";
+                    String modLinksUrl = "https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/refs/heads/main/data/modLinks.json";
                     HttpURLConnection conn = (HttpURLConnection) new URL(modLinksUrl).openConnection();
                     conn.setRequestProperty("User-Agent", "Aetheria-Installer");
                     InputStreamReader reader = new InputStreamReader(conn.getInputStream());
