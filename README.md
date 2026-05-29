@@ -56,4 +56,4 @@ This project would not be where it is today without the help of these amazing pe
 
 [Hooman](https://github.com/mxhooman)
 
-> You can find credits and project information for JustEnoughFakepixel here: [justenoughfakepixel.github.io](https://justenoughfakepixel.github.io/index.html#credits)
+> You can find credits and project information for Aetheria's skyblock mod here: [justenoughfakepixel.github.io](https://justenoughfakepixel.github.io/index.html#credits)
