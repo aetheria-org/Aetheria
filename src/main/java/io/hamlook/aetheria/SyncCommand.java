@@ -25,6 +25,8 @@ import java.util.Base64;
 public class SyncCommand extends SimpleCommand {
 
     private static final String MOD_SECRET = "a7c0e73c-3b0b-4789-8c80-741dd09ba1bc";
+    private static String SYNC_CODE = "";
+    private static long lastUse = 0;
 
     @Override
     public String getName() {
@@ -45,9 +47,22 @@ public class SyncCommand extends SimpleCommand {
             return;
         }
 
+        if(System.currentTimeMillis() - lastUse < 240000 && !SYNC_CODE.isEmpty()) {
+            IChatComponent text = new ChatComponentText("§a[SkyAtlas] Your sync code is: §e§l" + SYNC_CODE);
+            text.setChatStyle(new ChatStyle().setChatClickEvent(
+                    new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, SYNC_CODE)
+            ).setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,new ChatComponentText("§aClick to show in chat"))));
+            Minecraft.getMinecraft().addScheduledTask(() -> {
+                        Minecraft.getMinecraft().thePlayer.addChatMessage(text);
+                        ChatUtils.sendMessage(
+                                "§r§aPlease paste this code in the §9#sync§a channel on Discord within 5 minutes!");
+                    }
+            );
+            return;
+        }
+
         String playerName = sender.getName();
         String syncCode = generateSyncCode();
-
         new Thread(() -> {
             try {
                 URL url = new URL(CapeAPI.getAPIUrl("pending-sync"));
@@ -79,6 +94,8 @@ public class SyncCommand extends SimpleCommand {
                                         "§r§aPlease paste this code in the §9#sync§a channel on Discord within 5 minutes!");
                             }
                         );
+                    lastUse = System.currentTimeMillis();
+                    SYNC_CODE = syncCode;
                 } else {
                     Minecraft.getMinecraft().addScheduledTask(() -> ChatUtils.sendMessage("§c[SkyAtlas] Failed to generate sync code. API returned status " + responseCode));
                 }
