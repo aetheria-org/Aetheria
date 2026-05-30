@@ -1,44 +1,47 @@
-
 # JEF 1.2.7 - Aetheria 1.0.0 Changelog
 
-## Just Enough Fakepixel was renamed to Aetheria(Aetheria's Skyblock mod, ASM)
+## Just Enough Fakepixel (JEF) has been rebranded to Aetheria (Aetheria's Skyblock Mod / ASM)
 
-- Added in-game profile viewer (fetching data from SkyAtlas)
-- Added timer(stopwatch) `/asmtimer`
-- Added in-game Item list, recipe viewer
-- Added SkyAtlas in Options menu
-- Added hide dungeon blessing
+- Added in-game Profile Viewer powered by SkyAtlas
+- Added timer (stopwatch) `/asmtimer`
+- Added in-game Item List and Recipe Viewer
+- Added SkyAtlas button in the Options menu
+- Added Hide Dungeon Blessing Messages
 - Added Pickobulus Preview
-- Added Anvil Combine helper
-- Added `/Sync` command to sync with SkyAtlas
-- Added Player join/leave notifier
-- Added Better Containers (Improved SB menus)
-- Added filled buy/sell order highlight
-- Added Slot Bind
-- Added Chat Filters `/chatfilters`
-- Added Damage formatter
-- Added Chat Compact
-- Added Chat timestamps
-- Added Chat heads
-- Added Chat copy
-- Added Transparent chat
-- Added Chat animation
--------------
-- Optimized capes significantly
+- Added Anvil Combine Helper
+- Added `/sync` command to sync with SkyAtlas
+- Added Player Join/Leave Notifier
+- Added Better Containers (Improved SkyBlock menus)
+- Added filled Buy/Sell Order Highlights
+- Added Slot Binds
+- Added Chat Filters (`/chatfilters`)
+- Added Damage Formatter
+- Added Chat Compacting
+- Added Chat Timestamps
+- Added Chat Heads
+- Added Chat Copy
+- Added Transparent Chat
+- Added Chat Animation
+
+### Improvements
+- Significantly optimized capes
 - Optimized Dungeon features
-- Optimized ordered waypoints
-- Rework of current pet and massive optimization
-- Improved Waypoint Manager Gui
-- Search bar now has buttons to toggle between itemlist and search modes
-- Cleaned up and optimized search bar
-- Fixed Calculators showing calculations for plain text
+- Optimized Ordered Waypoints
+- Reworked Current Pet with major performance improvements
+- Improved Waypoint Manager GUI
+- Search Bar now has buttons to toggle between Item List and Search modes
+- Cleaned up and optimized Search Bar
 - Overall massive performance increase
--------------
-- Fixed Chest Case animation not working if DungeonTimers off
-- Fixed current pet with no head or level on relaunch
 
-# Important changelog
-- All commands with prefixes were changed to have aliases asm,athr, jef for backwards compatibility, you can use /asmprotect, /jefprotect, athrprotect for the same thing.
-- Added installer and autoupdater, run the mod jar to update fakepixel mods.
+### Fixes
+- Fixed Chest Case animation not working when Dungeon Timers were disabled
+- Fixed Current Pet showing no head or level after relaunch
+- Fixed calculators showing calculations for plain text
 
-The full changelog can be found [here](https://github.com/aetheria-org/Aetheria/commits/main/)
+## Important Changelog
+- All commands now support `asm`, `athr`, and `jef` prefixes for backwards compatibility.
+  - Examples: `/asmprotect`, `/athrprotect`, and `/jefprotect` all perform the same action.
+- Added installer and auto-updater.
+  - Run the mod JAR directly to update Fakepixel mods.
+
+The full changelog can be found [here](https://github.com/aetheria-org/Aetheria/commits/main/).
