@@ -428,23 +428,39 @@ public class ProfileViewerGUI extends GuiScreen {
 
         String updateTimeText = this.playerProfile.update_time;
         String syncTimeText = this.playerProfile.updated_at;
+        String updateDate = "";
+        String syncDate = "";
 
-        Instant updateT = Instant.parse(updateTimeText);
-        Instant syncT = Instant.parse(syncTimeText);
+        String updateHour = "";
+        String syncHour = "";
+
+        boolean parseUpd = true,parseSync = true;
+        if(updateTimeText == null || updateTimeText.isEmpty()){
+            updateDate = "Never";
+            parseUpd = false;
+        }
+        if(syncTimeText == null || syncTimeText.isEmpty()){
+            syncDate = "Never";
+            parseSync = false;
+        }
+
         ZoneId targetZone = ZoneId.systemDefault();
-
-        ZonedDateTime localizedUpd = updateT.atZone(targetZone);
-        ZonedDateTime localizedSync = syncT.atZone(targetZone);
-
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
 
-        String updateDate = "§8Uploaded: §f" + dateFormatter.format(localizedUpd);
-        String syncDate = "§8Sync: §f" + dateFormatter.format(localizedSync);
+        if(parseUpd){
+            Instant updateT = Instant.parse(updateTimeText);
+            ZonedDateTime localizedUpd = updateT.atZone(targetZone);
+            updateDate = "§8Uploaded: §f" + dateFormatter.format(localizedUpd);
+            updateHour = "§7(" + timeFormatter.format(localizedUpd) + ")";
 
-        String updateHour = "§7(" + timeFormatter.format(localizedUpd) + ")";
-        String syncHour = "§7(" + timeFormatter.format(localizedSync) + ")";
-
+        }
+        if(parseSync) {
+            Instant syncT = Instant.parse(syncTimeText);
+            ZonedDateTime localizedSync = syncT.atZone(targetZone);
+            syncDate = "§8Sync: §f" + dateFormatter.format(localizedSync);
+            syncHour = "§7(" + timeFormatter.format(localizedSync) + ")";
+        }
         float textScale = Math.max(0.25f, getScaledF(1)) * 2.5f;
         float labelScale = textScale * 0.70f;
         float hourScale = textScale * 0.55f;
