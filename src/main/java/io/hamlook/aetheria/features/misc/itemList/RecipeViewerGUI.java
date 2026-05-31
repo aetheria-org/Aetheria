@@ -23,20 +23,30 @@ public class RecipeViewerGUI extends GuiScreen {
     static final int NAV_H = 20;
 
     private final SkyblockItem item;
-    private final List<Recipe>  recipes;
+    private final List<Recipe> recipes;
+    private final GuiScreen parentScreen;
     private int recipeIndex = 0;
-    private int scrollY     = 0;
+    private int scrollY = 0;
 
     private int boxX, boxY, boxW, boxH;
 
     public RecipeViewerGUI(SkyblockItem item) {
-        this.item    = item;
+        this(item, Minecraft.getMinecraft().currentScreen);
+    }
+
+    public RecipeViewerGUI(SkyblockItem item, GuiScreen parentScreen) {
+        this.item = item;
         this.recipes = RecipeFactory.build(item);
+        this.parentScreen = parentScreen;
     }
 
     @Override public void initGui()      { Keyboard.enableRepeatEvents(true);  recipeIndex = 0; scrollY = 0; }
     @Override public void onGuiClosed() { Keyboard.enableRepeatEvents(false); }
     @Override public boolean doesGuiPauseGame() { return false; }
+
+    private void close() {
+        mc.displayGuiScreen(parentScreen);
+    }
 
     private void computeBox() {
         int contentW, contentH;
@@ -47,21 +57,18 @@ public class RecipeViewerGUI extends GuiScreen {
             contentW = sz[0];
             contentH = sz[1];
         } else {
-            // Dynamically scale the box based on the actual length and width of the lore
             contentH = (item.baseLore != null ? item.baseLore.size() * 10 : 0) + 10;
             contentW = 200;
 
             if (this.fontRendererObj != null) {
                 if (item.displayName != null) contentW = Math.max(contentW, this.fontRendererObj.getStringWidth(item.displayName));
                 if (item.baseLore != null) {
-                    for (String line : item.baseLore) {
+                    for (String line : item.baseLore)
                         contentW = Math.max(contentW, this.fontRendererObj.getStringWidth(line));
-                    }
                 }
             }
         }
 
-        // Remove the arbitrary MAX_H and MAX_W limits so huge lores fit, but cap it to screen boundaries
         boxW = Math.max(MIN_W, Math.min(this.width - 20, contentW + 40));
         boxH = Math.max(MIN_H, Math.min(this.height - 20, HEADER_H + contentH + NAV_H + 10));
 
@@ -73,7 +80,7 @@ public class RecipeViewerGUI extends GuiScreen {
     protected void keyTyped(char c, int key) throws IOException {
         if (ItemPaneRenderer.INSTANCE != null) ItemPaneRenderer.INSTANCE.handleKeyInput();
         if (key == Keyboard.KEY_ESCAPE || key == mc.gameSettings.keyBindInventory.getKeyCode())
-            mc.displayGuiScreen(null);
+            close();
     }
 
     @Override
@@ -87,9 +94,8 @@ public class RecipeViewerGUI extends GuiScreen {
         int contentH = boxH - HEADER_H - NAV_H;
 
         if (!recipes.isEmpty()) {
-            if (recipes.get(recipeIndex).mouseClicked(mx, my, btn, contentX, contentY, boxW, contentH, scrollY)) {
+            if (recipes.get(recipeIndex).mouseClicked(mx, my, btn, contentX, contentY, boxW, contentH, scrollY))
                 return;
-            }
         }
 
         if (recipes.size() <= 1) return;
@@ -121,7 +127,6 @@ public class RecipeViewerGUI extends GuiScreen {
         }
     }
 
-
     @Override
     public void drawScreen(int mx, int my, float pt) {
         drawRect(0, 0, width, height, 0xA0000000);
@@ -147,10 +152,9 @@ public class RecipeViewerGUI extends GuiScreen {
 
             if (item.baseLore != null) {
                 int ly = boxY + 32;
-                for (int i = 0; i < item.baseLore.size(); i++) {
+                for (String line : item.baseLore) {
                     if (ly + 10 > boxY + boxH - NAV_H) break;
-
-                    drawCenteredString(fontRendererObj, item.baseLore.get(i), cx, ly, 0xFFFFFF);
+                    drawCenteredString(fontRendererObj, line, cx, ly, 0xFFFFFF);
                     ly += 10;
                 }
             }
@@ -158,16 +162,16 @@ public class RecipeViewerGUI extends GuiScreen {
             Recipe current = recipes.get(recipeIndex);
 
             String typeLabel = current.typeLabel();
-            String nameStr  = item.displayName != null ? item.displayName : "";
-            ItemStack stack = item.getStack();
+            String nameStr   = item.displayName != null ? item.displayName : "";
+            ItemStack stack  = item.getStack();
 
             int typeW = fontRendererObj.getStringWidth(typeLabel);
             int nameW = fontRendererObj.getStringWidth(nameStr);
             int iconW = stack != null ? 18 : 0;
 
-            int totalW = typeW + (iconW > 0 ? 4 + iconW : 0) + 4 + nameW;
+            int totalW   = typeW + (iconW > 0 ? 4 + iconW : 0) + 4 + nameW;
             int currentX = cx - totalW / 2;
-            int textY = boxY + 12;
+            int textY    = boxY + 12;
 
             fontRendererObj.drawStringWithShadow(typeLabel, currentX, textY, current.typeLabelColor());
             currentX += typeW + 4;
@@ -191,9 +195,8 @@ public class RecipeViewerGUI extends GuiScreen {
             }
 
             List<String> tip = current.getTooltip(mx, my, contentX, contentY, boxW, contentH, scrollY);
-            if (tip != null && !tip.isEmpty()) {
+            if (tip != null && !tip.isEmpty())
                 TextRenderUtils.drawHoveringText(tip, mx, my, fontRendererObj);
-            }
         }
 
         super.drawScreen(mx, my, pt);

@@ -473,7 +473,7 @@ public class ItemPaneRenderer {
                     int sy = dropDy + PAD + (i / cols) * (S() + 2);
                     if (isInBounds(mouseX, mouseY, sx, sy, S(), S())) {
                         if (btn == 1) WikiPane.open(fam.members.get(i));
-                        else mc.displayGuiScreen(new RecipeViewerGUI(fam.members.get(i)));
+                        else mc.displayGuiScreen(new RecipeViewerGUI(fam.members.get(i), mc.currentScreen));
                         if (event != null) event.setCanceled(true);
                         return;
                     }
@@ -490,7 +490,7 @@ public class ItemPaneRenderer {
             if (isInBounds(mouseX, mouseY, sx, sy, S(), S())) {
                 if (btn == 1) WikiPane.open(fam.representative());
                 else if (!fam.hasDropdown() && fam.representative() != null)
-                    mc.displayGuiScreen(new RecipeViewerGUI(fam.representative()));
+                    mc.displayGuiScreen(new RecipeViewerGUI(fam.representative(), mc.currentScreen));
                 if (event != null) event.setCanceled(true);
                 return;
             }
