@@ -28,7 +28,7 @@ public class CurrentPetTracker implements StorageManager.Managed {
     private static final String ACTIVE_LORE = "Click to despawn";
 
     // §cAutopet §eequipped your §7[Lvl 100] §dEnderman§9 ✦§e! §a§lVIEW RULE
-    private static final Pattern AUTOPET = Pattern.compile("§r§cAutopet §r§eequipped your §r§7\\[Lvl (\\d+)] §r§(.)([^§]+?)§r(§. ?✦)?§r§e!(?:§r §a§lVIEW RULE)?§r?");
+    private static final Pattern AUTOPET = Pattern.compile("§r§cAutopet §r§eequipped your §r§7\\[Lvl (\\d+)] §r§(.)([^§]+?)(§r§. ?✦)?§r§e!(?:§r §a§lVIEW RULE)?§r?");
     private static final Pattern LVL_PATTERN = Pattern.compile("^\\[Lvl (\\d+)] (.+)$");
     private static final Pattern SKIN_PATTERN = Pattern.compile("(§. ?✦)");
     private static final Pattern RARITY_PATTERN = Pattern.compile("§7\\[Lvl \\d+] (§.)");
@@ -170,14 +170,15 @@ public class CurrentPetTracker implements StorageManager.Managed {
 
     @SubscribeEvent
     public void onChat(ClientChatReceivedEvent event) {
-        if (ChatUtils.isFromServer(event)) return;
+        if (!ChatUtils.isFromServer(event)) return;
         Matcher am = AUTOPET.matcher(event.message.getFormattedText());
         if (!am.find()) return;
 
         int level = Integer.parseInt(am.group(1));
         String rarity = "§" + am.group(2);
         String petName = normalizePetName(StringUtils.stripControlCodes(am.group(3)).trim());
-        String skinTag = am.group(4) != null ? am.group(4).trim() : "";
+        String rawSkinTag = am.group(4);
+        String skinTag = rawSkinTag != null ? rawSkinTag.replace("§r", "").trim() : "";
 
         if (petName.isEmpty()) return;
         PetCache.getInstance().updateFromChat(petName, level, rarity, skinTag);

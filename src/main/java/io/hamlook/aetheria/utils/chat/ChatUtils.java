@@ -24,7 +24,7 @@ public class ChatUtils {
     }
 
     public static boolean isFromServer(ClientChatReceivedEvent event) {
-        return event.type != 1;
+        return event.type == 0 || event.type == 1;
     }
 
     public static boolean isPartyMessage(String msg) {
