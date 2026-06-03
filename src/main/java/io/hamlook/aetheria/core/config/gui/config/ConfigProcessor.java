@@ -36,16 +36,7 @@ public class ConfigProcessor {
                     ProcessedSubcategory sub = new ProcessedSubcategory(subAnnotation.name(), subAnnotation.desc());
                     cat.subcategories.put(field.getName(), sub);
 
-                    // Scan options inside the sub-config class
-                    for (Field subField : subObj.getClass().getDeclaredFields()) {
-                        if (!subField.isAnnotationPresent(ConfigOption.class)) continue;
-                        ConfigOption opt = subField.getAnnotation(ConfigOption.class);
-                        ProcessedOption option = new ProcessedOption(opt.name(), opt.desc(), opt.subcategoryId(), subField, subObj);
-                        GuiOptionEditor editor = buildEditor(option, subField, config);
-                        if (editor == null) continue;
-                        option.editor = editor;
-                        sub.options.put(subField.getName(), option);
-                    }
+                    processSubcategoryOptions(subObj, sub, config);
                     continue;
                 }
 
@@ -65,6 +56,30 @@ public class ConfigProcessor {
             }
         }
         return processedConfig;
+    }
+
+    private static void processSubcategoryOptions(Object subObj, ProcessedSubcategory sub, Object config) {
+        for (Field subField : subObj.getClass().getDeclaredFields()) {
+            if (subField.isAnnotationPresent(Category.class)) {
+                Object subSubObj;
+                try { subSubObj = subField.get(subObj); } catch (Exception e) { continue; }
+
+                Category subSubAnnotation = subField.getAnnotation(Category.class);
+                ProcessedSubcategory subSub = new ProcessedSubcategory(subSubAnnotation.name(), subSubAnnotation.desc());
+                sub.subcategories.put(subField.getName(), subSub);
+
+                processSubcategoryOptions(subSubObj, subSub, config);
+                continue;
+            }
+
+            if (!subField.isAnnotationPresent(ConfigOption.class)) continue;
+            ConfigOption opt = subField.getAnnotation(ConfigOption.class);
+            ProcessedOption option = new ProcessedOption(opt.name(), opt.desc(), opt.subcategoryId(), subField, subObj);
+            GuiOptionEditor editor = buildEditor(option, subField, config);
+            if (editor == null) continue;
+            option.editor = editor;
+            sub.options.put(subField.getName(), option);
+        }
     }
 
     private static GuiOptionEditor buildEditor(ProcessedOption option, Field field, Object config) {
@@ -122,6 +137,7 @@ public class ConfigProcessor {
         public final String name;
         public final String desc;
         public final LinkedHashMap<String, ProcessedOption> options = new LinkedHashMap<>();
+        public final LinkedHashMap<String, ProcessedSubcategory> subcategories = new LinkedHashMap<>();
 
         public ProcessedSubcategory(String name, String desc) { this.name = name; this.desc = desc; }
     }

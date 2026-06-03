@@ -51,10 +51,7 @@ public class SecretRenderUtils {
             this.category = category;
             this.secretName = secretName;
             this.pos = pos;
-            boolean showFairies = ATHRConfig.feature != null
-                && ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled
-                && ATHRConfig.feature.dungeons.dungeonSecretFinder.showFairySouls;
-            this.collected = "fairysoul".equals(category) && !showFairies;
+            this.collected = false;
         }
     }
 
@@ -100,7 +97,7 @@ public class SecretRenderUtils {
 
     private static String formatSecretName(String secretName) {
         boolean compact = ATHRConfig.feature != null
-            && ATHRConfig.feature.dungeons.dungeonSecretFinder.compactLabels;
+            && ATHRConfig.feature.dungeons.dungeonSecretFinder.toggles.compactLabels;
         if (!compact) return secretName;
         int idx = secretName.indexOf(" - ");
         return idx >= 0 ? secretName.substring(0, idx) : secretName;
@@ -112,17 +109,17 @@ public class SecretRenderUtils {
         boolean sfOn = ATHRConfig.feature != null && ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled;
         if (!sfOn) return;
 
-        Color labelColor = parseConfigColor(ATHRConfig.feature.dungeons.dungeonSecretFinder.labelColor);
-        Color boxColor = parseConfigColor(ATHRConfig.feature.dungeons.dungeonSecretFinder.boxColor);
-        Color waypointColor = parseConfigColor(ATHRConfig.feature.dungeons.dungeonSecretFinder.waypointColor);
-        Color tracerColor = parseConfigColor(ATHRConfig.feature.dungeons.dungeonSecretFinder.tracerColor);
-        boolean showLabels = ATHRConfig.feature.dungeons.dungeonSecretFinder.showLabels;
-        boolean showWaypoints = ATHRConfig.feature.dungeons.dungeonSecretFinder.showWaypoints;
-        boolean showTracer = ATHRConfig.feature.dungeons.dungeonSecretFinder.showTracer;
-        boolean showBoundingBox = ATHRConfig.feature.dungeons.dungeonSecretFinder.showBoundingBox;
-        boolean showBorderBox = ATHRConfig.feature.dungeons.dungeonSecretFinder.showBorderBox;
-        boolean throughWalls = ATHRConfig.feature.dungeons.dungeonSecretFinder.showThroughWalls;
-        double labelScale = ATHRConfig.feature.dungeons.dungeonSecretFinder.labelScale;
+        Color labelColor = parseConfigColor(ATHRConfig.feature.dungeons.dungeonSecretFinder.colors.labelColor);
+        Color boxColor = parseConfigColor(ATHRConfig.feature.dungeons.dungeonSecretFinder.colors.boxColor);
+        Color waypointColor = parseConfigColor(ATHRConfig.feature.dungeons.dungeonSecretFinder.colors.waypointColor);
+        Color tracerColor = parseConfigColor(ATHRConfig.feature.dungeons.dungeonSecretFinder.colors.tracerColor);
+        boolean showLabels = ATHRConfig.feature.dungeons.dungeonSecretFinder.toggles.showLabels;
+        boolean showWaypoints = ATHRConfig.feature.dungeons.dungeonSecretFinder.toggles.showWaypoints;
+        boolean showTracer = ATHRConfig.feature.dungeons.dungeonSecretFinder.toggles.showTracer;
+        boolean showBoundingBox = ATHRConfig.feature.dungeons.dungeonSecretFinder.toggles.showBoundingBox;
+        boolean showBorderBox = ATHRConfig.feature.dungeons.dungeonSecretFinder.toggles.showBorderBox;
+        boolean throughWalls = ATHRConfig.feature.dungeons.dungeonSecretFinder.toggles.showThroughWalls;
+        double labelScale = ATHRConfig.feature.dungeons.dungeonSecretFinder.other.labelScale;
 
         double vx = mc.getRenderManager().viewerPosX;
         double vy = mc.getRenderManager().viewerPosY;
@@ -185,7 +182,8 @@ public class SecretRenderUtils {
             int bx = (int) Math.floor(nearest.aabb.minX);
             int by = (int) Math.floor(nearest.aabb.minY);
             int bz = (int) Math.floor(nearest.aabb.minZ);
-            WorldRenderUtils.drawTracer(new Vec3(bx, by, bz), partialTicks, tracerColor);
+            float tracerWidth = ATHRConfig.feature.dungeons.dungeonSecretFinder.other.tracerWidth;
+            WorldRenderUtils.drawTracer(new Vec3(bx, by, bz), partialTicks, tracerColor, tracerWidth);
         }
 
         setDepth(true);
@@ -263,17 +261,17 @@ public class SecretRenderUtils {
             double dz = mc.thePlayer.posZ - (sw.pos.getZ() + 0.5);
             double horizDist = Math.sqrt(dx * dx + dz * dz);
 
-            double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.entranceRemovalRange;
+            double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.entranceRemovalRange;
             if (horizDist <= range) {
                 sw.collected = true;
             }
         }
 
-        int intervalTicks = (int) (ATHRConfig.feature.dungeons.dungeonSecretFinder.updateInterval * 20);
+        int intervalTicks = (int) (ATHRConfig.feature.dungeons.dungeonSecretFinder.other.updateInterval * 20);
         periodicTickCounter++;
         if (periodicTickCounter >= intervalTicks) {
             periodicTickCounter = 0;
-            double itemRange = ATHRConfig.feature.dungeons.dungeonSecretFinder.itemRemovalRange;
+            double itemRange = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.itemRemovalRange;
             for (SecretWaypoint sw : currentSecrets) {
                 if (sw.collected) continue;
                 if ("wither".equals(sw.category) || sw.secretName.contains("Essence")) {
@@ -308,7 +306,7 @@ public class SecretRenderUtils {
                     sw.collected = true;
                 }
             } else {
-                double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.itemRemovalRange;
+                double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.itemRemovalRange;
                 for (SecretWaypoint sw : currentSecrets) {
                     if (sw.collected || !"item".equals(sw.category)) continue;
                     double dist = mc.thePlayer.getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
@@ -327,7 +325,7 @@ public class SecretRenderUtils {
 
         BlockPos clickedPos = event.pos;
 
-        double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.interactRemovalRange;
+        double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.interactRemovalRange;
 
         for (SecretWaypoint sw : currentSecrets) {
             if (sw.collected) continue;
@@ -370,7 +368,7 @@ public class SecretRenderUtils {
         for (SecretWaypoint sw : currentSecrets) {
             if (sw.collected || !"superboom".equals(sw.category)) continue;
 
-            double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.superboomRemovalRange;
+            double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.superboomRemovalRange;
             double dist = tnt.getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
             if (dist <= range) {
                 sw.collected = true;

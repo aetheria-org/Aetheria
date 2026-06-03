@@ -90,7 +90,6 @@ public class DungeonRoomDetector {
             DungeonRoomOverlay.currentRoomName = null;
             DungeonRoomOverlay.currentRoomCategory = null;
             DungeonRoomOverlay.currentRoomNotes = null;
-            DungeonRoomOverlay.currentRoomHasFairySoul = false;
             lastRoomHash = null;
             lastRoomJson = null;
             resetOrigin();
@@ -176,8 +175,6 @@ public class DungeonRoomDetector {
                         DungeonRoomOverlay.currentRoomCategory = null;
                         DungeonRoomOverlay.currentRoomNotes = null;
                     }
-                    DungeonRoomOverlay.currentRoomHasFairySoul = false;
-
                     lastRoomJson = null;
                     resetOrigin();
                     return;
@@ -234,8 +231,6 @@ public class DungeonRoomDetector {
 
         DungeonRoomOverlay.currentRoomCategory = room.get("category").getAsString();
         DungeonRoomOverlay.currentRoomName = name;
-        DungeonRoomOverlay.currentRoomHasFairySoul = room.has("fairysoul");
-
         JsonElement notes = room.get("notes");
         DungeonRoomOverlay.currentRoomNotes = (notes != null) ? notes.getAsString() : null;
     }
@@ -621,10 +616,13 @@ public class DungeonRoomDetector {
         if (DungeonRoomOverlay.currentRoomName == null) return;
         if (roomCeilingY <= 0 || roomFloorY < 0) return;
 
+        float tracerWidth = ATHRConfig.feature != null
+            && ATHRConfig.feature.dungeons.dungeonSecretFinder != null
+            ? ATHRConfig.feature.dungeons.dungeonSecretFinder.other.tracerWidth : 2.0f;
         WorldRenderUtils.drawSelectionBox(new AxisAlignedBB(
             roomMinX, roomFloorY, roomMinZ,
             roomMaxX + 1, roomCeilingY + 1, roomMaxZ + 1
-        ), new Color(0, 200, 255, 120), 2f);
+        ), new Color(0, 200, 255, 120), tracerWidth);
 
         if (originBlock == null) return;
 
@@ -632,7 +630,7 @@ public class DungeonRoomDetector {
         double vy = Minecraft.getMinecraft().getRenderManager().viewerPosY;
         double vz = Minecraft.getMinecraft().getRenderManager().viewerPosZ;
 
-        drawEspBoxTranslated(originBlock.getX(), originBlock.getY(), originBlock.getZ(), new Color(180, 0, 255, 200), vx, vy, vz);
+        drawEspBoxTranslated(originBlock.getX(), originBlock.getY(), originBlock.getZ(), new Color(180, 0, 255, 200), vx, vy, vz, tracerWidth);
 
         if (ATHRConfig.feature != null && ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled) {
             displayedSecretCount = SecretRenderUtils.getActiveSecretCount();
@@ -640,7 +638,7 @@ public class DungeonRoomDetector {
         }
     }
 
-    private void drawEspBoxTranslated(double x, double y, double z, Color color, double vx, double vy, double vz) {
+    private void drawEspBoxTranslated(double x, double y, double z, Color color, double vx, double vy, double vz, float lineWidth) {
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glDisable(GL11.GL_LIGHTING);
@@ -648,7 +646,7 @@ public class DungeonRoomDetector {
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDepthMask(false);
-        GL11.glLineWidth(2f);
+        GL11.glLineWidth(lineWidth);
         GL11.glPushMatrix();
         GL11.glTranslated(-vx, -vy, -vz);
         WorldRenderUtils.drawEspBox(x, y, z, color);

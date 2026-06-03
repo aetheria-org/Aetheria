@@ -40,6 +40,10 @@ public final class WorldRenderUtils {
     }
 
     public static void drawTracer(Vec3 target, float partialTicks, Color color) {
+        drawTracer(target, partialTicks, color, 2f);
+    }
+
+    public static void drawTracer(Vec3 target, float partialTicks, Color color, float lineWidth) {
         if (mc.thePlayer == null) return;
 
         double vx = mc.getRenderManager().viewerPosX;
@@ -56,7 +60,7 @@ public final class WorldRenderUtils {
         GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         GlStateManager.disableDepth();
         GL11.glDepthMask(false);
-        GL11.glLineWidth(2f);
+        GL11.glLineWidth(lineWidth);
 
         GL11.glPushMatrix();
         GL11.glTranslated(-vx, -vy, -vz);

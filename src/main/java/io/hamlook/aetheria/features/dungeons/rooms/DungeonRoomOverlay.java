@@ -20,7 +20,6 @@ public class DungeonRoomOverlay extends Overlay {
     public static String currentRoomName = null;
     public static String currentRoomCategory = null;
     public static String currentRoomNotes = null;
-    public static boolean currentRoomHasFairySoul = false;
     @Getter
     private static DungeonRoomOverlay instance;
 
@@ -77,11 +76,8 @@ public class DungeonRoomOverlay extends Overlay {
             String categoryColor = getCategoryColor(currentRoomCategory);
             out.add(EnumChatFormatting.GRAY + "Category  " + categoryColor + (currentRoomCategory != null ? currentRoomCategory : "Unknown"));
 
-            // Line 2: room name, with optional fairy soul indicator
+            // Line 2: room name
             String nameLine = EnumChatFormatting.WHITE + "❖  " + EnumChatFormatting.AQUA + currentRoomName;
-            if (currentRoomHasFairySoul) {
-                nameLine += "  " + EnumChatFormatting.DARK_PURPLE + "✿";
-            }
             out.add(nameLine);
 
             // Line 3: rotation and origin corner — only when detected
