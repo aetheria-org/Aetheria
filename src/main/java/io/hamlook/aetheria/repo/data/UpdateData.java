@@ -6,7 +6,7 @@ public class UpdateData {
 
     @SerializedName("version")
     public String version = "0.0.0";
-    
+
     @SerializedName("update_msg")
     public String updateMsg = "";
 

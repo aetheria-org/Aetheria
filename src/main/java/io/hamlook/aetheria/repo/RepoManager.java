@@ -1,6 +1,8 @@
 package io.hamlook.aetheria.repo;
 
 import com.google.gson.GsonBuilder;
+import io.hamlook.aetheria.utils.HttpClient;
+import io.hamlook.aetheria.utils.JsonCache;
 
 import java.lang.reflect.Type;
 import java.util.List;
@@ -8,7 +10,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RepoManager {
-    private final HttpFetcher http = new HttpFetcher();
+    private final HttpClient http = new HttpClient();
     private final JsonCache cache = new JsonCache(new GsonBuilder().create());
     private final ConcurrentMap<String, Source> sources = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, List<Runnable>> listeners = new ConcurrentHashMap<>();
@@ -58,7 +60,7 @@ public class RepoManager {
         if (src == null || !src.claim()) return;
         pool.execute(() -> {
             try {
-                HttpFetcher.FetchResult result = http.fetch(src.url, src.etag);
+                HttpClient.FetchResult result = http.fetch(src.url, src.etag);
                 if (result.modified() && result.body() != null) {
                     src.etag = result.etag();
                     cache.store(key, result.body());

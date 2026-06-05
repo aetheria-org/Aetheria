@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.repo;
+package io.hamlook.aetheria.utils;
 
 import com.google.gson.Gson;
 

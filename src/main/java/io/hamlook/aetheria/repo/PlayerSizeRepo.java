@@ -2,6 +2,7 @@ package io.hamlook.aetheria.repo;
 
 import com.google.gson.reflect.TypeToken;
 import io.hamlook.aetheria.repo.data.PlayerSizeData;
+import io.hamlook.aetheria.utils.NameUtils;
 
 import java.lang.reflect.Type;
 import java.util.List;

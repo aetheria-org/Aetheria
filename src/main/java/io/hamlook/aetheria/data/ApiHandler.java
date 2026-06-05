@@ -3,16 +3,13 @@ package io.hamlook.aetheria.data;
 import com.google.gson.Gson;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.HttpClient;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,72 +17,44 @@ import java.util.stream.Collectors;
 
 public class ApiHandler {
 
-    private static final String API_URL = "https://raw.githubusercontent.com/aetheria-org/Aetheria/main/data/repo.json";
+    private static final String CONFIG_URL = "https://raw.githubusercontent.com/aetheria-org/Aetheria/main/data/repo.json";
     private static final Gson GSON = new Gson();
-    private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+    private static final HttpClient HTTP = new HttpClient();
+    private static final ExecutorService POOL = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "ATHR-Analytics");
         t.setDaemon(true);
         return t;
     });
 
-    private ApiHandler() {}
+    private ApiHandler() {
+    }
 
     public static void onServerJoin() {
         if (ATHRConfig.feature == null) return;
-
-        EXECUTOR.submit(() -> {
-            try {
-                String apiUrl = fetchApiUrl();
-                if (apiUrl == null || apiUrl.isEmpty()) return;
-
-                String username = Minecraft.getMinecraft().getSession().getUsername();
-                List<String> modList = Loader.instance().getModList().stream()
-                        .map(ModContainer::getModId)
-                        .collect(Collectors.toList());
-
-                String json = GSON.toJson(new Payload(username, modList, Aetheria.VERSION));
-                sendPost(apiUrl, json);
-            } catch (Exception ignored) {}
-        });
+        POOL.submit(ApiHandler::sendAnalytics);
     }
 
-    private static String fetchApiUrl() {
+    private static void sendAnalytics() {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(API_URL).openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(5000);
-
-            StringBuilder sb = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) sb.append(line);
-            }
-            conn.disconnect();
-
-            RemoteConfig config = GSON.fromJson(sb.toString(), RemoteConfig.class);
-            if (config == null || config.apiUrl == null) return null;
-
-            // decode from Base64
-            return new String(java.util.Base64.getDecoder().decode(config.apiUrl), StandardCharsets.UTF_8);
+            String target = resolveEndpoint();
+            if (target == null || target.isEmpty()) return;
+            HTTP.post(target, buildPayload(), "application/json; charset=utf-8");
         } catch (Exception ignored) {
-            return null;
         }
     }
 
-    private static void sendPost(String apiUrl, String json) throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) new URL(apiUrl).openConnection();
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-        conn.setConnectTimeout(5000);
-        conn.setReadTimeout(5000);
-        conn.setDoOutput(true);
-        try (OutputStream os = conn.getOutputStream()) {
-            os.write(json.getBytes(StandardCharsets.UTF_8));
-        }
-        conn.getResponseCode();
-        conn.disconnect();
+    private static String resolveEndpoint() throws Exception {
+        HttpClient.FetchResult result = HTTP.fetch(CONFIG_URL, null);
+        if (result.body() == null) return null;
+        RemoteConfig cfg = GSON.fromJson(result.body(), RemoteConfig.class);
+        if (cfg == null || cfg.apiUrl == null) return null;
+        return new String(Base64.getDecoder().decode(cfg.apiUrl), StandardCharsets.UTF_8);
+    }
+
+    private static String buildPayload() {
+        String username = Minecraft.getMinecraft().getSession().getUsername();
+        List<String> mods = Loader.instance().getModList().stream().map(ModContainer::getModId).collect(Collectors.toList());
+        return GSON.toJson(new Payload(username, mods, Aetheria.VERSION));
     }
 
     private static class RemoteConfig {

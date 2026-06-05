@@ -1,12 +1,13 @@
-package io.hamlook.aetheria.repo;
+package io.hamlook.aetheria.utils;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
-public class HttpFetcher {
+public class HttpClient {
     private static final int TIMEOUT_MS = 5000;
     private static final String USER_AGENT = "ATHR/1.0 (Minecraft 1.8.9)";
 
@@ -36,6 +37,20 @@ public class HttpFetcher {
         String newEtag = conn.getHeaderField("ETag");
         String body = readAll(conn);
         return new FetchResult(body, newEtag != null ? newEtag : etag, true);
+    }
+
+    public void post(String url, String body, String contentType) throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", contentType);
+        conn.setConnectTimeout(TIMEOUT_MS);
+        conn.setReadTimeout(TIMEOUT_MS);
+        conn.setDoOutput(true);
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(body.getBytes(StandardCharsets.UTF_8));
+        }
+        conn.getResponseCode();
+        conn.disconnect();
     }
 
     public static class FetchResult {
