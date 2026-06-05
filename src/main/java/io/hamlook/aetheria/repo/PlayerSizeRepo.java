@@ -1,5 +1,3 @@
-// Credit: NotEnoughFakepixel (https://github.com/davidbelesp/NotEnoughFakepixel)
-
 package io.hamlook.aetheria.repo;
 
 import com.google.gson.reflect.TypeToken;
