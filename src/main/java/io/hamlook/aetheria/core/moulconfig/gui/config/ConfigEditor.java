@@ -393,13 +393,12 @@ public class ConfigEditor extends GuiElement {
 
             boolean catHasOptions = getOptionsInCategory(cat).values().stream().anyMatch(o -> o.editor != null);
             String catName = isSelectedRoot && !catHasOptions && selectedSubcategoryPath.isEmpty() ? EnumChatFormatting.DARK_AQUA + "" + EnumChatFormatting.UNDERLINE + cat.name : (isSelectedRoot ? EnumChatFormatting.AQUA + cat.name : EnumChatFormatting.GRAY + cat.name);
-            int catCenterX = (x + innerPadding + 12 + x + 189 + innerPadding - 10) / 2;
-            fr.drawString(catName, catCenterX - fr.getStringWidth(catName) / 2, y + 70 + catY, -1);
+            fr.drawString(catName, innerLeft + 9 + BASE_INDENT, y + 70 + catY, -1);
             catY += 15;
 
             if (isSelectedRoot) {
                 Set<List<String>> paths = getExpandedPaths(catKey);
-                catY = renderSubTree(cat.subcategories, cat, paths, 1, catY, y, innerLeft, fr);
+                catY = renderSubTree(cat.subcategories, cat, paths, 1, catY, y, innerLeft, fr, new ArrayList<String>());
             }
 
             if (catY > 0) {
@@ -544,7 +543,7 @@ public class ConfigEditor extends GuiElement {
         GlStateManager.translate(0, 0, -2);
     }
 
-    private int renderSubTree(LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subs, Object parent, Set<List<String>> expandedPaths, int depth, int catY, int y, int innerLeft, FontRenderer fr) {
+    private int renderSubTree(LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subs, Object parent, Set<List<String>> expandedPaths, int depth, int catY, int y, int innerLeft, FontRenderer fr, List<String> parentPath) {
         List<Map.Entry<String, ConfigProcessor.ProcessedSubcategory>> visible = getVisibleSubcategories(subs, parent, depth);
         int lineX = innerLeft + 9 + BASE_INDENT + TREE_INDENT * (depth - 1);
         int textBaseX = innerLeft + 9 + BASE_INDENT + TREE_INDENT * depth;
@@ -560,7 +559,9 @@ public class ConfigEditor extends GuiElement {
             lastChildCenterY = itemCenterY;
             currentCatY += 13;
             if (isPathExpanded(expandedPaths, subEntry.getKey(), depth) && !subEntry.getValue().subcategories.isEmpty()) {
-                currentCatY = renderSubTree(subEntry.getValue().subcategories, subEntry.getValue(), expandedPaths, depth + 1, currentCatY, y, innerLeft, fr);
+                parentPath.add(subEntry.getKey());
+                currentCatY = renderSubTree(subEntry.getValue().subcategories, subEntry.getValue(), expandedPaths, depth + 1, currentCatY, y, innerLeft, fr, parentPath);
+                parentPath.remove(parentPath.size() - 1);
             }
         }
 
@@ -570,13 +571,17 @@ public class ConfigEditor extends GuiElement {
         }
 
         currentCatY = catY;
+        int pathSize = parentPath.size();
         for (Map.Entry<String, ConfigProcessor.ProcessedSubcategory> subEntry : visible) {
             boolean inPath = isPathExpanded(expandedPaths, subEntry.getKey(), depth);
-            boolean isDeepest = isPathDeepest(expandedPaths, subEntry.getKey(), depth);
             int itemCenterY = y + 70 + currentCatY;
 
             int hColor = inPath ? 0xff00b8b8 : 0xff606060;
             Gui.drawRect(lineX, itemCenterY + 4, textBaseX - 2, itemCenterY + 5, hColor);
+
+            parentPath.add(subEntry.getKey());
+            boolean isDeepest = selectedSubcategoryPath.equals(parentPath);
+            parentPath.remove(pathSize);
 
             boolean hasChildren = !subEntry.getValue().subcategories.isEmpty();
             String indicator = hasChildren ? (inPath ? "▼ " : "▶ ") : "  ";
@@ -586,7 +591,9 @@ public class ConfigEditor extends GuiElement {
             currentCatY += 13;
 
             if (inPath && hasChildren) {
-                currentCatY = renderSubTree(subEntry.getValue().subcategories, subEntry.getValue(), expandedPaths, depth + 1, currentCatY, y, innerLeft, fr);
+                parentPath.add(subEntry.getKey());
+                currentCatY = renderSubTree(subEntry.getValue().subcategories, subEntry.getValue(), expandedPaths, depth + 1, currentCatY, y, innerLeft, fr, parentPath);
+                parentPath.remove(parentPath.size() - 1);
             }
         }
 
@@ -665,8 +672,8 @@ public class ConfigEditor extends GuiElement {
                 } else {
                     int optionY = -optionsScroll.getValue() + computeOptionHeight();
                     int visibleHeight = innerBottom - innerTop - 2;
-                    int maxScroll = Math.max(0, optionY + 5 + optionsScroll.getValue() - visibleHeight);
-                    int newScroll = Math.max(0, Math.min((int) ((mouseY - innerTop - 6) / (float) dist * (optionY + 5 + optionsScroll.getValue())), maxScroll));
+                    int maxScroll = Math.max(0, optionY + optionsScroll.getValue() - visibleHeight);
+                    int newScroll = Math.max(0, Math.min((int) ((mouseY - innerTop - 6) / (float) dist * (optionY + optionsScroll.getValue())), maxScroll));
                     optionsScroll.setValue(newScroll);
                     optionsScroll.setTarget(newScroll);
                 }
@@ -680,8 +687,8 @@ public class ConfigEditor extends GuiElement {
                 } else {
                     int catY = -categoryScroll.getValue() + computeCategoryHeight();
                     int visibleHeight = innerBottom - innerTop - 2;
-                    int maxScroll = Math.max(0, catY + 5 + categoryScroll.getValue() - visibleHeight);
-                    int newScroll = Math.max(0, Math.min((int) ((mouseY - innerTop - 6) / (float) dist * (catY + 5 + categoryScroll.getValue())), maxScroll));
+                    int maxScroll = Math.max(0, catY + categoryScroll.getValue() - visibleHeight);
+                    int newScroll = Math.max(0, Math.min((int) ((mouseY - innerTop - 6) / (float) dist * (catY + categoryScroll.getValue())), maxScroll));
                     categoryScroll.setValue(newScroll);
                     categoryScroll.setTarget(newScroll);
                 }
@@ -714,8 +721,8 @@ public class ConfigEditor extends GuiElement {
 
                 int catContent = computeCategoryHeight();
                 int catY = -newTarget + catContent;
-                float catBarSize = catY > 0 ? LerpUtils.clampZeroOne((float) (innerBottom - innerTop - 2) / (catY + 5 + newTarget)) : 1;
-                int barMax = (int) Math.floor((catY + 5 + newTarget) - catBarSize * (catY + 5 + newTarget));
+                float catBarSize = catY > 0 ? LerpUtils.clampZeroOne((float) (innerBottom - innerTop - 2) / (catY + newTarget)) : 1;
+                int barMax = (int) Math.floor((catY + newTarget) - catBarSize * (catY + newTarget));
                 if (newTarget > barMax) newTarget = barMax;
                 categoryScroll.setValue(newTarget);
             } else {
@@ -846,14 +853,6 @@ public class ConfigEditor extends GuiElement {
         if (paths == null) return false;
         for (List<String> path : paths) {
             if (path.size() >= depth && path.get(depth - 1).equals(key)) return true;
-        }
-        return false;
-    }
-
-    private boolean isPathDeepest(Set<List<String>> paths, String key, int depth) {
-        if (paths == null) return false;
-        for (List<String> path : paths) {
-            if (path.size() == depth && path.get(depth - 1).equals(key)) return true;
         }
         return false;
     }
