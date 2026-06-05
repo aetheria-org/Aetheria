@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.features.misc.timer;
 
-import io.hamlook.aetheria.command.SimpleCommand;
+import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.time.TimeFormatter;
@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 
 
 @RegisterCommand
-public class TimerCommand extends SimpleCommand {
+public class TimerCommand extends ASMCommand {
 
     private static final Pattern TIME_PATTERN = Pattern.compile("(\\d+)([dhms])", Pattern.CASE_INSENSITIVE);
 

@@ -1,11 +1,11 @@
 package io.hamlook.aetheria.features.misc
 
-import io.hamlook.aetheria.command.SimpleCommand
+import io.hamlook.aetheria.command.ASMCommand
 import io.hamlook.aetheria.init.RegisterCommand
 import net.minecraft.command.ICommandSender
 
 @RegisterCommand
-class PretendThisDoesntExist : SimpleCommand() {
+class PretendThisDoesntExist : ASMCommand() {
     
     override fun getName() = "ATHRthisisatestdontusethispls"
     

@@ -9,7 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Arrays;
 import java.util.List;
 
-public class Command extends SimpleCommand {
+public class Command extends ASMCommand {
 
     @Override
     public String getName() { return "athr"; }

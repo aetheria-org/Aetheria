@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.features.waypoints;
 
-import io.hamlook.aetheria.command.SimpleCommand;
+import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.init.RegisterCommand;
 import net.minecraft.client.Minecraft;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @RegisterCommand
-public class WaypointCommand extends SimpleCommand {
+public class WaypointCommand extends ASMCommand {
 
     public static final String PREFIX = "§3[ATHRW]§b ";
     private static final Minecraft mc = Minecraft.getMinecraft();

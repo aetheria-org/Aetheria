@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.features.mining.pristine;
 
-import io.hamlook.aetheria.command.SimpleCommand;
+import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 
 @RegisterCommand
-public class PristineCommand extends SimpleCommand {
+public class PristineCommand extends ASMCommand {
 
     private static final String PREFIX = EnumChatFormatting.LIGHT_PURPLE + "[Pristine] " + EnumChatFormatting.RESET;
 

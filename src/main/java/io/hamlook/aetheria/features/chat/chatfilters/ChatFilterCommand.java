@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.features.chat.chatfilters;
 
-import io.hamlook.aetheria.command.SimpleCommand;
+import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.chatfilters.ui.ChatFilterGUI;
 import io.hamlook.aetheria.init.RegisterCommand;
@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @RegisterCommand
-public class ChatFilterCommand extends SimpleCommand {
+public class ChatFilterCommand extends ASMCommand {
     @Override
     public String getName() {
         return "chatfilters";

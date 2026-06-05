@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.features.misc.protect
 
-import io.hamlook.aetheria.command.SimpleCommand
+import io.hamlook.aetheria.command.ASMCommand
 import io.hamlook.aetheria.init.RegisterCommand
 import io.hamlook.aetheria.utils.chat.ChatUtils
 import io.hamlook.aetheria.utils.item.ItemUtils
@@ -10,7 +10,7 @@ import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.util.BlockPos
 
 @RegisterCommand
-class ProtectItemCommand : SimpleCommand() {
+class ProtectItemCommand : ASMCommand() {
 
     companion object {
         private val mc = Minecraft.getMinecraft()

@@ -1,6 +1,6 @@
 package io.hamlook.aetheria;
 
-import io.hamlook.aetheria.command.SimpleCommand;
+import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
@@ -22,7 +22,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 @RegisterCommand
-public class SyncCommand extends SimpleCommand {
+public class SyncCommand extends ASMCommand {
 
     private static final String MOD_SECRET = "a7c0e73c-3b0b-4789-8c80-741dd09ba1bc";
     private static String SYNC_CODE = "";

@@ -7,21 +7,20 @@ import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.util.Locale;
-
 @RegisterEvents
-public class SimpleCommandFilter {
+public class CommandIntercept {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onChat(ClientChatReceivedEvent event) {
         String msg = String.valueOf(event.message);
-        if (msg == null || msg.isEmpty()) return;
-        if (msg.charAt(0) == '/') return;
+        String firstWord = CommandRegistry.firstWordOf(msg);
+        if (CommandRegistry.isRegistered(firstWord)) {
+            event.setCanceled(true);
+            redirectToCommand(msg);
+        }
+    }
 
-        String firstWord = msg.split(" ")[0].toLowerCase(Locale.ROOT);
-        if (!SimpleCommand.getSlashOnlyNames().contains(firstWord)) return;
-
-        event.setCanceled(true);
+    private static void redirectToCommand(String msg) {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.thePlayer != null) {
             ChatUtils.sendChatCommand("/" + msg);

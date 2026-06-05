@@ -5,19 +5,13 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
 
-public abstract class SimpleCommand extends CommandBase {
+public abstract class ASMCommand extends CommandBase {
 
-    private static final Set<String> SLASH_ONLY = new HashSet<>();
-
-    protected SimpleCommand() {
-        SLASH_ONLY.add(getName().toLowerCase(Locale.ROOT));
-        if (getAliases() != null) {
-            for (String alias : getAliases()) {
-                SLASH_ONLY.add(alias.toLowerCase(Locale.ROOT));
-            }
-        }
+    protected ASMCommand() {
+        CommandRegistry.register(getName(), getAliases());
     }
 
     public abstract String getName();
@@ -43,6 +37,4 @@ public abstract class SimpleCommand extends CommandBase {
         execute(sender, args);
     }
 
-    public static Set<String> getSlashOnlyNames() { return Collections.unmodifiableSet(SLASH_ONLY); }
-    public static boolean isSlashOnly(String cmd)  { return cmd != null && SLASH_ONLY.contains(cmd.toLowerCase(Locale.ROOT)); }
 }

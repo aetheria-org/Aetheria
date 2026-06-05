@@ -1,14 +1,14 @@
 package io.hamlook.aetheria.features.misc.invbuttons;
 
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.command.SimpleCommand;
+import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import net.minecraft.command.ICommandSender;
 import java.util.Arrays;
 import java.util.List;
 
 @RegisterCommand
-public class InvButtonsCommand extends SimpleCommand {
+public class InvButtonsCommand extends ASMCommand {
     @Override
     public String getName() { return "athrbuttons"; }
 

@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.features.misc;
 
-import io.hamlook.aetheria.command.SimpleCommand;
+import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.CalculatorUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @RegisterCommand
-public class CalcCommand extends SimpleCommand {
+public class CalcCommand extends ASMCommand {
 
     private static final String PREFIX = EnumChatFormatting.AQUA + "[ATHR] " + EnumChatFormatting.RESET;
 

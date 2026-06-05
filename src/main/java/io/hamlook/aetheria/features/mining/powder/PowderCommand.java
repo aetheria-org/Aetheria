@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.features.mining.powder;
 
-import io.hamlook.aetheria.command.SimpleCommand;
+import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 
 @RegisterCommand
-public class PowderCommand extends SimpleCommand {
+public class PowderCommand extends ASMCommand {
 
     private static final String PREFIX = EnumChatFormatting.AQUA + "[Powder] " + EnumChatFormatting.RESET;
 

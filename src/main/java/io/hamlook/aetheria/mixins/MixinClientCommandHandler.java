@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.mixins;
 
-import io.hamlook.aetheria.command.SimpleCommand;
+import io.hamlook.aetheria.command.CommandRegistry;
 import net.minecraft.command.ICommandSender;
 import net.minecraftforge.client.ClientCommandHandler;
 import org.spongepowered.asm.mixin.Mixin;
@@ -8,19 +8,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/// Thanks to NEF for providing this mixin
-
 @Mixin(ClientCommandHandler.class)
 public class MixinClientCommandHandler {
 
     @Inject(method = "executeCommand", at = @At("HEAD"), cancellable = true)
     private void requireSlash(ICommandSender sender, String input, CallbackInfoReturnable<Integer> cir) {
-        if (input == null) return;
-        String msg = input.trim();
-        if (msg.isEmpty() || msg.charAt(0) == '/') return;
-        int sp = msg.indexOf(' ');
-        String first = sp == -1 ? msg : msg.substring(0, sp);
-        if (SimpleCommand.isSlashOnly(first)) {
+        String first = CommandRegistry.firstWordOf(input);
+        if (CommandRegistry.isRegistered(first)) {
             cir.setReturnValue(0);
             cir.cancel();
         }

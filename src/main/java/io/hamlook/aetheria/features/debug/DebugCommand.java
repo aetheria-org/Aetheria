@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.features.debug;
 
-import io.hamlook.aetheria.command.SimpleCommand;
+import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiPlayerTabOverlay;
@@ -18,7 +18,7 @@ import java.util.Collections;
 import java.util.List;
 
 @RegisterCommand
-public class DebugCommand extends SimpleCommand {
+public class DebugCommand extends ASMCommand {
 
     private static final String PREFIX = EnumChatFormatting.GRAY + "[ATHR Debug] " + EnumChatFormatting.RESET;
 
