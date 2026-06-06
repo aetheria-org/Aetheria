@@ -334,7 +334,7 @@ public class ModInstaller {
                     HttpURLConnection conn = (HttpURLConnection) new URL(modLinksUrl).openConnection();
                     conn.setRequestProperty("User-Agent", "Aetheria-Installer");
                     InputStreamReader reader = new InputStreamReader(conn.getInputStream());
-                    JsonObject root = new JsonParser().parse(reader).getAsJsonObject();
+                    JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
                     reader.close();
 
                     for (Map.Entry<String, JsonElement> entry : root.entrySet()) {
@@ -717,7 +717,7 @@ public class ModInstaller {
             conn.setRequestProperty("User-Agent", "Aetheria-Installer");
 
             InputStreamReader reader = new InputStreamReader(conn.getInputStream());
-            JsonElement root = new JsonParser().parse(reader);
+            JsonElement root = JsonParser.parseReader(reader);
             reader.close();
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
