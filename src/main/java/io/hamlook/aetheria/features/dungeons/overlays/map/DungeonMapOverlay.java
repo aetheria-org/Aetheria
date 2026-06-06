@@ -25,6 +25,7 @@ import net.minecraft.world.storage.MapData;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
+import io.hamlook.aetheria.Aetheria;
 
 import java.util.Collections;
 import java.util.List;
@@ -88,7 +89,7 @@ public class DungeonMapOverlay extends Overlay {
             );
             if (players.isEmpty()) return;
             if(!ATHRConfig.feature.dungeons.dungeonMapConfig.showPlayerHead){
-                drawMarkers(info.mapDecorations,x,y);
+                drawMarkers(info.mapDecorations);
             }
             for (EntityPlayerSP playerSP : players) {
                 int worldX = -1 * (playerSP.getPosition().getX() + 6);
@@ -113,32 +114,34 @@ public class DungeonMapOverlay extends Overlay {
         GL11.glPopMatrix();
     }
 
-    private void drawMarkers(Map<String, Vec4b> mapDecorations) {
+    private void drawMarkers(Map<String, Vec4b> decorations) {
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer worldRenderer = tessellator.getWorldRenderer();
         Minecraft.getMinecraft().getTextureManager().bindTexture(Resources.DEFAULT_MAP_ICONS);
-        int k = 0;
-        for(Vec4b vec4b : mapDecorations.values()) {
-            if (vec4b.func_176110_a() == 1) {
+                Aetheria.logger.info("[DungeonMapOverlay] Rendering " + decorations.size() + " map decorations.");
+        int layer = 0;
+        for (Vec4b decoration : decorations.values()) {
+                            if (decoration.func_176110_a() == 1) {
+                Aetheria.logger.info("[DungeonMapOverlay] Rendering marker type=" + decoration.func_176110_a() + " at (" + decoration.func_176112_b() + ", " + decoration.func_176113_c() + ") rotation=" + decoration.func_176111_d());
                 GlStateManager.pushMatrix();
-                GlStateManager.translate((float)vec4b.func_176112_b() / 2.0F + 64.0F, (float)vec4b.func_176113_c() / 2.0F + 64.0F, -0.02F);
-                GlStateManager.rotate((float)(vec4b.func_176111_d() * 360) / 16.0F, 0.0F, 0.0F, 1.0F);
+                GlStateManager.translate((float)decoration.func_176112_b() / 2.0F + 64.0F, (float)decoration.func_176113_c() / 2.0F + 64.0F, -0.02F);
+                GlStateManager.rotate((float)(decoration.func_176111_d() * 360) / 16.0F, 0.0F, 0.0F, 1.0F);
                 GlStateManager.scale(4.0F, 4.0F, 3.0F);
                 GlStateManager.translate(-0.125F, 0.125F, 0.0F);
-                byte b = vec4b.func_176110_a();
-                float g = (float)(b % 4) / 4.0F;
-                float h = (float)(b / 4) / 4.0F;
-                float l = (float)(b % 4 + 1) / 4.0F;
-                float m = (float)(b / 4 + 1) / 4.0F;
+                byte iconId = decoration.func_176110_a();
+                float uStart = (float)(iconId % 4) / 4.0F;
+                float vStart = (float)(iconId / 4) / 4.0F;
+                float uEnd = (float)(iconId % 4 + 1) / 4.0F;
+                float vEnd = (float)(iconId / 4 + 1) / 4.0F;
                 worldRenderer.begin(7, DefaultVertexFormats.POSITION_TEX);
-                float n = -0.001F;
-                worldRenderer.pos((double)-1.0F, (double)1.0F, (double)((float)k * -0.001F)).tex((double)g, (double)h).endVertex();
-                worldRenderer.pos((double)1.0F, (double)1.0F, (double)((float)k * -0.001F)).tex((double)l, (double)h).endVertex();
-                worldRenderer.pos((double)1.0F, (double)-1.0F, (double)((float)k * -0.001F)).tex((double)l, (double)m).endVertex();
-                worldRenderer.pos((double)-1.0F, (double)-1.0F, (double)((float)k * -0.001F)).tex((double)g, (double)m).endVertex();
+                // float n = -0.001F; // unused
+                worldRenderer.pos((double)-1.0F, (double)1.0F, (double)((float)layer * -0.001F)).tex((double)uStart, (double)vStart).endVertex();
+                worldRenderer.pos((double)1.0F, (double)1.0F, (double)((float)layer * -0.001F)).tex((double)uEnd, (double)vStart).endVertex();
+                worldRenderer.pos((double)1.0F, (double)-1.0F, (double)((float)layer * -0.001F)).tex((double)uEnd, (double)vEnd).endVertex();
+                worldRenderer.pos((double)-1.0F, (double)-1.0F, (double)((float)layer * -0.001F)).tex((double)uStart, (double)vEnd).endVertex();
                 tessellator.draw();
                 GlStateManager.popMatrix();
-                ++k;
+                ++layer;
             }
         }
     }
