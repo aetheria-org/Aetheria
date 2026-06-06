@@ -80,12 +80,6 @@ public class DungeonRoomOverlay extends Overlay {
             String nameLine = EnumChatFormatting.WHITE + "❖  " + EnumChatFormatting.AQUA + currentRoomName;
             out.add(nameLine);
 
-            // Line 3: rotation and origin corner — only when detected
-            if (DungeonRoomDetector.roomRotation >= 0 && DungeonRoomDetector.originCorner != null) {
-                String rotColor = getRotationColor(DungeonRoomDetector.roomRotation);
-                out.add(EnumChatFormatting.GRAY + "Rot  " + rotColor + DungeonRoomDetector.roomRotation + "°" +
-                    "  " + EnumChatFormatting.GRAY + "Origin " + rotColor + DungeonRoomDetector.originCorner);
-            }
 
             // Line 4: relative player coordinates — only when detected
             if (DungeonRoomDetector.playerRelX != Integer.MAX_VALUE) {
@@ -98,15 +92,14 @@ public class DungeonRoomOverlay extends Overlay {
                 out.add(EnumChatFormatting.YELLOW + "✎  " + EnumChatFormatting.WHITE + currentRoomNotes);
             }
 
-            // Line 6: secret finder debug — only when secret finder is enabled
             if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled && DungeonRoomDetector.originBlock != null) {
                 int sc = DungeonRoomDetector.displayedSecretCount;
                 if (sc > 0) {
-                    out.add(EnumChatFormatting.GREEN + "☐  " + EnumChatFormatting.WHITE + sc + " secret(s) loaded");
+                    out.add(EnumChatFormatting.GREEN + "✦  " + EnumChatFormatting.WHITE + sc + " secret(s) loaded");
                 } else if (sc == 0) {
-                    out.add(EnumChatFormatting.RED + "☐  " + EnumChatFormatting.WHITE + "No secrets for this room");
+                    out.add(EnumChatFormatting.RED + "✦  " + EnumChatFormatting.WHITE + "No secrets for this room");
                 } else {
-                    out.add(EnumChatFormatting.GRAY + "☐  " + EnumChatFormatting.WHITE + "Searching...");
+                    out.add(EnumChatFormatting.GRAY + "✦  " + EnumChatFormatting.WHITE + "Searching...");
                 }
             }
         }

@@ -278,9 +278,7 @@ public class SecretRenderUtils {
             double itemRange = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.itemRemovalRange;
 for (SecretWaypoint sw : currentSecrets) {
                     if (sw.collected) continue;
-                    // Increment waypoint age counter
                     sw.ticksExisted++;
-                    // Update everSeen flag when block is non-air
                     if (!sw.everSeen) {
                         if (mc.theWorld.getBlockState(sw.pos).getBlock() != net.minecraft.init.Blocks.air) {
                             sw.everSeen = true;

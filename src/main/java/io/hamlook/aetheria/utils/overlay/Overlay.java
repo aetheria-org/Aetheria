@@ -24,7 +24,7 @@ public abstract class Overlay {
         this.lastH = defaultH;
     }
 
-    protected static void drawRoundedRect(int x, int y, int w, int h, int r, int color) {
+    public static void drawRoundedRect(int x, int y, int w, int h, int r, int color) {
         r = Math.min(r, Math.min(w - x, h - y) / 2);
         if (r <= 0) {
             Gui.drawRect(x, y, w, h, color);

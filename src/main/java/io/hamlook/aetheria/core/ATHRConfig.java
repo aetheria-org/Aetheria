@@ -8,6 +8,7 @@ import io.hamlook.aetheria.features.chat.chatfilters.ui.ChatFilterGUI;
 import io.hamlook.aetheria.features.diana.GuiDianaOverlayEditor;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.features.dungeons.overlays.DungeonBreakerOverlay;
+import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapOverlay;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomOverlay;
 import io.hamlook.aetheria.features.farming.BPSOverlay;
 import io.hamlook.aetheria.features.fishing.trophy.TrophyFishOverlay;
@@ -211,6 +212,15 @@ public class ATHRConfig {
         if (overlay == null) return;
         screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonBreaker.dungeonBreakerPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::saveConfig, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonBreaker.dungeonBreakerScale).withParent(Minecraft.getMinecraft().currentScreen);
     }
+
+    public static void openDungeonMapEditor(){
+        if (feature == null) return;
+        DungeonMapOverlay overlay = DungeonMapOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonMapConfig.dungeonMapPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::saveConfig, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonMapConfig.scale).withParent(Minecraft.getMinecraft().currentScreen);
+
+    }
+
 
     public static void openInvButtonEditor() {
         screenToOpen = new GuiInvButtonEditor();

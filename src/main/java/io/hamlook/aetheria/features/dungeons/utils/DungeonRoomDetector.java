@@ -138,7 +138,7 @@ public class DungeonRoomDetector {
                 if ("16370f79b2cad049096f881d5294aee6".equals(md5) && !"94fb12c91c4b46bd0c254edadaa49a3d".equals(floorHash)) {
                     floorHash = "e617eff1d7b77faf0f8dd53ec93a220f";
                 }
-
+                md5 = resolveMD5(md5);
                 if (Objects.equals(md5, lastRoomHash) && lastRoomJson != null) {
                     JsonElement jfh = lastRoomJson.get("floorhash");
                     if (jfh == null || (floorHash != null && floorHash.equals(jfh.getAsString()))) {
@@ -226,6 +226,38 @@ public class DungeonRoomDetector {
         });
     }
 
+    public static String resolveMD5(String md5) {
+        //TODO: Resolve rooms with multiple hashes into 1
+        switch (md5){
+            // Cavern-8
+            case "eb202d1d318396fc44bd1da3ab00b9cc":
+            case "e94d4df3348b347eb6182ef6bd7cb26d": return "721bf13b2441c9269f8222f4e90f897c";
+            // Entrance Room
+            case "11ac182bc9abe2cbf21719733d4d58bc": return "74e45b213b3372fe91b0dd6a7474a588";
+            // Trivia Room
+            case "3e877ad473671a2767362a93348b9f7f": return "506f87f8b14643cfcccd3d2845c86e50";
+            // Blood Room
+            case "48c22ef4c10a0a5036f9f06c62f295e4":
+            case "56ae7d302c9d835d187e001a93372463": return "710eb845c35f240667bb63f8edb754bf";
+            // Bridges
+            case "03c30fd33553f37b22b9c4b8bed33e1d": return "c979e9eda7361555ce2d75d63f5305bb";
+            // Ice-Path
+            case "1d104fa1f828f60074dfc345dcf35032": return "ac807d34afef330d7275836795c6f734";
+            // Miniboss Room
+            case "2002014fb9fbaa0f896aaadc3854fef4":
+            case "4c118368fc6f08b29ee18717999590bd":
+            case "aeeeb0546987de22e3c4a45f45d546f9": return "569c63a07c6ebfe1153d0738f0e44731";
+            // Redstone-Warrior-3
+            case "0d25288e91b3380442576b0c0b23fa31": return "6d788f8bd2fb147f71d1afa6e010a7b8";
+            // Sanctuary
+            case "2cfcecf71825b76faa4f97787da2e996": return "263a269d5c93255c60eb721e128f2d20";
+            // Trap-Very-Hard
+            case "d076f0391db006f2282c52ec7c63d520": return "fe4b5561b73fb082acb80d904ec82294";
+
+        }
+        return md5;
+    }
+
     private void setOverlay(JsonObject room) {
         String name = room.get("name").getAsString();
 
@@ -306,7 +338,7 @@ public class DungeonRoomDetector {
         }
     }
 
-    private static BlockPos actualToRelative(BlockPos actual) {
+    public static BlockPos actualToRelative(BlockPos actual) {
         if (originBlock == null || originCorner == null) return null;
         double x;
         double z;

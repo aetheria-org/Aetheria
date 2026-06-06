@@ -107,6 +107,7 @@ public class Config {
             case "openPristineEditor": ATHRConfig.openPristineEditor(); break;
             case "resetPristineTracker": ATHRConfig.resetPristineTracker(); break;
             case "openDungeonBreakerEditor": ATHRConfig.openDungeonBreakerEditor(); break;
+            case "editDungeonMapPos": ATHRConfig.openDungeonMapEditor(); break;
             case "openTrophyFishEditor": ATHRConfig.openTrophyFishEditor(); break;
             case "openDungeonRoomOverlayEditor": ATHRConfig.openDungeonRoomOverlayEditor(); break;
             case "openItemInvincibilityEditor": ATHRConfig.openItemInvincibilityEditor(); break;
