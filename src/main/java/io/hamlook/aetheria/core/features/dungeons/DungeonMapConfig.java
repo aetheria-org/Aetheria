@@ -35,6 +35,21 @@ public class DungeonMapConfig {
     public float scale = 1f;
 
     @Expose
+    @ConfigOption(name = "Name Offset from Head",desc = "Control how below the name is from the player head")
+    @ConfigEditorSliderAnnotation(minValue = 1f,maxValue = 20f,minStep = 1f)
+    public float nameOffset = 6f;
+
+    @Expose
+    @ConfigOption(name = "Name Font Size",desc = "Control how big the name display is")
+    @ConfigEditorSliderAnnotation(minValue = 0.25f,maxValue = 2f,minStep = 0.05f)
+    public float nameSize = 1f;
+
+    @Expose
+    @ConfigOption(name = "Head Scale",desc = "Control how big the head display is")
+    @ConfigEditorSliderAnnotation(minValue = 0.25f,maxValue = 2f,minStep = 0.05f)
+    public float headScale = 1f;
+
+    @Expose
     @ConfigOption(name = "Show Player Head",desc = "Show Player Heads in the Dungeon Map")
     @ConfigEditorBoolean
     public boolean showPlayerHead = true;
@@ -49,10 +64,6 @@ public class DungeonMapConfig {
     @ConfigEditorBoolean
     public boolean showPlayerRank = true;
 
-    @Expose
-    @ConfigOption(name = "Name Offset from Head",desc = "Control how below the name is from the player head")
-    @ConfigEditorSliderAnnotation(minValue = 1f,maxValue = 12f,minStep = 1f)
-    public float nameOffset = 4f;
 
 
 }

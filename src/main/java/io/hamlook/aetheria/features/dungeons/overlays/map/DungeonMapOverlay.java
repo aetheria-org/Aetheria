@@ -25,7 +25,6 @@ import net.minecraft.world.storage.MapData;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
-import io.hamlook.aetheria.Aetheria;
 
 import java.util.Collections;
 import java.util.List;
@@ -57,15 +56,13 @@ public class DungeonMapOverlay extends Overlay {
         if (info == null) return;
 
         final int baseSize = 128;
-        int w = baseSize;
-        int h = baseSize;
 
         ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
         Position pos = getPosition();
-        int x = pos.getAbsX(sr, (int) (w * getScale()));
-        int y = pos.getAbsY(sr, (int) (h * getScale()));
-        if (pos.isCenterX()) x -= (int) (w * getScale() / 2);
-        if (pos.isCenterY()) y -= (int) (h * getScale() / 2);
+        int x = pos.getAbsX(sr, (int) (baseSize * getScale()));
+        int y = pos.getAbsY(sr, (int) (baseSize * getScale()));
+        if (pos.isCenterX()) x -= (int) (baseSize * getScale() / 2);
+        if (pos.isCenterY()) y -= (int) (baseSize * getScale() / 2);
 
         GL11.glPushMatrix();
         GL11.glTranslatef(x, y, 0f);
@@ -73,7 +70,7 @@ public class DungeonMapOverlay extends Overlay {
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0) {
-            Overlay.drawRoundedRect(-3, -3, w, h - 3, getCornerRadius(), bgColor);
+            Overlay.drawRoundedRect(-3, -3, baseSize, baseSize - 3, getCornerRadius(), bgColor);
         }
 
         if (preview) {
@@ -81,52 +78,54 @@ public class DungeonMapOverlay extends Overlay {
             String txt = "Preview Map";
             int tw = mc.fontRendererObj.getStringWidth(txt);
             int th = mc.fontRendererObj.FONT_HEIGHT;
-            mc.fontRendererObj.drawStringWithShadow(txt, (w - tw) / 2f, (h - th) / 2f, 0xFFFFFFFF);
+            mc.fontRendererObj.drawStringWithShadow(txt, (baseSize - tw) / 2f, (baseSize - th) / 2f, 0xFFFFFFFF);
         } else {
             drawDungeonMap(0, 0, baseSize, baseSize, info);
             List<EntityPlayerSP> players = Minecraft.getMinecraft().theWorld.getPlayers(
                     EntityPlayerSP.class, Objects::nonNull
             );
             if (players.isEmpty()) return;
-            if(!ATHRConfig.feature.dungeons.dungeonMapConfig.showPlayerHead){
-                drawMarkers(info.mapDecorations);
-            }
             for (EntityPlayerSP playerSP : players) {
                 int worldX = -1 * (playerSP.getPosition().getX() + 6);
                 int worldZ = -1 * (playerSP.getPosition().getZ() + 6);
 
-                float pixelX = w - ((worldX / 186f) * w);
-                float pixelZ = h - ((worldZ / 186f) * h);
+                float pixelX = baseSize - ((worldX / 186f) * baseSize);
+                float pixelZ = baseSize - ((worldZ / 186f) * baseSize);
 
                 if (ATHRConfig.feature.dungeons.dungeonMapConfig.showPlayerHead) {
-                    renderPlayerHead(pixelX, pixelZ, -1, (getScale() * 1.25f), new NetworkPlayerInfo(playerSP.getGameProfile()), playerSP.rotationYaw);
+                    renderPlayerHead(pixelX, pixelZ, -1, (getScale() * getHeadScale()), new NetworkPlayerInfo(playerSP.getGameProfile()), playerSP.rotationYaw);
                 }
                 if (ATHRConfig.feature.dungeons.dungeonMapConfig.showPlayerUsername) {
                     String name = playerSP.getDisplayName().getFormattedText();
                     if(!ATHRConfig.feature.dungeons.dungeonMapConfig.showPlayerRank){
                         name = name.substring(name.indexOf("]")+1).trim();
                     }
-                    renderPlayerName(pixelX, pixelZ + ((getScale() * 1.25f) * 12), -1, (getScale() * 1.25f), name);
+                    renderPlayerName(pixelX, pixelZ + ((getScale() * getHeadScale()) * 12), -1, (getScale() * getHeadScale()),(getScale() * ATHRConfig.feature.dungeons.dungeonMapConfig.nameSize), name);
                 }
+            }
+            if(!ATHRConfig.feature.dungeons.dungeonMapConfig.showPlayerHead){
+                drawMarkers(info.mapDecorations);
             }
         }
 
         GL11.glPopMatrix();
     }
 
+
+    /*
+    <p>Taken from Minecraft's ItemMapRenderer.java & Modified to work for Overlay
+     */
     private void drawMarkers(Map<String, Vec4b> decorations) {
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer worldRenderer = tessellator.getWorldRenderer();
         Minecraft.getMinecraft().getTextureManager().bindTexture(Resources.DEFAULT_MAP_ICONS);
-                Aetheria.logger.info("[DungeonMapOverlay] Rendering " + decorations.size() + " map decorations.");
         int layer = 0;
         for (Vec4b decoration : decorations.values()) {
                             if (decoration.func_176110_a() == 1) {
-                Aetheria.logger.info("[DungeonMapOverlay] Rendering marker type=" + decoration.func_176110_a() + " at (" + decoration.func_176112_b() + ", " + decoration.func_176113_c() + ") rotation=" + decoration.func_176111_d());
                 GlStateManager.pushMatrix();
-                GlStateManager.translate((float)decoration.func_176112_b() / 2.0F + 64.0F, (float)decoration.func_176113_c() / 2.0F + 64.0F, -0.02F);
+                GlStateManager.translate((float)decoration.func_176112_b() / 2.0F + 64.0F, decoration.func_176113_c() / 2.0F + 64.0F, 0f);
                 GlStateManager.rotate((float)(decoration.func_176111_d() * 360) / 16.0F, 0.0F, 0.0F, 1.0F);
-                GlStateManager.scale(4.0F, 4.0F, 3.0F);
+                GlStateManager.scale(6.0F, 6.0F, 4.5F);
                 GlStateManager.translate(-0.125F, 0.125F, 0.0F);
                 byte iconId = decoration.func_176110_a();
                 float uStart = (float)(iconId % 4) / 4.0F;
@@ -134,11 +133,10 @@ public class DungeonMapOverlay extends Overlay {
                 float uEnd = (float)(iconId % 4 + 1) / 4.0F;
                 float vEnd = (float)(iconId / 4 + 1) / 4.0F;
                 worldRenderer.begin(7, DefaultVertexFormats.POSITION_TEX);
-                // float n = -0.001F; // unused
-                worldRenderer.pos((double)-1.0F, (double)1.0F, (double)((float)layer * -0.001F)).tex((double)uStart, (double)vStart).endVertex();
-                worldRenderer.pos((double)1.0F, (double)1.0F, (double)((float)layer * -0.001F)).tex((double)uEnd, (double)vStart).endVertex();
-                worldRenderer.pos((double)1.0F, (double)-1.0F, (double)((float)layer * -0.001F)).tex((double)uEnd, (double)vEnd).endVertex();
-                worldRenderer.pos((double)-1.0F, (double)-1.0F, (double)((float)layer * -0.001F)).tex((double)uStart, (double)vEnd).endVertex();
+                worldRenderer.pos(-1.0F, 1.0F, (float)layer * -0.001F).tex(uStart, vStart).endVertex();
+                worldRenderer.pos(1.0F, 1.0F, (float)layer * -0.001F).tex(uEnd, vStart).endVertex();
+                worldRenderer.pos(1.0F, -1.0F, (float)layer * -0.001F).tex(uEnd, vEnd).endVertex();
+                worldRenderer.pos(-1.0F, -1.0F, (float)layer * -0.001F).tex(uStart, vEnd).endVertex();
                 tessellator.draw();
                 GlStateManager.popMatrix();
                 ++layer;
@@ -146,28 +144,32 @@ public class DungeonMapOverlay extends Overlay {
         }
     }
 
-    public static void renderPlayerName(float pixelX, float pixelZ, int color, float scale, String name) {
+    public static void renderPlayerName(float pixelX, float pixelZ, int color, float headScale, float scale, String name) {
         if (name == null || name.isEmpty()) return;
-        float headSize = scale * 8f;
+        float headSize = headScale * 8f;
         float half = headSize / 2f;
 
         float cx = pixelX + half;
-        float cy = (pixelZ - 1f) + ATHRConfig.feature.dungeons.dungeonMapConfig.nameOffset;
+        float cy = (pixelZ - headSize) + ATHRConfig.feature.dungeons.dungeonMapConfig.nameOffset;
 
 
         Minecraft mc = Minecraft.getMinecraft();
-        int nameWidth = mc.fontRendererObj.getStringWidth(name);
+        float nameWidth = mc.fontRendererObj.getStringWidth(name) * scale;
         float nameX = cx - nameWidth / 2f;
 
         int alpha = (color >> 24) & 0xFF;
         float nameAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
+        GlStateManager.pushMatrix();
         GlStateManager.enableBlend();
         GlStateManager.enableAlpha();
         GlStateManager.enableTexture2D();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
         GlStateManager.color(1.0f, 1.0f, 1.0f, nameAlpha);
-        mc.fontRendererObj.drawString(name, (int) nameX, (int) cy, 0xFFFFFFFF);
+        GlStateManager.translate(nameX,cy,0f);
+        GlStateManager.scale(scale,scale,scale);
+        mc.fontRendererObj.drawString(name, 0,0, 0xFFFFFFFF);
         GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+        GlStateManager.popMatrix();
     }
 
     public static void drawDungeonMap(int x, int y, int w, int h, MapData info) {
@@ -234,6 +236,10 @@ public class DungeonMapOverlay extends Overlay {
     @Override
     public float getScale() {
         return ATHRConfig.feature.dungeons.dungeonMapConfig.scale;
+    }
+
+    public float getHeadScale() {
+        return ATHRConfig.feature.dungeons.dungeonMapConfig.headScale * 1.25f;
     }
 
     @Override

@@ -227,7 +227,6 @@ public class DungeonRoomDetector {
     }
 
     public static String resolveMD5(String md5) {
-        //TODO: Resolve rooms with multiple hashes into 1
         switch (md5){
             // Cavern-8
             case "eb202d1d318396fc44bd1da3ab00b9cc":

@@ -48,6 +48,8 @@ public final class Resources {
     public static final ResourceLocation CAPES_UI = new ResourceLocation("aetheria", "textures/gui/capesUI.png");
     public static final ResourceLocation DVD_LOGO = new ResourceLocation("aetheria", "textures/dvd.png");
 
+    public static final ResourceLocation DEFAULT_MAP_ICONS = new ResourceLocation("textures/map/map_icons.png");
+
     public static final int BETTER_CONTAINERS_STYLE_COUNT = 7;
     public static final ResourceLocation BETTER_CONTAINERS_DYNAMIC = new ResourceLocation("aetheria", "dynamic/better_containers");
     public static final int STORAGE_STYLE_COUNT = 5;
