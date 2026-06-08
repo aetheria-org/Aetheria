@@ -21,7 +21,10 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @RegisterEvents
@@ -34,7 +37,7 @@ public class ItemPaneRenderer {
     private static final String[] RARITIES = {"Any Rarity", "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Divine", "Special"};
     private static final String[] TYPES = {"Any Type", "Sword", "Bow", "Armor", "Helmet", "Chestplate", "Leggings", "Boots", "Accessory", "Pet", "Pickaxe", "Drill"};
     public static ItemPaneRenderer INSTANCE;
-    private List<ItemFamily> filteredFamilies = new ArrayList<>();
+    private volatile List<ItemFamily> filteredFamilies = Collections.emptyList();
     private GuiTextField searchField;
     private String lastSearchText = "";
     private final String[] localSearchText = new String[]{""};
@@ -48,6 +51,7 @@ public class ItemPaneRenderer {
     private int paneX, paneY, paneW, paneH, itemsPerPage;
     private int cachedTotalPages = 1;
 
+    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
     public ItemPaneRenderer() {
         INSTANCE = this;
     }
@@ -73,45 +77,66 @@ public class ItemPaneRenderer {
     }
 
     private void updateSearch(String q) {
-        String[] terms = q.toLowerCase().trim().split("\\s+");
-        String currentRarity = RARITIES[rarityFilterIdx].toLowerCase();
-        String currentType = TYPES[typeFilterIdx].toLowerCase();
-
-        filteredFamilies = ItemRegistry.familyRegistry.values().stream().filter(fam -> {
-            if (!currentRarity.equals("any rarity")) {
-                boolean matchRarity = fam.members.stream().anyMatch(i -> (i.itemRarity != null && i.itemRarity.toLowerCase().contains(currentRarity)) || (i.rarity != null && i.rarity.toLowerCase().contains(currentRarity)));
-                if (!matchRarity) return false;
-            }
-            if (!currentType.equals("any type")) {
-                boolean matchType = fam.members.stream().anyMatch(i -> i.itemType != null && i.itemType.toLowerCase().contains(currentType));
-                if (!matchType) return false;
-            }
-            if (q.trim().isEmpty()) return true;
-            for (String term : terms) {
-                if (term.isEmpty()) continue;
-                boolean matchTerm;
-                if (term.startsWith("type:")) {
-                    String t = term.substring(5);
-                    matchTerm = fam.members.stream().anyMatch(i -> i.itemType != null && i.itemType.toLowerCase().contains(t));
-                } else if (term.startsWith("rarity:")) {
-                    String r = term.substring(7);
-                    matchTerm = fam.members.stream().anyMatch(i -> (i.itemRarity != null && i.itemRarity.toLowerCase().contains(r)) || (i.rarity != null && i.rarity.toLowerCase().contains(r)));
-                } else {
-                    if (fam.cleanDisplayNameLower.contains(term)) matchTerm = true;
-                    else
-                        matchTerm = fam.members.stream().anyMatch(i -> (i.idLower != null && i.idLower.contains(term)) || (i.cleanNameLower != null && i.cleanNameLower.contains(term)));
-                }
-                if (!matchTerm) return false;
-            }
-            return true;
-        }).collect(Collectors.toList());
-
-        filteredFamilies.sort((f1, f2) -> f1.cleanDisplayName.compareToIgnoreCase(f2.cleanDisplayName));
-        currentPage = 0;
-        cachedTotalPages = totalPages();
+        scheduleSearchUpdate(q);
     }
 
-    private boolean shouldntShow() {
+    private void scheduleSearchUpdate(String query) {
+    final String q = query;
+    executor.submit(() -> {
+        List<ItemFamily> result = computeFilteredFamilies(q);
+        result.sort((f1, f2) -> f1.cleanDisplayName.compareToIgnoreCase(f2.cleanDisplayName));
+        filteredFamilies = result;
+        currentPage = 0;
+        cachedTotalPages = totalPages();
+    });
+}
+
+private List<ItemFamily> computeFilteredFamilies(String q) {
+    String[] terms = q.toLowerCase().trim().split("\\s+");
+    String currentRarity = RARITIES[rarityFilterIdx].toLowerCase();
+    String currentType = TYPES[typeFilterIdx].toLowerCase();
+
+    return ItemRegistry.familyRegistry.values().stream().filter(fam -> {
+        if (!currentRarity.equals("any rarity")) {
+            boolean matchRarity = fam.members.stream().anyMatch(i ->
+                (i.itemRarity != null && i.itemRarity.toLowerCase().contains(currentRarity))
+                || (i.rarity != null && i.rarity.toLowerCase().contains(currentRarity)));
+            if (!matchRarity) return false;
+        }
+        if (!currentType.equals("any type")) {
+            boolean matchType = fam.members.stream().anyMatch(i ->
+                i.itemType != null && i.itemType.toLowerCase().contains(currentType));
+            if (!matchType) return false;
+        }
+        if (q.trim().isEmpty()) return true;
+        for (String term : terms) {
+            if (term.isEmpty()) continue;
+            boolean matchTerm;
+            if (term.startsWith("type:")) {
+                String t = term.substring(5);
+                matchTerm = fam.members.stream().anyMatch(i ->
+                    i.itemType != null && i.itemType.toLowerCase().contains(t));
+            } else if (term.startsWith("rarity:")) {
+                String r = term.substring(7);
+                matchTerm = fam.members.stream().anyMatch(i ->
+                    (i.itemRarity != null && i.itemRarity.toLowerCase().contains(r))
+                    || (i.rarity != null && i.rarity.toLowerCase().contains(r)));
+            } else {
+                if (fam.cleanDisplayNameLower.contains(term)) {
+                    matchTerm = true;
+                } else {
+                    matchTerm = fam.members.stream().anyMatch(i ->
+                        (i.idLower != null && i.idLower.contains(term))
+                        || (i.cleanNameLower != null && i.cleanNameLower.contains(term)));
+                }
+            }
+            if (!matchTerm) return false;
+        }
+        return true;
+    }).collect(Collectors.toList());
+}
+
+private boolean shouldntShow() {
         if (ATHRConfig.feature == null) return true;
         if (!ATHRConfig.feature.misc.itemList.enabled) return true;
         if (StorageManager.isOverlayActive()) return true;
@@ -317,7 +342,7 @@ public class ItemPaneRenderer {
         if (hoverFamilyId != null) {
             ItemFamily dropFam = ItemRegistry.familyRegistry.get(hoverFamilyId);
             if (dropFam != null && dropFam.hasDropdown()) {
-                dropdownTooltipItem = drawFamilyHover(mc, dropFam, mouseX, mouseY);
+                dropdownTooltipItem = drawFamilyHover(dropFam, mouseX, mouseY);
             }
         }
 
@@ -335,7 +360,7 @@ public class ItemPaneRenderer {
         }
     }
 
-    private SkyblockItem drawFamilyHover(Minecraft mc, ItemFamily fam, int mouseX, int mouseY) {
+    private SkyblockItem drawFamilyHover(ItemFamily fam, int mouseX, int mouseY) {
         int members = fam.members.size();
         int cols = Math.min(members, 5);
         int dropRows = (int) Math.ceil((double) members / cols);
@@ -418,10 +443,10 @@ public class ItemPaneRenderer {
         if (Mouse.getEventButton() != 0 && Mouse.getEventButton() != 1) return;
 
         computeGeometry(screenW, screenH);
-        handleClick(screenW, screenH, mouseX, mouseY, Mouse.getEventButton(), event);
+        handleClick(mouseX, mouseY, Mouse.getEventButton(), event);
     }
 
-    public void handleClick(int screenW, int screenH, int mouseX, int mouseY, int btn, GuiScreenEvent.MouseInputEvent.Pre event) {
+    public void handleClick(int mouseX, int mouseY, int btn, GuiScreenEvent.MouseInputEvent.Pre event) {
         if (shouldntShow()) return;
 
         if (mouseX < paneX || mouseX >= paneX + paneW || mouseY < paneY || mouseY >= paneY + paneH) return;

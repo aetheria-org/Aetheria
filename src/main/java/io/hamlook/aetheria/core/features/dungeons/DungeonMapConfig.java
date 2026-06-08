@@ -64,6 +64,11 @@ public class DungeonMapConfig {
     @ConfigEditorBoolean
     public boolean showPlayerRank = true;
 
+    @Expose
+    @ConfigOption(name = "Show Visited Room Names",desc = "Display the name of each room you have visited on the dungeon map")
+    @ConfigEditorBoolean
+    public boolean showVisitedRoomNames = true;
+
 
 
 }

@@ -86,7 +86,7 @@ public class RecipeViewerGUI extends GuiScreen {
     @Override
     protected void mouseClicked(int mx, int my, int btn) throws IOException {
         if (ItemPaneRenderer.INSTANCE != null)
-            ItemPaneRenderer.INSTANCE.handleClick(width, height, mx, my, btn, null);
+            ItemPaneRenderer.INSTANCE.handleClick(mx, my, btn, null);
 
         computeBox();
         int contentX = boxX;

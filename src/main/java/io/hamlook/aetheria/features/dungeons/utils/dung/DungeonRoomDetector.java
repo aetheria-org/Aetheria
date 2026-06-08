@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.features.dungeons.utils;
+package io.hamlook.aetheria.features.dungeons.utils.dung;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapOverlay;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
@@ -35,6 +36,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -46,7 +49,8 @@ public class DungeonRoomDetector {
     private static int tickCount = 0;
     private static String lastRoomHash = null;
     private static JsonObject lastRoomJson = null;
-    private final Executor executor = Executors.newFixedThreadPool(2);
+    private static final Executor executor = Executors.newFixedThreadPool(2);
+    private static final ConcurrentMap<String, DungeonRoom> visitedRooms = new ConcurrentHashMap<>();
 
     private static final Set<String> loadedSecretKeys = new HashSet<>();
 
@@ -63,6 +67,10 @@ public class DungeonRoomDetector {
     public static volatile int roomCeilingY = -1;
     public static volatile int roomFloorY = -1;
     public static volatile boolean roomBoundsValid = false;
+
+    public static java.util.Collection<DungeonRoom> getVisitedRooms() {
+        return visitedRooms.values();
+    }
 
     private void resetOrigin() {
         originBlock = null;
@@ -139,11 +147,13 @@ public class DungeonRoomDetector {
                 if ("16370f79b2cad049096f881d5294aee6".equals(md5) && !"94fb12c91c4b46bd0c254edadaa49a3d".equals(floorHash)) {
                     floorHash = "e617eff1d7b77faf0f8dd53ec93a220f";
                 }
+                if(md5 == null) return;
                 md5 = resolveMD5(md5);
                 if (Objects.equals(md5, lastRoomHash) && lastRoomJson != null) {
                     JsonElement jfh = lastRoomJson.get("floorhash");
                     if (jfh == null || (floorHash != null && floorHash.equals(jfh.getAsString()))) {
                         computeRoomBounds(x, top, z);
+                        addVisitedRoom(lastRoomJson);
                         if (sfOn) processSecrets();
                         if (sfOn && originBlock != null && originCorner != null) {
                             BlockPos rel = actualToRelative(new BlockPos(x, y, z));
@@ -206,6 +216,7 @@ public class DungeonRoomDetector {
                 }
 
                 computeRoomBounds(x, top, z);
+                addVisitedRoom(lastRoomJson);
                 if (sfOn) processSecrets();
 
                 if (sfOn && originBlock != null && originCorner != null) {
@@ -314,6 +325,22 @@ public class DungeonRoomDetector {
         roomBoundsValid = true;
     }
 
+    // Store a visited room in the static cache. Called after the room has been identified
+    private static void addVisitedRoom(JsonObject roomJson) {
+        if (roomJson == null) return;
+        // Use the already‑computed bounds (roomMinX/Y etc.) to derive centre and size
+        String name = roomJson.get("name").getAsString();
+        String hash = lastRoomHash;
+        // Origin is the minimum corner at floor level
+        BlockPos origin = new BlockPos(roomMinX, roomFloorY, roomMinZ);
+        BlockPos center = new BlockPos((roomMinX + roomMaxX) / 2, roomFloorY, (roomMinZ + roomMaxZ) / 2);
+        int width = Math.abs(roomMaxX - roomMinX) + 1;
+        int height = Math.abs(roomMaxZ - roomMinZ) + 1;
+        DungeonRoom dr = new DungeonRoom(name, hash, origin, center, width, height);
+        visitedRooms.putIfAbsent(hash, dr);
+    }
+
+
     private void checkCorner(BlockPos blockPos) {
         World world = Minecraft.getMinecraft().theWorld;
         if (world == null) return;
@@ -401,15 +428,17 @@ public class DungeonRoomDetector {
     }
 
     private void loadSecretLocationsJson() {
-        String webUrl = "https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/refs/heads/main/data/secretlocations.json";
-        ResourceLocation loc = Resources.SECRET_LOCATIONS_JSON;
-        try {
-            InputStream in = getStreamWithFallback(webUrl, loc);
-            if(in == null) return;
-            secretLocationsJson = new Gson().fromJson(new InputStreamReader(in), JsonObject.class);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        executor.execute(() -> {
+            String webUrl = "https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/refs/heads/main/data/secretlocations.json";
+            ResourceLocation loc = Resources.SECRET_LOCATIONS_JSON;
+            try {
+                InputStream in = getStreamWithFallback(webUrl, loc);
+                if(in == null) return;
+                secretLocationsJson = new Gson().fromJson(new InputStreamReader(in), JsonObject.class);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public static int displayedSecretCount = -1;
@@ -433,15 +462,17 @@ public class DungeonRoomDetector {
     }
 
     private void loadRoomsJson() {
-        String webUrl = "https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/refs/heads/main/data/dungeonrooms.json";
-        ResourceLocation loc = Resources.DUNGEON_ROOMS_JSON;
-        try {
-            InputStream in = getStreamWithFallback(webUrl, loc);
-            if(in == null) return;
-            roomsJson = new Gson().fromJson(new InputStreamReader(in), JsonObject.class);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        executor.execute(() -> {
+            String webUrl = "https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/refs/heads/main/data/dungeonrooms.json";
+            ResourceLocation loc = Resources.DUNGEON_ROOMS_JSON;
+            try {
+                InputStream in = getStreamWithFallback(webUrl, loc);
+                if (in == null) return;
+                roomsJson = new Gson().fromJson(new InputStreamReader(in), JsonObject.class);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     private int dungeonTop(int x, int z) {
@@ -648,6 +679,8 @@ public class DungeonRoomDetector {
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
         resetOrigin();
+        DungeonMapOverlay.players.clear();
+
     }
 
     @SubscribeEvent

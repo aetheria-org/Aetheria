@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.features.dungeons.utils;
+package io.hamlook.aetheria.features.dungeons.utils.dung;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
