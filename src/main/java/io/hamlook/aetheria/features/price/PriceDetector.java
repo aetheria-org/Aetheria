@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.features.price.vars.AuctionEntry;
 import io.hamlook.aetheria.features.price.vars.BazaarEntry;
 import io.hamlook.aetheria.features.price.vars.PriceData;
@@ -129,6 +130,7 @@ public class PriceDetector {
     }
 
     private static void sendPrices() {
+        if(!NetworkGuard.apiAllowed()) return;
         if(!ATHRConfig.feature.misc.priceFetcher.enabled
         || !ATHRConfig.feature.misc.priceFetcher.sendToDB) return;
         if (bazaarMap.isEmpty() && auctionMap.isEmpty()) return;

@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.misc.invbuttons;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.hamlook.aetheria.network.NetworkGuard;
 import lombok.Getter;
 
 import java.io.BufferedInputStream;
@@ -90,6 +91,11 @@ public class SkyblockItemCache {
     }
 
     private void loadSync() {
+        if (!NetworkGuard.githubAllowed()) {
+            System.out.println("[ATHR] GitHub calls disabled. Skipping NEU item repo download.");
+            loaded = true;
+            return;
+        }
         try {
             System.out.println("[ATHR] Downloading NEU item repo...");
             HttpURLConnection conn = (HttpURLConnection) new URL(REPO_ZIP_URL).openConnection();

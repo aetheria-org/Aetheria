@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.profile.data.ItemData;
+import io.hamlook.aetheria.network.NetworkGuard;
 import net.minecraft.item.ItemStack;
 
 import java.io.File;
@@ -70,6 +71,7 @@ public class ItemRegistry {
 
                 boolean requiresDownload = true;
 
+                if (NetworkGuard.githubAllowed()) {
                 try {
                     Aetheria.logger.info("[ATHR-DEBUG] Checking GitHub for updates...");
                     URL url = new URL("https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/refs/heads/main/itemData/itemData.json");
@@ -113,6 +115,9 @@ public class ItemRegistry {
                     if (!dataFile.exists()) {
                         throw new RuntimeException("No local cache available and network fetch failed.");
                     }
+                }
+                } else {
+                    Aetheria.logger.info("[ATHR-DEBUG] GitHub calls disabled. Skipping update check, using local cache.");
                 }
 
                 if (dataFile.exists()) {

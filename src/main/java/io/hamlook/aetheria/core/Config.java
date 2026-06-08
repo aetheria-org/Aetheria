@@ -17,6 +17,7 @@ import io.hamlook.aetheria.core.features.waypoints.Waypoints;
 import io.hamlook.aetheria.core.features.farming.Farming;
 import io.hamlook.aetheria.core.features.scoreboard.Scoreboard;
 import io.hamlook.aetheria.core.features.storage.Storage;
+import io.hamlook.aetheria.core.features.network.NetworkConfig;
 import io.hamlook.aetheria.features.capes.CapeManager;
 
 import java.awt.*;
@@ -77,8 +78,12 @@ public class Config {
     public final Fishing fishing = new Fishing();
 
     @Expose
-    @Category(name = "Overlays", desc = "Various Ovarlay features")
+    @Category(name = "Overlays", desc = "Various Overlay features")
     public final Overlays overlays = new Overlays();
+
+    @Expose
+    @Category(name = "Privacy", desc = "Manage network calls")
+    public final NetworkConfig network = new NetworkConfig();
 
     @Expose
     @Category(name = "Debug", desc = "Debug tools")
@@ -115,6 +120,7 @@ public class Config {
             case "openBpsEditor": ATHRConfig.openBpsEditor(); break;
             case "openUptimeEditor": ATHRConfig.openUptimeEditor(); break;
             case "chatFiltersGUI": ATHRConfig.openChatFilterUI(); break;
+            case "openPrivacyNotice": ATHRConfig.openPrivacyNotice(); break;
             case "reloadCapes": CapeManager.reload(); break;
             case "openWebsite": openUrl("https://aetheria.github.io"); break;
             case "openDiscord": openUrl("https://discord.gg/tdMFbmhFTb"); break;

@@ -3,6 +3,7 @@ package io.hamlook.aetheria.data;
 import com.google.gson.Gson;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.utils.HttpClient;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.Loader;
@@ -31,6 +32,7 @@ public class ApiHandler {
 
     public static void onServerJoin() {
         if (ATHRConfig.feature == null) return;
+        if (!NetworkGuard.telemetryAllowed()) return;
         POOL.submit(ApiHandler::sendAnalytics);
     }
 
@@ -53,7 +55,9 @@ public class ApiHandler {
 
     private static String buildPayload() {
         String username = Minecraft.getMinecraft().getSession().getUsername();
-        List<String> mods = Loader.instance().getModList().stream().map(ModContainer::getModId).collect(Collectors.toList());
+        List<String> mods = NetworkGuard.modListInTelemetryAllowed()
+                ? Loader.instance().getModList().stream().map(ModContainer::getModId).collect(Collectors.toList())
+                : null;
         return GSON.toJson(new Payload(username, mods, Aetheria.VERSION));
     }
 

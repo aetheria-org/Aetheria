@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.profile.viewer;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.network.NetworkGuard;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.resources.DefaultPlayerSkin;
@@ -38,6 +39,7 @@ public class SkinManager {
     }
 
     private static void fetchSkinAsync(String username) {
+        if (!NetworkGuard.networkingEnabled()) return;
         new Thread(() -> {
             try {
                 if (!SKIN_DIR.exists()) {

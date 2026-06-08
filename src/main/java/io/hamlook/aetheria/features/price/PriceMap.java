@@ -2,7 +2,9 @@ package io.hamlook.aetheria.features.price;
 
 import com.google.gson.Gson;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.price.vars.PriceData;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import lombok.Getter;
 
@@ -19,6 +21,7 @@ public class PriceMap {
     private static final PriceData priceData = new PriceData();
 
     public static void fetch() {
+        if (ATHRConfig.feature != null && !NetworkGuard.apiAllowed()) return;
         new Thread(() -> {
             try {
                 URL url = new URL(CapeAPI.getAPIUrl("price"));

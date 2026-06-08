@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomOverlay;
@@ -365,6 +366,10 @@ public class DungeonRoomDetector {
     }
 
     private InputStream getStreamWithFallback(String webUrl, ResourceLocation fallBack) {
+        if (!NetworkGuard.githubAllowed()) {
+            Aetheria.logger.info("GitHub calls disabled. Skipping web fetch, using fallback.");
+            return getFallbackStream(fallBack);
+        }
         try {
             URL url = new URL(webUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -382,6 +387,10 @@ public class DungeonRoomDetector {
         } catch (IOException e) {
             Aetheria.logger.info("Network error connecting to URL. Falling back to JAR. Error: " + e.getMessage());
         }
+        return getFallbackStream(fallBack);
+    }
+
+    private InputStream getFallbackStream(ResourceLocation fallBack) {
         try{
             Aetheria.logger.info("Loading data from fallback Path: " + fallBack.getResourcePath());
             return Minecraft.getMinecraft().getResourceManager().getResource(fallBack).getInputStream();

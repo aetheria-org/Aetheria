@@ -31,10 +31,13 @@ import io.hamlook.aetheria.OptionsMenu;
 import io.hamlook.aetheria.features.mining.pristine.PristineOverlay;
 import io.hamlook.aetheria.features.mining.pristine.PristineStats;
 import io.hamlook.aetheria.features.misc.invbuttons.GuiInvButtonEditor;
+import io.hamlook.aetheria.network.PrivacyNoticeScreen;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.client.ClientCommandHandler;
+import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -270,6 +273,20 @@ public class ATHRConfig {
     public static void openChatFilterUI() {
         if (feature == null) return;
         screenToOpen = new ChatFilterGUI();
+    }
+
+    public static void openPrivacyNotice() {
+        if (feature == null) return;
+        Minecraft.getMinecraft().displayGuiScreen(new PrivacyNoticeScreen(Minecraft.getMinecraft().currentScreen));
+    }
+
+    @SubscribeEvent
+    public void onGuiOpen(GuiOpenEvent event) {
+        if (!(event.gui instanceof GuiMainMenu)) return;
+
+        if (ATHRConfig.feature.network.hasSeenPrivacyNotice) return;
+
+        event.gui = new PrivacyNoticeScreen(event.gui);
     }
 
     @SubscribeEvent

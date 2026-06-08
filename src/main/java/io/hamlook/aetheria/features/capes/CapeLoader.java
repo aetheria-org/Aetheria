@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.capes;
 
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.network.NetworkGuard;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
@@ -24,6 +25,7 @@ public class CapeLoader {
             "https://api.github.com/repos/aetheria-org/Aetheria-REPO/contents/capes";
 
     public static void loadAllCapes() {
+        if (!NetworkGuard.githubAllowed()) return;
         Aetheria.logger.info("[CapeLoader] Starting cape load...");
 
         String rawJson = httpGet(CONTENTS_API);

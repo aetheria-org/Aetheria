@@ -1,7 +1,9 @@
 package io.hamlook.aetheria.features.profile.saving;
 
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.profile.ProfileCompressor;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.features.profile.WaiterLogs;
 import io.hamlook.aetheria.features.profile.data.ProfileData;
@@ -20,6 +22,7 @@ public class SupabaseHandler {
     private static final HashMap<String, Long> lastUploaded = new HashMap<>();
 
     public static void pushProfileAsync(String playerName, ProfileData data) {
+        if (ATHRConfig.feature != null && !NetworkGuard.apiAllowed()) return;
         long now = System.currentTimeMillis();
         long lastUploadTime = lastUploaded.getOrDefault(playerName, 0L);
 

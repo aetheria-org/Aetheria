@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.profile.viewer;
 import com.google.gson.*;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.network.NetworkGuard;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ChatComponentText;
 
@@ -59,6 +60,7 @@ public class ProfileViewerAPI {
 
     public static void fetchPlayerListAsync() {
         if (!cachedPlayerList.isEmpty()) return;
+        if (!NetworkGuard.apiAllowed()) return;
         networkExecutor.execute(() -> {
             try {
                 URL url = new URL("https://capeapi.qzz.io/game/players");
@@ -89,6 +91,7 @@ public class ProfileViewerAPI {
     }
 
     public static void fetchFromAPI(String username){
+        if (!NetworkGuard.apiAllowed()) return;
         if(System.currentTimeMillis() - lastFetches.getOrDefault(username,0L) <= FETCH_INTERVAL) return;
         networkExecutor.execute(() -> {
             try{

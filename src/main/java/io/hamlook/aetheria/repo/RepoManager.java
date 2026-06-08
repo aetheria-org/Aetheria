@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.repo;
 
 import com.google.gson.GsonBuilder;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.JsonCache;
 
@@ -56,6 +57,7 @@ public class RepoManager {
     }
 
     private void doFetch(String key) {
+        if (!NetworkGuard.githubAllowed()) return;
         Source src = sources.get(key);
         if (src == null || !src.claim()) return;
         pool.execute(() -> {

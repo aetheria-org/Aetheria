@@ -1,7 +1,9 @@
 package io.hamlook.aetheria;
 
 import io.hamlook.aetheria.command.ASMCommand;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -41,6 +43,11 @@ public class SyncCommand extends ASMCommand {
     @Override
     public void execute(ICommandSender sender, String[] args) throws CommandException {
         if (!(sender instanceof EntityPlayer)) return;
+
+        if (ATHRConfig.feature != null && !NetworkGuard.apiAllowed()) {
+            ChatUtils.sendMessage("§cAPI calls are disabled. Enable them in Settings → Network to use /sync.");
+            return;
+        }
 
         if (!SkyblockData.isOnSkyblock()) {
             ChatUtils.sendMessage("§cPlease Join SkyBlock in order to sync, this is to prove that you are not using the username of someone else.");

@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import net.minecraft.client.Minecraft;
 
@@ -88,6 +89,7 @@ public class CapeManager {
 
 
     public static void fetchIDFromAPI() {
+        if (!NetworkGuard.apiAllowed()) return;
         try {
             URL url = new URL(CapeAPI.getAPIUrl() + "/cape");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -110,6 +112,7 @@ public class CapeManager {
     }
 
     private static boolean pushCapeToAPI(String playerName, String capeId) {
+        if (!NetworkGuard.apiAllowed()) return false;
         try {
             URL url = new URL(CapeAPI.getAPIUrl() + "/cape");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -132,6 +135,7 @@ public class CapeManager {
     }
 
     private static void deleteCapeFromAPI(String playerName) {
+        if (!NetworkGuard.apiAllowed()) return;
         try {
             URL url = new URL(CapeAPI.getAPIUrl() + "/cape/" + URLEncoder.encode(playerName, "UTF-8"));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -181,6 +185,7 @@ public class CapeManager {
 
     public static void initialise(boolean force) {
         if (!ATHRConfig.feature.cosmetics.capes.capesEnabled && !force) return;
+        if (!NetworkGuard.githubAllowed()) return;
         POLL_INTERVAL_MS = ATHRConfig.feature.cosmetics.capes.reloadInterval * 60000L;
         capes.clear();
 
