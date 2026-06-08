@@ -1,3 +1,138 @@
+package io.hamlook.aetheria.network;
+
+import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.render.RenderUtils;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.renderer.GlStateManager;
+import org.lwjgl.opengl.GL11;
+
+import java.io.IOException;
+
+public class PrivacyNoticeScreen extends GuiScreen {
+
+    private static final int PANEL_W = 400;
+    private static final int PANEL_H = 280;
+    private static final int TOG_W   = 160;
+    private static final int TOG_H   = 28;
+    private static final int NAV_W   = 80;
+    private static final int NAV_H   = 22;
+    private static final int NAV_PAD = 14;
+
+    private static final float ANIM_SPEED = 0.12f;
+
+    private static final Page[] PAGES = {
+            new Page("Telemetry",
+                    "Sends your username and mod version when joining a server.",
+                    "Used for player counts and crash reports.\nNo gameplay data is collected.",
+                    "disableTelemetry"),
+            new Page("Mod List in Telemetry",
+                    "Also includes your installed mod list alongside telemetry.",
+                    "Only sent when Telemetry is enabled above.\nUseful for crash triage and compatibility reports.",
+                    "disableModListInTelemetry"),
+            new Page("API Calls",
+                    "Communicates with the mod API for capes, profile viewer,\nprofile parser, and the sync command.",
+                    "Disabling this will break those features entirely.",
+                    "disableApiCalls"),
+            new Page("GitHub Calls",
+                    "Fetches repo data from GitHub used by overlays, timers,\nversion checks, and most other features.",
+                    "Disabling this will break the majority of the mod.",
+                    "disableGithubCalls"),
+    };
+
+    private static class Page {
+        final String title, what, why, field;
+        boolean touched;
+
+        Page(String title, String what, String why, String field) {
+            this.title = title;
+            this.what  = what;
+            this.why   = why;
+            this.field = field;
+        }
+    }
+
+    private final GuiScreen parent;
+    private final boolean firstLaunch;
+    private int page;
+    private float animOffset;
+    private int px, py;
+
+    public PrivacyNoticeScreen(GuiScreen parent) {
+        this.parent      = parent;
+        this.firstLaunch = ATHRConfig.feature != null && !ATHRConfig.feature.network.hasSeenPrivacyNotice;
+        for (Page p : PAGES) p.touched = false;
+    }
+
+    @Override
+    public void initGui() {
+        px = (width  - PANEL_W) / 2;
+        py = (height - PANEL_H) / 2;
+    }
+
+    @Override
+    public void updateScreen() {
+        if (animOffset != 0) {
+            animOffset *= (1f - ANIM_SPEED * 3);
+            if (Math.abs(animOffset) < 0.5f) animOffset = 0;
+        }
+    }
+
+    private boolean getValue(Page p) {
+        if (ATHRConfig.feature == null) return false;
+        switch (p.field) {
+            case "disableTelemetry":          return ATHRConfig.feature.network.disableTelemetry;
+            case "disableModListInTelemetry": return ATHRConfig.feature.network.disableModListInTelemetry;
+            case "disableApiCalls":           return ATHRConfig.feature.network.disableApiCalls;
+            case "disableGithubCalls":        return ATHRConfig.feature.network.disableGithubCalls;
+            default: return false;
+        }
+    }
+
+    private void setValue(Page p, boolean value) {
+        if (ATHRConfig.feature == null) return;
+        switch (p.field) {
+            case "disableTelemetry":          ATHRConfig.feature.network.disableTelemetry          = value; break;
+            case "disableModListInTelemetry": ATHRConfig.feature.network.disableModListInTelemetry = value; break;
+            case "disableApiCalls":           ATHRConfig.feature.network.disableApiCalls           = value; break;
+            case "disableGithubCalls":        ATHRConfig.feature.network.disableGithubCalls        = value; break;
+        }
+    }
+
+    private boolean isLastPage() { return page == PAGES.length - 1; }
+    private int togX()  { return px + PANEL_W / 2 - TOG_W / 2; }
+    private int togY()  { return py + PANEL_H / 2 + 14; }
+    private int navY()  { return py + PANEL_H - NAV_H - NAV_PAD; }
+    private int backX() { return px + NAV_PAD; }
+    private int nextX() { return px + PANEL_W - NAV_PAD - NAV_W; }
+    private int skipX() { return px + PANEL_W / 2 - NAV_W / 2; }
+    private int skipY() { return navY(); }
+
+    @Override
+    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        drawDefaultBackground();
+        GlStateManager.color(1f, 1f, 1f, 1f);
+
+        RenderUtils.drawFloatingRectDark(px, py, PANEL_W, PANEL_H, false);
+
+        float slide = animOffset;
+        float alpha = 1f - Math.min(1f, Math.abs(slide) / (PANEL_W * 0.4f));
+
+        ScaledResolution sr = new ScaledResolution(mc);
+        int scale = sr.getScaleFactor();
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(px * scale, mc.displayHeight - (py + PANEL_H) * scale, PANEL_W * scale, PANEL_H * scale);
+
+        GlStateManager.enableBlend();
+        GlStateManager.color(1f, 1f, 1f, alpha);
+        drawPageContent(mouseX, mouseY, (int) slide);
+
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        GlStateManager.color(1f, 1f, 1f, 1f);
+
+        drawNavigation(mouseX, mouseY);
 
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
