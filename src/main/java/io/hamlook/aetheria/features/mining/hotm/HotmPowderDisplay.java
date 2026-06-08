@@ -3,9 +3,8 @@ package io.hamlook.aetheria.features.mining.hotm;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.inventory.GuiChest;
-import net.minecraft.inventory.ContainerChest;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -119,13 +118,7 @@ public class HotmPowderDisplay {
     }
 
     private static String getContainerName() {
-        if (!(mc.currentScreen instanceof GuiChest)) return null;
-        try {
-            ContainerChest cc = (ContainerChest) ((GuiChest) mc.currentScreen).inventorySlots;
-            return ColorUtils.stripColor(cc.getLowerChestInventory().getDisplayName().getUnformattedText());
-        } catch (Exception e) {
-            return null;
-        }
+        return ContainerUtils.getContainerName();
     }
 
     private static String formatNumber(long n) {

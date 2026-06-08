@@ -3,9 +3,8 @@ package io.hamlook.aetheria.features.profile;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
-import net.minecraft.client.gui.inventory.GuiChest;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.inventory.ContainerChest;
-import net.minecraft.inventory.IInventory;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -33,13 +32,9 @@ public class ProfileListener {
             }
         }
 
-        if (event.gui instanceof GuiChest) {
-            GuiChest chest       = (GuiChest) event.gui;
-            ContainerChest ch    = (ContainerChest) chest.inventorySlots;
-            IInventory lowerInv  = ch.getLowerChestInventory();
-            String title         = ColorUtils.stripColor(
-                    lowerInv.getDisplayName().getUnformattedText()
-            ).trim();
+        ContainerChest ch = ContainerUtils.getOpenChest(event.gui);
+        if (ch != null) {
+            String title = ContainerUtils.getTitle(ch);
 
             if (!PROFILE_TITLES.contains(title)) {
                 ProfileParser.lastCachedProfile = "";

@@ -3,11 +3,11 @@ package io.hamlook.aetheria.features.fishing.trophy;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
@@ -46,20 +46,8 @@ public class TrophyFishTracker {
 
     private static final Pattern BRONZE_LINE = Pattern.compile("^(?:§5§o)?§8Bronze.*");
 
-    private static ContainerChest getChestContainer(GuiScreen gui) {
-        if (!(gui instanceof GuiChest)) return null;
-        GuiChest chest = (GuiChest) gui;
-        if (!(chest.inventorySlots instanceof ContainerChest)) return null;
-        return (ContainerChest) chest.inventorySlots;
-    }
-
-    private static String containerName(ContainerChest cc) {
-        return ColorUtils.stripColor(cc.getLowerChestInventory().getDisplayName().getUnformattedText());
-    }
-
     private static String getOpenContainerName() {
-        ContainerChest cc = getChestContainer(mc.currentScreen);
-        return cc == null ? null : containerName(cc);
+        return ContainerUtils.getContainerName();
     }
 
     private static String ordinal(int n) {
@@ -117,9 +105,9 @@ public class TrophyFishTracker {
 
     @SubscribeEvent
     public void onGuiDraw(GuiScreenEvent.BackgroundDrawnEvent event) {
-        ContainerChest container = getChestContainer(event.gui);
+        if (!ContainerUtils.isInContainer(event.gui, ODGER_TITLE)) return;
+        ContainerChest container = ContainerUtils.getOpenChest(event.gui);
         if (container == null) return;
-        if (!ODGER_TITLE.equals(containerName(container))) return;
 
         scanOdger(container);
     }

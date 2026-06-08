@@ -3,9 +3,9 @@ package io.hamlook.aetheria.features.mining
 import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.ColorUtils
+import io.hamlook.aetheria.utils.ContainerUtils
 import io.hamlook.aetheria.utils.item.ItemUtils
 import io.hamlook.aetheria.utils.render.HighlightUtils
-import net.minecraft.inventory.ContainerChest
 import net.minecraft.item.ItemStack
 
 @RegisterEvents
@@ -17,8 +17,8 @@ object CommissionHighlight {
         HighlightUtils.registerHighlighter { gui, slot ->
             if (ATHRConfig.feature?.mining?.commissionHighlight != true) return@registerHighlighter null
 
-            val container = gui.inventorySlots as? ContainerChest ?: return@registerHighlighter null
-            if (!container.lowerChestInventory.displayName.unformattedText.contains("Commissions")) return@registerHighlighter null
+            val container = ContainerUtils.getOpenChest(gui) ?: return@registerHighlighter null
+            if (ContainerUtils.getTitle(container)?.contains("Commissions") != true) return@registerHighlighter null
 
             val stack = slot.stack ?: return@registerHighlighter null
             if (isCommissionCompleted(stack)) COMPLETED_HIGHLIGHT_COLOR else null

@@ -16,9 +16,9 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.repo.OtherDataAPI;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
@@ -180,10 +180,9 @@ public class PriceDetector {
         if (now - lastParseTime < REPARSE_COOLDOWN_MS) return;
 
         if (!(event.gui instanceof GuiContainer)) return;
-        GuiContainer gui = (GuiContainer) event.gui;
-        if (!(gui.inventorySlots instanceof ContainerChest)) return;
-        ContainerChest chest = (ContainerChest) gui.inventorySlots;
-        String title = ColorUtils.stripColor(chest.getLowerChestInventory().getName());
+        ContainerChest chest = ContainerUtils.getOpenChest(event.gui);
+        if (chest == null) return;
+        String title = chest.getLowerChestInventory().getName();
 
         if (title.contains("Auction Browser") && ATHRConfig.feature.misc.priceFetcher.auctionEnabled) {
             scanning = true;

@@ -4,9 +4,8 @@ import io.hamlook.aetheria.core.GsonBuilder;
 import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.init.RegisterInstance;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.inventory.GuiChest;
-import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagList;
@@ -59,11 +58,10 @@ public class MaxwellPowerSync implements StorageManager.Managed, StorageManager.
     public void onTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
-        if (!(mc.currentScreen instanceof GuiChest)) return;
+        if (!ContainerUtils.isChestOpen()) return;
 
-        GuiChest chest = (GuiChest) mc.currentScreen;
-        IInventory inv = ((ContainerChest) chest.inventorySlots).getLowerChestInventory();
+        IInventory inv = ContainerUtils.getLowerInventory();
+        if (inv == null) return;
 
         String title = ColorUtils.stripColor(inv.getDisplayName().getUnformattedText());
         if (!title.contains("Accessory Bag Thaumaturgy")) return;

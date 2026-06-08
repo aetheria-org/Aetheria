@@ -5,9 +5,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.features.storage.data.StorageSaving;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.inventory.GuiChest;
-import net.minecraft.inventory.ContainerChest;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.C0EPacketClickWindow;
@@ -23,12 +21,7 @@ public class SPacketHandler {
     private String currentContainerId = null;
 
     public int getCurrentWindowId() {
-        if (!(Minecraft.getMinecraft().currentScreen instanceof GuiChest)) {
-            return -1;
-        }
-
-        GuiChest chest = (GuiChest) Minecraft.getMinecraft().currentScreen;
-        return chest.inventorySlots.windowId;
+        return ContainerUtils.getWindowId();
     }
 
     public SContainer getCurrentContainer() {
@@ -164,11 +157,8 @@ public class SPacketHandler {
         SContainer container = getCurrentContainer();
         if (container == null) return;
 
-        if (Minecraft.getMinecraft().currentScreen instanceof GuiChest) {
-            GuiChest guiChest = (GuiChest) Minecraft.getMinecraft().currentScreen;
-            ContainerChest containerChest = (ContainerChest) guiChest.inventorySlots;
-            IInventory inv = containerChest.getLowerChestInventory();
-
+        IInventory inv = ContainerUtils.getLowerInventory();
+        if (inv != null) {
             int chestSize = inv.getSizeInventory();
             int rows = chestSize / 9;
             int storageSlots = (rows - 1) * 9;
@@ -205,7 +195,7 @@ public class SPacketHandler {
     public void handleClickWindow(C0EPacketClickWindow packet) {
         if (!ATHRConfig.feature.storage.enabled) return;
         if (currentContainerId == null) return;
-        if (!(Minecraft.getMinecraft().currentScreen instanceof GuiChest)) return;
+        if (!ContainerUtils.isChestOpen()) return;
 
         int windowId = getCurrentWindowId();
         if (windowId == -1 || windowId != packet.getWindowId()) return;
@@ -213,9 +203,8 @@ public class SPacketHandler {
         SContainer container = getCurrentContainer();
         if (container == null) return;
 
-        GuiChest guiChest = (GuiChest) Minecraft.getMinecraft().currentScreen;
-        ContainerChest containerChest = (ContainerChest) guiChest.inventorySlots;
-        IInventory inv = containerChest.getLowerChestInventory();
+        IInventory inv = ContainerUtils.getLowerInventory();
+        if (inv == null) return;
 
         int maxSlot = Math.min(9 + container.slotCount, inv.getSizeInventory());
         for (int i = 9; i < maxSlot; i++) {

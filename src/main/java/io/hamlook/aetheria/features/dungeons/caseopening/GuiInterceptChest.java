@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.dungeons.caseopening;
 
 import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -51,7 +52,7 @@ public class GuiInterceptChest extends GuiContainer {
     }
 
     private void scanForReward() {
-        IInventory lower = container.getLowerChestInventory();
+        IInventory lower = ContainerUtils.getLowerInventory(container);
         int size = lower.getSizeInventory();
         int dropCount = DungeonDropData.getDrops(material, floor).size();
         DebugLogger.log("[GuiInterceptChest] Scanning — floor=" + floor + ", material=" + material + ", possible drops=" + dropCount + ", inventory size=" + size);

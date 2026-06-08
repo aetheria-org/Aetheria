@@ -3,10 +3,10 @@ package io.hamlook.aetheria.features.misc
 import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour
 import io.hamlook.aetheria.init.RegisterEvents
+import io.hamlook.aetheria.utils.ContainerUtils
 import io.hamlook.aetheria.utils.data.SkyblockData
 import io.hamlook.aetheria.utils.item.ItemUtils
 import io.hamlook.aetheria.utils.render.HighlightUtils
-import net.minecraft.inventory.ContainerChest
 
 @RegisterEvents
 object BazaarOrderHighlight {
@@ -22,8 +22,8 @@ object BazaarOrderHighlight {
             val config = ATHRConfig.feature?.misc?.bazaarOrders ?: return@registerHighlighter null
             if (!config.highlightSellOrders && !config.highlightBuyOrders) return@registerHighlighter null
 
-            val container = gui.inventorySlots as? ContainerChest ?: return@registerHighlighter null
-            if (!container.lowerChestInventory.displayName.unformattedText.contains(CONTAINER_NAME)) {
+            val container = ContainerUtils.getOpenChest(gui) ?: return@registerHighlighter null
+            if (ContainerUtils.getTitle(container)?.contains(CONTAINER_NAME) != true) {
                 return@registerHighlighter null
             }
 

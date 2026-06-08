@@ -10,6 +10,7 @@ import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
@@ -61,6 +62,7 @@ public class EnchantProcessor {
         LORE_CACHE.updateBefore(loreList);
         FontRenderer fontRenderer = Minecraft.getMinecraft().fontRendererObj;
 
+        boolean isEnchantedBook = "ENCHANTED_BOOK".equals(ItemUtils.getInternalName(event.itemStack));
         int startEnchant = -1, endEnchant = -1, maxTooltipWidth = 0;
 
         int indexOfLastGreyEnchant = accountForAndRemoveGreyEnchants(loreList, event.itemStack);
@@ -118,7 +120,7 @@ public class EnchantProcessor {
         }
 
         loreList.subList(startEnchant, endEnchant + 1).clear();
-        List<String> insertEnchants = buildLayout(new ArrayList<>(orderedEnchants), hasLore, maxTooltipWidth);
+        List<String> insertEnchants = buildLayout(new ArrayList<>(orderedEnchants), hasLore, maxTooltipWidth, isEnchantedBook);
         loreList.addAll(startEnchant, insertEnchants);
         LORE_CACHE.updateAfter(loreList);
     }
@@ -209,11 +211,11 @@ public class EnchantProcessor {
         return maxTooltipWidth;
     }
 
-    private List<String> buildLayout(List<FormattedEnchant> enchants, boolean hasLore, int maxWidth) {
+    private List<String> buildLayout(List<FormattedEnchant> enchants, boolean hasLore, int maxWidth, boolean isEnchantedBook) {
         List<String> out = new ArrayList<>();
         int layout = ATHRConfig.feature.qol.enchantParser.enchantLayout;
 
-        if (layout == LAYOUT_SINGLE_LINE && enchants.size() > 1) {
+        if (layout == LAYOUT_SINGLE_LINE && enchants.size() > 1 && !(hasLore && isEnchantedBook)) {
             FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
             int commaLength = fr.getStringWidth(GRAY_COMMA);
             int sum = 0;

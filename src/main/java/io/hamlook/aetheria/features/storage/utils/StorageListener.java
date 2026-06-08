@@ -2,9 +2,11 @@ package io.hamlook.aetheria.features.storage.utils;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.storage.StorageManager;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.features.storage.render.StorageRenderer;
+import io.hamlook.aetheria.features.storage.utils.StorageParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import lombok.Setter;
@@ -49,7 +51,7 @@ public class StorageListener {
             return;
         }
 
-        if (!(event.gui instanceof GuiChest)) {
+        if (!ContainerUtils.isChestOpen(event.gui)) {
             if (!switchingContainer) {
                 resetOverlayState();
                 StorageManager.closeOverlay();
@@ -57,18 +59,7 @@ public class StorageListener {
             return;
         }
 
-        GuiChest guiChest = (GuiChest) event.gui;
-        if (!(guiChest.inventorySlots instanceof ContainerChest)) {
-            if (!switchingContainer) {
-                resetOverlayState();
-                StorageManager.closeOverlay();
-            }
-            return;
-        }
-
-        ContainerChest chest = (ContainerChest) guiChest.inventorySlots;
-        String title = chest.getLowerChestInventory().getDisplayName().getUnformattedText();
-
+        String title = ContainerUtils.getContainerName(event.gui);
         handleStorageGuiOpen(title);
     }
 
@@ -124,13 +115,10 @@ public class StorageListener {
         if (!shouldRenderOverlay) return;
         if (!ATHRConfig.feature.storage.enabled) return;
 
-        if (!(event.gui instanceof GuiChest)) return;
+        if (!ContainerUtils.isInContainer(event.gui, "Storage")) return;
 
-        GuiChest guiChest = (GuiChest) event.gui;
-        ContainerChest chest = (ContainerChest) guiChest.inventorySlots;
-        String title = chest.getLowerChestInventory().getDisplayName().getUnformattedText();
-
-        if (title == null || !title.equals("Storage")) return;
+        ContainerChest chest = ContainerUtils.getOpenChest(event.gui);
+        if (chest == null) return;
 
         if (!overlayInitialized) {
             boolean success = StorageManager.initializeOverlay(chest);
@@ -144,7 +132,7 @@ public class StorageListener {
     public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
         if (!shouldRenderOverlay || !overlayInitialized) return;
         if (!ATHRConfig.feature.storage.enabled) return;
-        if (!(event.gui instanceof GuiChest)) return;
+        if (!ContainerUtils.isChestOpen(event.gui)) return;
 
         GuiChest guiChest = (GuiChest) event.gui;
         int mouseX = Mouse.getX() * guiChest.width / Minecraft.getMinecraft().displayWidth;
@@ -201,7 +189,9 @@ public class StorageListener {
     private boolean isClickingActiveContainerSlots(int mouseX, int mouseY, GuiChest guiChest) {
         StorageRenderer r = StorageManager.getRenderer();
         if (r == null) return false;
-        for (net.minecraft.inventory.Slot slot : guiChest.inventorySlots.inventorySlots) {
+        ContainerChest chest = ContainerUtils.getOpenChest(guiChest);
+        if (chest == null) return false;
+        for (net.minecraft.inventory.Slot slot : chest.inventorySlots) {
             if (slot == null) continue;
             if (slot.inventory == Minecraft.getMinecraft().thePlayer.inventory) continue;
             if (r.isMouseOverActiveContainerSlot(slot, mouseX, mouseY)) return true;
@@ -213,7 +203,7 @@ public class StorageListener {
     public void onKeyboardInput(GuiScreenEvent.KeyboardInputEvent.Pre event) {
         if (!shouldRenderOverlay || !overlayInitialized) return;
         if (!ATHRConfig.feature.storage.enabled) return;
-        if (!(event.gui instanceof GuiChest)) return;
+        if (!ContainerUtils.isChestOpen(event.gui)) return;
 
         int keyCode = org.lwjgl.input.Keyboard.getEventKey();
         if (keyCode == org.lwjgl.input.Keyboard.KEY_ESCAPE) return;
@@ -230,7 +220,7 @@ public class StorageListener {
     public void onDrawScreen(GuiScreenEvent.DrawScreenEvent.Post event) {
         if (!shouldRenderOverlay || !overlayInitialized) return;
         if (!ATHRConfig.feature.storage.enabled) return;
-        if (!(event.gui instanceof GuiChest)) return;
+        if (!ContainerUtils.isChestOpen(event.gui)) return;
 
         StorageManager.renderOverlay(event.mouseX, event.mouseY);
         ItemRenderUtils.renderHeldCursorItem();

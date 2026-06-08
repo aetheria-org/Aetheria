@@ -3,7 +3,7 @@ package io.hamlook.aetheria.features.qol;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.SlotClickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
-import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.HighlightUtils;
 import net.minecraft.client.Minecraft;
@@ -48,15 +48,13 @@ public class AnvilCombineHelper {
     }
 
     private static boolean isAnvilGui(GuiContainer gui) {
-        if (!(gui instanceof GuiChest)) return true;
-        ContainerChest cc = (ContainerChest) ((GuiChest) gui).inventorySlots;
-        String title = ColorUtils.stripColor(cc.getLowerChestInventory().getDisplayName().getUnformattedText());
+        ContainerChest cc = ContainerUtils.getOpenChest(gui);
+        if (cc == null) return true;
+        String title = ContainerUtils.getTitle(cc);
         return !ANVIL_TITLE.equals(title);
     }
 
-    private static void refreshSlots(GuiChest gui) {
-        ContainerChest container = (ContainerChest) gui.inventorySlots;
-
+    private static void refreshSlots(ContainerChest container) {
         String newLeft = idFromContainerSlot(container, SLOT_LEFT);
         String newRight = idFromContainerSlot(container, SLOT_RIGHT);
 
@@ -71,17 +69,15 @@ public class AnvilCombineHelper {
     private static void updateHighlights(ContainerChest container) {
         highlightedSlots.clear();
 
-        // Only highlight when exactly one slot is filled
         boolean hasLeft = leftId != null;
         boolean hasRight = rightId != null;
-        if (hasLeft == hasRight) return; // both filled or both empty → nothing to do
+        if (hasLeft == hasRight) return;
 
         String targetId = hasLeft ? leftId : rightId;
 
-        // Scan player inventory slots
-        int chestSize = container.getLowerChestInventory().getSizeInventory();
+        int chestSize = ContainerUtils.getLowerInventory(container).getSizeInventory();
         for (Slot slot : container.inventorySlots) {
-            if (slot.slotNumber < chestSize) continue; // skip chest slots
+            if (slot.slotNumber < chestSize) continue;
             ItemStack stack = slot.getStack();
             if (stack == null) continue;
             if (targetId.equals(ItemUtils.getInternalName(stack))) {
@@ -119,22 +115,24 @@ public class AnvilCombineHelper {
         pendingRefresh = false;
 
         Minecraft mc = Minecraft.getMinecraft();
-        if (!(mc.currentScreen instanceof GuiChest)) return;
+        ContainerChest chest = ContainerUtils.getOpenChest();
+        if (chest == null) return;
         if (isAnvilGui((GuiContainer) mc.currentScreen)) return;
 
-        refreshSlots((GuiChest) mc.currentScreen);
+        refreshSlots(chest);
     }
 
     @SubscribeEvent
     public void onGuiOpen(GuiScreenEvent.InitGuiEvent.Post event) {
-        if (!(event.gui instanceof GuiChest)) return;
+        ContainerChest chest = ContainerUtils.getOpenChest(event.gui);
+        if (chest == null) return;
         if (isAnvilGui((GuiContainer) event.gui)) return;
-        refreshSlots((GuiChest) event.gui);
+        refreshSlots(chest);
     }
 
     @SubscribeEvent
     public void onGuiClose(GuiScreenEvent.InitGuiEvent.Pre event) {
-        if (!(event.gui instanceof GuiChest)) return;
+        if (!ContainerUtils.isChestOpen(event.gui)) return;
         leftId = null;
         rightId = null;
         highlightedSlots.clear();

@@ -3,10 +3,10 @@ package io.hamlook.aetheria.features.qol;
 import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.init.Blocks;
@@ -46,10 +46,6 @@ public final class BetterContainers {
                 && SkyblockData.isOnSkyblock();
     }
 
-    private static boolean isChestOpen() {
-        return Minecraft.getMinecraft().currentScreen instanceof GuiChest;
-    }
-
     private static int currentStyle() {
         if (ATHRConfig.feature == null) return 0;
         int s = ATHRConfig.feature.qol.betterContainers.style;
@@ -57,10 +53,10 @@ public final class BetterContainers {
     }
 
     public boolean tryBindTexture(TextureManager tm, ResourceLocation original) {
-        if (!isEnabled() || !isChestOpen()) return false;
+        if (!isEnabled() || !ContainerUtils.isChestOpen()) return false;
 
-        Minecraft mc = Minecraft.getMinecraft();
-        ContainerChest cc = (ContainerChest) ((GuiChest) mc.currentScreen).inventorySlots;
+        ContainerChest cc = ContainerUtils.getOpenChest();
+        if (cc == null) return false;
         IInventory lower = cc.getLowerChestInventory();
         int identity = System.identityHashCode(lower);
         int style    = currentStyle();
@@ -74,6 +70,7 @@ public final class BetterContainers {
             return false;
         }
 
+        Minecraft mc = Minecraft.getMinecraft();
         mc.getTextureManager().loadTexture(Resources.BETTER_CONTAINERS_DYNAMIC, dynamicTexture);
         mc.getTextureManager().bindTexture(Resources.BETTER_CONTAINERS_DYNAMIC);
         return true;

@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.dungeons.caseopening;
 
 import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
@@ -10,7 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.inventory.ContainerChest;
-import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
@@ -39,16 +39,13 @@ public class ChestListener {
     @SubscribeEvent
     public void onGuiOpen(GuiOpenEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.dungeons.caseOpening.caseOpeningAnimation) return;
-        if (!(event.gui instanceof GuiChest)) return;
+        if (!ContainerUtils.isChestOpen(event.gui)) return;
 
         originalGui = (GuiChest) event.gui;
-        if (!(originalGui.inventorySlots instanceof ContainerChest)) return;
+        ContainerChest container = ContainerUtils.getOpenChest(event.gui);
+        if (container == null) return;
 
-        ContainerChest container = (ContainerChest) originalGui.inventorySlots;
-        IInventory lower = container.getLowerChestInventory();
-        if (!lower.hasCustomName()) return;
-
-        String name = lower.getDisplayName().getUnformattedText();
+        String name = ContainerUtils.getTitle(container);
         DebugLogger.log("[ChestListener] GUI opened: \"" + name + "\"");
 
         if (name.contains("Croesus")) {
@@ -143,7 +140,7 @@ public class ChestListener {
 
     @SubscribeEvent
     public void onItemTooltip(ItemTooltipEvent event) {
-        if (!(Minecraft.getMinecraft().currentScreen instanceof GuiChest)) return;
+        if (!ContainerUtils.isChestOpen()) return;
         if (!isCatacombsChestList) return;
 
         GuiChest chest = (GuiChest) Minecraft.getMinecraft().currentScreen;
@@ -173,7 +170,7 @@ public class ChestListener {
 
     @SubscribeEvent
     public void onMouseClick(GuiScreenEvent.MouseInputEvent.Pre event) {
-        if (!(event.gui instanceof GuiChest)) return;
+        if (!ContainerUtils.isChestOpen(event.gui)) return;
         Slot slot = ((GuiChest) event.gui).getSlotUnderMouse();
         if (slot != null && org.lwjgl.input.Mouse.getEventButtonState() && isCroesus && !isCatacombsChestList) {
             chestID = slot.slotNumber;

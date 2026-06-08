@@ -2,9 +2,9 @@ package io.hamlook.aetheria.features.misc;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
@@ -121,10 +121,10 @@ public class BrewingStandHelper {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.colorBrewingStands) return;
         if (!isOnPrivateIsland()) return;
         if (lastBrewingStand == null) return;
-        if (!(event.gui instanceof GuiChest)) return;
+        if (!ContainerUtils.isInContainer(event.gui, "Brewing Stand")) return;
 
-        ContainerChest container = (ContainerChest) ((GuiChest) event.gui).inventorySlots;
-        if (!container.getLowerChestInventory().getDisplayName().getUnformattedText().equals("Brewing Stand")) return;
+        ContainerChest container = ContainerUtils.getOpenChest(event.gui);
+        if (container == null) return;
 
         BlockPos pos = lastBrewingStand.getPos();
         double time = 0.0;

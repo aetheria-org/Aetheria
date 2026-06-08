@@ -6,12 +6,11 @@ import io.hamlook.aetheria.events.ItemTossEvent
 import io.hamlook.aetheria.events.RenderItemOverlayEvent
 import io.hamlook.aetheria.events.SlotClickEvent
 import io.hamlook.aetheria.init.RegisterEvents
+import io.hamlook.aetheria.utils.ContainerUtils
 import io.hamlook.aetheria.utils.item.ItemUtils
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Gui
-import net.minecraft.client.gui.inventory.GuiChest
 import net.minecraft.client.renderer.GlStateManager
-import net.minecraft.inventory.ContainerChest
 import net.minecraft.item.ItemStack
 import net.minecraft.util.ChatComponentText
 import net.minecraft.util.EnumChatFormatting
@@ -135,10 +134,8 @@ class ProtectItemFeature {
     }
 
     private fun isDangerousGuiInteraction(event: SlotClickEvent): Boolean {
-        val gui = mc.currentScreen as? GuiChest ?: return false
-        val container = gui.inventorySlots as? ContainerChest ?: return false
-
-        return ProtectionChecks.shouldBlockMovement(gui, container)
+        val container = ContainerUtils.getOpenChest() ?: return false
+        return ProtectionChecks.shouldBlockMovement(container)
     }
 
     private fun handleDangerousGuiInteraction(event: SlotClickEvent) {

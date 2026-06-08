@@ -1,7 +1,7 @@
 package io.hamlook.aetheria.mixins;
 
 import io.hamlook.aetheria.features.qol.BetterContainers;
-import net.minecraft.client.gui.inventory.GuiChest;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
@@ -15,7 +15,7 @@ public class MixinGuiContainer_BetterContainers {
 
     @Inject(method = "onGuiClosed", at = @At("HEAD"))
     private void ATHR$onGuiClosed(CallbackInfo ci) {
-        if ((Object) this instanceof GuiChest) {
+        if (ContainerUtils.isChestOpen((GuiContainer) (Object) this)) {
             BetterContainers.getInstance().reset();
         }
     }

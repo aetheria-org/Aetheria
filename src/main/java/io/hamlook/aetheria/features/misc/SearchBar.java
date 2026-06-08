@@ -5,6 +5,7 @@ import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.CalculatorUtils;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
@@ -14,7 +15,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
@@ -125,7 +125,7 @@ public class SearchBar {
     }
 
     private static boolean isSupportedGui(Object gui) {
-        return gui instanceof GuiInventory || gui instanceof GuiChest;
+        return gui instanceof GuiInventory || ContainerUtils.isChestOpen((net.minecraft.client.gui.GuiScreen) gui);
     }
 
     private static void drawSearchBar(GuiTextField field) {

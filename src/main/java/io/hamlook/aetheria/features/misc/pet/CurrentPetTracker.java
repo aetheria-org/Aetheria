@@ -3,11 +3,11 @@ package io.hamlook.aetheria.features.misc.pet;
 import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.events.SlotClickEvent;
 import io.hamlook.aetheria.init.RegisterInstance;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
@@ -93,10 +93,10 @@ public class CurrentPetTracker implements StorageManager.Managed {
 
     @SubscribeEvent
     public void onGuiDraw(GuiScreenEvent.BackgroundDrawnEvent event) {
-        if (!(event.gui instanceof GuiChest)) return;
-        ContainerChest container = (ContainerChest) ((GuiChest) event.gui).inventorySlots;
-        if (!container.getLowerChestInventory().getDisplayName().getUnformattedText().startsWith(PETS_CONTAINER))
-            return;
+        ContainerChest container = ContainerUtils.getOpenChest(event.gui);
+        if (container == null) return;
+        String title = ContainerUtils.getTitle(container);
+        if (title == null || !title.startsWith(PETS_CONTAINER)) return;
         long now = System.currentTimeMillis();
 
         if (now - lastContainerScan >= 500L) {
@@ -135,13 +135,12 @@ public class CurrentPetTracker implements StorageManager.Managed {
 
     @SubscribeEvent
     public void onSlotClick(SlotClickEvent event) {
-        if (!(event.getGui() instanceof GuiChest)) return;
+        ContainerChest container = ContainerUtils.getOpenChest(event.getGui());
+        if (container == null) return;
         if (event.getClickType() != 0 || event.getSlot() == null) return;
 
-        ContainerChest container = (ContainerChest) ((GuiChest) event.getGui()).inventorySlots;
-
-        if (!container.getLowerChestInventory().getDisplayName().getUnformattedText().startsWith(PETS_CONTAINER))
-            return;
+        String title = ContainerUtils.getTitle(container);
+        if (title == null || !title.startsWith(PETS_CONTAINER)) return;
 
         if (event.getSlot().inventory == Minecraft.getMinecraft().thePlayer.inventory) return;
 

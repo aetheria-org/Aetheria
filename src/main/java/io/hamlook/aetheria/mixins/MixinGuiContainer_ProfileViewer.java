@@ -3,12 +3,12 @@ package io.hamlook.aetheria.mixins;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ContainerChest;
-import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -43,9 +43,8 @@ public class MixinGuiContainer_ProfileViewer extends GuiScreen {
 
     @Inject(method = "initGui",at = @At("RETURN"))
     public void initGui(CallbackInfo ci) {
-        Container container = this.inventorySlots;
-        if (container instanceof ContainerChest) {
-            ContainerChest chest = (ContainerChest) container;
+        ContainerChest chest = ContainerUtils.getOpenChest((GuiScreen)(Object) this);
+        if (chest != null) {
             Aetheria.logger.info(chest.getLowerChestInventory().getName());
             if (chest.getLowerChestInventory().getName().equals("View Profile")) {
                 this.justEnoughfakepixel$button = new GuiButton(1000,
@@ -72,10 +71,9 @@ public class MixinGuiContainer_ProfileViewer extends GuiScreen {
     public void mouseClicked(int mouseX, int mouseY, int mouseButton, CallbackInfo ci) {
         if (mouseButton != 0) return;
 
-        if(this.inventorySlots instanceof ContainerChest){
-            ContainerChest chest = (ContainerChest) this.inventorySlots;
-            IInventory lowerInv = chest.getLowerChestInventory();
-            String title = ColorUtils.stripColor(lowerInv.getDisplayName().getUnformattedText()).trim();
+        ContainerChest chest = ContainerUtils.getOpenChest((GuiScreen)(Object) this);
+        if (chest != null) {
+            String title = ContainerUtils.getTitle(chest);
             if (theSlot == null || !theSlot.getHasStack()) return;
             Aetheria.logger.info("Slot: " + theSlot.slotNumber + " | Window: " + chest.windowId);
             if (!title.equals(GUI_TITLE)) return;

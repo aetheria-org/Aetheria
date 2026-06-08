@@ -1,16 +1,15 @@
 package io.hamlook.aetheria.features.misc.protect
 
 import io.hamlook.aetheria.utils.ColorUtils
+import io.hamlook.aetheria.utils.ContainerUtils
 import io.hamlook.aetheria.utils.item.ItemUtils
-import net.minecraft.client.gui.inventory.GuiChest
-import net.minecraft.client.gui.inventory.GuiContainer
 import net.minecraft.inventory.ContainerChest
 
 object ProtectionChecks {
 
 
-    fun isDangerousGui(gui: GuiContainer?, container: ContainerChest?): Boolean {
-        if (gui !is GuiChest || container == null) return false
+    fun isDangerousGui(container: ContainerChest?): Boolean {
+        if (container == null) return false
 
         val title = getCleanTitle(container)
         return isDangerousTitle(title)
@@ -49,13 +48,12 @@ object ProtectionChecks {
     }
 
 
-    fun shouldBlockMovement(gui: GuiContainer?, container: ContainerChest?): Boolean {
-        return isDangerousGui(gui, container) || hasSellItem(container)
+    fun shouldBlockMovement(container: ContainerChest?): Boolean {
+        return isDangerousGui(container) || hasSellItem(container)
     }
 
     private fun getCleanTitle(container: ContainerChest): String {
-        val rawTitle = container.lowerChestInventory.displayName.unformattedText
-        return ColorUtils.stripColor(rawTitle).lowercase()
+        return ContainerUtils.getTitle(container)?.lowercase() ?: ""
     }
 
 

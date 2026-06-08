@@ -44,11 +44,13 @@ import io.hamlook.aetheria.features.profile.saving.SupabaseHandler;
 import io.hamlook.aetheria.features.profile.vars.EquipmentSlot;
 import io.hamlook.aetheria.features.profile.vars.ProfileMode;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ContainerChest;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTException;
@@ -356,11 +358,9 @@ public class ProfileParser {
         EnumMap<CollectionType,CollectionData> data = new EnumMap<>(CollectionType.class);
         if (container == null) return data;
 
-        String title = ColorUtils.stripColor(
-                container.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
+        String title = ContainerUtils.getTitle(container);
 
-        if (!title.startsWith("View") || !title.endsWith("Collections")) return data;
+        if (title == null || !title.startsWith("View") || !title.endsWith("Collections")) return data;
 
         for(int i = 19; i < 44; i++){
             if(i % 9 == 0 || (i + 1) % 9 == 0) continue;
@@ -425,13 +425,12 @@ public class ProfileParser {
         EnumMap<Arrow,Integer> quiver = new EnumMap<>(Arrow.class);
         if (container == null) return new QuiverData(quiver);
 
-        String title = ColorUtils.stripColor(
-                container.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
-        if (!title.equals("Show Contents")) return new QuiverData(quiver);
+        String title = ContainerUtils.getTitle(container);
+        if (!"Show Contents".equals(title)) return new QuiverData(quiver);
 
-        for(int i = 0; i < container.getLowerChestInventory().getSizeInventory();i++){
-            ItemStack stack = container.getLowerChestInventory().getStackInSlot(i);
+        IInventory lower = ContainerUtils.getLowerInventory(container);
+        for(int i = 0; i < lower.getSizeInventory();i++){
+            ItemStack stack = lower.getStackInSlot(i);
             if(stack == null)continue;
             String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
             if(name.isEmpty() || name.equals("Go Back")) continue;
@@ -449,13 +448,12 @@ public class ProfileParser {
     private static Collection<? extends ItemData> parseAccessory(ContainerChest container) {
         List<ItemData> accessory = new ArrayList<>();
         if (container == null) return accessory;
-        String title = ColorUtils.stripColor(
-                container.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
-        if (!title.equals("Show Contents")) return accessory;
+        String title = ContainerUtils.getTitle(container);
+        if (!"Show Contents".equals(title)) return accessory;
 
-        for(int i = 0; i < container.getLowerChestInventory().getSizeInventory();i++){
-            ItemStack stack = container.getLowerChestInventory().getStackInSlot(i);
+        IInventory lower = ContainerUtils.getLowerInventory(container);
+        for(int i = 0; i < lower.getSizeInventory();i++){
+            ItemStack stack = lower.getStackInSlot(i);
             if(stack == null)continue;
             String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
             if(name.isEmpty() || name.equals("Go Back") || name.equals("Next Page") || name.equals("Previous Page")) continue;
@@ -468,13 +466,12 @@ public class ProfileParser {
         EnumMap<Bait,Integer> baits = new EnumMap<>(Bait.class);
 
         if (container == null) return new FishingData(baits);
-        String title = ColorUtils.stripColor(
-                container.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
-        if (!title.equals("Show Contents")) return new FishingData(baits);
+        String title = ContainerUtils.getTitle(container);
+        if (!"Show Contents".equals(title)) return new FishingData(baits);
 
-        for(int i = 0; i < container.getLowerChestInventory().getSizeInventory();i++){
-            ItemStack stack = container.getLowerChestInventory().getStackInSlot(i);
+        IInventory lower = ContainerUtils.getLowerInventory(container);
+        for(int i = 0; i < lower.getSizeInventory();i++){
+            ItemStack stack = lower.getStackInSlot(i);
             if(stack == null)continue;
             String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
             if(name.isEmpty() || name.equals("Go Back")) continue;
@@ -500,13 +497,12 @@ public class ProfileParser {
     public static ContainerData parseStorage(String id, ContainerChest storage) {
         HashMap<Integer,ItemData> data = new HashMap<>();
         if (storage == null) return new ContainerData(id, data);
-        String title = ColorUtils.stripColor(
-                storage.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
-        if (!title.equals("Show Contents")) return new ContainerData(id, data);
+        String title = ContainerUtils.getTitle(storage);
+        if (!"Show Contents".equals(title)) return new ContainerData(id, data);
 
-        for(int i = 0; i < storage.getLowerChestInventory().getSizeInventory();i++){
-            ItemStack stack = storage.getLowerChestInventory().getStackInSlot(i);
+        IInventory lower = ContainerUtils.getLowerInventory(storage);
+        for(int i = 0; i < lower.getSizeInventory();i++){
+            ItemStack stack = lower.getStackInSlot(i);
             if(stack == null)continue;
             String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
             if(name.isEmpty() || name.equals("Go Back")) continue;
@@ -518,10 +514,8 @@ public class ProfileParser {
     public static HashMap<Integer, Pet> parsePets(int startIndex,ContainerChest container){
         HashMap<Integer, Pet> set = new HashMap<>();
         if (container == null) return set;
-        String title = ColorUtils.stripColor(
-                container.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
-        if (!title.equals("View Pets")) return set;
+        String title = ContainerUtils.getTitle(container);
+        if (!"View Pets".equals(title)) return set;
 
         ItemStack pageItem = container.getSlot(53).getStack();
         if(pageItem == null) return set;
@@ -543,10 +537,8 @@ public class ProfileParser {
     public static HashMap<Integer, WardrobeSet> parseWardrobe(ContainerChest container){
         HashMap<Integer, WardrobeSet> set = new HashMap<>();
         if (container == null) return set;
-        String title = ColorUtils.stripColor(
-                container.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
-        if (!title.equals("View Wardrobe")) return set;
+        String title = ContainerUtils.getTitle(container);
+        if (!"View Wardrobe".equals(title)) return set;
 
         HashMap<Integer, Integer> parsingSlots = new HashMap<>();
         int equippedSlot = -1;
@@ -618,10 +610,8 @@ public class ProfileParser {
     }
     public static SlayersData parseSlayer(ContainerChest container) {
         if (container == null) return null;
-        String title = ColorUtils.stripColor(
-                container.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
-        if (!title.equals("View Slayers")) return null;
+        String title = ContainerUtils.getTitle(container);
+        if (title == null || !title.equals("View Slayers")) return null;
         EnumMap<Slayer, SlayerData> slayers = new EnumMap<>(Slayer.class);
         for(Slayer slayer : Slayer.values()){
             Aetheria.logger.info("[Slayer1] " + slayer);
@@ -687,10 +677,8 @@ public class ProfileParser {
     }
     public static DungeonData parseDungeon(ContainerChest container){
         if (container == null) return null;
-        String title = ColorUtils.stripColor(
-                container.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
-        if (!title.equals("View Dungeon Stats")) return null;
+        String title = ContainerUtils.getTitle(container);
+        if (title == null || !title.equals("View Dungeon Stats")) return null;
 
         ItemStack skill = container.getSlot(4).getStack();
         if(skill == null) return null;
@@ -847,10 +835,8 @@ public class ProfileParser {
     }
     public static HOTMData parseHOTM(ContainerChest container) {
         if (container == null) return null;
-        String title = ColorUtils.stripColor(
-                container.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
-        if (!title.equals("View HOTM")) return null;
+        String title = ContainerUtils.getTitle(container);
+        if (title == null || !title.equals("View HOTM")) return null;
 
         ItemStack hotm = container.getSlot(11).getStack();
         if(hotm == null) return null;
@@ -903,10 +889,8 @@ public class ProfileParser {
 
     public static InventoryData parseInvData(ContainerChest container) {
         if (container == null) return null;
-        String title = ColorUtils.stripColor(
-                container.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
-        if (!title.equals("View Inventory")) return null;
+        String title = ContainerUtils.getTitle(container);
+        if (title == null || !title.equals("View Inventory")) return null;
 
         HashMap<EquipmentSlot, ItemData> armorData = new HashMap<>();
         HashMap<Integer, ItemData>       invData   = new HashMap<>();
@@ -1131,10 +1115,8 @@ public class ProfileParser {
         EnumMap<Skill, SkillData> result = new EnumMap<>(Skill.class);
         if (container == null) return null;
 
-        String title = ColorUtils.stripColor(
-                container.getLowerChestInventory().getDisplayName().getUnformattedText()
-        ).trim();
-        if (!title.equals("View Skills")) return null;
+        String title = ContainerUtils.getTitle(container);
+        if (title == null || !title.equals("View Skills")) return null;
 
         for(Skill skill : Skill.values()){
             ItemStack stack = container.getSlot(skill.slot).getStack();

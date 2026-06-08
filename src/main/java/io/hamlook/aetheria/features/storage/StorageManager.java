@@ -8,9 +8,9 @@ import io.hamlook.aetheria.features.storage.utils.SContainer;
 import io.hamlook.aetheria.features.storage.utils.StorageListener;
 import io.hamlook.aetheria.features.storage.utils.StorageParser;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.inventory.ContainerChest;
 
 import java.util.LinkedHashMap;
@@ -89,7 +89,7 @@ public class StorageManager {
     }
 
     public static void renderOverlay(int mouseX, int mouseY) {
-        if (Minecraft.getMinecraft().currentScreen instanceof GuiChest) {
+        if (ContainerUtils.isChestOpen()) {
             lastValidChestTime = System.currentTimeMillis();
         }
         if (renderer == null && !StorageData.containers.isEmpty()) {
@@ -101,7 +101,7 @@ public class StorageManager {
         }
 
         // Check if overlay has been active without a storage container for too long
-        if (overlayActive && !(Minecraft.getMinecraft().currentScreen instanceof GuiChest)) {
+        if (overlayActive && !ContainerUtils.isChestOpen()) {
             long elapsed = System.currentTimeMillis() - lastValidChestTime;
 
             if (elapsed > TRANSITION_TIMEOUT) {
@@ -228,7 +228,7 @@ public class StorageManager {
 
     public static void overrideIsMouseOverSlot(net.minecraft.inventory.Slot slotIn, int mouseX, int mouseY, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
         if (!isOverlayActive() || renderer == null) return;
-        if (!(Minecraft.getMinecraft().currentScreen instanceof GuiChest)) return;
+        if (!ContainerUtils.isChestOpen()) return;
 
         boolean isPlayerSlot = slotIn.inventory == Minecraft.getMinecraft().thePlayer.inventory;
 

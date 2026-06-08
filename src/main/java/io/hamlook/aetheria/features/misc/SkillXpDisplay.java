@@ -2,8 +2,8 @@ package io.hamlook.aetheria.features.misc;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -60,16 +60,6 @@ public class SkillXpDisplay {
         return -1;
     }
 
-    private static String getContainerName() {
-        if (!(mc.currentScreen instanceof GuiChest)) return null;
-        try {
-            net.minecraft.inventory.IInventory inv = ((net.minecraft.inventory.ContainerChest) ((GuiChest) mc.currentScreen).inventorySlots).getLowerChestInventory();
-            return strip(inv.getDisplayName().getUnformattedText());
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     private static String formatXp(long xp) {
         if (xp <= 0) return "0";
         if (xp >= 1_000_000_000) return String.format("%.2fB", xp / 1e9);
@@ -86,9 +76,9 @@ public class SkillXpDisplay {
     public void onTooltip(ItemTooltipEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.misc.skillXpDisplay) return;
         if (event.toolTip == null || event.itemStack == null) return;
-        if (!(mc.currentScreen instanceof GuiChest)) return;
+        if (!ContainerUtils.isChestOpen()) return;
 
-        String containerName = getContainerName();
+        String containerName = ContainerUtils.getContainerName();
         if (containerName == null) return;
         boolean isSkill = containerName.contains("View Skills") || containerName.contains("Your Skills");
         boolean isDungeon = containerName.contains("View Dungeon Stats") || containerName.contains("Dungeoneering");
