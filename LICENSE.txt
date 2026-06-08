@@ -1,165 +1,341 @@
-                   GNU LESSER GENERAL PUBLIC LICENSE
-                       Version 3, 29 June 2007
+AETHERIA MOD LICENSE
+Version 1.0, 2026
+Short Identifier: AML-1.0
 
- Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
- Everyone is permitted to copy and distribute verbatim copies
- of this license document, but changing it is not allowed.
+Copyright (C) 2026 Hamlock and Contributors
+
+This License governs the use, modification, and distribution of the Aetheria
+Mod and its source code. While it incorporates certain copyleft concepts
+inspired by free software licenses, it is not the GNU Lesser General Public
+License and should not be interpreted as such. The purpose of this License
+is to promote transparency and public auditability of software distributed
+under its terms. The rights granted by this License are subject to the
+conditions and restrictions described below.
 
 
-  This version of the GNU Lesser General Public License incorporates
-the terms and conditions of version 3 of the GNU General Public
-License, supplemented by the additional permissions listed below.
+1. DEFINITIONS
 
-  0. Additional Definitions.
+1.1  "License" means the Aetheria Mod License, Version 1.0 (AML-1.0).
 
-  As used herein, "this License" refers to version 3 of the GNU Lesser
-General Public License, and the "GNU GPL" refers to version 3 of the GNU
-General Public License.
+1.2  "Project" means the Aetheria Mod and all source code covered under
+this License.
 
-  "The Library" refers to a covered work governed by this License,
-other than an Application or a Combined Work as defined below.
+1.3  "You" means any individual or entity exercising permissions granted by
+this License.
 
-  An "Application" is any work that makes use of an interface provided
-by the Library, but which is not otherwise based on the Library.
-Defining a subclass of a class defined by the Library is deemed a mode
-of using an interface provided by the Library.
+1.4  "Original Author" means Hamlock, or any successor designated in writing
+by Hamlock.
 
-  A "Combined Work" is a work produced by combining or linking an
-Application with the Library.  The particular version of the Library
-with which the Combined Work was made is also called the "Linked
-Version".
+1.5  "Modification" means any change made to the Source Code, Compiled
+Build, metadata, dependencies, build configuration, or any other
+component of the Project that alters its content, behavior, or
+identity in any way, including but not limited to editing source
+files, adding or removing dependencies, changing version strings,
+altering build scripts, or modifying any files that affect the
+resulting Compiled Build.
 
-  The "Minimal Corresponding Source" for a Combined Work means the
-Corresponding Source for the Combined Work, excluding any source code
-for portions of the Combined Work that, considered in isolation, are
-based on the Application, and not on the Linked Version.
+1.6  "Derivative Work" means any work based on or incorporating code from
+the Project, including forks, Modifications, or partial copies.
 
-  The "Corresponding Application Code" for a Combined Work means the
-object code and/or source code for the Application, including any data
-and utility programs needed for reproducing the Combined Work from the
-Application, but excluding the System Libraries of the Combined Work.
+1.7  "Compiled Build" means any executable, compiled, packaged, obfuscated,
+transformed, or otherwise usable form of the Project intended to be
+run by an end user, including but not limited to JAR files, bundled
+distributions, installer packages, and modified client distributions.
 
-  1. Exception to Section 3 of the GNU GPL.
+1.8  "Contribution" means any source code, patch, pull request,
+documentation, or other material intentionally submitted for inclusion
+in the Project, regardless of whether it is ultimately accepted or
+merged.
 
-  You may convey a covered work under sections 3 and 4 of this License
-without being bound by section 3 of the GNU GPL.
+1.9  "Public Distribution" means publishing, hosting, or facilitating
+access to a Compiled Build of the Project or any Derivative Work in
+a manner accessible to any person or entity beyond yourself, including
+but not limited to:
 
-  2. Conveying Modified Versions.
+     (a) Publishing a Compiled Build on any platform such as GitHub,
+         Modrinth, CurseForge, or any other file hosting or mod distribution
+         service, regardless of whether the release was promoted, advertised,
+         or shared.
 
-  If you modify a copy of the Library, and, in your modifications, a
-facility refers to a function or data to be supplied by an Application
-that uses the facility (other than as an argument passed when the
-facility is invoked), then you may convey a copy of the modified
-version:
+     (b) Sharing or linking to download locations for a Compiled Build in
+         any public or semi-public space including servers, forums, posts,
+         or websites, including links to third-party mirrors or unofficial
+         hosting locations.
 
-   a) under this License, provided that you make a good faith effort to
-   ensure that, in the event an Application does not supply the
-   function or data, the facility still operates, and performs
-   whatever part of its purpose remains meaningful, or
+     (c) Distributing any patch, installer, updater, binary difference,
+         reconstruction tool, or similar mechanism whose primary purpose
+         is to create, modify, or reproduce a Compiled Build of the
+         Project or a Derivative Work for an end user.
 
-   b) under the GNU GPL, with none of the additional permissions of
-   this License applicable to that copy.
+     (d) Directing, instructing, or otherwise facilitating any person to
+         obtain a Compiled Build from any source other than the Project's
+         official distribution channels.
 
-  3. Object Code Incorporating Material from Library Header Files.
+     For the avoidance of doubt, merely linking to an Official Release hosted
+     on the Project's official distribution channels in accordance with
+     Section 3(d) does not constitute Public Distribution.
 
-  The object code form of an Application may incorporate material from
-a header file that is part of the Library.  You may convey such object
-code under terms of your choice, provided that, if the incorporated
-material is not limited to numerical parameters, data structure
-layouts and accessors, or small macros, inline functions and templates
-(ten or fewer lines in length), you do both of the following:
+     Public Distribution does not include making source code publicly
+     visible, shared, forked, or modified in any repository, source-code
+     hosting service, or public channel, provided no Compiled Build is
+     published or distributed alongside it.
 
-   a) Give prominent notice with each copy of the object code that the
-   Library is used in it and that the Library and its use are
-   covered by this License.
+     Automatic build artifacts produced by continuous integration systems
+     shall not by themselves constitute Public Distribution, provided such
+     artifacts are not intentionally published as releases, linked to
+     publicly, or otherwise promoted for end-user distribution.
 
-   b) Accompany the object code with a copy of the GNU GPL and this license
-   document.
+1.10 "Private Distribution" means sharing a Compiled Build directly with
+specific named individuals through a direct and private channel such
+as a direct message or private file transfer, provided that no more
+than five individuals in aggregate receive that Compiled Build through
+this means. Any distribution that does not qualify as Private
+Distribution under this definition and is not otherwise permitted
+under Section 3 is considered Public Distribution and requires Written
+Permission under Section 4. Sharing within a team, staff group, or
+any group of more than five people is not considered Private
+Distribution regardless of whether that group is internal or private.
 
-  4. Combined Works.
+1.11 "Commercial Use" means use primarily intended for commercial advantage
+or monetary compensation, including but not limited to selling the
+software, selling access to a service that depends on the software, or
+using the software in a product or service that generates revenue. The
+following are not considered Commercial Use:
 
-  You may convey a Combined Work under terms of your choice that,
-taken together, effectively do not restrict modification of the
-portions of the Library contained in the Combined Work and reverse
-engineering for debugging such modifications, if you also do each of
-the following:
+     (a) YouTube videos or Twitch streams featuring the Project.
 
-   a) Give prominent notice with each copy of the Combined Work that
-   the Library is used in it and that the Library and its use are
-   covered by this License.
+     (b) Patreon-supported modpacks that include the Project.
 
-   b) Accompany the Combined Work with a copy of the GNU GPL and this license
-   document.
+     (c) Ad-supported websites that merely reference the Project.
 
-   c) For a Combined Work that displays copyright notices during
-   execution, include the copyright notice for the Library among
-   these notices, as well as a reference directing the user to the
-   copies of the GNU GPL and this license document.
+     (d) Operating a Minecraft server that uses the Project while accepting
+         voluntary donations, provided access to the Project itself is not
+         sold or restricted based on payment.
 
-   d) Do one of the following:
+1.12 "Written Permission" means express written authorization from the
+     Original Author through a documented channel such as email or direct
+     message. Written Permission is granted per release, applies only to
+     the specific Compiled Build and authorized party identified in the
+     permission, and is irrevocable for that release unless a material
+     breach of this License occurs, but does not extend to any future
+     releases or distributions unless explicitly stated.
 
-       0) Convey the Minimal Corresponding Source under the terms of this
-       License, and the Corresponding Application Code in a form
-       suitable for, and under terms that permit, the user to
-       recombine or relink the Application with a modified version of
-       the Linked Version to produce a modified Combined Work, in the
-       manner specified by section 6 of the GNU GPL for conveying
-       Corresponding Source.
+1.13 "Official Release" means a Compiled Build published directly by the
+Original Author, a contributor explicitly authorized by the Original
+Author, or a successor designated in writing by the Original Author,
+through the Project's official distribution channels.
 
-       1) Use a suitable shared library mechanism for linking with the
-       Library.  A suitable mechanism is one that (a) uses at run time
-       a copy of the Library already present on the user's computer
-       system, and (b) will operate properly with a modified version
-       of the Library that is interface-compatible with the Linked
-       Version.
+1.14 "Source Code" means the preferred form of the Project for making
+Modifications, including all source files, build scripts, configuration
+files, dependency declarations, and other materials used to produce or
+included in a Compiled Build or Official Release.
 
-   e) Provide Installation Information, but only if you would otherwise
-   be required to provide such information under section 6 of the
-   GNU GPL, and only to the extent that such information is
-   necessary to install and execute a modified version of the
-   Combined Work produced by recombining or relinking the
-   Application with a modified version of the Linked Version. (If
-   you use option 4d0, the Installation Information must accompany
-   the Minimal Corresponding Source and Corresponding Application
-   Code. If you use option 4d1, you must provide the Installation
-   Information in the manner specified by section 6 of the GNU GPL
-   for conveying Corresponding Source.)
+     Source Code does not include API keys, environment files, credentials,
+     secrets, or configuration values intended to remain private and not
+     compiled into the build itself.
 
-  5. Combined Libraries.
+1.15 "Project Branding" means the names Aetheria, JEF, Just Enough
+Fakepixel, and any associated logos, icons, or visual identifiers
+used to identify the Project or its authors.
 
-  You may place library facilities that are a work based on the
-Library side by side in a single library together with other library
-facilities that are not Applications and are not covered by this
-License, and convey such a combined library under terms of your
-choice, if you do both of the following:
 
-   a) Accompany the combined library with a copy of the same work based
-   on the Library, uncombined with any other library facilities,
-   conveyed under the terms of this License.
+2. CONTRIBUTOR AGREEMENT
 
-   b) Give prominent notice with the combined library that part of it
-   is a work based on the Library, and explaining where to find the
-   accompanying uncombined form of the same work.
+By submitting a Contribution to the Project, You represent that You have
+the right to license the Contribution and authorize the Original Author
+to administer and enforce this License, including granting Written
+Permission for Public Distribution of Derivative Works that incorporate
+Your Contribution. Contributors retain copyright in their own Contributions
+and grant the Original Author and any successor designated under Section
+1.4 the right to relicense those Contributions under future versions of
+this License only. A Contribution becomes part of the Project only when
+accepted and merged by the Original Author.
 
-  6. Revised Versions of the GNU Lesser General Public License.
 
-  The Free Software Foundation may publish revised and/or new versions
-of the GNU Lesser General Public License from time to time. Such new
-versions will be similar in spirit to the present version, but may
-differ in detail to address new problems or concerns.
+3. LICENSE GRANT
 
-  Each version is given a distinguishing version number. If the
-Library as you received it specifies that a certain numbered version
-of the GNU Lesser General Public License "or any later version"
-applies to it, you have the option of following the terms and
-conditions either of that published version or of any later version
-published by the Free Software Foundation. If the Library as you
-received it does not specify a version number of the GNU Lesser
-General Public License, you may choose any version of the GNU Lesser
-General Public License ever published by the Free Software Foundation.
+Subject to compliance with this License, You are granted a non-exclusive
+license to:
 
-  If the Library as you received it specifies that a proxy can decide
-whether future versions of the GNU Lesser General Public License shall
-apply, that proxy's public statement of acceptance of any version is
-permanent authorization for you to choose that version for the
-Library.
+     (a) View, study, use, and modify the Source Code.
+
+     (b) Publicly view, share, fork, and modify the Source Code of the
+         Project provided no Compiled Build is published or distributed.
+
+     (c) Share Compiled Builds through Private Distribution as defined in
+         Section 1.10.
+
+     (d) Share links to Official Releases publicly without requiring
+         Written Permission, provided the link directs to an Official
+         Release hosted on the Project's official distribution channels
+         and is not used to misrepresent the source or authorship of
+         the Project.
+
+     (e) Include an unmodified Official Release of the Project in a publicly
+         distributed modpack without requiring separate Written Permission,
+         provided the Project files are not modified, repackaged, or
+         redistributed separately from the modpack, and are sourced directly
+         from an Official Release.
+
+     (f) Submit Contributions to the Project under the terms of this License.
+
+
+4. RESTRICTIONS
+
+4.1  Except as permitted under Section 3(e), You may not publicly
+distribute or host a Compiled Build, including unmodified Official
+Releases, without obtaining Written Permission from the Original
+Author prior to that distribution. Sharing links to Official Releases
+hosted on the Project's official channels is permitted under Section 3(d)
+and does not require Written Permission.
+This applies regardless of whether the release is promoted or actively
+shared, and regardless of the platform used. Written Permission is
+granted per release and applies only to the specific Compiled Build
+identified in the permission at the time it was granted, in the exact
+state it was in when permission was issued. Each permission must
+identify the specific Compiled Build it covers, the authorized
+distribution platform or method, and the name of the authorized party. Any subsequent Modification to that Compiled Build or its
+contents voids the Written Permission for that release, and new
+Written Permission must be obtained before the modified version is
+distributed. It does not extend to any future versions or additional
+distributions unless explicitly stated. Once granted, Written
+Permission for a specific unmodified release is irrevocable for that
+release, but does not authorize any subsequent release.
+
+4.2  You may not use the Project or any Derivative Work for Commercial Use
+without Written Permission from the Original Author. This includes
+but is not limited to locking access to an Official Release behind
+advertisements, paywalls, or any form of payment or exchange,
+regardless of whether the Official Release itself is modified.
+
+4.3  You may not sublicense, relicense, or apply different license terms
+to any portion of the Project or any portion of a Derivative Work
+that is derived from or incorporates the Project's Source Code.
+Works that are not derivative works of the Project and do not
+contain Project Source Code may be licensed under different terms
+at the author's discretion.
+
+4.4  All rights in Project Branding are reserved by the Original Author
+unless expressly granted in writing. You may not use Project Branding
+to identify, promote, or name any Derivative Work, fork, or
+redistribution in a way that implies official endorsement by or
+affiliation with the Original Author without Written Permission.
+This includes but is not limited to using the names Aetheria, JEF,
+or Just Enough Fakepixel as the name or part of the name of any
+fork, release, or related project. This restriction does not
+prohibit factual references to the Project for purposes of
+compatibility, attribution, commentary, or identification, such
+as stating that a work is a fork of or compatible with Aetheria.
+
+
+5. SOURCE AVAILABILITY
+
+Any Project or Derivative Work that is publicly distributed under this
+License must make all covered Source Code publicly available at all
+times. This is a mandatory condition of this License and cannot be
+waived. No party may
+publicly distribute a Project or Derivative Work under this License while
+keeping any portion of covered Source Code private or restricted. This
+obligation applies to the Original Author and to any party granted Written
+Permission to distribute a Derivative Work. Any Derivative Work that is
+publicly distributed under Written Permission must make publicly available
+the Source Code of all portions that incorporate or are derived from the
+Project. Works that are not derivative works of the Project and do not
+contain Project Source Code are not subject to this obligation. Source
+Code must be accessible without cost, without registration, and without
+any barrier to access, and must remain publicly available at all times.
+
+If a party becomes unable to maintain public access to the Source Code due
+to circumstances beyond their reasonable control, such as account suspension,
+platform termination, or similar events, they shall not be considered in
+violation of this License provided they make reasonable efforts to restore
+public access or mirror the Source Code on an alternative platform within
+five days.
+
+For an unmodified Official Release distributed under Section 3(e)
+this obligation is satisfied if the corresponding Project Source Code
+is publicly available from the Project's official repository.
+
+6. ATTRIBUTION
+
+Any distribution of the Project or a Derivative Work must include clear
+credit to the original Project and its authors. Existing copyright notices
+must be retained. A link to the original repository must be included where
+reasonably possible.
+
+The following notice should be retained in source files covered by this
+License:
+
+     Copyright (C) [year] [copyright holder]
+     Licensed under the Aetheria Mod License (AML-1.0)
+
+
+7. TERMINATION
+
+Any attempt to exercise rights granted under this License while in violation
+of its terms is void, and all rights granted under this License terminate
+automatically upon such violation. However, if the violation is cured within
+five days of the Original Author providing written notice of the violation,
+the rights granted under this License will be reinstated. The Original Author
+reserves the right to pursue any remedies available under applicable law in
+the event of a violation that is not cured within that period.
+
+
+8. SEVERABILITY
+
+If any provision of this License is found to be unenforceable under
+applicable law, that provision shall be modified to the minimum extent
+necessary to make it enforceable. If modification is not possible, the
+provision shall be severed from this License. The remaining provisions shall
+continue in full force and effect.
+
+
+9. DISCLAIMER OF WARRANTY
+
+THE PROJECT IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+FROM, OUT OF, OR IN CONNECTION WITH THE PROJECT OR THE USE OR OTHER DEALINGS
+IN THE PROJECT.
+
+
+10. LICENSE VERSIONS
+
+The Original Author may publish revised versions of this License. Unless
+otherwise stated, a project licensed under AML-1.0 remains licensed under
+AML-1.0 and is not automatically subject to later versions. The Original
+Author may offer the option to use a later version, but no such obligation
+exists on either party.
+
+
+11. ENTIRE AGREEMENT
+
+This License constitutes the entire agreement between the parties regarding
+the Project and supersedes any prior understandings, agreements, or
+representations concerning the subject matter herein.
+
+12. THIRD-PARTY INTELLECTUAL PROPERTY
+
+This License applies only to the Project and does not grant any rights
+to Minecraft, Mojang, Microsoft, or any other third-party intellectual
+property.
+
+Minecraft is a trademark of Microsoft Corporation. Use of the Project
+may be subject to the Minecraft End User License Agreement, Commercial
+Usage Guidelines, and other applicable terms imposed by Microsoft or
+its affiliates.
+
+Nothing in this License shall be interpreted as granting permission to
+use, copy, modify, distribute, or exploit any third-party intellectual
+property except to the extent separately permitted by the applicable
+rights holder.
+
+
+13. CONTACT
+
+To request Written Permission for Public Distribution or Commercial Use,
+contact the Original Author by opening an issue on the official project
+repository, or by reaching out directly through any publicly listed contact
+information on the repository.
