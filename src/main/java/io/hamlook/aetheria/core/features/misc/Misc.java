@@ -37,7 +37,6 @@ public class Misc {
     @Category(name = "Price Fetcher", desc = "Settings related to the dynamic price fetcher used for various purposes.")
     public PriceFetcherConfig priceFetcher = new PriceFetcherConfig();
 
-    // ── standalone options ───────────────────────────────────────────────────
     @Expose
     @ConfigOption(name = "Item Stack Tips", desc = "Shows enchant levels on books and floor numbers on Catacombs passes")
     @ConfigEditorBoolean
@@ -105,4 +104,8 @@ public class Misc {
     @Expose
     @Category(name = "Item List", desc = "Settings for the Item List Overlay")
     public ItemListConfig itemList = new ItemListConfig();
+
+    @Expose
+    @Category(name = "Item Log Alerts", desc = "On-screen alerts when specific items are picked up")
+    public ItemLogAlertsConfig itemLogAlerts = new ItemLogAlertsConfig();
 }

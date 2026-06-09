@@ -5,6 +5,7 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.data.SkyblockData;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
@@ -29,6 +30,7 @@ public class ItemPickupLog extends Overlay {
     private static ItemPickupLog instance;
     private final LinkedList<LogEntry> log = new LinkedList<>();
     private final List<BiConsumer<String, Integer>> itemChangeListeners = new ArrayList<>();
+    private final List<RichItemChangeListener> richItemChangeListeners = new ArrayList<>();
     private ItemStack[] preScreenSnapshot = null;
     private ItemStack[] previousInventory = null;
 
@@ -52,6 +54,15 @@ public class ItemPickupLog extends Overlay {
 
     public void addItemChangeListener(BiConsumer<String, Integer> listener) {
         itemChangeListeners.add(listener);
+    }
+
+    @FunctionalInterface
+    public interface RichItemChangeListener {
+        void onItemChange(String internalId, String displayName, int delta);
+    }
+
+    public void addRichItemChangeListener(RichItemChangeListener listener) {
+        richItemChangeListeners.add(listener);
     }
 
     private boolean inventoryChanged(ItemStack[] prev, ItemStack[] curr) {
@@ -142,14 +153,27 @@ public class ItemPickupLog extends Overlay {
         resetSnapshot();
     }
 
+    private static void accumulateInternal(Map<String, Integer> map, Map<String, String> internalToDisplay, ItemStack stack) {
+        if (stack == null) return;
+        String id = ItemUtils.getInternalName(stack);
+        if (id.isEmpty()) return;
+        map.merge(id, stack.stackSize, Integer::sum);
+        internalToDisplay.putIfAbsent(id, stack.getDisplayName());
+    }
+
     private void diffAndLog(ItemStack[] prev, ItemStack[] curr) {
         Map<String, Integer> prevMap = new HashMap<>();
         Map<String, Integer> currMap = new HashMap<>();
+        Map<String, Integer> prevInternalMap = new HashMap<>();
+        Map<String, Integer> currInternalMap = new HashMap<>();
+        Map<String, String> internalToDisplay = new HashMap<>();
 
         for (int i = 0; i < prev.length; i++) {
             if (i == IGNORED_HOTBAR_SLOT) continue;
             accumulate(prevMap, prev[i]);
             accumulate(currMap, curr[i]);
+            accumulateInternal(prevInternalMap, internalToDisplay, prev[i]);
+            accumulateInternal(currInternalMap, internalToDisplay, curr[i]);
         }
 
         Set<String> allKeys = new HashSet<>(prevMap.keySet());
@@ -164,6 +188,20 @@ public class ItemPickupLog extends Overlay {
             }
 
             addOrMerge(name, delta);
+        }
+
+        if (!richItemChangeListeners.isEmpty()) {
+            Set<String> allInternal = new HashSet<>(prevInternalMap.keySet());
+            allInternal.addAll(currInternalMap.keySet());
+
+            for (String id : allInternal) {
+                int delta = currInternalMap.getOrDefault(id, 0) - prevInternalMap.getOrDefault(id, 0);
+                if (delta == 0) continue;
+                String displayName = internalToDisplay.getOrDefault(id, "");
+                for (RichItemChangeListener listener : richItemChangeListeners) {
+                    listener.onItemChange(id, displayName, delta);
+                }
+            }
         }
     }
 
