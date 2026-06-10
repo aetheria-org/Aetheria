@@ -26,18 +26,14 @@ public class PriceMap {
     public static List<BazaarEntry> getBZPrice(String id,int entries){
         List<BazaarEntry> prices = priceData.bazaar.get(id);
         if(prices == null) return null;
-        prices.sort((c,c1) -> {
-            return Long.compare(c1.timestamp, c.timestamp);
-        });
+        prices.sort((c,c1) -> Long.compare(c1.timestamp, c.timestamp));
         return prices.subList(0, entries);
     }
 
     public static List<AuctionEntry> getAHPrice(String id, int entries){
         List<AuctionEntry> prices = priceData.auction.get(id);
         if(prices == null) return null;
-        prices.sort((c,c1) -> {
-            return Double.compare(c1.price, c.price);
-        });
+        prices.sort((c,c1) -> Double.compare(c1.price, c.price));
         return prices.subList(0, (entries > 0) ? entries : prices.size());
     }
 
@@ -54,6 +50,7 @@ public class PriceMap {
 
                 int responseCode = conn.getResponseCode();
                 if (responseCode == 200) {
+                    Aetheria.logger.info("[PriceDetector] Loaded entries items from DB");
                     try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
                         StringBuilder sb = new StringBuilder();
                         String line;
@@ -61,11 +58,13 @@ public class PriceMap {
 
                         PriceData fetched = gson.fromJson(sb.toString(), PriceData.class);
                         if (fetched != null) {
+                            Aetheria.logger.info("[PriceDetector] Loaded entries items from DB aren't null");
                             synchronized (priceData) {
                                 priceData.bazaar.clear();
                                 priceData.auction.clear();
                                 if (fetched.bazaar != null) priceData.bazaar.putAll(fetched.bazaar);
                                 if (fetched.auction != null) priceData.auction.putAll(fetched.auction);
+                                Aetheria.logger.info("[PriceDetector] Loaded " + (priceData.bazaar.size() + priceData.auction.size()) + " items from DB");
                             }
                         }
                     }

@@ -104,6 +104,7 @@ public class PriceDetector {
         if (event.phase != TickEvent.Phase.END) return;
 
         if (!initialised) {
+            Aetheria.logger.info("[PriceDetector] Starting Initialised Ticking of PriceDetector");
             initialised = true;
             sendIntervalTicks = (int) (OtherDataAPI.getPriceUploadInterval() / 50);
             fetchIntervalMs = OtherDataAPI.getPriceFetchInterval();
@@ -119,8 +120,10 @@ public class PriceDetector {
 
         long now = System.currentTimeMillis();
         if (now - lastFetchTime >= fetchIntervalMs) {
+            Aetheria.logger.info("[PriceDetector] Updating PriceMap");
             lastFetchTime = now;
             PriceMap.fetch();
+            Aetheria.logger.info("[PriceDetector] Updated PriceMap");
         }
     }
 
@@ -163,7 +166,7 @@ public class PriceDetector {
                 }
 
                 int responseCode = conn.getResponseCode();
-                Aetheria.logger.info("Sent all prices, response: " + responseCode);
+                Aetheria.logger.info("Sent all prices, response: " + responseCode + " | " + conn.getResponseMessage());
             } catch (Exception e) {
                 Aetheria.logger.info("Failed to send prices: " + e.getMessage());
             }

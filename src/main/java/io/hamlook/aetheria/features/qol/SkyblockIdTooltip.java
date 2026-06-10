@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.qol;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.price.PriceMap;
 import io.hamlook.aetheria.features.price.vars.AuctionEntry;
@@ -15,6 +16,7 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,7 +27,7 @@ public class SkyblockIdTooltip {
 
     private int tickCounter = 0;
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onTooltip(ItemTooltipEvent e) {
         if (e.toolTip == null || e.itemStack == null) return;
         if (ATHRConfig.feature == null) return;
@@ -33,7 +35,6 @@ public class SkyblockIdTooltip {
         boolean doRoman = ATHRConfig.feature.qol.romanNumerals;
         boolean doSkyblock = ATHRConfig.feature.qol.showSkyblockId;
         boolean doPrice = ATHRConfig.feature.qol.showPriceInLore;
-        String id = ItemUtils.getInternalName(e.itemStack);
 
         if (doRoman) {
             for (int i = 1; i < e.toolTip.size(); i++) {
@@ -43,20 +44,28 @@ public class SkyblockIdTooltip {
         }
 
         if (doSkyblock) {
+            String id = ItemUtils.getInternalName(e.itemStack);
             if (!id.isEmpty()) {
                 String line = EnumChatFormatting.DARK_GRAY + "skyblock:" + id;
                 if (!e.toolTip.contains(line)) e.toolTip.add(line);
             }
         }
         if(doPrice) {
-            if(id == null || id.isEmpty()) return;
+            String id = ItemUtils.getInternalName(e.itemStack);
+            if(id == null || id.isEmpty()){
+                Aetheria.logger.info("ID is Null for " + e.itemStack.getItem().getRegistryName());
+                return;
+            }
             List<BazaarEntry> entry = PriceMap.getBZPrice(id,1);
             List<String> lines = new ArrayList<>();
             if(entry == null || entry.isEmpty()) {
+
                 List<AuctionEntry> ahEntry = PriceMap.getAHPrice(id,-1);
                 if(ahEntry == null || ahEntry.isEmpty()) {
+                    Aetheria.logger.info(id + " is Missing from DB");
                     lines.add("§cThis Item does not have an updated price yet.");
                 }else{
+                    Aetheria.logger.info(id + " is Auction Based");
                     double lowestBin = -1;
                     double highestBin = -1;
                     double averageBin = -1;
@@ -79,14 +88,16 @@ public class SkyblockIdTooltip {
                     lines.add("§6§bAverage BIN: §r§a" + (averageBin > 0 ? averageBin : "N/A") + " coins.");
                     lines.add("§6§bAverage AH: §r§a" + (averageAH > 0 ? averageAH : "N/A") + " coins.");
                 }
-                return;
             }else {
                 BazaarEntry price = entry.get(0);
                 if (price != null) {
+                    Aetheria.logger.info(id + " is Bazaar Based");
                     lines.add("§6§bBZ Insta-Buy: §r§a" + (price.iBuy >= 0 ? price.iBuy : "N/A"));
                     lines.add("§6§bBZ Insta-Sell: §r§a" + (price.iSell >= 0 ? price.iSell : "N/A"));
-                    lines.add("§6§bBZ Buy Offer: §r§a" + (price.oBuy >= 0 ? price.oBuy : "N/A"));
-                    lines.add("§6§bBZ Sell Order: §r§a" + (price.oSell >= 0 ? price.oSell : "N/A"));
+                    if (price.priceType == PriceType.BZ_WITH_OFFER) {
+                        lines.add("§6§bBZ Buy Offer: §r§a" + (price.oBuy >= 0 ? price.oBuy : "N/A"));
+                        lines.add("§6§bBZ Sell Order: §r§a" + (price.oSell >= 0 ? price.oSell : "N/A"));
+                    }
                 }
             }
             e.toolTip.addAll(lines);
