@@ -9,6 +9,8 @@ import java.util.Map;
 public class PriceAPI {
 
     private static final Map<String, Double> HARDCODED_PRICES = new HashMap<>();
+    private static final Map<String, CachedPrice> PRICE_CACHE = new HashMap<>();
+    private static final long CACHE_TIME_MS = 30_000L;
 
     static {
         HARDCODED_PRICES.put("GHOSTLY_BOOTS", 77_000.0);
@@ -16,8 +18,8 @@ public class PriceAPI {
     }
 
     /**
-     * Get the price of an item by its internal name, example PriceAPI.getPrice("SORROW")
-     * First check hardcoded prices, then queries the price database
+     * Get the price of an item by its internal name
+     * First checks hardcoded prices, then queries the price database
      *
      * @param internalItemId The internal Skyblock item ID
      * @return The price in coins, or -1 if not available
@@ -32,7 +34,18 @@ public class PriceAPI {
         if (hardcodedPrice > 0) {
             return hardcodedPrice;
         }
-        return getPriceFromMap(internalItemId);
+
+        // Check cache
+        CachedPrice cached = PRICE_CACHE.get(internalItemId);
+        if (cached != null && !cached.isExpired()) {
+            return cached.price;
+        }
+
+        double price = getPriceFromMap(internalItemId);
+
+        PRICE_CACHE.put(internalItemId, new CachedPrice(price, System.currentTimeMillis()));
+
+        return price;
     }
 
     private static double getHardcodedPrice(String itemId) {
@@ -51,5 +64,19 @@ public class PriceAPI {
             return -1;
         }
         return -1;
+    }
+
+    private static class CachedPrice {
+        double price;
+        long timestamp;
+
+        CachedPrice(double price, long timestamp) {
+            this.price = price;
+            this.timestamp = timestamp;
+        }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() - timestamp > CACHE_TIME_MS;
+        }
     }
 }
