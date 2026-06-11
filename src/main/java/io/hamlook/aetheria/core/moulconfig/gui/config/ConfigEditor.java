@@ -227,7 +227,63 @@ public class ConfigEditor extends GuiElement {
 
     private void setSelectedCategory(String category) {
         selectedCategory = category;
+        selectedSubcategoryPath.clear();
         optionsScroll.setValue(0);
+
+        // During search, if no direct matches but subcategories have matches, auto-open first matching subcategory
+        if (searchedOptions != null && !searchedOptions.isEmpty()) {
+            ConfigProcessor.ProcessedCategory cat = processedConfig.get(category);
+            if (cat != null) {
+                // Check if there are direct matches in this category
+                boolean hasDirectMatches = cat.options.values().stream()
+                        .anyMatch(opt -> searchedOptions.contains(opt));
+
+                // If no direct matches but category has subcategories, try to find matches inside
+                if (!hasDirectMatches && !cat.subcategories.isEmpty()) {
+                    List<String> matchingPath = findFirstMatchingSubcategoryPath(cat.subcategories, new ArrayList<>());
+                    if (!matchingPath.isEmpty()) {
+                        selectedSubcategoryPath.addAll(matchingPath);
+                        categoriesWithTreeOpen.add(category);
+
+                        // Expand all parent paths to make the match visible
+                        Set<List<String>> expandedPaths = getExpandedPaths(category);
+                        for (int i = 1; i <= matchingPath.size(); i++) {
+                            expandedPaths.add(new ArrayList<>(matchingPath.subList(0, i)));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Recursively finds the first subcategory path that contains matching search options.
+     * Returns an empty list if no matches found.
+     */
+    private List<String> findFirstMatchingSubcategoryPath(LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subs, List<String> currentPath) {
+        for (Map.Entry<String, ConfigProcessor.ProcessedSubcategory> subEntry : subs.entrySet()) {
+            ConfigProcessor.ProcessedSubcategory sub = subEntry.getValue();
+            List<String> path = new ArrayList<>(currentPath);
+            path.add(subEntry.getKey());
+
+            // Check if this subcategory has any matching options
+            boolean hasMatch = sub.options.values().stream()
+                    .anyMatch(opt -> searchedOptions.contains(opt));
+
+            if (hasMatch) {
+                return path;
+            }
+
+            // Recursively search nested subcategories
+            if (!sub.subcategories.isEmpty()) {
+                List<String> nestedMatch = findFirstMatchingSubcategoryPath(sub.subcategories, path);
+                if (!nestedMatch.isEmpty()) {
+                    return nestedMatch;
+                }
+            }
+        }
+
+        return new ArrayList<>();
     }
 
     private void toggleTreePath(String catKey, List<String> targetPath) {
