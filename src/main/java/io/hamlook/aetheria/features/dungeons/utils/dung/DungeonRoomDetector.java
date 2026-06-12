@@ -96,7 +96,9 @@ public class DungeonRoomDetector {
         if (ATHRConfig.feature == null) return;
         boolean overlayOn = ATHRConfig.feature.dungeons.dungeonRoomOverlayConfig.dungeonRoomOverlay;
         boolean sfOn = ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled;
-        if (!overlayOn && !sfOn) {
+        boolean dmOn = ATHRConfig.feature.dungeons.dungeonMapConfig.showVisitedRoomNames;
+
+        if (!overlayOn && !sfOn && !dmOn) {
             DungeonRoomOverlay.currentRoomName = null;
             DungeonRoomOverlay.currentRoomCategory = null;
             DungeonRoomOverlay.currentRoomNotes = null;

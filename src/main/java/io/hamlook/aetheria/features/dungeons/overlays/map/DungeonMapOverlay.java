@@ -32,6 +32,8 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec4b;
 import net.minecraft.world.storage.MapData;
 import io.hamlook.aetheria.features.dungeons.utils.dung.DungeonRoomDetector;
+import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.*;
@@ -43,7 +45,7 @@ public class DungeonMapOverlay extends Overlay {
 
     @Getter
     private static DungeonMapOverlay instance;
-    private static final DynamicTexture map = new DynamicTexture(128,128);
+    private static DynamicTexture map = new DynamicTexture(128,128);
     private static ResourceLocation mapTexture;
     private static byte[] lastMapColors = null;
     private static int ticks = 0;
@@ -56,6 +58,14 @@ public class DungeonMapOverlay extends Overlay {
         mapTexture = Minecraft.getMinecraft().getTextureManager().getDynamicTextureLocation("dungeon_map",map);
     }
 
+    @SubscribeEvent
+    public void onUnload(WorldEvent.Unload e){
+        map = new DynamicTexture(128,128);
+        mapTexture = Minecraft.getMinecraft().getTextureManager().getDynamicTextureLocation("dungeon_map",map);
+        lastMapColors = null;
+        ticks = 0;
+        players.clear();
+    }
 
     @Override
     public void render(boolean preview) {
