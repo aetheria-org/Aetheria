@@ -104,6 +104,7 @@ public class DungeonRoomDetector {
             DungeonRoomOverlay.currentRoomNotes = null;
             lastRoomHash = null;
             lastRoomJson = null;
+            visitedRooms.clear();
             resetOrigin();
             return;
         }

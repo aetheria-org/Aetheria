@@ -65,6 +65,7 @@ public class DungeonMapOverlay extends Overlay {
         lastMapColors = null;
         ticks = 0;
         players.clear();
+        DungeonRoomDetector.getVisitedRooms().clear();
     }
 
     @Override
