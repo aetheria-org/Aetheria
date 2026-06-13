@@ -48,14 +48,15 @@ public class Dungeons {
     public DungeonMapConfig dungeonMapConfig = new DungeonMapConfig();
 
     @Expose
+    @Category(name = "D.Chest Price Estimator",desc = "Custom estimator, that estimates a profit or loss on dungeon chests")
+    public PriceEstimatorConfig priceEstimator = new PriceEstimatorConfig();
+
+    @Expose
     @ConfigOption(name = "Hide Blessing Messages", desc = "Hides the 'DUNGEON BUFF! ... found a Blessing of ...' chat spam in dungeons")
     @ConfigEditorBoolean
     public boolean hideBlessingMessages = false;
 
-    @Expose
-    @ConfigOption(name = "Dungeon Reward Profit Estimator", desc = "Estimates whether you will get profit by taking a reward chest or not.")
-    @ConfigEditorBoolean
-    public boolean rewardProfitEstimator = false;
+
 
     @Expose
     public java.util.Map<String, Long> floorPbs = new java.util.HashMap<>();

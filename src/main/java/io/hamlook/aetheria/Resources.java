@@ -65,6 +65,7 @@ public final class Resources {
     public static final int STORAGE_STYLE_COUNT = 5;
     private static final ResourceLocation[] BC_BG = new ResourceLocation[BETTER_CONTAINERS_STYLE_COUNT];
     private static final ResourceLocation[] BC_SLOT = new ResourceLocation[BETTER_CONTAINERS_STYLE_COUNT];
+    private static final ResourceLocation[] BC_NINE_SLICE = new ResourceLocation[BETTER_CONTAINERS_STYLE_COUNT];
     private static final ResourceLocation[] STORAGE_BG_TEXTURES = new ResourceLocation[STORAGE_STYLE_COUNT];
     private static final ResourceLocation[] STORAGE_SLOT_TEXTURES = new ResourceLocation[STORAGE_STYLE_COUNT];
 
@@ -73,6 +74,7 @@ public final class Resources {
             int s = i + 1;
             BC_BG[i] = new ResourceLocation("aetheria", "dynamic_54/style" + s + "/dynamic_54.png");
             BC_SLOT[i] = new ResourceLocation("aetheria", "dynamic_54/style" + s + "/dynamic_54_slot_ctm.png");
+            BC_NINE_SLICE[i] = new ResourceLocation("aetheria", "dynamic_54/style" + s + "/nine_slice.png");
         }
         for (int i = 0; i < STORAGE_STYLE_COUNT; i++) {
             STORAGE_BG_TEXTURES[i] = new ResourceLocation("aetheria", "textures/gui/containers/style" + i + "_bg.png");
@@ -88,6 +90,10 @@ public final class Resources {
 
     public static ResourceLocation betterContainersSlot(int styleIndex) {
         return BC_SLOT[Math.max(0, Math.min(styleIndex, BETTER_CONTAINERS_STYLE_COUNT - 1))];
+    }
+
+    public static ResourceLocation betterContainerNineSlice(int styleIndex) {
+        return BC_NINE_SLICE[Math.max(0, Math.min(styleIndex, BETTER_CONTAINERS_STYLE_COUNT - 1))];
     }
 
     /**

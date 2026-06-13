@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.features.dungeons.utils;
 
-import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapOverlay;
+import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

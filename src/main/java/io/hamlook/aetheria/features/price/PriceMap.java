@@ -23,10 +23,21 @@ public class PriceMap {
     @Getter
     private static final PriceData priceData = new PriceData();
 
+    public static BazaarEntry getLatestBZPrice(String id){
+        List<BazaarEntry> prices = getBZPrice(id,1);
+        if(prices == null || prices.isEmpty()) return null;
+        return prices.get(0);
+    }
+
+    public static AuctionEntry getLatestAHPrice(String id){
+        List<AuctionEntry> prices = getAHPrice(id,1);
+        if(prices == null || prices.isEmpty()) return null;
+        return prices.get(0);
+    }
+
     public static List<BazaarEntry> getBZPrice(String id,int entries){
         List<BazaarEntry> prices = priceData.bazaar.get(id);
         if(prices == null) {
-            Aetheria.logger.info("Prices Null for " + id.toLowerCase());
             return null;
         }
         prices.sort((c,c1) -> Long.compare(c1.timestamp, c.timestamp));
@@ -37,7 +48,6 @@ public class PriceMap {
     public static List<AuctionEntry> getAHPrice(String id, int entries){
         List<AuctionEntry> prices = priceData.auction.get(id);
         if(prices == null) {
-            Aetheria.logger.info("Prices Null for " + id.toLowerCase());
             return null;
         }
         prices.sort((c,c1) -> Double.compare(c1.price, c.price));

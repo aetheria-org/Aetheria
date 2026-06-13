@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.features.dungeons.overlays.map;
+package io.hamlook.aetheria.features.dungeons.overlays;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.Resources;
@@ -25,10 +25,6 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import net.minecraft.scoreboard.Score;
-import net.minecraft.scoreboard.ScoreObjective;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec4b;
 import net.minecraft.world.storage.MapData;
@@ -38,6 +34,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.hamlook.aetheria.features.dungeons.utils.dung.DungeonRoom;
@@ -55,7 +52,7 @@ public class DungeonMapOverlay extends Overlay {
     public static boolean dungeonRunEnded = false;
 
     public static final List<EntityPlayer> players = new ArrayList<>();
-    public static Pattern PLAYER_REGEX = Pattern.compile("^\\[\\d+]\\s(?:\\[\\S+]\\s)?\\S+$");
+    public static Pattern PLAYER_REGEX = Pattern.compile("^\\[\\d+]\\s+(?:\\[[^]]+]\\s+)?(\\w+)");
     public DungeonMapOverlay() {
         super(128,128);
         instance = this;
@@ -172,21 +169,13 @@ public class DungeonMapOverlay extends Overlay {
             if(stripped.isEmpty()){
                 continue;
             }
-            if(PLAYER_REGEX.matcher(stripped).lookingAt()) {
-                String[] words = stripped.split("\\s+");
-                String username;
-                if (words.length >= 3) {
-                    username = words[2];
-                } else {
-                    username = words[1];
-                }
 
-                if(username.isEmpty()){
-                    Aetheria.logger.info("Empty Username: " + stripped);
-                    continue;
-                }
+            Matcher matcher = PLAYER_REGEX.matcher(stripped);
+            if (matcher.lookingAt()) {
+                String username = matcher.group(1);
+
                 EntityPlayer player = Minecraft.getMinecraft().theWorld.getPlayerEntityByName(username);
-                if(player == null){
+                if (player == null) {
                     Aetheria.logger.info("Player Null for: " + username + " | " + stripped);
                     continue;
                 }
@@ -196,21 +185,6 @@ public class DungeonMapOverlay extends Overlay {
                 Aetheria.logger.info("Regex is wrong: " + stripped);
             }
         }
-    }
-
-    private List<String> getScoreboardLines() {
-        Minecraft mc = Minecraft.getMinecraft();
-        if(mc.theWorld == null || mc.theWorld.getScoreboard() == null) return new ArrayList<>();
-
-        Scoreboard scoreboard = mc.theWorld.getScoreboard();
-        ScoreObjective objective = scoreboard.getObjectiveInDisplaySlot(1);
-        if(objective == null) return new ArrayList<>();
-        List<String> lines = new ArrayList<>();
-        for(Score score : scoreboard.getSortedScores(objective)){
-            String playerName = score.getPlayerName();
-            lines.add(EnumChatFormatting.getTextWithoutFormattingCodes(playerName));
-        }
-        return lines;
     }
 
 

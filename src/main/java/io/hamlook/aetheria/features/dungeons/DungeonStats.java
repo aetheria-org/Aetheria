@@ -2,7 +2,6 @@ package io.hamlook.aetheria.features.dungeons;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapOverlay;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.features.dungeons.overlays.PhaseOverlay;
 import io.hamlook.aetheria.features.dungeons.utils.*;

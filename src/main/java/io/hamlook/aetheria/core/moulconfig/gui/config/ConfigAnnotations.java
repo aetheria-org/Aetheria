@@ -138,4 +138,9 @@ public final class ConfigAnnotations {
     @Target(ElementType.FIELD)
     public @interface ConfigEditorVersionDisplay {
     }
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    public @interface ConfigEditorTextDisplay {
+        String text();
+    }
 }

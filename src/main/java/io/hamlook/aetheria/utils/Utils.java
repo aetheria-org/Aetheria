@@ -170,7 +170,10 @@ public class Utils {
     }
 
     private static final char[] SUFFIXES = {'\0', 'k', 'M', 'B', 'T'};
-    public static String shortNumberFormat(double n, int iteration) {
+    public static String shortNumberFormat(double num, int iteration) {
+        boolean negative = num < 0;
+        double n = Math.abs(num);
+
         if (n < 1000) {
             if (iteration == 0) {
                 return String.valueOf((int) n);
@@ -180,6 +183,6 @@ public class Utils {
             String number = isRound || d > 9.99 ? String.valueOf((int) d) : String.valueOf(d);
             return number + SUFFIXES[iteration];
         }
-        return shortNumberFormat(n / 1000.0, iteration + 1);
+        return (negative ? "-" : "") + shortNumberFormat(n / 1000.0, iteration + 1);
     }
 }

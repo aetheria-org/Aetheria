@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.utils.item;
 
+import io.hamlook.aetheria.utils.ColorUtils;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -25,6 +26,16 @@ public class ItemUtils {
         NBTTagList lore = display.getTagList("Lore", 8);
         List<String> lines = new ArrayList<>(lore.tagCount());
         for (int i = 0; i < lore.tagCount(); i++) lines.add(lore.getStringTagAt(i));
+        return lines;
+    }
+
+    public static @NotNull List<String> getLoreLinesWithoutColor(@Nullable ItemStack item) {
+        if (item == null || !item.hasTagCompound()) return Collections.emptyList();
+        NBTTagCompound display = item.getTagCompound().getCompoundTag("display");
+        if (display == null || !display.hasKey("Lore")) return Collections.emptyList();
+        NBTTagList lore = display.getTagList("Lore", 8);
+        List<String> lines = new ArrayList<>(lore.tagCount());
+        for (int i = 0; i < lore.tagCount(); i++) lines.add(ColorUtils.stripColor(lore.getStringTagAt(i)));
         return lines;
     }
 

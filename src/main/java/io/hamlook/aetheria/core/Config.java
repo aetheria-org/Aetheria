@@ -115,6 +115,7 @@ public class Config {
             case "editDungeonMapPos": ATHRConfig.openDungeonMapEditor(); break;
             case "openTrophyFishEditor": ATHRConfig.openTrophyFishEditor(); break;
             case "openDungeonRoomOverlayEditor": ATHRConfig.openDungeonRoomOverlayEditor(); break;
+            case "editAnalyzerOverlay": ATHRConfig.openDungeonAnalyzerOverlayEditor(); break;
             case "openItemInvincibilityEditor": ATHRConfig.openItemInvincibilityEditor(); break;
             case "openItemAbilityTimerEditor": ATHRConfig.openItemAbilityTimerEditor(); break;
             case "openBpsEditor": ATHRConfig.openBpsEditor(); break;

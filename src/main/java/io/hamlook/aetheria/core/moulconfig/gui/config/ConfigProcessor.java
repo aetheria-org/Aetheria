@@ -91,6 +91,10 @@ public class ConfigProcessor {
 
         if (field.isAnnotationPresent(ConfigEditorVersionDisplay.class))
             editor = new GuiOptionEditorVersionDisplay(option);
+        if (field.isAnnotationPresent(ConfigEditorTextDisplay.class)) {
+            ConfigEditorTextDisplay a = field.getAnnotation(ConfigEditorTextDisplay.class);
+            editor = new GuiOptionEditorTextDisplay(option,a.text());
+        }
         if (editor == null && t == int.class && field.isAnnotationPresent(ConfigEditorKeybind.class))
             editor = new GuiOptionEditorKeybind(option, (int) option.get(), field.getAnnotation(ConfigEditorKeybind.class).defaultKey());
         if (editor == null && field.isAnnotationPresent(ConfigEditorButton.class)) {

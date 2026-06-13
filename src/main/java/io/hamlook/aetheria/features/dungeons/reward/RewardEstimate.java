@@ -1,47 +1,32 @@
 package io.hamlook.aetheria.features.dungeons.reward;
 
-import java.util.Collections;
 import java.util.List;
 
-public class RewardEstimate {
+import lombok.Getter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Objects;
 
-    /**
-     * The price of opening the chest. A negative value indicates price could not be determined.
-     */
-    public final long price;
-    /**
-     * List of rewards contained in the chest. The list is made immutable to prevent accidental modification.
-     */
-    public final List<DungeonReward> rewards;
-    /**
-     * Identifier of the chest type (e.g., "wood", "gold").
-     */
-    public final String chestID;
-    /**
-     * Cached profit value calculated from {@code price} and {@code rewards}.
-     */
-    public final double profit;
+@Getter
+public final class RewardEstimate {
 
-    /**
-     * Constructs a new {@code RewardEstimate} and pre‑computes the profit.
-     */
+    private final long price;
+    private final List<DungeonReward> rewards;
+    private final String chestID;
+
     public RewardEstimate(long price, List<DungeonReward> rewards, String chestID) {
         this.price = price;
-        // Ensure the rewards list cannot be modified after construction.
-        this.rewards = Collections.unmodifiableList(rewards);
-        this.chestID = chestID;
-        double p = - (double) price;
-        for (DungeonReward reward : rewards) {
-            p += reward.price;
-        }
-        this.profit = p;
+        this.rewards = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(rewards, "rewards cannot be null")));
+        this.chestID = chestID != null ? chestID : "";
     }
 
     /**
-     * Returns the pre‑computed profit.
+     * Calculates the net profit of the chest after subtracting its price
+     * from the total value of all rewards.
      */
     public double getProfit() {
-        return profit;
+        double totalRewardValue = rewards.stream().mapToDouble(DungeonReward::getPrice).sum();
+        return totalRewardValue - price;
     }
 
 }

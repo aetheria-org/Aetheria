@@ -6,7 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapOverlay;
+import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
