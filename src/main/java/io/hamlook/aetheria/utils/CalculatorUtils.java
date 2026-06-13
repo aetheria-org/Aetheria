@@ -127,11 +127,10 @@ public class CalculatorUtils {
 
                 if (CONSTANTS.containsKey(name)) {
                     t.type = TokenType.CONSTANT;
-                    t.operatorValue = name;
                 } else {
                     t.type = TokenType.FUNCTION;
-                    t.operatorValue = name;
                 }
+                t.operatorValue = name;
             } else {
                 throw new CalculatorException("Unknown character: " + c, i, 1);
             }
@@ -175,6 +174,7 @@ public class CalculatorUtils {
                     out.add(t);
                     break;
                 case FUNCTION:
+                case LPAREN:
                     op.push(t);
                     break;
                 case COMMA:
@@ -193,9 +193,6 @@ public class CalculatorUtils {
                             break;
                         }
                     }
-                    op.push(t);
-                    break;
-                case LPAREN:
                     op.push(t);
                     break;
                 case RPAREN:

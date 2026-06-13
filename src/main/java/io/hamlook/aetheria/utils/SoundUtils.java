@@ -12,8 +12,6 @@ public class SoundUtils {
     public static void playSound(String sound, float volume, float pitch) {
         try {
             ISound s = new PositionedSound(new ResourceLocation(sound)) {{
-                this.volume = volume;
-                this.pitch = pitch;
                 repeat = false;
                 repeatDelay = 0;
                 attenuationType = ISound.AttenuationType.NONE;

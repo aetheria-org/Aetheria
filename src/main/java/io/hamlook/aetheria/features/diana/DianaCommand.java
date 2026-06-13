@@ -54,8 +54,7 @@ public class DianaCommand extends ASMCommand {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
+    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
         if (args.length == 1) return Arrays.asList("reset", "toggle");
         return Collections.emptyList();
     }

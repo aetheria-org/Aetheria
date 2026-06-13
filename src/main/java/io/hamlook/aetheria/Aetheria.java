@@ -38,9 +38,8 @@ public class Aetheria {
         ATHRRepo.init();
         logger = Logger.getLogger("[ATHR] ");
         StorageManager.initAll(ATHRConfig.configDirectory);
-        // Moved ProtectedItemStorage to initAll()
-
         CapeManager.initialise(false);
+        TesterWhitelist.init(VERSION);
     }
 
     @Mod.EventHandler
