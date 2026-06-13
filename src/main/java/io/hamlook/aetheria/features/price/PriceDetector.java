@@ -263,7 +263,7 @@ public class PriceDetector {
                 }
                 if (buyPrice.isEmpty() || sellPrice.isEmpty()) continue;
 
-                String internalName = ItemUtils.getInternalName(stack);
+                String internalName = ItemUtils.getEffectiveItemId(stack);
                 entries.add(new BazaarEntry(internalName, parseRawDouble(buyPrice), parseRawDouble(sellPrice), -1, -1, PriceType.BAZAAR, now));
             }
         } else {
@@ -272,7 +272,7 @@ public class PriceDetector {
             ItemStack stack = slot.getStack();
             if (!ItemUtils.isSkyblockItem(stack)) return false;
 
-            String internalName = ItemUtils.getInternalName(stack);
+            String internalName = ItemUtils.getEffectiveItemId(stack);
 
             Slot iBuy = chest.getSlot(10);
             Slot iSell = chest.getSlot(11);
@@ -325,7 +325,7 @@ public class PriceDetector {
 
             String price = "";
             PriceType type = PriceType.AUCTION;
-            String internalName = ItemUtils.getInternalName(stack);
+            String internalName = ItemUtils.getEffectiveItemId(stack);
             List<String> formattedLore = new ArrayList<>();
             JsonObject extraAttributes = new JsonObject();
 
