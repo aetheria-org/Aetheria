@@ -20,7 +20,7 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraftforge.client.event.GuiScreenEvent;
+import io.hamlook.aetheria.events.GuiContainerRenderButtonsEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.Arrays;
@@ -281,7 +281,7 @@ public class SearchBar {
     }
 
     @SubscribeEvent
-    public void onDrawGui(GuiScreenEvent.DrawScreenEvent.Post event) {
+    public void onDrawGui(GuiContainerRenderButtonsEvent event) {
         if (isEnabled() && isSupportedGui(event.gui) && searchBar != null && !StorageManager.isOverlayActive()) {
             searchBar.updateCursorCounter();
             drawSearchBar(searchBar);
