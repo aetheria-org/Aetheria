@@ -55,14 +55,16 @@ public class SkyblockTooltips {
         }
         if (doPrice) {
             if (doPriceWhenShift && !KeybindHelper.isKeyDown(priceShowKey)) {
-                e.toolTip.add("§7" + KeybindHelper.getKeyName(priceShowKey) + " to view price data.");
+                if (ItemUtils.isSkyblockItem(e.itemStack)) {
+                    e.toolTip.add("§7" + KeybindHelper.getKeyName(priceShowKey) + " to view price data.");
+                }
                 return;
             }
             // Check if item has a valid Skyblock ID
             if (!ItemUtils.isSkyblockItem(e.itemStack)) {
                 return;
             }
-            String id = ItemUtils.getInternalName(e.itemStack);
+            String id = ItemUtils.getEffectiveItemId(e.itemStack);
             if (id == null || id.isEmpty()) {
                 return;
             }
