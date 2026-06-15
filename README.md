@@ -59,65 +59,15 @@ A full list of features can be found [here](https://github.com/aetheria-org/Aeth
 # Contributing to the project
 A full comprehensive guide for contribution and compiling the mod yourself can be found [here](https://github.com/aetheria-org/Aetheria/blob/main/docs/CONTRIBUTING.md).
 
-# 📋 IMPORTANT
+# IMPORTANT
 
-## Privacy & External Connections
+Aetheria shows a privacy notice on first launch before making any external connections. Analytics are fully optional and can be disabled anytime.
 
-On **first launch**, Aetheria will display a **Privacy Notice screen** before any external connection is made. This screen explains exactly what data may be sent and gives you the opportunity to opt out of any or all external communication before it occurs. No data leaves your client until(data still may be fetched from github before the privacy screen, that data may include all skyblock recipes, the index of capes used for the capes feature.) you have reviewed and acknowledged this screen.
+### Privacy & License
+ 
+The mod is source-available under the Aetheria Mod License v1.0 (AML-1.0).
 
-When you join a server with Aetheria, it may send some information to our servers depending on your privacy settings. This helps us understand how many people use the mod and diagnose issues when things go wrong. The information that may be collected is:
-
-- **Your Minecraft username** -- only collected if telemetry is enabled, used to count unique players
-- **Your mod list** -- only collected if "send mod list" is enabled in privacy settings, used to identify your Aetheria version and assist with crash reports
-
-We do not send any other information, such as passwords, files, chat messages, or server IPs. **Analytics collection is entirely optional and can be disabled at any time in the mod settings.**
-
-Some features require information to be sent to function. For example, the capes feature sends your Minecraft username and your selected cape to a backend server, allowing other players to see your cape in-game. **These features are opt-in.** We only send the information strictly necessary for a feature to work, and you can disable any feature individually.
-
-The information we collect is only accessible to the project's Original Author and is never shared with any third party.
-
-### Third-Party Infrastructure
-
-Some of our backend services run on infrastructure provided by [Vercel](https://vercel.com/legal/privacy-policy) and [Cloudflare](https://www.cloudflare.com/privacypolicy/). These providers may independently log data such as your IP address as part of their standard network operations. This is beyond our control, and we encourage you to review their privacy policies if you have concerns.
-
-### 🔓 Source / License
-
-Aetheria is licensed under the **Aetheria Mod License v1.0 (AML-1.0)**.
-
-The source code is publicly available, and anyone is free to:
-- View and study the code
-- Fork the repository
-- Modify the source code
-- Submit contributions
-
-However, AML-1.0 has some differences from common open-source licenses:
-
-- Compiled builds (such as `.jar` files) cannot be publicly redistributed without permission from the Original Author.
-- The official releases should be obtained from the project's official distribution channels.
-- Derivative works based on Aetheria's code must follow AML-1.0 and keep the relevant source code publicly available.
-- The Aetheria branding (name, logos, and identifiers) cannot be used for unofficial projects without permission.
-
-For normal users:
-- You can download and use Aetheria normally.
-- You can use it in modpacks, videos, streams, and servers.
-- You do not need permission to use the mod for personal gameplay.
-
-For contributors:
-- Contributions are welcome through pull requests and other submissions.
-- By contributing, your contribution becomes part of the project under AML-1.0.
-- Contributors keep ownership of their own contributions while allowing the project to maintain and distribute the combined work.
-
-For content creators:
-- You are free to make videos, streams, guides, reviews, and other content about Aetheria.
-- You may link to official downloads and repositories.
-- You do not need permission to talk about or showcase the project.
-
-For developers:
-- You may inspect, fork, and modify the source code.
-- Public distribution of modified builds requires permission.
-- Modified projects containing Aetheria code must keep the required source availability and attribution.
-
-The full license text can be found [here](https://github.com/aetheria-org/Aetheria/blob/main/LICENSE.txt).
+For full details on data collection, third-party infrastructure, and what the license means for you, see [ABOUT.md](https://github.com/aetheria-org/Aetheria/blob/main/docs/ABOUT.md).
 
 ## ✨ Credits
 This project would not be where it is today without the help of these amazing people.

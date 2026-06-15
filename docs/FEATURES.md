@@ -8,7 +8,7 @@
 - **Gyro Wand Helper** — Shows the AoE ring when holding the Gyrokinetic Wand, plus a cooldown timer.
 - **Roman Numerals** — Converts Roman numerals to integers.
 - **Prevent Cursor Reset** — Stops the mouse cursor from resetting when opening GUIs.
-- **Skyblock ID** — Shows the internal SkyBlock item ID at the bottom of tooltips.
+- **Skyblock ID & Price in Tooltip** — Shows the internal SkyBlock item ID and estimated market price at the bottom of item tooltips.
 - **Disable Enchant Glint** — Removes the enchantment glint.
 - **Brewing Helper** — Highlights brewing stands.
 - **Missing Enchants** — Hold Shift on an enchanted item to see missing enchants.
@@ -29,7 +29,7 @@
 - **Item Cooldowns** — Tracks cooldowns for abilities and invincibility timers with a HUD overlay.
 - **Current Pet** — Shows your active pet as a HUD overlay.
 - **Item Pickup Log** — Shows recently picked up or dropped items in a HUD.
-- **Inventory Buttons** — Adds clickable shortcut buttons to inventories; configure with `/asmbuttons`.
+- **Inventory Buttons** — Adds clickable shortcut buttons to inventories; configure with `/asmbuttons`. Optionally hides buttons in terminal menus.
 - **Item Stack Tips** — Shows enchant levels on books and floor numbers on Catacombs passes.
 - **Party Finder Floor Labels** — Shows F1–F7, M1–M7, or ENT on listings in the Party Finder.
 - **Skill XP Display** — Hold Shift on a skill item to see XP remaining to max.
@@ -45,6 +45,9 @@
 - **Item List & Recipe Viewer** — Browse SkyBlock items and view their crafting recipes in-game.
 - **Player Join/Leave Notifier** — Alerts when watched players join or leave; custom messages per player.
 - **Bazaar Order Highlights** — Highlights filled sell orders in gold and buy orders in green.
+- **Ghost Tracker** — Tracks ghost kills, drops (Sorrow, Volta, Plasma, etc.), magic find, and scavenger coins in the Dwarven Mines / The Mist with a configurable HUD overlay.
+- **Item Log Alerts** — On-screen alerts when configured items are picked up; choose Always or First-Time-Only mode.
+- **Item Prices** — Community-driven price database. Dynamically fetches and displays item prices from the community API (auction & bazaar). Configurable detail level (Latest / 24h / 1 Week / 1 Month), optionally show prices only while holding a key, and optionally submit parsed data to the shared price database. Powers profit estimates across the mod.
 
 
 ## Dungeons
@@ -56,6 +59,9 @@
 - **Dungeon Room Overlay** — Shows the name of your current dungeon room.
 - **CSGO Chest Opening** — Opening an obsidian/bedrock chest plays a CS:GO crate opening animation.
 - **Hide Blessing Messages** — Suppresses the chat spam when dungeon blessings are found.
+- **Secret Finder** — Highlights dungeon secrets (chests, levers, superboom, essences, fairy souls, wither essence) with labels, waypoints, tracers, and bounding boxes. Configurable colors and range detection.
+- **Dungeon Map** — Custom overlay showing dungeon rooms, player heads with names/ranks, and visited room labels.
+- **Dungeon Chest Price Estimator** — Estimates profit or loss on dungeon reward chests using the community price API, with an analyzer overlay that highlights the best-value chest.
 
 
 ## Mining
@@ -86,6 +92,7 @@
 - **Loot Overlay** — HUD for chimeras, rare drops, and coins.
 - **Inquisitor HP Overlay** — Live HP bar for the nearest Minos Inquisitor.
 - **Diana Mob HP Overlay** — Live HP bar for the nearest non-inquisitor Diana mob.
+- **Profit Estimate** — Live profit calculation for all Diana drops (Chimeras, Daedalus Sticks, Feathers, etc.) using community price data, displayed in the Loot Overlay.
 
 
 ## Farming
