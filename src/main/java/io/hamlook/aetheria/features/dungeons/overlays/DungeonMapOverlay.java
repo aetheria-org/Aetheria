@@ -7,6 +7,7 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import net.minecraft.block.material.MapColor;
@@ -172,17 +173,17 @@ public class DungeonMapOverlay extends Overlay {
 
             Matcher matcher = PLAYER_REGEX.matcher(stripped.trim());
             if (matcher.lookingAt()) {
+                ChatUtils.sendMessage("Username in: " + stripped.trim());
                 String username = matcher.group(1);
+                ChatUtils.sendMessage("Username is: " + username);
 
                 EntityPlayer player = Minecraft.getMinecraft().theWorld.getPlayerEntityByName(username);
                 if (player == null) {
+                    ChatUtils.sendMessage("Player is null for: " + username);
                     Aetheria.logger.info("Player Null for: " + username + " | " + stripped);
                     continue;
                 }
                 players.add(player);
-            }
-            if(stripped.contains("nth_to_smth")){
-                Aetheria.logger.info("Regex is wrong: " + stripped);
             }
         }
     }
