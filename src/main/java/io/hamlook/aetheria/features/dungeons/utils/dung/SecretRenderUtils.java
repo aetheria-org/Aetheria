@@ -84,6 +84,7 @@ public class SecretRenderUtils {
             int ay = secret.get("y").getAsInt();
             int rz = secret.get("z").getAsInt();
 
+            if(category.equals("fairysoul")) continue;
             BlockPos relPos = new BlockPos(rx, ay, rz);
             BlockPos absPos = DungeonRoomDetector.relativeToActual(relPos);
             if (absPos != null) {

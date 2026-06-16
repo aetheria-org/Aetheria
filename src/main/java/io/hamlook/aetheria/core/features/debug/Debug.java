@@ -16,6 +16,11 @@ public class Debug {
     public boolean dungeonRoomDebug = false;
 
     @Expose
+    @ConfigOption(name = "Dungeon Map: Show Detection", desc = "Show detection error logs in dungeon map")
+    @ConfigEditorBoolean
+    public boolean dungeonMapDebug = false;
+
+    @Expose
     @ConfigOption(name = "Enable debug features", desc = "DO NOT TURN ON UNLESS YOU KNOW WHAT YOURE DOING!")
     @ConfigEditorBoolean
     public boolean enableDebug = false;

@@ -116,8 +116,9 @@ public class DungeonMapOverlay extends Overlay {
                     int worldX = -1 * (player.getPosition().getX() + 6);
                     int worldZ = -1 * (player.getPosition().getZ() + 6);
 
-                    float pixelX = baseSize - ((worldX / 186f) * baseSize);
-                    float pixelZ = baseSize - ((worldZ / 186f) * baseSize);
+                    float headSize = 16* getHeadScale();
+                    float pixelX = baseSize - ((worldX / 186f) * baseSize)-(headSize/2f);
+                    float pixelZ = baseSize - ((worldZ / 186f) * baseSize)-(headSize/2f);
 
                     if (ATHRConfig.feature.dungeons.dungeonMapConfig.showPlayerHead) {
                         renderPlayerHead(pixelX, pixelZ, -1, (getScale() * getHeadScale()), new NetworkPlayerInfo(player.getGameProfile()), player.rotationYaw);
@@ -173,17 +174,25 @@ public class DungeonMapOverlay extends Overlay {
 
             Matcher matcher = PLAYER_REGEX.matcher(stripped.trim());
             if (matcher.lookingAt()) {
-                ChatUtils.sendMessage("Username in: " + stripped.trim());
                 String username = matcher.group(1);
                 ChatUtils.sendMessage("Username is: " + username);
 
                 EntityPlayer player = Minecraft.getMinecraft().theWorld.getPlayerEntityByName(username);
                 if (player == null) {
                     ChatUtils.sendMessage("Player is null for: " + username);
+                    if(ATHRConfig.feature.debug.dungeonMapDebug){
+                        ChatUtils.sendMessage("§7[§6DEBUG§7] §cCould not Find Player for username: " + username);
+                    }
                     Aetheria.logger.info("Player Null for: " + username + " | " + stripped);
                     continue;
                 }
                 players.add(player);
+            }else{
+                if(stripped.contains("[") && stripped.contains("]")) {
+                    if (ATHRConfig.feature.debug.dungeonMapDebug) {
+                        ChatUtils.sendMessage("§7[§6DEBUG§7] §cCould not Find Username in: " + stripped);
+                    }
+                }
             }
         }
     }
