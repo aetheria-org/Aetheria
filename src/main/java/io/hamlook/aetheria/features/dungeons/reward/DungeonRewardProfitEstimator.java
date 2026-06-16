@@ -51,8 +51,9 @@ public class DungeonRewardProfitEstimator {
         ContainerChest chest = (ContainerChest) container.inventorySlots;
         String title = ContainerUtils.getTitle(chest);
         if(!title.endsWith("Chest")) return;
-
         String chestID = (title.replace("Chest","").trim()).toLowerCase();
+        if(getChestHeader(chestID).equals("unknown")) return;
+
         List<DungeonReward> rewardList = new ArrayList<>();
         long chestPrice = -1;
 
@@ -174,7 +175,7 @@ public class DungeonRewardProfitEstimator {
             case "obsidian": return "§0Obsidian Chest";
             case "bedrock": return "§0Bedrock Chest";
         }
-        return chestID + " chest";
+        return "unknown";
     }
 
 
