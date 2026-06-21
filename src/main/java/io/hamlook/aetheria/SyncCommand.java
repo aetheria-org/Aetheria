@@ -26,7 +26,6 @@ import java.util.Base64;
 @RegisterCommand
 public class SyncCommand extends ASMCommand {
 
-    private static final String MOD_SECRET = "a7c0e73c-3b0b-4789-8c80-741dd09ba1bc";
     private static String SYNC_CODE = "";
     private static long lastUse = 0;
 
@@ -80,7 +79,7 @@ public class SyncCommand extends ASMCommand {
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
                 conn.setRequestProperty("Accept", "*/*");
                 conn.setRequestProperty("x-code", syncCode);
-                conn.setRequestProperty("x-mod-secret", MOD_SECRET);
+                conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
                 conn.setDoOutput(true);
 
                 try (OutputStream os = conn.getOutputStream()) {

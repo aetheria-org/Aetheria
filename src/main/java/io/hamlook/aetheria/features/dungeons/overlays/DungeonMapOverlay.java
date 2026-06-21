@@ -60,6 +60,7 @@ public class DungeonMapOverlay extends Overlay {
         mapTexture = Minecraft.getMinecraft().getTextureManager().getDynamicTextureLocation("dungeon_map",map);
     }
 
+
     @SubscribeEvent
     public void onUnload(WorldEvent.Unload e){
 
@@ -172,10 +173,18 @@ public class DungeonMapOverlay extends Overlay {
                 continue;
             }
 
+
+            if(ATHRConfig.feature.debug.dungeonMapDebug) {
+                StringBuilder builder = new StringBuilder();
+                Minecraft.getMinecraft().theWorld.playerEntities.forEach(player -> {
+                    String name = player.getDisplayName().getFormattedText();
+                    builder.append(name).append(", \n");
+                });
+                ChatUtils.sendMessage("Players in Cur World: " + builder);
+            }
             Matcher matcher = PLAYER_REGEX.matcher(stripped.trim());
             if (matcher.lookingAt()) {
                 String username = matcher.group(1);
-                ChatUtils.sendMessage("Username is: " + username);
 
                 EntityPlayer player = Minecraft.getMinecraft().theWorld.getPlayerEntityByName(username);
                 if (player == null) {
