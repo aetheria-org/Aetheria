@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.qol;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.data.ApiHandler;
 import io.hamlook.aetheria.features.price.PriceMap;
 import io.hamlook.aetheria.features.price.vars.AuctionEntry;
 import io.hamlook.aetheria.features.price.vars.BazaarEntry;
@@ -22,9 +23,15 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 @RegisterEvents
 public class SkyblockTooltips {
+
+    private static boolean isExcludedFromPrice(String id) {
+        Set<String> ids = ApiHandler.getNoPriceIds();
+        return ids != null && ids.contains(id.toLowerCase());
+    }
 
     private int tickCounter = 0;
 
@@ -56,6 +63,8 @@ public class SkyblockTooltips {
         if (doPrice) {
             if (doPriceWhenShift && !KeybindHelper.isKeyDown(priceShowKey)) {
                 if (ItemUtils.isSkyblockItem(e.itemStack)) {
+                    String id = ItemUtils.getEffectiveItemId(e.itemStack);
+                    if (id != null && !id.isEmpty() && isExcludedFromPrice(id)) return;
                     e.toolTip.add("§7" + KeybindHelper.getKeyName(priceShowKey) + " to view price data.");
                 }
                 return;
@@ -68,6 +77,7 @@ public class SkyblockTooltips {
             if (id == null || id.isEmpty()) {
                 return;
             }
+            if (isExcludedFromPrice(id)) return;
             List<BazaarEntry> entry = PriceMap.getBZPrice(id, 1);
             List<String> lines = new ArrayList<>();
             if (entry == null || entry.isEmpty()) {

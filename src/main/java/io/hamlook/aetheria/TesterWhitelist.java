@@ -23,6 +23,10 @@ public class TesterWhitelist {
     private static int tickCounter = 0;
     private static boolean hasChecked = false;
 
+    public static String getApiKey() {
+        return API_KEY;
+    }
+
     public static void init(String version) {
         isAlpha = version.toLowerCase().contains("alpha") || version.toLowerCase().contains("beta");
     }
