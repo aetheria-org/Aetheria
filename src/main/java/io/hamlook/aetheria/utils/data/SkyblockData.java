@@ -70,6 +70,16 @@ public final class SkyblockData {
         return getScoreboardLines().stream().map(s -> net.minecraft.util.StringUtils.stripControlCodes(s).trim()).collect(Collectors.toList());
     }
 
+    private static String currentProfile = "";
+
+    public static String getCurrentProfile() {
+        return currentProfile;
+    }
+
+    public static void setCurrentProfile(String profile) {
+        currentProfile = profile;
+    }
+
     public static boolean isOnSkyblock() {
         return getCurrentLocation() != Location.NONE;
     }

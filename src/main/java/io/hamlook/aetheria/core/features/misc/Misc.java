@@ -3,6 +3,9 @@ package io.hamlook.aetheria.core.features.misc;
 import com.google.gson.annotations.Expose;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Misc {
 
     @Expose
@@ -73,6 +76,9 @@ public class Misc {
     public boolean skyblockXpInChat = false;
 
     @Expose
+    public Map<String, SbProfileData> sbProfileData = new HashMap<>();
+
+    @Expose
     @ConfigOption(name = "Sign Calculator", desc = "Auto-calculate expressions on signs when line 2 is ^^^^^^ (e.g., 3m x 3 → 9000000)")
 
     @ConfigEditorBoolean
@@ -112,4 +118,9 @@ public class Misc {
     @Expose
     @Category(name = "Ghost Tracker", desc = "Settings for Ghost Tracker overlay")
     public GhostTrackerConfig ghostTrackerConfig = new GhostTrackerConfig();
+
+    public static class SbProfileData {
+        public int lastSbLevel = -1;
+        public int lastSbXp = -1;
+    }
 }

@@ -18,6 +18,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @RegisterEvents
 public class TablistParser {
@@ -36,6 +37,13 @@ public class TablistParser {
     private static long mithrilPowder = 0;
     @Getter
     private static long glacitePowder = 0;
+    @Getter
+    private static int sbLevel = 0;
+    @Getter
+    private static int sbCurrentXp = 0;
+    @Getter
+    private static int sbMaxXp = 0;
+    private static final Pattern SB_LEVEL = Pattern.compile("SB Level: \\[(\\d+)\\] (\\d+)/(\\d+) XP");
     private static String currentMayor = "";
     @Setter
     private static java.util.function.BiConsumer<Long, Long> gemstonePowderChangeListener = null;
@@ -236,6 +244,14 @@ public class TablistParser {
                     currentMayor = line.substring("Current Mayor: ".length()).trim();
                     continue;
                 }
+                if (line.startsWith("SB Level:")) {
+                    java.util.regex.Matcher m = SB_LEVEL.matcher(line);
+                    if (m.find()) {
+                        sbLevel = Integer.parseInt(m.group(1));
+                        sbCurrentXp = Integer.parseInt(m.group(2));
+                        sbMaxXp = Integer.parseInt(m.group(3));
+                    }
+                }
             }
         }
 
@@ -289,6 +305,9 @@ public class TablistParser {
         gemstonePowder = 0;
         mithrilPowder = 0;
         glacitePowder = 0;
+        sbLevel = 0;
+        sbCurrentXp = 0;
+        sbMaxXp = 0;
         currentMayor = "";
         BankParser.clear();
     }

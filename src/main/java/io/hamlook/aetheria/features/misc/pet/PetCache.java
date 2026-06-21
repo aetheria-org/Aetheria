@@ -3,16 +3,16 @@ package io.hamlook.aetheria.features.misc.pet;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import io.hamlook.aetheria.core.StorageManager;
+import io.hamlook.aetheria.core.ProfileManagedStorage;
+import java.io.File;
 import net.minecraft.client.Minecraft;
 
-import java.io.File;
 import java.lang.reflect.Type;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PetCache implements StorageManager.Managed {
+public class PetCache extends ProfileManagedStorage {
 
     private static final int MAX_ENTRIES = 500;
     private static PetCache INSTANCE;
@@ -24,9 +24,8 @@ public class PetCache implements StorageManager.Managed {
         }
     };
 
-    private File file;
-
     private PetCache() {
+        super("pet_cache.json");
     }
 
     public static PetCache getInstance() {
@@ -44,16 +43,13 @@ public class PetCache implements StorageManager.Managed {
     }
 
     @Override
-    public void initFile(File configDir) {
-        file = new File(configDir, "pet_cache.json");
-        PetFileValidator.deleteIfLegacy(file);
-    }
-
-    @Override
     public void load() {
+        pets.clear();
+        File f = resolveFile();
+        if (f == null) return;
         Type type = new TypeToken<Map<String, CachedPet>>() {
         }.getType();
-        Map<String, CachedPet> loaded = PetFileValidator.load(file, type);
+        Map<String, CachedPet> loaded = PetFileValidator.load(f, type);
         if (loaded == null) return;
         loaded.forEach((key, pet) -> {
             if (key == null || pet == null) return;
@@ -71,12 +67,14 @@ public class PetCache implements StorageManager.Managed {
         }
     }
 
-    private void save() {
+    public void save() {
         Map<String, CachedPet> toSave = new LinkedHashMap<>();
         pets.forEach((k, v) -> {
             if (k != null && v != null) toSave.put(k, v);
         });
-        PetFileValidator.save(file, toSave);
+        File f = resolveFile();
+        if (f == null) return;
+        PetFileValidator.save(f, toSave);
     }
 
     private CachedPet getOrCreate(String key, String baseName) {

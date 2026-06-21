@@ -8,6 +8,7 @@ import com.google.gson.stream.JsonReader;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.storage.utils.SContainer;
+import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
 
 import java.io.File;
@@ -24,7 +25,9 @@ public class StorageSaving {
 
     private static File getStorageFolder() {
         String username = Minecraft.getMinecraft().getSession().getUsername();
-        return new File(ATHRConfig.configDirectory, "storage/" + username);
+        String profile = SkyblockData.getCurrentProfile();
+        if (profile.isEmpty()) profile = "_unknown";
+        return new File(ATHRConfig.configDirectory, "profiles/" + profile + "/storage/" + username);
     }
 
     public static LinkedHashMap<String, SContainer> loadStorageData() {
@@ -41,8 +44,20 @@ public class StorageSaving {
         });
         File folder = getStorageFolder();
         if (!folder.exists()) {
-            folder.mkdirs();
-            return new LinkedHashMap<>();
+            String username = Minecraft.getMinecraft().getSession().getUsername();
+            File oldFolder = new File(ATHRConfig.configDirectory, "storage/" + username);
+            if (oldFolder.exists()) {
+                folder.mkdirs();
+                File[] oldFiles = oldFolder.listFiles();
+                if (oldFiles != null) {
+                    for (File f : oldFiles) {
+                        if (f.isFile()) f.renameTo(new File(folder, f.getName()));
+                    }
+                }
+            } else {
+                folder.mkdirs();
+                return new LinkedHashMap<>();
+            }
         }
 
         File[] files = folder.listFiles();
