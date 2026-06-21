@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.dungeons.rooms.report;
 
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoom;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomDetector;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
@@ -60,7 +61,7 @@ public class SecretReportGUI extends GuiScreen {
 
     public String submitReport() {
         if(System.currentTimeMillis() - lastReport < REPORT_INTERVAL) return "§cYou cannot submit multiple reports this fast.";
-
+        if(!NetworkGuard.apiAllowed()) return "§cYou have API Requests disabled in Privacy Controls";
         int xCoord = tryGet(xField.getText());
         int yCoord = tryGet(yField.getText());
         int zCoord = tryGet(zField.getText());
