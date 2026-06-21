@@ -127,7 +127,7 @@ public class PowderTracker {
         String msg = ChatUtils.clean(event);
 
         if (ChatUtils.isPartyMessage(msg) || ChatUtils.isPlayerMessage(msg) ||
-            ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg)) return;
+            ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg) || ChatUtils.isDonateMessage(msg)) return;
 
         PowderStats stats = PowderStats.getInstance();
         PowderData data = stats.getData();

@@ -19,6 +19,7 @@ public class ChatUtils {
     private static final Pattern MSG_SENT = Pattern.compile("^§.From Me §.to (?:§.\\[[^\\]]*\\] )?§.(\\w{1,16})§.: §.(.+)§r$");
     private static final Pattern MSG_RECEIVED_STRIPPED = Pattern.compile("^From (?:\\[[^\\]]*\\] )?(\\w{1,16}) to Me: (.+)$");
     private static final Pattern MSG_SENT_STRIPPED = Pattern.compile("^From Me to (?:\\[[^\\]]*\\] )?(\\w{1,16}): (.+)$");
+    private static final Pattern DONATE_MSG = Pattern.compile("^Donate Chat \\(/dc\\) ▶ (?:\\[[^]]*] )?(\\w{1,16}): (.+)$");
 
     private ChatUtils() {
     }
@@ -97,6 +98,20 @@ public class ChatUtils {
         return m.matches() ? m.group(1) : null;
     }
 
+    public static boolean isDonateMessage(String msg) {
+        return DONATE_MSG.matcher(msg).matches();
+    }
+
+    public static String getDonateSender(String msg) {
+        Matcher m = DONATE_MSG.matcher(msg);
+        return m.matches() ? m.group(1) : null;
+    }
+
+    public static String getDonateBody(String msg) {
+        Matcher m = DONATE_MSG.matcher(msg);
+        return m.matches() ? m.group(2).trim() : null;
+    }
+
     public static IChatComponent ensureSiblings(IChatComponent component) {
         if (component.getSiblings().isEmpty()) {
             ChatComponentText root = new ChatComponentText("");
@@ -144,5 +159,9 @@ public class ChatUtils {
 
     public static void sendPartyMessage(String message) {
         sendPartyMessage(message, 1500);
+    }
+
+    public static void sendDonateMessage(String message) {
+        sendChatCommand("/dc " + message);
     }
 }

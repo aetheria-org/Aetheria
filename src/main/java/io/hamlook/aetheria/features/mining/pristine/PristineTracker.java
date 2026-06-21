@@ -51,7 +51,7 @@ public class PristineTracker {
         if (isActive()) return;
         String msg = ChatUtils.clean(event);
         if (ChatUtils.isPartyMessage(msg) || ChatUtils.isPlayerMessage(msg) ||
-                ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg)) return;
+                ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg) || ChatUtils.isDonateMessage(msg)) return;
 
         if (!msg.contains("PRISTINE!")) return;
 
