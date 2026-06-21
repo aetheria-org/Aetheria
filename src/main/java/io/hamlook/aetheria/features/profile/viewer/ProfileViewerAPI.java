@@ -4,6 +4,7 @@ import com.google.gson.*;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.repo.CapeAPI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ChatComponentText;
 
@@ -28,7 +29,6 @@ public class ProfileViewerAPI {
     public static List<String> cachedPlayerList = new ArrayList<>();
 
     public static final long FETCH_INTERVAL = 1800000;
-    public static final String MOD_SECRET = "a7c0e73c-3b0b-4789-8c80-741dd09ba1bc";
 
     private static final Gson gson = new GsonBuilder()
             .registerTypeHierarchyAdapter(EnumMap.class, (JsonDeserializer<EnumMap<?, ?>>) (json, typeOfT, context) -> {
@@ -67,7 +67,7 @@ public class ProfileViewerAPI {
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
-                conn.setRequestProperty("x-mod-secret", MOD_SECRET);
+                conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
                 conn.setRequestProperty("Accept", "application/json");
                 conn.setConnectTimeout(5000);
                 conn.setReadTimeout(5000);
@@ -117,7 +117,7 @@ public class ProfileViewerAPI {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
-        conn.setRequestProperty("x-mod-secret", MOD_SECRET);
+        conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
         conn.setRequestProperty("Accept", "application/json");
         conn.setConnectTimeout(5000);
         conn.setReadTimeout(5000);

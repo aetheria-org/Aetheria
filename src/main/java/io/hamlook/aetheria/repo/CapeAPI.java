@@ -9,6 +9,10 @@ public class CapeAPI {
         return url.capeApi;
     }
 
+    public static String getModSecret(){
+        return "a7c0e73c-3b0b-4789-8c80-741dd09ba1bc";
+    }
+
     public static String getAPIUrl(String endpoint) {
         RepoData url = RepoHandler.get(ATHRRepo.KEY_REPO, RepoData.class, new RepoData());
         return url.capeApi + (url.capeApi.endsWith("/") || endpoint.startsWith("/") ? "" : "/") + endpoint;

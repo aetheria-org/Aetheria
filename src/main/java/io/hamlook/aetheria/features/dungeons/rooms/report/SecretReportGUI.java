@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.dungeons.rooms.report;
 
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoom;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomDetector;
+import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -23,7 +24,6 @@ public class SecretReportGUI extends GuiScreen {
 
     public long lastReport = 0;
     public static final long REPORT_INTERVAL = 10000;
-    public static final String WEBHOOK_URL = "WEBHOOK_URL";
     public DungeonRoom room;
     public GuiTextField xField,zField,yField;
     public GuiButton submitButton,cancelButton;
@@ -60,7 +60,6 @@ public class SecretReportGUI extends GuiScreen {
 
     public String submitReport() {
         if(System.currentTimeMillis() - lastReport < REPORT_INTERVAL) return "§cYou cannot submit multiple reports this fast.";
-        String title = "Secret Location Report";
 
         int xCoord = tryGet(xField.getText());
         int yCoord = tryGet(yField.getText());
@@ -72,25 +71,23 @@ public class SecretReportGUI extends GuiScreen {
         if(searchField.getText().isEmpty()){
             return "§cPlease put a valid secret name.";
         }
-        String coordinate = "X: " + xCoord + " \\n Y: " + yCoord + " \\n Z: " + zCoord;
-        String description = "Room: " + room.name + " | " + "Secret: " + searchField.getText() + " \\n " + coordinate;
 
-        int decimalColor = 4194559;
-        String jsonPayload = "{"
-                + "\"embeds\": [{"
-                + "\"title\": \"" + title + "\","
-                + "\"description\": \"" + description + "\","
-                + "\"color\": " + decimalColor
-                + "}]"
-                + "}";
+        String jsonPayload = String.format(
+                "{\"data\": {\"secret\": \"%s\", \"room\": \"%s\", \"coords\": {\"x\": %d, \"y\": %d, \"z\": %d}}}",
+                searchField.getText(),
+                room.name,
+                xCoord,
+                yCoord,
+                zCoord
+        );
         try {
-            URL url = new URL(WEBHOOK_URL
-            );
+            URL url = new URL(CapeAPI.getAPIUrl("/report-secret"));
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
 
             connection.addRequestProperty("Content-Type", "application/json");
             connection.addRequestProperty("User-Agent", "Java-8-Discord-Webhook");
             connection.setDoOutput(true);
+            connection.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
             connection.setRequestMethod("POST");
 
             try (OutputStream os = connection.getOutputStream()) {

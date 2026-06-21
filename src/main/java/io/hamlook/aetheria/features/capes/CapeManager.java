@@ -32,7 +32,6 @@ public class CapeManager {
     private static long lastFetched = 0L;
     private static long POLL_INTERVAL_MS = 900000;
 
-    public static final String MOD_SECRET = "a7c0e73c-3b0b-4789-8c80-741dd09ba1bc";
 
     public static String CLIENT_SIDE_CAPE_ID = "";
 
@@ -93,7 +92,7 @@ public class CapeManager {
             URL url = new URL(CapeAPI.getAPIUrl() + "/cape");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("x-mod-secret", MOD_SECRET);
+            conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
             conn.setRequestProperty("Accept", "application/json");
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
@@ -116,7 +115,7 @@ public class CapeManager {
             URL url = new URL(CapeAPI.getAPIUrl() + "/cape");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
-            conn.setRequestProperty("x-mod-secret", MOD_SECRET);
+            conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setDoOutput(true);
 
@@ -139,7 +138,7 @@ public class CapeManager {
             URL url = new URL(CapeAPI.getAPIUrl() + "/cape/" + URLEncoder.encode(playerName, "UTF-8"));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("DELETE");
-            conn.setRequestProperty("x-mod-secret", MOD_SECRET);
+            conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
             conn.getResponseCode();
         } catch (Exception e) {
             e.printStackTrace();

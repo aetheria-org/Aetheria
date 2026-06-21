@@ -69,7 +69,7 @@ public class PriceMap {
                 URL url = new URL(CapeAPI.getAPIUrl("price"));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-                conn.setRequestProperty("x-mod-secret", PriceDetector.MOD_SECRET);
+                conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
                 conn.setRequestProperty("x-type", getDetailType());
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
                 conn.setConnectTimeout(5000);

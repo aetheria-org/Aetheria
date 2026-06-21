@@ -48,7 +48,6 @@ public class PriceDetector {
     private static final Map<String, List<BazaarEntry>> bazaarMap = new HashMap<>();
     private static final Map<String, List<AuctionEntry>> auctionMap = new HashMap<>();
     private static final Gson gson = new Gson();
-    public static final String MOD_SECRET = "a7c0e73c-3b0b-4789-8c80-741dd09ba1bc";
     private static final long DEDUP_INTERVAL_MS = 120_000;
     private static final long REPARSE_COOLDOWN_MS = 1_000;
 
@@ -160,7 +159,7 @@ public class PriceDetector {
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("x-mod-secret", MOD_SECRET);
+                conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
                 conn.setDoOutput(true);
                 conn.setConnectTimeout(5000);
