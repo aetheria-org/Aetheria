@@ -7,14 +7,8 @@ import org.lwjgl.input.Keyboard;
 public class Farming {
 
     @Expose
-    @ConfigOption(name = "Lock Mouse", desc = "Locks yaw and pitch so you can't accidentally move your camera")
-    @ConfigEditorBoolean
-    public boolean lockMouse = false;
-
-    @Expose
-    @ConfigOption(name = "Lock Toggle Key", desc = "Keybind to toggle mouse lock on/off")
-    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
-    public int lockMouseKey = Keyboard.KEY_NONE;
+    @Category(name = "Mouse Lock", desc = "Lock camera movement and visual indicators")
+    public LockMouseConfig lockMouseConfig = new LockMouseConfig();
 
     @Expose
     @Category(name = "BPS Calculator", desc = "Blocks per second calculator for farming")
