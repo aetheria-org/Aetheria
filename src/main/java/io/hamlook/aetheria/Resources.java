@@ -58,6 +58,8 @@ public final class Resources {
     public static final ResourceLocation GHOSTTRACKER_MONEY = new ResourceLocation("aetheria", "ghosttracker/money.png");
     public static final ResourceLocation GHOSTTRACKER_TIME = new ResourceLocation("aetheria", "ghosttracker/time.png");
 
+    public static final ResourceLocation LOCK_CURSOR = new ResourceLocation("aetheria:lock.png");
+
     public static final ResourceLocation DEFAULT_MAP_ICONS = new ResourceLocation("textures/map/map_icons.png");
 
     public static final int BETTER_CONTAINERS_STYLE_COUNT = 7;

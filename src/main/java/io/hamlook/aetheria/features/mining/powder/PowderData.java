@@ -16,6 +16,8 @@ public class PowderData {
     public long hardStone = 0L;
     public long hardStoneCompacted = 0L;
 
+    public long activeTimeMs = 0L;
+
     public Map<String, Long> gemstones = new HashMap<>();
 
     public long goblinEgg = 0L;
@@ -35,6 +37,7 @@ public class PowderData {
         jungleHearts = 0L;
         hardStone = 0L;
         hardStoneCompacted = 0L;
+        activeTimeMs = 0L;
         gemstones.clear();
         goblinEgg = greenGoblinEgg = redGoblinEgg = yellowGoblinEgg = blueGoblinEgg = 0L;
     }

@@ -1,19 +1,20 @@
 package io.hamlook.aetheria.features.fishing.trophy;
 
 import io.hamlook.aetheria.core.GsonBuilder;
+import io.hamlook.aetheria.core.ProfileManagedStorage;
 import io.hamlook.aetheria.core.StorageManager;
 
 import java.io.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class TrophyFishStorage implements StorageManager.Managed, StorageManager.AutoSaveable {
+public class TrophyFishStorage extends ProfileManagedStorage implements StorageManager.AutoSaveable {
 
     private static TrophyFishStorage INSTANCE;
-    private File file;
     private StoredData data = new StoredData();
 
     private TrophyFishStorage() {
+        super("trophy_fish.json");
     }
 
     public static TrophyFishStorage getInstance() {
@@ -22,18 +23,17 @@ public class TrophyFishStorage implements StorageManager.Managed, StorageManager
     }
 
     @Override
-    public void initFile(File configDir) {
-        this.file = new File(configDir, "trophy_fish.json");
-    }
-
-    @Override
     public void load() {
-        StoredData loaded = StorageManager.loadSafe(file, StoredData.class, GsonBuilder.GSON);
+        File f = resolveFile();
+        if (f == null) return;
+        StoredData loaded = StorageManager.loadSafe(f, StoredData.class, GsonBuilder.GSON);
         if (loaded != null) data = loaded;
     }
 
     public void save() {
-        StorageManager.saveAtomic(file, data, GsonBuilder.GSON);
+        File f = resolveFile();
+        if (f == null) return;
+        StorageManager.saveAtomic(f, data, GsonBuilder.GSON);
     }
 
     @Override

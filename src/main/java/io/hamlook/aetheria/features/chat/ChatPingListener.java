@@ -57,6 +57,9 @@ public class ChatPingListener {
         if (body == null && cfg.chatPingAllMessages) {
             body = ChatUtils.getMsgSentBody(stripped);
         }
+        if (body == null && cfg.chatPingAllMessages) {
+            body = ChatUtils.getDonateBody(stripped);
+        }
 
         if (body == null || !body.toLowerCase().contains(name)) return;
 

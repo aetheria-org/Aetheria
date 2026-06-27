@@ -17,14 +17,10 @@ public class PristineTracker {
 
     private static final Pattern PRISTINE_GEMSTONE = Pattern.compile("PRISTINE!.*?(Flawed|Fine|Flawless) (Ruby|Sapphire|Amber|Amethyst|Jade|Topaz|Jasper|Opal|Citrine|Aquamarine|Peridot|Onyx) Gemstone.*?x(\\d+)");
 
-    private static int tickCounter = 0;
 
     private static boolean isActive() {
         PristineStats stats = PristineStats.getInstance();
-        return ATHRConfig.feature == null ||
-                !ATHRConfig.feature.mining.pristineTrackerConfig.pristineTracker ||
-                !stats.isTrackingEnabled() ||
-                SkyblockData.getCurrentLocation() != SkyblockData.Location.CRYSTAL_HOLLOWS;
+        return ATHRConfig.feature == null || !ATHRConfig.feature.mining.pristineTrackerConfig.pristineTracker || !stats.isTrackingEnabled() || SkyblockData.getCurrentLocation() != SkyblockData.Location.CRYSTAL_HOLLOWS;
     }
 
     private static long parseLong(String s) {
@@ -39,19 +35,17 @@ public class PristineTracker {
     public void onTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END || isActive()) return;
 
-        if (++tickCounter % 20 == 0) {
-            PristineStats stats = PristineStats.getInstance();
-            stats.tickRates();
-            if (stats.shouldAutoStop()) stats.toggleTracking();
-        }
+        PristineStats stats = PristineStats.getInstance();
+        stats.timerTick();
+        if (stats.shouldAutoStop()) stats.toggleTracking();
     }
 
     @SubscribeEvent
     public void onChat(ClientChatReceivedEvent event) {
         if (isActive()) return;
         String msg = ChatUtils.clean(event);
-        if (ChatUtils.isPartyMessage(msg) || ChatUtils.isPlayerMessage(msg) ||
-                ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg)) return;
+        if (ChatUtils.isPartyMessage(msg) || ChatUtils.isPlayerMessage(msg) || ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg) || ChatUtils.isDonateMessage(msg))
+            return;
 
         if (!msg.contains("PRISTINE!")) return;
 
@@ -59,6 +53,7 @@ public class PristineTracker {
         if (m.find()) {
             PristineStats stats = PristineStats.getInstance();
             PristineData data = stats.getData();
+            stats.updateActivity();
             String quality = m.group(1);
             String gem = m.group(2);
             long amount = parseLong(m.group(3));
@@ -72,6 +67,6 @@ public class PristineTracker {
 
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
-        PristineStats.getInstance().onWorldChange();
+        PristineStats.getInstance().pauseTimer();
     }
 }

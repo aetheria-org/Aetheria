@@ -22,6 +22,11 @@ public class PristineTrackerConfig {
     public boolean showCompacted = false;
 
     @Expose
+    @ConfigOption(name = "Pause on Chat", desc = "Pause tracking while chat GUI is open; resumes on next tracked action")
+    @ConfigEditorBoolean
+    public boolean pauseOnChat = false;
+
+    @Expose
     @ConfigOption(name = "Toggle Key", desc = "Keybind to pause/resume the pristine tracker")
     @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
     public int pristineToggleKey = Keyboard.KEY_NONE;
@@ -57,6 +62,7 @@ public class PristineTrackerConfig {
             "§d§lPristine Tracker",
             "§7Total Gems: §a1,500 §7(150/h)",
             "§7Procs: §d42 §7(5/h)",
+            "§1Playtime: §f2h 30m  §1Session: §f45m",
             "§a200 §cRuby Gemstone",
             "§a200 §bSapphire Gemstone",
             "§a200 §6Amber Gemstone",
@@ -70,7 +76,7 @@ public class PristineTrackerConfig {
             "§a200 §aPeridot Gemstone",
             "§a200 §8Onyx Gemstone"
     })
-    public List<Integer> pristineDisplayLines = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14));
+    public List<Integer> pristineDisplayLines = new ArrayList<>(Arrays.asList(0, 15, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14));
 
     @Expose
     public Position pristineOverlayPos = new Position(4, -5);

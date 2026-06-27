@@ -1,8 +1,12 @@
 package io.hamlook.aetheria.features.diana;
 
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.GsonBuilder;
+import io.hamlook.aetheria.core.ProfileManagedStorage;
 import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.features.price.PriceMap;
+import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.data.TablistParser;
 import lombok.Getter;
@@ -12,7 +16,7 @@ import net.minecraft.util.StringUtils;
 
 import java.io.File;
 
-public class DianaStats implements StorageManager.Managed, StorageManager.AutoSaveable {
+public class DianaStats extends ProfileManagedStorage implements StorageManager.AutoSaveable {
 
     private static final long INACTIVITY_LIMIT_MS = 120_000L;
     private static final Minecraft mc = Minecraft.getMinecraft();
@@ -20,7 +24,6 @@ public class DianaStats implements StorageManager.Managed, StorageManager.AutoSa
     public volatile String lastDropType = null;
     public volatile long lastDropAmount = 0L;
     public volatile long lastDropMs = 0L;
-    private File file = null;
     @Getter
     private DianaData data = new DianaData();
     @Getter
@@ -36,6 +39,7 @@ public class DianaStats implements StorageManager.Managed, StorageManager.AutoSa
     private long lastActivityTime = 0L;
 
     private DianaStats() {
+        super("diana_stats.json");
     }
 
     public static DianaStats getInstance() {
@@ -55,34 +59,21 @@ public class DianaStats implements StorageManager.Managed, StorageManager.AutoSa
     }
 
     public static String formatTime(long ms) {
-        if (ms <= 0) return "0s";
-        long totalSeconds = ms / 1000;
-        long days = totalSeconds / 86400;
-        long hours = (totalSeconds % 86400) / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
-        long seconds = totalSeconds % 60;
-
-        StringBuilder sb = new StringBuilder();
-        if (days > 0) sb.append(days).append("d ");
-        if (hours > 0 || days > 0) sb.append(hours).append("h ");
-        if (minutes > 0 || hours > 0 || days > 0) sb.append(minutes).append("m ");
-        if (sb.length() == 0) sb.append(seconds).append("s");
-        return sb.toString().trim();
-    }
-
-    @Override
-    public void initFile(File configDir) {
-        this.file = new File(configDir, "diana_stats.json");
+        return Utils.formatDuration(ms);
     }
 
     @Override
     public void load() {
-        DianaData loaded = StorageManager.loadSafe(file, DianaData.class, GsonBuilder.GSON);
+        File f = resolveFile();
+        if (f == null) return;
+        DianaData loaded = StorageManager.loadSafe(f, DianaData.class, GsonBuilder.GSON);
         if (loaded != null) data = loaded;
     }
 
     public void save() {
-        StorageManager.saveAtomic(file, data, GsonBuilder.GSON);
+        File f = resolveFile();
+        if (f == null) return;
+        StorageManager.saveAtomic(f, data, GsonBuilder.GSON);
     }
 
     @Override
@@ -177,6 +168,12 @@ public class DianaStats implements StorageManager.Managed, StorageManager.AutoSa
     public void timerTick() {
         if (!timerRunning) return;
         long now = System.currentTimeMillis();
+        if (ATHRConfig.feature != null && ATHRConfig.feature.diana.pauseOnChat && ChatUtils.isChatOpen()) {
+            data.activeTimeMs += now - timerStartTime;
+            sessionActiveTimeMs += now - timerStartTime;
+            timerRunning = false;
+            return;
+        }
         if (isTracking() && isDianaMayor()) {
             data.activeTimeMs += now - timerStartTime;
             sessionActiveTimeMs += now - timerStartTime;
@@ -217,7 +214,7 @@ public class DianaStats implements StorageManager.Managed, StorageManager.AutoSa
     }
 
     public String formatMobPct(int count) {
-        return data.totalMobs > 0 ? String.format("%.2f%%", getMobPercent(count)) : "-.--%%";
+        return data.totalMobs > 0 ? String.format("%.2f%%", getMobPercent(count)) : "-.--%";
     }
 
     public long getEstimatedProfit() {

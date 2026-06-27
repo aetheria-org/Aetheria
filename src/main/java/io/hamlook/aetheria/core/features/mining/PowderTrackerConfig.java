@@ -17,6 +17,11 @@ public class PowderTrackerConfig {
     public boolean powderTracker = true;
 
     @Expose
+    @ConfigOption(name = "Pause on Chat", desc = "Pause tracking while chat GUI is open; resumes on next tracked action")
+    @ConfigEditorBoolean
+    public boolean pauseOnChat = false;
+
+    @Expose
     @ConfigOption(name = "Toggle Key", desc = "Keybind to pause/resume the powder tracker")
     @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
     public int powderToggleKey = Keyboard.KEY_NONE;
@@ -52,6 +57,7 @@ public class PowderTrackerConfig {
             "§7420 Chests §7(120/h)",
             "§b2x Powder: §aActive!",
             "§d1,337 Gemstone Powder §7(2.5K/h)",
+            "§1Playtime: §f2h 30m  §1Session: §f45m",
             "§b12 Diamond Essence",
             "§66 Gold Essence",
             "§88 Oil Barrels",
@@ -73,7 +79,7 @@ public class PowderTrackerConfig {
             "§51-§93-§a4-§f0 §8Onyx",
             "§33-§c2-§e1-§a1-§91 §fGoblin Eggs"
     })
-    public List<Integer> powderDisplayLines = new ArrayList<>(Arrays.asList(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23));
+    public List<Integer> powderDisplayLines = new ArrayList<>(Arrays.asList(0,24,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23));
 
     @Expose
     public Position powderOverlayPos = new Position(4, 60);

@@ -1,13 +1,16 @@
 package io.hamlook.aetheria.features.misc.ghosttracker;
 
 import com.google.gson.annotations.Expose;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.GsonBuilder;
+import io.hamlook.aetheria.core.ProfileManagedStorage;
 import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.features.price.PriceMap;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 
 import java.io.File;
 
-public class GhostStats implements StorageManager.Managed, StorageManager.AutoSaveable {
+public class GhostStats extends ProfileManagedStorage implements StorageManager.AutoSaveable {
 
     private static final long INACTIVITY_LIMIT_MS = 120_000L; // 2 minutes
     private static GhostStats INSTANCE;
@@ -49,7 +52,6 @@ public class GhostStats implements StorageManager.Managed, StorageManager.AutoSa
     public int killsSinceLastBagOfCash = 0;
     @Expose
     public int killsSinceLastCoins = 0;
-    private File file;
     private boolean timerRunning = false;
     private boolean timerStartedOnce = false;
     private boolean inactivityFlagged = false;
@@ -57,6 +59,7 @@ public class GhostStats implements StorageManager.Managed, StorageManager.AutoSa
     private long lastActivityTime = 0L;
 
     private GhostStats() {
+        super("ghost_stats.json");
     }
 
     public static GhostStats getInstance() {
@@ -65,13 +68,10 @@ public class GhostStats implements StorageManager.Managed, StorageManager.AutoSa
     }
 
     @Override
-    public void initFile(File configDir) {
-        this.file = new File(configDir, "ghost_stats.json");
-    }
-
-    @Override
     public void load() {
-        GhostStats loaded = StorageManager.loadSafe(file, GhostStats.class, GsonBuilder.GSON);
+        File f = resolveFile();
+        if (f == null) return;
+        GhostStats loaded = StorageManager.loadSafe(f, GhostStats.class, GsonBuilder.GSON);
         if (loaded != null) {
             this.totalKills = loaded.totalKills;
             this.activeTimeMs = loaded.activeTimeMs;
@@ -101,8 +101,9 @@ public class GhostStats implements StorageManager.Managed, StorageManager.AutoSa
     }
 
     public void save() {
-        if (file == null) return;
-        StorageManager.saveAtomic(file, this, GsonBuilder.GSON);
+        File f = resolveFile();
+        if (f == null) return;
+        StorageManager.saveAtomic(f, this, GsonBuilder.GSON);
     }
 
     public void reset() {
@@ -152,6 +153,11 @@ public class GhostStats implements StorageManager.Managed, StorageManager.AutoSa
     public void timerTick() {
         if (!timerRunning) return;
         long now = System.currentTimeMillis();
+        if (ATHRConfig.feature != null && ATHRConfig.feature.misc.ghostTrackerConfig.pauseOnChat && ChatUtils.isChatOpen()) {
+            activeTimeMs += now - timerStartTime;
+            timerRunning = false;
+            return;
+        }
         activeTimeMs += now - timerStartTime;
         timerStartTime = now;
         if (now - lastActivityTime > INACTIVITY_LIMIT_MS) {

@@ -109,7 +109,7 @@ public class DianaTracker {
 
         String msg = ChatUtils.clean(event);
 
-        if (ChatUtils.isPartyMessage(msg) || ChatUtils.isPlayerMessage(msg) || ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg)) {
+        if (ChatUtils.isPartyMessage(msg) || ChatUtils.isPlayerMessage(msg) || ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg) || ChatUtils.isDonateMessage(msg)) {
             return;
         }
         DianaStats stats = DianaStats.getInstance();

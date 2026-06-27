@@ -26,6 +26,7 @@ public class PlayerTagListener {
         if (ign == null) ign = ChatUtils.getGuildSender(plain);
         if (ign == null) ign = ChatUtils.getMsgReceivedSender(plain);
         if (ign == null) ign = ChatUtils.getMsgSentRecipient(plain);
+        if (ign == null) ign = ChatUtils.getDonateSender(plain);
         if (ign == null) return;
 
         PlayerTagData.Entry entry = PlayerTagRepo.getTag(ign);

@@ -21,7 +21,7 @@ public class GhostTrackerListener {
     private static float previousXp = -1f;
 
     private static boolean isPlayerOrPartyMessage(String msg) {
-        return ChatUtils.isPlayerMessage(msg) || ChatUtils.isPartyMessage(msg) || ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg);
+        return ChatUtils.isPlayerMessage(msg) || ChatUtils.isPartyMessage(msg) || ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg) || ChatUtils.isDonateMessage(msg);
     }
 
     private static void handleRareDrop(Matcher matcher) {

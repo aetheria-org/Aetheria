@@ -145,6 +145,7 @@ public class DungeonStats extends Overlay {
         if (!timers.isInDungeon()) return;
 
         String clean = ChatUtils.clean(event);
+        if (ChatUtils.isDonateMessage(clean)) return;
 
         if (!timers.isRunEnded()) {
             boolean handled = phaseDetector.handleGeneralEvents(clean);

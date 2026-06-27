@@ -11,7 +11,7 @@ public class ChatPingConfig {
     public boolean chatPing = true;
 
     @Expose
-    @ConfigOption(name = "Ping All Messages", desc = "Also ping when your name is mentioned in party and guild chat")
+    @ConfigOption(name = "Ping All Messages", desc = "Also ping when your name is mentioned in party, donate and guild chat")
     @ConfigEditorBoolean
     public boolean chatPingAllMessages = false;
 

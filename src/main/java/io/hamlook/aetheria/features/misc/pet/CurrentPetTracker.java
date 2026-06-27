@@ -1,10 +1,11 @@
 package io.hamlook.aetheria.features.misc.pet;
 
-import io.hamlook.aetheria.core.StorageManager;
+import io.hamlook.aetheria.core.ProfileManagedStorage;
 import io.hamlook.aetheria.events.SlotClickEvent;
 import io.hamlook.aetheria.init.RegisterInstance;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import java.io.File;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
@@ -16,13 +17,12 @@ import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.hamlook.aetheria.features.misc.pet.PetCache.normalizePetName;
 
-public class CurrentPetTracker implements StorageManager.Managed {
+public class CurrentPetTracker extends ProfileManagedStorage {
 
     private static final String PETS_CONTAINER = "Pets";
     private static final String ACTIVE_LORE = "Click to despawn";
@@ -36,12 +36,12 @@ public class CurrentPetTracker implements StorageManager.Managed {
     private static CurrentPetTracker INSTANCE;
     private long ignoreContainerUpdatesUntil = 0L;
     private long lastContainerScan = 0L;
-    private File file;
 
     @Getter
     private String currentBaseName = "";
 
     private CurrentPetTracker() {
+        super("current_pet.json");
     }
 
     public static CurrentPetTracker getInstance() {
@@ -76,19 +76,18 @@ public class CurrentPetTracker implements StorageManager.Managed {
     }
 
     @Override
-    public void initFile(File configDir) {
-        file = new File(configDir, "current_pet.json");
-        PetFileValidator.deleteIfLegacy(file);
-    }
-
-    @Override
     public void load() {
-        String loaded = PetFileValidator.load(file, String.class);
+        currentBaseName = "";
+        File f = resolveFile();
+        if (f == null) return;
+        String loaded = PetFileValidator.load(f, String.class);
         if (loaded != null) currentBaseName = loaded;
     }
 
-    private void save() {
-        PetFileValidator.save(file, currentBaseName);
+    public void save() {
+        File f = resolveFile();
+        if (f == null) return;
+        PetFileValidator.save(f, currentBaseName);
     }
 
     @SubscribeEvent

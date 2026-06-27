@@ -17,6 +17,11 @@ public class GhostTrackerConfig {
     public boolean ghostTrackerEnabled = true;
 
     @Expose
+    @ConfigOption(name = "Pause on Chat", desc = "Pause tracking while chat GUI is open; resumes on next tracked action")
+    @ConfigEditorBoolean
+    public boolean pauseOnChat = false;
+
+    @Expose
     @ConfigOption(name = "Ghost Tracker Lines", desc = "Choose which lines to show and drag to reorder. Drag lines to the trash to hide them.")
     @ConfigEditorDraggableList(exampleText = {
             "Kills: 1,234",

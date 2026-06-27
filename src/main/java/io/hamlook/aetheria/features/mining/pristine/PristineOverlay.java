@@ -2,9 +2,9 @@ package io.hamlook.aetheria.features.mining.pristine;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.utils.Position;
-import io.hamlook.aetheria.features.mining.powder.PowderStats;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
@@ -40,7 +40,7 @@ public class PristineOverlay extends Overlay {
             long[] bd = PristineStats.getGemBreakdown(d, gem);
             return String.format("§5%s§7-§9%s§7-§a%s %s%s Gemstone", bd[0], bd[1], bd[2], color, gem);
         }
-        return String.format("§a%s %s%s Gemstone", PowderStats.fmtNum(total), color, gem);
+        return String.format("§a%s %s%s Gemstone", Utils.shortNumberFormat(total, 0), color, gem);
     }
 
     @Override
@@ -79,13 +79,20 @@ public class PristineOverlay extends Overlay {
         }
         if (ordinal == 1) {
             long total = preview ? 1500L : d.gemstones.values().stream().mapToLong(Long::longValue).sum();
-            String rate = preview ? "150" : PowderStats.fmtRate(stats.rateInfo.perHour);
-            return String.format("§7Total Gems: §a%s §7(%s/h)", PowderStats.fmtNum(total), rate);
+            String rate = preview ? "150" : Utils.shortNumberFormat(stats.getGemstonesPerHour(), 0);
+            return String.format("§7Total Gems: §a%s §7(%s/h)", Utils.shortNumberFormat(total, 0), rate);
         }
         if (ordinal == 2) {
             int procs = preview ? 42 : d.totalProcs;
-            String rate = preview ? "5" : PowderStats.fmtRate(stats.procRateInfo.perHour);
-            return String.format("§7Procs: §d%s §7(%s/h)", procs, rate);
+            String rate = preview ? "5" : Utils.shortNumberFormat(stats.getProcsPerHour(), 0);
+            return String.format("§7Procs: §d%s §7(%s/h)", Utils.shortNumberFormat(procs, 0), rate);
+        }
+        if (ordinal == 15) {
+            if (preview) return "§1Playtime: §f2h 30m  §1Session: §f45m";
+            long total = d.activeTimeMs;
+            long session = stats.getSessionTimeMs();
+            if (total == 0 && session == 0) return null;
+            return String.format("§1Playtime: §f%s  §1Session: §f%s", Utils.formatDuration(total), Utils.formatDuration(session));
         }
         int gemIndex = ordinal - 3;
         if (gemIndex < 0 || gemIndex >= GEM_ENTRIES.length) return null;
@@ -98,8 +105,7 @@ public class PristineOverlay extends Overlay {
         PristineStats stats = PristineStats.getInstance();
         PristineData d = stats.getData();
 
-        for (Object entry : ATHRConfig.feature.mining.pristineTrackerConfig.pristineDisplayLines) {
-            int ordinal = (entry instanceof Number) ? ((Number) entry).intValue() : -1;
+        for (int ordinal : ATHRConfig.feature.mining.pristineTrackerConfig.pristineDisplayLines) {
             String line = lineForEntry(ordinal, d, stats, preview);
             if (line != null) lines.add(line);
         }

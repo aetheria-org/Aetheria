@@ -1,7 +1,7 @@
 package io.hamlook.aetheria.features.misc.invbuttons;
 
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.events.GuiContainerRenderButtonsEvent;
+import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
@@ -87,7 +87,7 @@ public class InvButtonRenderer {
     }
 
     @SubscribeEvent
-    public void onRenderButtons(GuiContainerRenderButtonsEvent event) {
+    public void onRenderButtons(GuiContainerRenderBeforeTooltipEvent event) {
         if (!isEnabled() || isGuiEditor()) return;
         if (StorageManager.isOverlayActive()) return;
 

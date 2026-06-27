@@ -35,7 +35,6 @@ public class PowderTracker {
 
     private static final long SYNC_WINDOW_MS = 2000;
 
-    private static int tickCounter = 0;
     private static boolean listenerRegistered = false;
 
     private static long pendingGemstoneDelta = 0;
@@ -64,6 +63,7 @@ public class PowderTracker {
         if (now - lastGemstoneChatTime <= SYNC_WINDOW_MS) {
             if (isActive()) return;
             PowderStats stats = PowderStats.getInstance();
+            stats.updateActivity();
             stats.getData().gemstonePowder += delta;
             stats.save();
             lastGemstoneChatTime = 0;
@@ -79,6 +79,7 @@ public class PowderTracker {
         if (delta <= 0) return;
 
         PowderStats stats = PowderStats.getInstance();
+        stats.updateActivity();
         stats.getData().hardStone += delta;
         stats.save();
     }
@@ -115,9 +116,7 @@ public class PowderTracker {
 
         ensureListenerRegistered();
 
-        tickCounter++;
-
-        if (tickCounter % 20 == 0) PowderStats.getInstance().tickRates();
+        PowderStats.getInstance().timerTick();
     }
 
     @SubscribeEvent
@@ -126,19 +125,21 @@ public class PowderTracker {
 
         String msg = ChatUtils.clean(event);
 
-        if (ChatUtils.isPartyMessage(msg) || ChatUtils.isPlayerMessage(msg) ||
-            ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg)) return;
+        if (ChatUtils.isPartyMessage(msg) || ChatUtils.isPlayerMessage(msg) || ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg) || ChatUtils.isDonateMessage(msg))
+            return;
 
         PowderStats stats = PowderStats.getInstance();
         PowderData data = stats.getData();
 
         if (CHEST_UNCOVERED.matcher(msg).find()) {
+            stats.updateActivity();
             data.totalChestsPicked++;
             stats.save();
             return;
         }
 
         if (COMPACT.matcher(msg).find()) {
+            stats.updateActivity();
             data.hardStoneCompacted++;
             stats.save();
             return;
@@ -151,6 +152,7 @@ public class PowderTracker {
             long now = System.currentTimeMillis();
 
             if (pendingGemstoneDelta > 0 && now - pendingDeltaTime <= SYNC_WINDOW_MS) {
+                stats.updateActivity();
                 data.gemstonePowder += pendingGemstoneDelta;
                 stats.save();
                 pendingGemstoneDelta = 0;
@@ -163,6 +165,7 @@ public class PowderTracker {
 
         m = GEMSTONE_DROP.matcher(msg);
         if (m.find() && !msg.contains("PRISTINE")) {
+            stats.updateActivity();
             String key = PowderStats.gemKey(m.group(1), m.group(2));
             data.gemstones.put(key, data.gemstones.getOrDefault(key, 0L) + parseLong(m.group(3)));
             stats.save();
@@ -171,6 +174,7 @@ public class PowderTracker {
 
         m = DIAMOND_ESSENCE.matcher(msg);
         if (m.find()) {
+            stats.updateActivity();
             data.diamondEssence += parseLong(m.group(1));
             stats.save();
             return;
@@ -178,6 +182,7 @@ public class PowderTracker {
 
         m = GOLD_ESSENCE.matcher(msg);
         if (m.find()) {
+            stats.updateActivity();
             data.goldEssence += parseLong(m.group(1));
             stats.save();
             return;
@@ -185,6 +190,7 @@ public class PowderTracker {
 
         m = OIL_BARREL.matcher(msg);
         if (m.find()) {
+            stats.updateActivity();
             data.oilBarrels += parseLong(m.group(1));
             stats.save();
             return;
@@ -192,6 +198,7 @@ public class PowderTracker {
 
         m = ASCENSION_ROPE.matcher(msg);
         if (m.find()) {
+            stats.updateActivity();
             data.ascensionRopes += parseLong(m.group(1));
             stats.save();
             return;
@@ -199,6 +206,7 @@ public class PowderTracker {
 
         m = WISHING_COMPASS.matcher(msg);
         if (m.find()) {
+            stats.updateActivity();
             data.wishingCompasses += parseLong(m.group(1));
             stats.save();
             return;
@@ -206,6 +214,7 @@ public class PowderTracker {
 
         m = JUNGLE_HEART.matcher(msg);
         if (m.find()) {
+            stats.updateActivity();
             data.jungleHearts += parseLong(m.group(1));
             stats.save();
             return;
@@ -213,6 +222,7 @@ public class PowderTracker {
 
         m = GOBLIN_EGG.matcher(msg);
         if (m.find()) {
+            stats.updateActivity();
             data.goblinEgg += parseLong(m.group(1));
             stats.save();
             return;
@@ -220,6 +230,7 @@ public class PowderTracker {
 
         m = GREEN_GOBLIN_EGG.matcher(msg);
         if (m.find()) {
+            stats.updateActivity();
             data.greenGoblinEgg += parseLong(m.group(1));
             stats.save();
             return;
@@ -227,6 +238,7 @@ public class PowderTracker {
 
         m = RED_GOBLIN_EGG.matcher(msg);
         if (m.find()) {
+            stats.updateActivity();
             data.redGoblinEgg += parseLong(m.group(1));
             stats.save();
             return;
@@ -234,6 +246,7 @@ public class PowderTracker {
 
         m = YELLOW_GOBLIN_EGG.matcher(msg);
         if (m.find()) {
+            stats.updateActivity();
             data.yellowGoblinEgg += parseLong(m.group(1));
             stats.save();
             return;
@@ -241,6 +254,7 @@ public class PowderTracker {
 
         m = BLUE_GOBLIN_EGG.matcher(msg);
         if (m.find()) {
+            stats.updateActivity();
             data.blueGoblinEgg += parseLong(m.group(1));
             stats.save();
         }
@@ -252,6 +266,6 @@ public class PowderTracker {
         pendingDeltaTime = 0;
         lastGemstoneChatTime = 0;
 
-        PowderStats.getInstance().onWorldChange();
+        PowderStats.getInstance().pauseTimer();
     }
 }

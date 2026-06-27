@@ -11,6 +11,11 @@ public class Diana {
     public boolean enabled = true;
 
     @Expose
+    @ConfigOption(name = "Pause on Chat", desc = "Pause tracking while chat GUI is open; resumes on next tracked action")
+    @ConfigEditorBoolean
+    public boolean pauseOnChat = false;
+
+    @Expose
     @ConfigOption(name = "Edit Overlay Positions", desc = "Drag all Diana overlays to reposition them individually")
     @ConfigEditorButton(runnableId = "openDianaOverlayEditor", buttonText = "Edit")
     public boolean editOverlayPosDummy = false;

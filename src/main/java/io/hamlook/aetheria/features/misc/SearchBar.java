@@ -20,6 +20,7 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
+import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -282,11 +283,14 @@ public class SearchBar {
     }
 
     @SubscribeEvent
-    public void onDrawGui(GuiScreenEvent event) {
+    public void onDrawGui(GuiContainerRenderBeforeTooltipEvent event) {
         if (isEnabled() && isSupportedGui(event.gui) && searchBar != null && !StorageManager.isOverlayActive()) {
+            GlStateManager.pushMatrix();
+            GlStateManager.translate(-event.gui.guiLeft, -event.gui.guiTop, 50);
             searchBar.updateCursorCounter();
             drawSearchBar(searchBar);
             if (isItemListActive()) drawToggleButton(searchBar.xPosition, searchBar.yPosition);
+            GlStateManager.popMatrix();
         }
     }
 }

@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.mixins;
 
-import io.hamlook.aetheria.events.GuiContainerRenderButtonsEvent;
+import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraftforge.common.MinecraftForge;
 import org.spongepowered.asm.mixin.Mixin;
@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GuiContainer.class)
-public class MixinGuiContainer_InvButtons {
+public class MixinGuiContainer_BeforeTooltip {
 
     @Inject(
             method = "drawScreen",
@@ -21,6 +21,6 @@ public class MixinGuiContainer_InvButtons {
     )
     public void afterDrawForeground(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         MinecraftForge.EVENT_BUS.post(
-                new GuiContainerRenderButtonsEvent((GuiContainer)(Object)this, mouseX, mouseY));
+                new GuiContainerRenderBeforeTooltipEvent((GuiContainer)(Object)this, mouseX, mouseY));
     }
 }
