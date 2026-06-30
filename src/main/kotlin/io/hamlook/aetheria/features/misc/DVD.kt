@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.misc
 
 import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.Resources
+import io.hamlook.aetheria.features.storage.StorageManager
 import io.hamlook.aetheria.utils.render.RenderUtils
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.chat.ChatUtils
@@ -47,6 +48,7 @@ object DVD {
     @SubscribeEvent
     fun onRenderOverlay(event: RenderGameOverlayEvent.Post) {
         if (event.type != RenderGameOverlayEvent.ElementType.ALL) return
+        if (StorageManager.isOverlayActive()) return
         if (!ATHRConfig.feature.misc.dvdScreensaver) {
             initialized = false
             return

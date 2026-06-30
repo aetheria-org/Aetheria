@@ -18,6 +18,13 @@ public class MixinNetHandlerPlayClient {
 
     private static final SPacketHandler storageHandler = new SPacketHandler();
 
+    @Inject(method = "addToSendQueue", at = @At("HEAD"))
+    public void addToSendQueue(Packet packet, CallbackInfo ci) {
+        if (packet instanceof C0EPacketClickWindow) {
+            storageHandler.handleClickWindow((C0EPacketClickWindow) packet);
+        }
+    }
+
     @Inject(method = "handleSetSlot", at = @At("RETURN"))
     public void handleSetSlot(S2FPacketSetSlot packetIn, CallbackInfo ci) {
         storageHandler.handleSetSlot(packetIn);
@@ -36,12 +43,5 @@ public class MixinNetHandlerPlayClient {
     @Inject(method = "handleWindowItems", at = @At("RETURN"))
     public void handleWindowItems(S30PacketWindowItems packetIn, CallbackInfo ci) {
         storageHandler.handleWindowItems(packetIn);
-    }
-
-    @Inject(method = "addToSendQueue", at = @At("HEAD"))
-    public void addToSendQueue(Packet packet, CallbackInfo ci) {
-        if (packet instanceof C0EPacketClickWindow) {
-            storageHandler.handleClickWindow((C0EPacketClickWindow) packet);
-        }
     }
 }

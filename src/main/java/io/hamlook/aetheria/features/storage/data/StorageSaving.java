@@ -21,7 +21,7 @@ import java.util.TreeMap;
 
 public class StorageSaving {
 
-    public static Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private static File getStorageFolder() {
         String username = Minecraft.getMinecraft().getSession().getUsername();
@@ -66,11 +66,10 @@ public class StorageSaving {
         for (File file : files) {
             if (!file.isFile() || file.length() == 0) continue;
 
-            try (FileReader fileReader = new FileReader(file);
-                 JsonReader jsonReader = new JsonReader(fileReader)) {
+            try (FileReader fileReader = new FileReader(file); JsonReader jsonReader = new JsonReader(fileReader)) {
 
                 jsonReader.setLenient(true);
-                SContainer container = gson.fromJson(jsonReader, SContainer.class);
+                SContainer container = GSON.fromJson(jsonReader, SContainer.class);
 
                 if (container != null && !container.empty) {
                     sorted.put(container.id, container);
@@ -85,26 +84,23 @@ public class StorageSaving {
     }
 
     public static void saveStorageData(Collection<SContainer> containers) {
+        for (SContainer container : containers) {
+            saveContainer(container);
+        }
+    }
+
+    public static void saveContainer(SContainer container) {
+        if (container.empty) return;
         File folder = getStorageFolder();
         if (!folder.exists()) {
             folder.mkdirs();
         }
-        for (SContainer container : containers) {
-            if (container.empty) continue;
-            File file = new File(folder, container.id + ".json");
-            try {
-                if (!file.exists()) {
-                    file.createNewFile();
-                }
-                FileWriter writer = new FileWriter(file);
-                writer.write(gson.toJson(container));
-                writer.flush();
-                writer.close();
-            } catch (IOException e) {
-                Aetheria.logger.info("ERROR While Saving " + container.id + " ERROR: " + e.getMessage());
-                e.printStackTrace();
-            }
+        File file = new File(folder, container.id + ".json");
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(GSON.toJson(container));
+        } catch (IOException e) {
+            Aetheria.logger.info("ERROR While Saving " + container.id + " ERROR: " + e.getMessage());
+            e.printStackTrace();
         }
     }
-
 }

@@ -1,6 +1,5 @@
 package io.hamlook.aetheria.features.storage.utils;
 
-import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.block.Block;
@@ -8,7 +7,6 @@ import net.minecraft.block.BlockStainedGlassPane;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.ItemStack;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
 
@@ -94,12 +92,9 @@ public class StorageParser {
                 existing.renderH = renderH;
                 existing.slotCount = slotCount;
             }
-            DebugLogger.log("Using saved data for " + id + " with " + existing.slots.size() + " items");
             return existing;
         } else {
-            SContainer container = new SContainer(new HashMap<>(), id, page, type, specialFlag, 307, renderH, slotCount, false);
-            DebugLogger.log("Created new empty container " + id);
-            return container;
+            return new SContainer(new java.util.HashMap<>(), id, page, type, specialFlag, 307, renderH, slotCount, false);
         }
     }
 

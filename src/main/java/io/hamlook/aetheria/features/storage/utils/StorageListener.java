@@ -7,7 +7,6 @@ import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.features.storage.render.StorageRenderer;
-import io.hamlook.aetheria.features.storage.utils.StorageParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import lombok.Setter;
@@ -134,11 +133,12 @@ public class StorageListener {
         if (!shouldRenderOverlay || !overlayInitialized) return;
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!ContainerUtils.isChestOpen(event.gui)) return;
+        if (StorageManager.isTransitioning()) return;
 
         GuiChest guiChest = (GuiChest) event.gui;
         int[] mouse = KeybindHelper.getMouseCoords(guiChest.width, guiChest.height);
         int mouseX = mouse[0], mouseY = mouse[1];
- 
+  
          if (handleScrollInput()) {
             event.setCanceled(true);
             return;
@@ -190,6 +190,8 @@ public class StorageListener {
     private boolean isClickingActiveContainerSlots(int mouseX, int mouseY, GuiChest guiChest) {
         StorageRenderer r = StorageManager.getRenderer();
         if (r == null) return false;
+        // Early exit if mouse isn't even over the storage area
+        if (!StorageManager.isMouseOverStorageArea(mouseX, mouseY)) return false;
         ContainerChest chest = ContainerUtils.getOpenChest(guiChest);
         if (chest == null) return false;
         for (net.minecraft.inventory.Slot slot : chest.inventorySlots) {
@@ -208,6 +210,7 @@ public class StorageListener {
 
         int keyCode = org.lwjgl.input.Keyboard.getEventKey();
         if (keyCode == org.lwjgl.input.Keyboard.KEY_ESCAPE) return;
+        if (StorageManager.isTransitioning()) return;
         if (!org.lwjgl.input.Keyboard.getEventKeyState()) return;
 
         char typedChar = org.lwjgl.input.Keyboard.getEventCharacter();

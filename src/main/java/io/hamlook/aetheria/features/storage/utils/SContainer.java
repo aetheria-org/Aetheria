@@ -1,6 +1,5 @@
 package io.hamlook.aetheria.features.storage.utils;
 
-import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.features.storage.data.ItemData;
 import lombok.AllArgsConstructor;
 import net.minecraft.item.ItemStack;
@@ -25,14 +24,11 @@ public class SContainer {
         this.page = page;
         this.type = type;
 
-        DebugLogger.log("Creating container " + this.id + " with " + slots.size() + " items");
         this.slots = convertSlots(slots);
-        DebugLogger.log("After serialization: " + this.slots.size() + " items");
 
         this.renderH = renderH;
         this.renderW = 307;
         this.slotCount = calculateSlotCount(renderH);
-        DebugLogger.log(renderW + " | " + slotCount);
         this.locked = locked;
     }
 

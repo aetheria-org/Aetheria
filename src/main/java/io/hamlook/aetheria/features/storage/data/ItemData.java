@@ -13,6 +13,8 @@ public class ItemData {
     @SerializedName("n")
     public String displayName;
 
+    private transient ItemStack cachedStack;
+
     public ItemData() {
     }
 
@@ -26,16 +28,18 @@ public class ItemData {
         item.data = compound.toString();
 
         item.displayName = stack.getDisplayName();
+        item.cachedStack = stack;
 
         return item;
     }
 
     public ItemStack toItemStack() {
+        if (cachedStack != null) return cachedStack;
         if (data == null || data.isEmpty()) return null;
 
         try {
-            NBTTagCompound nbt = JsonToNBT.getTagFromJson(data);
-            return ItemStack.loadItemStackFromNBT(nbt);
+            cachedStack = ItemStack.loadItemStackFromNBT(JsonToNBT.getTagFromJson(data));
+            return cachedStack;
         } catch (Exception e) {
             return null;
         }

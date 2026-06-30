@@ -10,31 +10,42 @@ import io.hamlook.aetheria.features.storage.utils.StorageParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.SoundUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.inventory.ContainerChest;
 
 import java.util.LinkedHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 @RegisterEvents
 public class StorageManager {
 
     private static final long TRANSITION_TIMEOUT = 5000;
+    private static final long SWITCH_COOLDOWN_MS = 1500;
+    private static long lastSuccessfulOpenTime = 0;
     @Getter
     private static String activeContainerId = null;
     @Getter
     private static StorageRenderer renderer = null;
-    @Getter
     private static boolean overlayActive = false;
     private static long transitionStartTime = 0;
     @Getter
     private static boolean isTransitioning = false;
-    private static boolean wasMouseLocked = false;
+    private static boolean overlayLockedMouse = false;
     private static boolean switchInitiatedFromOverlay = false;
     private static long lastValidChestTime = 0;
+    private static final ScheduledExecutorService COMMAND_EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Storage-Cmd"));
 
     public static void setActiveContainer(String containerId) {
+        // If this was an overlay-initiated switch, record successful open time
+        if (switchInitiatedFromOverlay) {
+            lastSuccessfulOpenTime = System.currentTimeMillis();
+        }
+
         activeContainerId = containerId;
 
         // Only auto-scroll if enabled in config and switch was NOT initiated from overlay
@@ -49,8 +60,9 @@ public class StorageManager {
     }
 
     private static void endTransition() {
-        if (isTransitioning && !wasMouseLocked) {
+        if (overlayLockedMouse) {
             setMouseLockedSilent(false);
+            overlayLockedMouse = false;
         }
         isTransitioning = false;
     }
@@ -62,6 +74,10 @@ public class StorageManager {
         if (ATHRConfig.feature == null) return;
         ATHRConfig.feature.farming.lockMouseConfig.lockMouse = locked;
         ATHRConfig.saveConfig();
+    }
+
+    public static boolean isOverlayActive() {
+        return overlayActive;
     }
 
     public static boolean initializeOverlay(ContainerChest parser) {
@@ -82,7 +98,7 @@ public class StorageManager {
         overlayActive = true;
 
         // Request scroll to active container
-        if (ATHRConfig.feature.storage.autoScrollToActive && renderer != null && activeContainerId != null) {
+        if (ATHRConfig.feature.storage.autoScrollToActive && activeContainerId != null) {
             renderer.requestScrollToActive();
         }
 
@@ -162,14 +178,20 @@ public class StorageManager {
         SContainer container = StorageData.containers.get(containerId);
         if (container == null) return;
 
+        if (isSwitchOnCooldown()) {
+            SoundUtils.playSound("note.pling");
+            return;
+        }
+
+
         // Mark that this switch was initiated from the overlay
         switchInitiatedFromOverlay = true;
 
         isTransitioning = true;
         transitionStartTime = System.currentTimeMillis();
-        wasMouseLocked = LockMouse.isLocked();
-        if (!wasMouseLocked) {
+        if (!LockMouse.isLocked()) {
             setMouseLockedSilent(true);
+            overlayLockedMouse = true;
         }
 
         StorageListener.setSwitchingContainer(true);
@@ -191,21 +213,18 @@ public class StorageManager {
     }
 
     private static void executeCommandDelayed(String command) {
-        new Thread(() -> {
-            try {
-                Thread.sleep(100);
-                Minecraft.getMinecraft().addScheduledTask(() -> {
-                    Minecraft.getMinecraft().thePlayer.sendChatMessage(command);
-                });
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }).start();
+        COMMAND_EXECUTOR.schedule(() -> {
+            Minecraft.getMinecraft().addScheduledTask(() -> Minecraft.getMinecraft().thePlayer.sendChatMessage(command));
+        }, 100, TimeUnit.MILLISECONDS);
     }
 
     public static boolean isClickingPlayerInventory(int mouseX, int mouseY) {
         if (renderer == null) return false;
         return renderer.isClickingPlayerInventory(mouseX, mouseY);
+    }
+
+    public static boolean isSwitchOnCooldown() {
+        return System.currentTimeMillis() - lastSuccessfulOpenTime < SWITCH_COOLDOWN_MS;
     }
 
     public static void closeOverlay() {
@@ -214,18 +233,18 @@ public class StorageManager {
         renderer = null;
         overlayActive = false;
         lastValidChestTime = 0;
-        if (isTransitioning && !wasMouseLocked) {
+        if (overlayLockedMouse) {
             setMouseLockedSilent(false);
+            overlayLockedMouse = false;
         }
         isTransitioning = false;
     }
 
-    public static void requestScrollToActiveContainer() {
+    public static void markContainersDirty() {
         if (renderer != null) {
-            renderer.requestScrollToActive();
+            renderer.markDirty();
         }
     }
-
 
     public static void overrideIsMouseOverSlot(net.minecraft.inventory.Slot slotIn, int mouseX, int mouseY, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
         if (!isOverlayActive() || renderer == null) return;
