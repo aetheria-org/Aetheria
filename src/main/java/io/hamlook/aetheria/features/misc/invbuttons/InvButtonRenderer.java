@@ -143,6 +143,8 @@ public class InvButtonRenderer {
             }
             GlStateManager.popMatrix();
         }
+
+        GlStateManager.disableAlpha();
     }
 
     @SubscribeEvent
