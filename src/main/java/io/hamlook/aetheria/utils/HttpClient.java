@@ -1,5 +1,7 @@
 package io.hamlook.aetheria.utils;
 
+import io.hamlook.aetheria.Aetheria;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -9,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 
 public class HttpClient {
     private static final int TIMEOUT_MS = 5000;
-    private static final String USER_AGENT = "ATHR/1.0 (Minecraft 1.8.9)";
+    private static final String USER_AGENT = "Aetheria/" + Aetheria.VERSION;
 
     private static String readAll(HttpURLConnection conn) throws Exception {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {

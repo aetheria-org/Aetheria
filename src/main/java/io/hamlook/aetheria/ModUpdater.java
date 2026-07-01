@@ -25,7 +25,7 @@ public class ModUpdater {
                 URL url = new URL("https://api.github.com/repos/aetheria-org/Aetheria/releases/latest");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-                conn.setRequestProperty("User-Agent", "Aetheria-Updater");
+                conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
 
                 if (conn.getResponseCode() != 200) return;
 
@@ -64,7 +64,7 @@ public class ModUpdater {
 
                 URL downloadURL = new URL(downloadUrl);
                 HttpURLConnection downloadConn = (HttpURLConnection) downloadURL.openConnection();
-                downloadConn.setRequestProperty("User-Agent", "Aetheria-Updater");
+                downloadConn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
 
                 try (InputStream in = downloadConn.getInputStream();
                      FileOutputStream out = new FileOutputStream(newModFile)) {

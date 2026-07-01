@@ -71,7 +71,7 @@ public class PriceMap {
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
                 conn.setRequestProperty("x-type", getDetailType());
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
                 conn.setConnectTimeout(5000);
                 conn.setReadTimeout(5000);
 

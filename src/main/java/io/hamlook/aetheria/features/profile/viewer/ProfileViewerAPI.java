@@ -66,7 +66,7 @@ public class ProfileViewerAPI {
                 URL url = new URL("https://capeapi.qzz.io/game/players");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+                conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
                 conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
                 conn.setRequestProperty("Accept", "application/json");
                 conn.setConnectTimeout(5000);
@@ -116,7 +116,7 @@ public class ProfileViewerAPI {
         URL url = new URL("https://capeapi.qzz.io/game/profile/" + username);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+        conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
         conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
         conn.setRequestProperty("Accept", "application/json");
         conn.setConnectTimeout(5000);

@@ -64,7 +64,7 @@ public class SupabaseHandler {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+            conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
             conn.setRequestProperty("Accept", "*/*");
             conn.setRequestProperty("Content-Type", "application/octet-stream");
             conn.setRequestProperty("x-player-name", playerName);

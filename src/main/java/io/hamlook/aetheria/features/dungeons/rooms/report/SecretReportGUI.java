@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.dungeons.rooms.report;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoom;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomDetector;
 import io.hamlook.aetheria.network.NetworkGuard;
@@ -86,7 +87,7 @@ public class SecretReportGUI extends GuiScreen {
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
 
             connection.addRequestProperty("Content-Type", "application/json");
-            connection.addRequestProperty("User-Agent", "Java-8-Discord-Webhook");
+            connection.addRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
             connection.setDoOutput(true);
             connection.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
             connection.setRequestMethod("POST");
