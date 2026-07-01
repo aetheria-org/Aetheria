@@ -31,4 +31,8 @@ public class Mining {
     @ConfigOption(name = "Pickobulus Preview", desc = "Shows a wireframe cube and block count preview for the Pickobulus ability blast radius")
     @ConfigEditorBoolean
     public boolean pickobulusPreview = false;
+
+    @Expose
+    @Category(name = "Powder Mining Chat", desc = "Hide powder mining chest reward messages from chat")
+    public PowderMiningChatFilterConfig powderMiningChat = new PowderMiningChatFilterConfig();
 }
