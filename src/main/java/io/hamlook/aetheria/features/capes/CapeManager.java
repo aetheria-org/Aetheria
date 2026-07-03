@@ -17,6 +17,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,6 +38,7 @@ public class CapeManager {
 
     private static final AtomicBoolean isFetching = new AtomicBoolean(false);
     private static final Gson gson = new Gson();
+    public static int capeCalls = 0;
 
     private static final ExecutorService networkExecutor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "ATHR-CapeNetworkThread");
@@ -81,31 +83,36 @@ public class CapeManager {
         }
     }
 
-    public static void refreshAll() {
-        networkExecutor.execute(CapeManager::fetchIDFromAPI);
-    }
-
 
     public static void fetchIDFromAPI() {
         if (!NetworkGuard.apiAllowed()) return;
         try {
-            URL url = new URL(CapeAPI.getAPIUrl() + "/cape");
+            String apiURL = CapeAPI.getAPIUrl("/cape");
+            URL url = new URL(apiURL);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
             conn.setRequestProperty("Accept", "application/json");
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
             if (conn.getResponseCode() == 200) {
+                capeCalls++;
                 String json = readResponse(conn);
                 Type type = new TypeToken<Map<String, String>>(){}.getType();
                 Map<String, String> map = gson.fromJson(json, type);
                 activeCapes.clear();
+                map.forEach((key, value) -> {
+                    if (key != null && value != null) {
+                        activeCapes.put(key, value);
+                    } else {
+                        Aetheria.logger.warning("[CapeManager] Skipped a bad entry from API json. Key: " + key + ", Value: " + value);
+                    }
+                });
                 activeCapes.putAll(map);
                 lastFetched = System.currentTimeMillis();
             }
         } catch (Exception e) {
-            Aetheria.logger.info("Failed to fetch capes: " + e.getMessage());
+            Aetheria.logger.severe("Failed to fetch capes: " + e);
+            Aetheria.logger.info(Arrays.toString(e.getStackTrace()));
         }
     }
 
@@ -115,7 +122,6 @@ public class CapeManager {
             URL url = new URL(CapeAPI.getAPIUrl() + "/cape");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
-            conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setDoOutput(true);
 

@@ -72,8 +72,8 @@ public class PriceMap {
                 conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
                 conn.setRequestProperty("x-type", getDetailType());
                 conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
-                conn.setConnectTimeout(5000);
-                conn.setReadTimeout(5000);
+                conn.setConnectTimeout(35000);
+                conn.setReadTimeout(35000);
 
                 int responseCode = conn.getResponseCode();
                 if (responseCode >= 200 && responseCode <= 210) {

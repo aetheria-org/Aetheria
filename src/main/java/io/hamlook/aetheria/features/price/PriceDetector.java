@@ -173,7 +173,6 @@ public class PriceDetector {
                 Aetheria.logger.info("Sent all prices, response: " + responseCode + " | " + conn.getResponseMessage());
                 bazaarMap.clear();
                 auctionMap.clear();
-                PriceMap.fetch();
             } catch (Exception e) {
                 Aetheria.logger.info("Failed to send prices: " + e.getMessage());
             }
