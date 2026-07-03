@@ -17,25 +17,16 @@ public class PurseTracker {
         if (SkyblockData.getScoreboardLines().isEmpty() || !SkyblockData.isInMist()) return;
 
         String purseLine = getPurseLine();
-        if (purseLine == null) {
-            Aetheria.logger.fine("[GhostTracker/PurseTracker] No purse line found");
-            return;
-        }
+        if (purseLine == null) return;
 
         int scavengerGain = parseScavengerGain(purseLine);
-        if (scavengerGain == 0) {
-            return;
-        }
-
-        Aetheria.logger.info("[GhostTracker/PurseTracker] Scavenger gain detected: " + scavengerGain + " (lastRecorded=" + lastRecordedGain + ")");
+        if (scavengerGain == 0) return;
 
         if (scavengerGain != lastRecordedGain && isValidGain(scavengerGain)) {
-            Aetheria.logger.info("[GhostTracker/PurseTracker] Valid scavenger gain, posting event: " + scavengerGain);
+            Aetheria.logger.info("[GhostTracker/PurseTracker] Valid scavenger gain event: " + scavengerGain);
             lastRecordedGain = scavengerGain;
             MinecraftForge.EVENT_BUS.post(new ScavengerGainEvent(scavengerGain));
-        } else if (scavengerGain == lastRecordedGain) {
-            Aetheria.logger.fine("[GhostTracker/PurseTracker] Scavenger gain already recorded: " + scavengerGain);
-        } else {
+        } else if (scavengerGain != lastRecordedGain) {
             Aetheria.logger.info("[GhostTracker/PurseTracker] Invalid scavenger gain rejected: " + scavengerGain);
         }
     }

@@ -130,12 +130,14 @@ public class GhostTrackerListener {
     @SubscribeEvent
     public void onActionBar(ActionBarUpdateEvent event) {
         String msg = event.getText();
-        Aetheria.logger.info("[GhostTracker] ActionBar: " + msg);
+        
         Matcher matcher = GhostTrackerConstants.COMBAT_XP_PATTERN.matcher(msg);
         if (!matcher.find()) {
-            Aetheria.logger.info("[GhostTracker] ActionBar: COMBAT_XP_PATTERN did not match");
             return;
         }
+        
+        Aetheria.logger.info("[GhostTracker] ActionBar (Combat XP detected): " + msg);
+        
         if (!isValidKillContext()) {
             Aetheria.logger.info("[GhostTracker] ActionBar: isValidKillContext returned false");
             return;
