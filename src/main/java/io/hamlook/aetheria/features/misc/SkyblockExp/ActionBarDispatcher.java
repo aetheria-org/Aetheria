@@ -25,7 +25,7 @@ public class ActionBarDispatcher {
     private String lastXpAmount = null;
 
     public ActionBarDispatcher() {
-        Aetheria.logger.info("[ActionBarDispatcher] Initialized");
+        Aetheria.logger.severe("[ActionBarDispatcher] Initialized - CLASSPATH SCAN FOUND THIS CLASS");
     }
 
     @SubscribeEvent
@@ -38,7 +38,7 @@ public class ActionBarDispatcher {
         // Only log when in mist
         boolean inMist = io.hamlook.aetheria.utils.data.SkyblockData.isInMist();
         if (inMist) {
-            Aetheria.logger.fine("[ActionBarDispatcher] onActionBar called with: " + stripped);
+            Aetheria.logger.severe("[ActionBarDispatcher] onActionBar RECEIVED: " + stripped);
         }
 
         MinecraftForge.EVENT_BUS.post(new ActionBarUpdateEvent(stripped));
