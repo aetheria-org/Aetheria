@@ -10,7 +10,6 @@ public class ScavengerGainListener {
 
     @SubscribeEvent
     public void onScavengerGain(ScavengerGainEvent event) {
-        Aetheria.logger.info("[GhostTracker/ScavengerGainListener] Scavenger gain event received: " + event.getAmount());
         GhostStats.getInstance().addScavenger(event.getAmount());
     }
 }

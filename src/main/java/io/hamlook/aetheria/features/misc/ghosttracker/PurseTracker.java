@@ -23,11 +23,8 @@ public class PurseTracker {
         if (scavengerGain == 0) return;
 
         if (scavengerGain != lastRecordedGain && isValidGain(scavengerGain)) {
-            Aetheria.logger.info("[GhostTracker/PurseTracker] Valid scavenger gain event: " + scavengerGain);
             lastRecordedGain = scavengerGain;
             MinecraftForge.EVENT_BUS.post(new ScavengerGainEvent(scavengerGain));
-        } else if (scavengerGain != lastRecordedGain) {
-            Aetheria.logger.info("[GhostTracker/PurseTracker] Invalid scavenger gain rejected: " + scavengerGain);
         }
     }
 
@@ -45,13 +42,6 @@ public class PurseTracker {
         long timeSinceKill = now - lastKillTime;
         boolean inWindow = timeSinceKill <= KILL_WINDOW_MS;
         boolean inRange = scavengerGain >= GhostTrackerConstants.MIN_SCAVENGER_GAIN && scavengerGain <= GhostTrackerConstants.MAX_SCAVENGER_GAIN;
-
-        if (!inRange) {
-            Aetheria.logger.info("[GhostTracker/PurseTracker] Scavenger gain out of range: " + scavengerGain + " (min=" + GhostTrackerConstants.MIN_SCAVENGER_GAIN + " max=" + GhostTrackerConstants.MAX_SCAVENGER_GAIN + ")");
-        }
-        if (!inWindow) {
-            Aetheria.logger.info("[GhostTracker/PurseTracker] Scavenger gain outside kill window: timeSinceKill=" + timeSinceKill + "ms (max=" + KILL_WINDOW_MS + "ms)");
-        }
 
         return inRange && inWindow;
     }
