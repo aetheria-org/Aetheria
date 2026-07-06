@@ -3,8 +3,6 @@ package io.hamlook.aetheria.features.dungeons.reward;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.price.PriceMap;
-import io.hamlook.aetheria.features.price.vars.AuctionEntry;
-import io.hamlook.aetheria.features.price.vars.BazaarEntry;
 import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
@@ -89,14 +87,7 @@ public class DungeonRewardProfitEstimator {
             String itemID = ItemUtils.getEffectiveItemId(stack);
             if(itemID == null || itemID.isEmpty()) continue;
 
-            double itemPrice = 0;
-            AuctionEntry price = PriceMap.getLatestAHPrice(itemID);
-            if(price != null) {
-                itemPrice = price.price;
-            }else {
-                BazaarEntry entry = PriceMap.getLatestBZPrice(itemID);
-                if(entry != null) itemPrice = entry.iSell;
-            }
+            double itemPrice = PriceMap.Cached.getDPrice(itemID);;
 
             DungeonReward reward = new DungeonReward(stack,itemPrice);
             rewardList.add(reward);

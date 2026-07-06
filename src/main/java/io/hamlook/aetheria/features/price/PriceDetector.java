@@ -17,6 +17,7 @@ import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.repo.OtherDataAPI;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -154,27 +155,52 @@ public class PriceDetector {
         }
 
         new Thread(() -> {
-            try {
-                URL url = new URL(CapeAPI.getAPIUrl("upload-price"));
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
-                conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
-                conn.setDoOutput(true);
-                conn.setConnectTimeout(5000);
-                conn.setReadTimeout(5000);
+            int maxRetries = 5;
+            int attempt = 0;
+            boolean successOrStop = false;
+            while (attempt < maxRetries && !successOrStop) {
+                try {
+                    URL url = new URL(CapeAPI.getAPIUrl("upload-price"));
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
+                    conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
+                    conn.setDoOutput(true);
+                    conn.setConnectTimeout(5000);
+                    conn.setReadTimeout(5000);
 
-                try (OutputStream os = conn.getOutputStream()) {
-                    os.write(json.getBytes(StandardCharsets.UTF_8));
+                    try (OutputStream os = conn.getOutputStream()) {
+                        os.write(json.getBytes(StandardCharsets.UTF_8));
+                    }
+
+                    int responseCode = conn.getResponseCode();
+                    if (responseCode == 429) {
+                        attempt++;
+                        Aetheria.logger.warning("Rate limited (429). Attempt " + attempt + " of " + maxRetries + ". Retrying in 5 seconds...");
+
+                        if (attempt < maxRetries) {
+                            Thread.sleep(5000);
+                        } else {
+                            ChatUtils.sendMessage("§cCould not send Price Data Automatically: Rate limit reached after 5 attempts.");
+                        }
+                    }else {
+                        successOrStop = true;
+                        if (responseCode == 200) {
+                            Aetheria.logger.info("Sent all prices, response: " + responseCode + " | " + conn.getResponseMessage());
+                            bazaarMap.clear();
+                            auctionMap.clear();
+                        } else {
+                            ChatUtils.sendMessage("§cCould not send Price Data Automatically, Error: " + responseCode);
+                        }
+                    }
+                }catch (InterruptedException e) {
+                    Aetheria.logger.info("Retry sleep interrupted: " + e.getMessage());
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (Exception e) {
+                    Aetheria.logger.info("Failed to send prices: " + e.getMessage());
                 }
-
-                int responseCode = conn.getResponseCode();
-                Aetheria.logger.info("Sent all prices, response: " + responseCode + " | " + conn.getResponseMessage());
-                bazaarMap.clear();
-                auctionMap.clear();
-            } catch (Exception e) {
-                Aetheria.logger.info("Failed to send prices: " + e.getMessage());
             }
         }).start();
 

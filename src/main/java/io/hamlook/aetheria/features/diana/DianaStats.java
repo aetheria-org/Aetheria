@@ -219,15 +219,15 @@ public class DianaStats extends ProfileManagedStorage implements StorageManager.
 
     public long getEstimatedProfit() {
         long profit = 0;
-        profit += (long) (data.totalChimeras * PriceMap.Cached.getPrice("CHIMERA_1"));
-        profit += (long) (data.griffinFeathers * PriceMap.Cached.getPrice("GRIFFIN_FEATHER"));
-        profit += (long) (data.dwarfTurtleShelmets * PriceMap.Cached.getPrice("DWARF_TURTLE_SHELMET"));
-        profit += (long) (data.antiqueRemedies * PriceMap.Cached.getPrice("ANTIQUE_REMEDIES"));
-        profit += (long) (data.crochetTigerPlushies * PriceMap.Cached.getPrice("CROCHET_TIGER_PLUSHIE"));
-        profit += (long) (data.totalSticks * PriceMap.Cached.getPrice("DAEDALUS_STICK"));
-        profit += (long) (data.totalRelics * PriceMap.Cached.getPrice("MINOS_RELIC"));
-        profit += (long) (data.souvenirs * PriceMap.Cached.getPrice("WASHED_UP_SOUVENIR"));
-        profit += (long) (data.crownsOfGreed * PriceMap.Cached.getPrice("CROWN_OF_GREED"));
+        profit += (long) (data.totalChimeras * PriceMap.Cached.getDPrice("CHIMERA_1"));
+        profit += (long) (data.griffinFeathers * PriceMap.Cached.getDPrice("GRIFFIN_FEATHER"));
+        profit += (long) (data.dwarfTurtleShelmets * PriceMap.Cached.getDPrice("DWARF_TURTLE_SHELMET"));
+        profit += (long) (data.antiqueRemedies * PriceMap.Cached.getDPrice("ANTIQUE_REMEDIES"));
+        profit += (long) (data.crochetTigerPlushies * PriceMap.Cached.getDPrice("CROCHET_TIGER_PLUSHIE"));
+        profit += (long) (data.totalSticks * PriceMap.Cached.getDPrice("DAEDALUS_STICK"));
+        profit += (long) (data.totalRelics * PriceMap.Cached.getDPrice("MINOS_RELIC"));
+        profit += (long) (data.souvenirs * PriceMap.Cached.getDPrice("WASHED_UP_SOUVENIR"));
+        profit += (long) (data.crownsOfGreed * PriceMap.Cached.getDPrice("CROWN_OF_GREED"));
         profit += data.totalCoins;
         return profit;
     }

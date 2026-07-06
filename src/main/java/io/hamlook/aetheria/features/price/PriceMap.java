@@ -3,21 +3,18 @@ package io.hamlook.aetheria.features.price;
 import com.google.gson.Gson;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.features.price.vars.AuctionEntry;
-import io.hamlook.aetheria.features.price.vars.BazaarEntry;
-import io.hamlook.aetheria.features.price.vars.PriceData;
+import io.hamlook.aetheria.features.price.vars.recieve.PriceEntry;
+import io.hamlook.aetheria.features.price.vars.recieve.PriceReceiveData;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import lombok.Getter;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -25,42 +22,14 @@ public class PriceMap {
 
     private static final Gson gson = new Gson();
     @Getter
-    private static final PriceData priceData = new PriceData();
+    private static final PriceReceiveData newPriceData = new PriceReceiveData();
 
     public static int fetchFailCount = 0;
     public static final int MAX_RETRIES = 5;
 
-    public static BazaarEntry getLatestBZPrice(String id) {
-        List<BazaarEntry> prices = getBZPrice(id, 1);
-        if (prices == null || prices.isEmpty()) return null;
-        return prices.get(0);
-    }
 
-    public static AuctionEntry getLatestAHPrice(String id) {
-        List<AuctionEntry> prices = getAHPrice(id, 1);
-        if (prices == null || prices.isEmpty()) return null;
-        return prices.get(0);
-    }
-
-    public static List<BazaarEntry> getBZPrice(String id, int entries) {
-        List<BazaarEntry> prices = priceData.bazaar.get(id);
-        if (prices == null) {
-            return null;
-        }
-        prices.sort((c, c1) -> Long.compare(c1.timestamp, c.timestamp));
-        int end = Math.min(entries, prices.size());
-        return prices.subList(0, end);
-    }
-
-    public static List<AuctionEntry> getAHPrice(String id, int entries) {
-        List<AuctionEntry> prices = priceData.auction.get(id);
-        if (prices == null) {
-            return null;
-        }
-        prices.sort((c, c1) -> Double.compare(c1.price, c.price));
-        int count = (entries > 0) ? entries : prices.size();
-        int end = Math.min(count, prices.size());
-        return prices.subList(0, end);
+    public static PriceEntry getPrice(String id){
+        return newPriceData.get(id);
     }
 
     public static void fetch() {
@@ -70,8 +39,6 @@ public class PriceMap {
                 URL url = new URL(CapeAPI.getAPIUrl("price"));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-                conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
-                conn.setRequestProperty("x-type", getDetailType());
                 conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
                 conn.setConnectTimeout(35000);
                 conn.setReadTimeout(35000);
@@ -84,18 +51,15 @@ public class PriceMap {
                         StringBuilder sb = new StringBuilder();
                         String line;
                         while ((line = br.readLine()) != null) sb.append(line);
-
-                        PriceData fetched = gson.fromJson(sb.toString(), PriceData.class);
-                        if (fetched != null) {
-                            Aetheria.logger.info("[PriceDetector] Loaded entries items from DB aren't null");
-                            synchronized (priceData) {
-                                priceData.bazaar.clear();
-                                priceData.auction.clear();
-                                if (fetched.bazaar != null) priceData.bazaar.putAll(fetched.bazaar);
-                                if (fetched.auction != null) priceData.auction.putAll(fetched.auction);
-                                priceData.bazaar.forEach((id, am) -> Aetheria.logger.info("[PriceDetector] Loaded " + am.size() + " entries of " + id));
-                                priceData.auction.forEach((id, am) -> Aetheria.logger.info("[PriceDetector] Loaded " + am.size() + " entries of " + id));
-
+                        PriceReceiveData fetchedData = gson.fromJson(sb.toString(), PriceReceiveData.class);
+                        if(fetchedData != null) {
+                            Aetheria.logger.info("[PriceDetector] Loaded entries items from new DB aren't null");
+                            writeToJson(fetchedData,"fetchedData.json");
+                            writeToJson(sb.toString(),"fetchedDataString.txt");
+                            synchronized (newPriceData) {
+                                newPriceData.clear();
+                                newPriceData.putAll(fetchedData);
+                                Aetheria.logger.info("[PriceDetector] Loaded " + newPriceData.size() + " entries from DB.");
                             }
                         }
                     }
@@ -111,19 +75,27 @@ public class PriceMap {
         }).start();
     }
 
-    private static String getDetailType() {
-        switch (ATHRConfig.feature.misc.itemPriceConfig.priceDetail) {
-            case 0:
-                return "latest";
-            case 1:
-                return "full_day";
-            case 2:
-                return "full_week";
-            case 3:
-                return "full_month";
+    private static void writeToJson(Object obj,String fileName) {
+        File file = new File(ATHRConfig.configDirectory, fileName);
+        if (!file.exists()) {
+            try { file.createNewFile(); }
+            catch (IOException e) { Aetheria.logger.info("Error creating " + fileName); return; }
         }
-        return "full_month";
+        if(obj instanceof String){
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                fos.write(((String)obj).getBytes());
+            } catch (Exception e) {
+                Aetheria.logger.info("Error writing to profile.bin");
+            }
+        }else {
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                fos.write(new Gson().toJson(obj).getBytes());
+            } catch (Exception e) {
+                Aetheria.logger.info("Error writing to profile.bin");
+            }
+        }
     }
+
 
     public static class Cached {
 
@@ -138,36 +110,8 @@ public class PriceMap {
             HARDCODED_PRICES.put("CROWN_OF_GREED", 1_000_000.0);
         }
 
-        public static BazaarEntry getLatestBZPrice(String id) {
-            return getOrCache("bz_latest_" + id, () -> PriceMap.getLatestBZPrice(id));
-        }
-
-        public static AuctionEntry getLatestAHPrice(String id) {
-            return getOrCache("ah_latest_" + id, () -> PriceMap.getLatestAHPrice(id));
-        }
-
-        public static List<BazaarEntry> getBZPrice(String id, int entries) {
-            return getOrCache("bz_" + id + "_" + entries, () -> PriceMap.getBZPrice(id, entries));
-        }
-
-        public static List<AuctionEntry> getAHPrice(String id, int entries) {
-            return getOrCache("ah_" + id + "_" + entries, () -> PriceMap.getAHPrice(id, entries));
-        }
-
-        public static double getPrice(String id) {
-            if (id == null || id.isEmpty()) return -1;
-            Double hc = HARDCODED_PRICES.get(id);
-            if (hc != null) return hc;
-            BazaarEntry entry = getLatestBZPrice(id);
-            return entry != null && entry.oSell > 0 ? entry.oSell : -1;
-        }
-
-        public static double getAHPriceDouble(String id) {
-            if (id == null || id.isEmpty()) return -1;
-            Double hc = HARDCODED_PRICES.get(id);
-            if (hc != null) return hc;
-            AuctionEntry entry = getLatestAHPrice(id);
-            return entry != null && entry.price > 0 ? entry.price : -1;
+        public static PriceEntry getPrice(String id){
+            return getOrCache(id,() -> PriceMap.getPrice(id));
         }
 
         public static void invalidate() {
@@ -184,6 +128,17 @@ public class PriceMap {
             long ttl = value != null ? TTL_MS : NOT_FOUND_TTL_MS;
             CACHE.put(key, new CachedValue(value, System.currentTimeMillis() + ttl));
             return value;
+        }
+
+        public static double getDPrice(String id) {
+            if (id == null || id.isEmpty()) return 0;
+            Double hc = HARDCODED_PRICES.get(id);
+            if (hc != null) return hc;
+            PriceEntry entry = getPrice(id);
+            if(entry == null) return 0;
+            double price = entry.price.getOrDefault("iSell",0.0);
+            if(price > 0) return price;
+            return entry.price.getOrDefault("avgBin",0.0);
         }
 
         private static class CachedValue {

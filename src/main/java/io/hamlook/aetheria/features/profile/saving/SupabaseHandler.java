@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 public class SupabaseHandler {
@@ -39,6 +40,7 @@ public class SupabaseHandler {
                 Aetheria.logger.info("[SupabaseHandler] Initiating upload for: " + playerName);
                 WaiterLogs.addLog("[SupabaseHandler] Initiating upload for: " + playerName);
                 boolean success = pushProfileToAPI(playerName, data);
+                trySaveProfile(data);
 
                 if (success) {
                     Aetheria.logger.info("[SupabaseHandler] Successfully uploaded profile to cloud for: " + playerName);
@@ -54,6 +56,50 @@ public class SupabaseHandler {
                 WaiterLogs.saveLogs();
             }
         }, "ProfilePush-" + playerName).start();
+    }
+
+    private static void trySaveProfile(ProfileData data) {
+        try {
+            String API = CapeAPI.getAPIUrl("profile-upload-data");
+            WaiterLogs.addLog("[SupabaseHandler] API URL: " + API);
+            URL url = new URL(API);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
+            conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
+            conn.setRequestProperty("Accept", "*/*");
+            // 1. Changed Content-Type to JSON
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(15000);
+
+            WaiterLogs.addLog("[SupabaseHandler] Starting GSON serialization...");
+            String jsonBody = ProfileParser.GSON.toJson(data);
+
+            WaiterLogs.addLog("[SupabaseHandler] GSON success. Length: " + jsonBody.length() + ". Converting to UTF-8 bytes...");
+            byte[] jsonData = jsonBody.getBytes(StandardCharsets.UTF_8);
+
+            WaiterLogs.addLog("[SupabaseHandler] Conversion success. Bytes: " + jsonData.length + ". Opening Output Stream...");
+            conn.setFixedLengthStreamingMode(jsonData.length);
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(jsonData);
+                os.flush();
+                WaiterLogs.addLog("[SupabaseHandler] Wrote Data to OS");
+            } catch (IOException e) {
+                WaiterLogs.addLog("[SupabaseHandler] Could not write data to OS: " + e.getMessage());
+                e.printStackTrace();
+                return;
+            }
+
+            int responseCode = conn.getResponseCode();
+            WaiterLogs.addLog("[SupabaseHandler] Response Code: " + responseCode);
+
+        } catch (Throwable t) {
+            Aetheria.logger.info("[SupabaseHandler] CRITICAL THREAD CRASH: " + t.getMessage());
+            WaiterLogs.addLog("[SupabaseHandler] CRITICAL THREAD CRASH: " + t.getClass().getSimpleName() + " - " + t.getMessage());
+            t.printStackTrace();
+        }
     }
 
     private static boolean pushProfileToAPI(String playerName, ProfileData data) {

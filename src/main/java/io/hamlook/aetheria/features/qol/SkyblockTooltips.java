@@ -3,13 +3,11 @@ package io.hamlook.aetheria.features.qol;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.data.ApiHandler;
 import io.hamlook.aetheria.features.price.PriceMap;
-import io.hamlook.aetheria.features.price.vars.AuctionEntry;
-import io.hamlook.aetheria.features.price.vars.BazaarEntry;
 import io.hamlook.aetheria.features.price.vars.PriceType;
+import io.hamlook.aetheria.features.price.vars.recieve.PriceEntry;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
-import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -78,49 +76,48 @@ public class SkyblockTooltips {
                 return;
             }
             if (isExcludedFromPrice(id)) return;
-            List<BazaarEntry> entry = PriceMap.getBZPrice(id, 1);
+            PriceEntry entry = PriceMap.getPrice(id);
+            if(entry == null) return;
             List<String> lines = new ArrayList<>();
-            if (entry == null || entry.isEmpty()) {
+            PriceType type = detectType(entry);
+            if(type == PriceType.BIN){
+                double avgBin = toDecimalDouble(entry.price.getOrDefault("avgBin",-1D));
+                double avgAuction = toDecimalDouble(entry.price.getOrDefault("avgAuction",-1D));
+                double highBin = toDecimalDouble(entry.price.getOrDefault("highestBin",-1D));
+                double lowBin = toDecimalDouble(entry.price.getOrDefault("lowestBin",-1D));
 
-                List<AuctionEntry> ahEntry = PriceMap.getAHPrice(id, -1);
-                if (ahEntry == null || ahEntry.isEmpty()) {
-                    lines.add("§cThis Item does not have an updated price yet.");
-                } else {
-                    double lowestBin = -1;
-                    double highestBin = -1;
-                    double averageBin = -1;
-                    double averageAH = -1;
-                    int bins = 0;
-                    for (AuctionEntry each : ahEntry) {
-                        if (each.type == PriceType.BIN) {
-                            if (each.price < lowestBin || lowestBin == -1) lowestBin = each.price;
-                            if (each.price > highestBin) highestBin = each.price;
-                            averageBin += each.price;
-                            bins++;
-                        }
-                        if (each.type == PriceType.AUCTION) averageAH += each.price;
-                    }
-                    averageBin = averageBin / bins;
-                    averageAH = averageAH / (ahEntry.size() - bins);
+                lines.add("§bAverage BIN: §6" + (avgBin > 0 ? avgBin : "N/A"));
+                lines.add("§bAverage Auction: §6" + (avgAuction > 0 ? avgAuction : "N/A"));
+                lines.add("§bHighest BIN: §6" + (highBin > 0 ? highBin : "N/A"));
+                lines.add("§bLowest BIN: §6" + (lowBin > 0 ? lowBin : "N/A"));
+            }
+            else if(type == PriceType.BAZAAR || type == PriceType.BZ_WITH_OFFER){
+                double buyPrice = toDecimalDouble(entry.price.getOrDefault("iBuy",-1D));
+                double sellPrice = toDecimalDouble(entry.price.getOrDefault("iSell",-1D));
+                double oBuyPrice = toDecimalDouble(entry.price.getOrDefault("oBuy",-1D));
+                double oSellPrice = toDecimalDouble(entry.price.getOrDefault("oSell",-1D));
 
-                    lines.add("§6§bLowest BIN: §r§a" + (lowestBin > 0 ? Utils.shortNumberFormat(lowestBin, 0) : "N/A") + " coins.");
-                    lines.add("§6§bHighest BIN: §r§a" + (highestBin > 0 ? Utils.shortNumberFormat(highestBin, 0) : "N/A") + " coins.");
-                    lines.add("§6§bAverage BIN: §r§a" + (averageBin > 0 ? Utils.shortNumberFormat(averageBin, 0) : "N/A") + " coins.");
-                    lines.add("§6§bAverage AH: §r§a" + (averageAH > 0 ? Utils.shortNumberFormat(averageAH, 0) : "N/A") + " coins.");
-                }
-            } else {
-                BazaarEntry price = entry.get(0);
-                if (price != null) {
-                    lines.add("§6§bBZ Insta-Buy: §r§a" + (price.iBuy >= 0 ? Utils.shortNumberFormat(price.iBuy, 0) : "N/A"));
-                    lines.add("§6§bBZ Insta-Sell: §r§a" + (price.iSell >= 0 ? Utils.shortNumberFormat(price.iSell, 0) : "N/A"));
-                    if (price.priceType == PriceType.BZ_WITH_OFFER) {
-                        lines.add("§6§bBZ Buy Offer: §r§a" + (price.oBuy >= 0 ? Utils.shortNumberFormat(price.oBuy, 0) : "N/A"));
-                        lines.add("§6§bBZ Sell Order: §r§a" + (price.oSell >= 0 ? Utils.shortNumberFormat(price.oSell, 0) : "N/A"));
-                    }
-                }
+                lines.add("§bBazaar Insta-Buy: §6 " + (buyPrice > 0 ? buyPrice : "N/A"));
+                lines.add("§bBazaar Insta-Sell: §6 " + (sellPrice > 0 ? sellPrice : "N/A"));
+                lines.add("§bBazaar Buy-Order: §6 " + (oBuyPrice > 0 ? oBuyPrice : "N/A"));
+                lines.add("§bBazaar Sell-Order: §6 " + (oSellPrice > 0 ? oSellPrice : "N/A"));
             }
             e.toolTip.addAll(lines);
         }
+    }
+
+    public static double toDecimalDouble(double initial){
+        if(initial == -1) return -1;
+        int val = (int)(initial * 100);
+        return val / 100D;
+    }
+    public static PriceType detectType(PriceEntry entry) {
+        double type = entry.price.getOrDefault("priceType",-2D);
+        if(type == -2D) return null;
+        if(type == -1D) return PriceType.BIN;
+        if(type == 0D) return PriceType.BAZAAR;
+        if(type == 1D) return PriceType.BZ_WITH_OFFER;
+        return null;
     }
 
     @SubscribeEvent

@@ -242,11 +242,11 @@ public class GhostStats extends ProfileManagedStorage implements StorageManager.
     public long getEstimatedProfit() {
         long profit = 0;
 
-        double sorrowPrice = PriceMap.Cached.getPrice("SORROW");
-        double voltaPrice = PriceMap.Cached.getPrice("VOLTA");
-        double plasmaPrice = PriceMap.Cached.getPrice("PLASMA");
-        double bootsPrice = PriceMap.Cached.getPrice("GHOSTLY_BOOTS");
-        double bagPrice = PriceMap.Cached.getPrice("BAG_OF_CASH");
+        double sorrowPrice = PriceMap.Cached.getDPrice("SORROW");
+        double voltaPrice = PriceMap.Cached.getDPrice("VOLTA");
+        double plasmaPrice = PriceMap.Cached.getDPrice("PLASMA");
+        double bootsPrice = PriceMap.Cached.getDPrice("GHOSTLY_BOOTS");
+        double bagPrice = PriceMap.Cached.getDPrice("BAG_OF_CASH");
 
         if (sorrowPrice > 0) profit += (long) (totalSorrow * sorrowPrice);
         if (voltaPrice > 0) profit += (long) (totalVolta * voltaPrice);
