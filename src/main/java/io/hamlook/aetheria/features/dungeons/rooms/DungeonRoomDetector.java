@@ -115,7 +115,7 @@ public class DungeonRoomDetector {
         return md5;
     }
 
-    static BlockPos relativeToActual(BlockPos relative) {
+    public static BlockPos relativeToActual(BlockPos relative) {
         if (originBlock == null || originCorner == null) return null;
         double x;
         double z;
@@ -281,10 +281,11 @@ public class DungeonRoomDetector {
         if (event.phase != TickEvent.Phase.START) return;
         if (ATHRConfig.feature == null) return;
         boolean overlayOn = ATHRConfig.feature.dungeons.dungeonRoomOverlayConfig.dungeonRoomOverlay;
-        boolean sfOn = ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled;
-        boolean dmOn = ATHRConfig.feature.dungeons.dungeonMapConfig.showVisitedRoomNames;
+            boolean sfOn = ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled;
+                boolean dmOn = ATHRConfig.feature.dungeons.dungeonMapConfig.showVisitedRoomNames;
+                boolean needOrigin = sfOn || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled;
 
-        if (!overlayOn && !sfOn && !dmOn) {
+                if (!overlayOn && !sfOn && !dmOn && !ATHRConfig.feature.dungeons.dungeonMapConfig.enabled) {
             DungeonRoomOverlay.currentRoomName = null;
             DungeonRoomOverlay.currentRoomCategory = null;
             DungeonRoomOverlay.currentRoomNotes = null;
@@ -294,12 +295,14 @@ public class DungeonRoomDetector {
             resetOrigin();
             return;
         }
-        if (!sfOn) {
+        if (!needOrigin) {
             originBlock = null;
             originCorner = null;
             roomRotation = -1;
             playerRelX = Integer.MAX_VALUE;
             playerRelZ = Integer.MAX_VALUE;
+        }
+        if (!sfOn) {
             SecretRenderUtils.clearSecrets();
             loadedSecretKeys.clear();
             displayedSecretCount = -1;
@@ -333,15 +336,15 @@ public class DungeonRoomDetector {
                 // If player is still inside the last detected room, skip full scan.
                 // Fall through if secrets need origin detection (first tick after room enter clears it)
                 if (roomBoundsValid && lastRoomHash != null && x >= roomMinX && x <= roomMaxX && z >= roomMinZ && z <= roomMaxZ
-                    && !(sfOn && originBlock == null)) {
+                    && !(needOrigin && originBlock == null)) {
                     if (dmOn) updateAllPlayerRooms();
-                    if (sfOn && originBlock != null && originCorner != null) {
+                    if (needOrigin && originBlock != null && originCorner != null) {
                         BlockPos rel = actualToRelative(new BlockPos(x, y, z));
                         if (rel != null) {
                             playerRelX = rel.getX();
                             playerRelZ = rel.getZ();
                         }
-                        processSecrets();
+                        if (sfOn) processSecrets();
                     }
                     return;
                 }
@@ -366,7 +369,7 @@ public class DungeonRoomDetector {
                         addVisitedRoom(lastRoomJson);
                         updateAllPlayerRooms();
                         if (sfOn) processSecrets();
-                        if (sfOn && originBlock != null && originCorner != null) {
+                        if (needOrigin && originBlock != null && originCorner != null) {
                             BlockPos rel = actualToRelative(new BlockPos(x, y, z));
                             if (rel != null) {
                                 playerRelX = rel.getX();
@@ -377,7 +380,7 @@ public class DungeonRoomDetector {
                     }
                 }
 
-                if (sfOn) {
+                if (needOrigin) {
                     originBlock = null;
                     originCorner = null;
                     roomRotation = -1;
@@ -431,7 +434,7 @@ public class DungeonRoomDetector {
                 updateAllPlayerRooms();
                 if (sfOn) processSecrets();
 
-                if (sfOn && originBlock != null && originCorner != null) {
+                if (needOrigin && originBlock != null && originCorner != null) {
                     BlockPos rel = actualToRelative(new BlockPos(x, y, z));
                     if (rel != null) {
                         playerRelX = rel.getX();
@@ -742,7 +745,7 @@ public class DungeonRoomDetector {
             int nz = endOfRoom(x, y, z, "n"), nwx = endOfRoom(x, y, nz, "w");
             int sz = endOfRoom(x, y, z, "s"), sex = endOfRoom(x, y, sz, "e");
             for (BlockPos bp : BlockPos.getAllInBox(new BlockPos(nwx, y, nz), new BlockPos(sex, y, sz))) {
-                if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled) checkCorner(bp);
+                if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled) checkCorner(bp);
                 freqMap.merge(world.getBlockState(bp).toString(), 1, Integer::sum);
             }
         } else if (getSize(x, y, z).equals("L-shape")) {
@@ -759,7 +762,7 @@ public class DungeonRoomDetector {
                         Block b = world.getBlockState(bp).getBlock();
                         if (b == Blocks.air || checkPlatform(startX + dx * j, y + 1, cz) || (j > 0 && Math.abs(dungeonHeight(startX + dx * j, cz) - dungeonHeight(startX + dx * (j - 1), cz)) > 3))
                             break;
-                        if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled) checkCorner(bp);
+                        if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled) checkCorner(bp);
                         freqMap.merge(b.toString(), 1, Integer::sum);
                     }
                 }
@@ -776,7 +779,7 @@ public class DungeonRoomDetector {
                         Block b = world.getBlockState(bp).getBlock();
                         if (b == Blocks.air || checkPlatform(cx, y + 1, startZ + dz * j) || (j > 0 && Math.abs(dungeonHeight(cx, startZ + dz * j) - dungeonHeight(cx, startZ + dz * (j - 1))) > 3))
                             break;
-                        if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled) checkCorner(bp);
+                        if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled) checkCorner(bp);
                         freqMap.merge(b.toString(), 1, Integer::sum);
                     }
                 }
@@ -827,7 +830,7 @@ public class DungeonRoomDetector {
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
         resetOrigin();
-        DungeonMapOverlay.players.clear();
+        DungeonMapOverlay.clearPlayers();
 
     }
 

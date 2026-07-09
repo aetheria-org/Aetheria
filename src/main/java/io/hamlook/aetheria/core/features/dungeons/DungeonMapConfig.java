@@ -74,6 +74,10 @@ public class DungeonMapConfig {
     @ConfigEditorSliderAnnotation(minValue = 0.25f,maxValue = 2f,minStep = 0.05f)
     public float roomnameSize = 1f;
 
+    @Expose
+    @ConfigOption(name = "Cell Block Size",desc = "Block size of one dungeon cell including border (default 32)")
+    @ConfigEditorSliderAnnotation(minValue = 20f, maxValue = 50f, minStep = 1f)
+    public int cellSizeBlocks = 32;
 
 
 }
