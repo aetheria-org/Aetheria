@@ -3,6 +3,7 @@ package io.hamlook.aetheria.core;
 import com.google.gson.Gson;
 import io.hamlook.aetheria.features.diana.DianaStats;
 import io.hamlook.aetheria.features.fishing.trophy.TrophyFishStorage;
+import io.hamlook.aetheria.features.farming.FarmingTrackerData;
 import io.hamlook.aetheria.features.mining.powder.PowderStats;
 import io.hamlook.aetheria.features.mining.pristine.PristineStats;
 import io.hamlook.aetheria.features.misc.invbuttons.InventoryButtonStorage;
@@ -50,6 +51,7 @@ public enum StorageManager {
     PET_CACHE      (PetCache.getInstance()),
     CURRENT_PET    (CurrentPetTracker.getInstance()),
     TROPHY_FISH    (TrophyFishStorage.getInstance()),
+    FARMING_TRACKER(FarmingTrackerData.getInstance()),
     GHOST_STATS    (GhostStats.getInstance());
     // ─────────────────────────────────────────────────────────────────────────
 
