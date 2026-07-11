@@ -4,6 +4,7 @@ import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.Position
 import io.hamlook.aetheria.utils.Utils
+import io.hamlook.aetheria.utils.data.SkyblockData
 import io.hamlook.aetheria.utils.overlay.Overlay
 import io.hamlook.aetheria.utils.render.ItemRenderUtils
 import net.minecraft.client.Minecraft
@@ -22,6 +23,31 @@ class FarmingTrackerOverlay : Overlay(160, 70) {
 
         private const val ICON_SIZE = 8
         private const val ICON_GAP = 2
+
+        // Ordinal layout (must stay in sync with FarmingTrackerConfig's exampleText):
+        //   0        = title
+        //   1        = value/coins-per-hour
+        //   2        = total crops/hour
+        //   3..16    = per-crop count line for Crop.all()[i]  (COUNT_LINES_START + i)
+        //   17       = session timer
+        //   18..31   = per-crop rate/hour line for Crop.all()[i]  (RATE_LINES_START + i)
+        //   32       = total crops collected this session (raw-crop-equivalent count)
+        private const val COUNT_LINES_START = 3
+        private val SESSION_TIMER_ORDINAL = COUNT_LINES_START + Crop.all().size // 17
+        private val RATE_LINES_START = SESSION_TIMER_ORDINAL + 1 // 18
+        private val TOTAL_CROPS_ORDINAL = RATE_LINES_START + Crop.all().size // 32
+
+        private fun formatDuration(ms: Long): String {
+            val totalSeconds = ms / 1000
+            val hours = totalSeconds / 3600
+            val minutes = (totalSeconds % 3600) / 60
+            val seconds = totalSeconds % 60
+            return if (hours > 0) {
+                String.format("%d:%02d:%02d", hours, minutes, seconds)
+            } else {
+                String.format("%02d:%02d", minutes, seconds)
+            }
+        }
     }
 
     init {
@@ -30,11 +56,15 @@ class FarmingTrackerOverlay : Overlay(160, 70) {
 
     private val config get() = ATHRConfig.feature.farming.farmingTracker
 
-    // Ordinal 0 = title, 1 = value/rate, 2 = total crops/hour, 3+i = crop
-    // family line for FarmingTracker.getCrops()[i]. Must stay in sync with
-    // FarmingTrackerConfig's exampleText ordering. Icon is only non-null for
-    // crop-family lines, and shown once at the start of the line — not once
-    // per raw/enchanted/block sub-form within it.
+    private fun isInFarmingLocation(): Boolean {
+        val location = SkyblockData.getCurrentLocation()
+        return location == SkyblockData.Location.BARN
+            || location == SkyblockData.Location.PRIVATE_ISLAND
+            || location == SkyblockData.Location.GARDEN
+    }
+
+    // Icon is only non-null for crop-family lines, and shown once at the
+    // start of the line — not once per raw/enchanted/block sub-form within it.
     private fun entryForOrdinal(ordinal: Int, preview: Boolean): Pair<ItemStack?, String>? {
         if (ordinal == 0) {
             val pausedTag = if (!preview && FarmingTracker.isPaused()) " §7[Paused]" else ""
@@ -48,29 +78,64 @@ class FarmingTrackerOverlay : Overlay(160, 70) {
             if (preview) return null to "§b12,480 crops/h"
             return null to "§b${Utils.shortNumberFormat(FarmingTracker.cropsPerHour(), 0)} crops/h"
         }
-
-        val crops = FarmingTracker.getCrops()
-        val index = ordinal - 3
-        if (index < 0 || index >= crops.size) return null
-        val crop = crops[index]
-        val icon = FarmingTracker.getCropIcon(crop)
-
-        if (preview) {
-            return icon to "§a${crop.displayName}: §f12 §7E.${crop.displayName}: §f3"
+        if (ordinal == SESSION_TIMER_ORDINAL) {
+            if (preview) return null to "§7Session: §f42:17"
+            val pausedTag = if (FarmingTracker.isPaused()) " §7[Paused]" else ""
+            return null to "§7Session: §f${formatDuration(FarmingTracker.getActiveTimeMs())}$pausedTag"
+        }
+        if (ordinal == TOTAL_CROPS_ORDINAL) {
+            if (preview) return null to "§bTotal: §f108,240 crops"
+            val total = FarmingTracker.totalRawCrops()
+            if (total <= 0L) return null
+            return null to "§bTotal: §f${Utils.shortNumberFormat(total.toDouble(), 0)} crops"
         }
 
-        val raw = FarmingTracker.getCount(crop.rawId)
-        val ench = FarmingTracker.getCount(crop.enchantedId)
-        val block = if (crop.blockId != null) FarmingTracker.getCount(crop.blockId) else 0L
+        val crops = Crop.all()
 
-        if (raw == 0L && ench == 0L && block == 0L) return null
+        val countIndex = ordinal - COUNT_LINES_START
+        if (countIndex in crops.indices) {
+            val crop = crops[countIndex]
+            val icon = crop.getIcon()
 
-        val parts = mutableListOf<String>()
-        if (raw > 0) parts.add("§a${crop.displayName}: §f${Utils.shortNumberFormat(raw.toDouble(), 0)}")
-        if (ench > 0) parts.add("§7E.${crop.displayName}: §f${Utils.shortNumberFormat(ench.toDouble(), 0)}")
-        if (block > 0 && crop.blockChatName != null) parts.add("§7${crop.blockChatName}: §f${Utils.shortNumberFormat(block.toDouble(), 0)}")
+            if (preview) {
+                return icon to "§a${crop.displayName}: §f12 §7E.${crop.displayName}: §f3 §b(4,760/h)"
+            }
 
-        return icon to parts.joinToString(" ")
+            val raw = FarmingTracker.getCount(crop.rawId)
+            val ench = FarmingTracker.getCount(crop.enchantedId)
+            val block = if (crop.blockId != null) FarmingTracker.getCount(crop.blockId) else 0L
+
+            if (raw == 0L && ench == 0L && block == 0L) return null
+
+            val parts = mutableListOf<String>()
+            if (raw > 0) parts.add("§a${crop.displayName}: §f${Utils.shortNumberFormat(raw.toDouble(), 0)}")
+            if (ench > 0) parts.add("§7E.${crop.displayName}: §f${Utils.shortNumberFormat(ench.toDouble(), 0)}")
+            if (block > 0 && crop.blockChatName != null) parts.add("§7${crop.blockChatName}: §f${Utils.shortNumberFormat(block.toDouble(), 0)}")
+
+            // Combined raw-crop-equivalent rate across all tiers (raw + enchanted +
+            // block folded together via Crop.rawEquivalentOf), not a per-tier rate.
+            val rate = FarmingTracker.getCropRate(crop)
+            if (rate > 0.0) parts.add("§b(${Utils.shortNumberFormat(rate, 0)}/h)")
+
+            return icon to parts.joinToString(" ")
+        }
+
+        val rateIndex = ordinal - RATE_LINES_START
+        if (rateIndex in crops.indices) {
+            val crop = crops[rateIndex]
+            val icon = crop.getIcon()
+
+            if (preview) {
+                return icon to "§a${crop.displayName}: §f4,760/h"
+            }
+
+            val rate = FarmingTracker.getCropRate(crop)
+            if (rate <= 0.0) return null
+
+            return icon to "§a${crop.displayName}: §f${Utils.shortNumberFormat(rate, 0)}/h"
+        }
+
+        return null
     }
 
     private fun buildEntries(preview: Boolean): List<Pair<ItemStack?, String>> {
@@ -138,7 +203,8 @@ class FarmingTrackerOverlay : Overlay(160, 70) {
     override fun getScale(): Float = config.farmingTrackerScale
     override fun getBgColor(): Int = config.farmingTrackerBgColor
     override fun getCornerRadius(): Int = config.farmingTrackerCornerRadius
-    override fun isEnabled(): Boolean = config.enabled
+    override fun isEnabled(): Boolean =
+        config.enabled && (!config.requireFarmingIsland || isInFarmingLocation())
 
     override fun hideOnChat() = config.hideOnChat
     override fun hideOnTab() = config.hideOnTab
