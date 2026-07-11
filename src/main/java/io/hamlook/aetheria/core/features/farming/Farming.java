@@ -13,4 +13,8 @@ public class Farming {
     @Expose
     @Category(name = "BPS Calculator", desc = "Blocks per second calculator for farming")
     public BPSConfig bps = new BPSConfig();
+
+    @Expose
+    @Category(name = "Farming Tracker", desc = "Track crop value and coins/hour")
+    public FarmingTrackerConfig farmingTracker = new FarmingTrackerConfig();
 }
