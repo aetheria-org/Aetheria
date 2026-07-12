@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.farming;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.misc.itemlog.ItemPickupLog;
+import io.hamlook.aetheria.features.price.PriceMap;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
@@ -237,7 +238,7 @@ public class FarmingTracker {
     public static double currentValue() {
         double total = 0.0;
         for (Map.Entry<String, Long> entry : FarmingTrackerData.getInstance().getCounts().entrySet()) {
-            double price = PriceMap.getCachedPrice(entry.getKey());
+            double price = PriceMap.Cached.getPrice(entry.getKey());
             if (price > 0) total += entry.getValue() * price;
         }
         return total;

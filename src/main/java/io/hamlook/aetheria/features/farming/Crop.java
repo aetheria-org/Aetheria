@@ -36,6 +36,7 @@ public class Crop {
     public final String enchantedChatName;
     public final String blockId;
     public final String blockChatName;
+    public final String blockDisplayName;
     public final String displayName;
 
     private Crop(String rawId, String enchantedId, String enchantedChatName, String blockId, String blockChatName, String displayName) {
@@ -44,6 +45,12 @@ public class Crop {
         this.enchantedChatName = enchantedChatName;
         this.blockId = blockId;
         this.blockChatName = blockChatName;
+        // Overlay-only abbreviation ("Enchanted Hay Bale" -> "E. Hay Bale"), kept separate
+        // from blockChatName since that field also has to match the game's exact
+        // "RARE DROP!" chat text (see Crop.findByChatName / CHAT_NAME_TO_ID below).
+        this.blockDisplayName = blockChatName != null && blockChatName.startsWith("Enchanted ")
+                ? "E. " + blockChatName.substring("Enchanted ".length())
+                : blockChatName;
         this.displayName = displayName;
     }
 
