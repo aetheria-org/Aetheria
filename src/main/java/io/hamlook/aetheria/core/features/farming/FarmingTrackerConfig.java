@@ -46,11 +46,11 @@ public class FarmingTrackerConfig {
             "§a§lFarming Tracker",
             "§76,144,000 coins §7(3.2M/h)",
             "§b12,480 crops/h",
-            "§aWheat: §f2,304 §7E.Wheat: §f12 §7E.Hay Bale: §f1 §b(2,304/h)",
+            "§aWheat: §f2,304 §7E.Wheat: §f12 §7E. Hay Bale: §f1 §b(2,304/h)",
             "§aCarrot: §f1,120 §7E.Carrot: §f6 §b(1,120/h)",
             "§aPotato: §f980 §7E.Potato: §f4 §b(980/h)",
-            "§aPumpkin: §f560 §7E.Pumpkin: §f3 §7Polished: §f1 §b(560/h)",
-            "§aMelon: §f8 §7E.Melon: §f92 §7E.Melon Block: §f2 §b(4,760/h)",
+            "§aPumpkin: §f560 §7E.Pumpkin: §f3 §7Polished Pumpkin: §f1 §b(560/h)",
+            "§aMelon: §f8 §7E.Melon: §f92 §7E. Melon Block: §f2 §b(4,760/h)",
             "§aSugar Cane: §f640 §7E.Sugar: §f5 §b(640/h)",
             "§aCocoa Beans: §f300 §7E.Cocoa Beans: §f2 §b(300/h)",
             "§aCactus: §f150 §7E.Cactus Green: §f3 §b(150/h)",
@@ -61,23 +61,9 @@ public class FarmingTrackerConfig {
             "§aMoonflower: §f30 §7E.Moonflower: §f1 §b(30/h)",
             "§aSunflower: §f35 §7E.Sunflower: §f1 §b(35/h)",
             "§7Session: §f42:17",
-            "§aWheat: §f2,304/h",
-            "§aCarrot: §f1,120/h",
-            "§aPotato: §f980/h",
-            "§aPumpkin: §f560/h",
-            "§aMelon: §f4,760/h",
-            "§aSugar Cane: §f640/h",
-            "§aCocoa Beans: §f300/h",
-            "§aCactus: §f150/h",
-            "§aRed Mushroom: §f80/h",
-            "§aBrown Mushroom: §f75/h",
-            "§aNether Wart: §f420/h",
-            "§aWild Rose: §f40/h",
-            "§aMoonflower: §f30/h",
-            "§aSunflower: §f35/h",
             "§bTotal: §f108,240 crops"
     })
-    public List<Integer> farmingDisplayLines = new ArrayList<>(Arrays.asList(0, 1, 2, 32, 17, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+    public List<Integer> farmingDisplayLines = new ArrayList<>(Arrays.asList(0, 1, 2, 18, 17, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
 
     @Expose
     @ConfigOption(name = "Edit Position", desc = "Drag to reposition the farming tracker overlay")
