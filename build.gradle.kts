@@ -81,7 +81,7 @@ dependencies {
     shadowImpl("org.spongepowered:mixin:0.7.11-SNAPSHOT") {
         isTransitive = false
     }
-    implementation("org.java-websocket:Java-WebSocket:1.6.0")
+    shadowImpl("org.java-websocket:Java-WebSocket:1.6.0") { isTransitive = false }
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
 
     // Kotlin standard library, must be shadowed into the JAR
@@ -152,6 +152,7 @@ tasks.shadowJar {
     fun relocate(name: String) = relocate(name, "$baseGroup.deps.$name")
     relocate("kotlin")
     relocate("com.google.gson")
+    relocate("org.java_websocket")
 }
 
 tasks.assemble.get().dependsOn(tasks.remapJar)
