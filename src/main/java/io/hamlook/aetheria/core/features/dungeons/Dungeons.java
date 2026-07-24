@@ -43,8 +43,8 @@ public class Dungeons {
     @Category(name = "Secret Finder", desc = "Secret finder with  secret ESP, and display options")
     public DungeonSecretFinderConfig dungeonSecretFinder = new DungeonSecretFinderConfig();
 
-    @Expose
-    @Category(name = "Dungeon Map", desc = "Custom Dungeon Map display overlay")
+//    @Expose
+//    @Category(name = "Dungeon Map", desc = "Custom Dungeon Map display overlay")
     public DungeonMapConfig dungeonMapConfig = new DungeonMapConfig();
 
     @Expose
