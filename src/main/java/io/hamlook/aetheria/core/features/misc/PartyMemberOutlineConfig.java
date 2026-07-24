@@ -10,7 +10,7 @@ public class PartyMemberOutlineConfig {
     @Expose
     @ConfigOption(name = "Enable", desc = "Draw a colored outline around party members while they're actually visible on screen. Blocks/walls between you and them hide it like normal - it never shows through terrain.")
     @ConfigEditorBoolean
-    public boolean enabled = true;
+    public boolean enabled = false;
 
     @Expose
     @ConfigOption(name = "Outline Color", desc = "Color of the party member outline")

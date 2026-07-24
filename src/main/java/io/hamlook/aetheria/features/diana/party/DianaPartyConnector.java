@@ -32,15 +32,18 @@ public class DianaPartyConnector {
             isDiana = true;
         }
         if(ElectionUtils.perks != null){
-            if(ElectionUtils.perks.perks.contains("Mythological Ritual")){
-                isRitual = true;
+            for(String perk : ElectionUtils.perks.perks){
+                if (perk.toLowerCase().contains("mythological") && perk.toLowerCase().contains("ritual")) {
+                    isRitual = true;
+                    break;
+                }
             }
         }
     }
 
     public static void initialise(){
         if(!NetworkGuard.apiAllowed()) return;
-//        checkForDiana();
+        checkForDiana();
         connectToAPI();
         long intervalSeconds = 120;
         scheduler.schedule(() -> {
@@ -103,6 +106,14 @@ public class DianaPartyConnector {
         return partyClient.sendAndRecieve(GSON.toJson(obj));
     }
 
+    public static CompletableFuture<String> kickFromParty(String player) {
+        if(!isConnected) connectToAPI();
+        JsonObject obj = new JsonObject();
+        obj.addProperty("command", "dpartykick");
+        obj.addProperty("player",player.toLowerCase());
+        return partyClient.sendAndRecieve(GSON.toJson(obj));
+    }
+
     public static CompletableFuture<String> sendMessage(String msg) {
         if(!isConnected) connectToAPI();
 
@@ -131,6 +142,10 @@ public class DianaPartyConnector {
         if(partyClient == null || !isConnected){
             partyClient = new DianaPartyClient();
         }
+        if(!isDiana && !isRitual){
+            checkForDiana();
+        }
+        if(!isDiana && !isRitual) return;
         if(!NetworkGuard.apiAllowed()) return;
         Aetheria.logger.info("[D-Party] Trying to connect to Diana Party API");
         partyClient.connect();
@@ -176,6 +191,7 @@ public class DianaPartyConnector {
             isConnected = false;
         }
     }
+
 
 
 }

@@ -30,12 +30,12 @@ public class DPartyCommand extends ASMCommand {
     }
 
     private String getArgs() {
-        return "<join|create|leave|disband|transfer>";
+        return "<join|create|leave|disband|transfer|kick>";
     }
 
     @Override
     public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
-        String[] options = new String[] {"join", "create", "leave", "disband","transfer"};
+        String[] options = new String[] {"join", "create", "leave", "disband","transfer","kick"};
         if(args.length == 0) return Arrays.asList(options);
         if(args.length == 1){
             String argument = args[0];
@@ -66,7 +66,45 @@ public class DPartyCommand extends ASMCommand {
             case "transfer":
                 transferParty(args);
                 break;
+            case "kick":
+                kickFromParty(args);
+                break;
         }
+    }
+
+    public void kickFromParty(String[] args) {
+        if (!DianaPartyConnector.isConnected) {
+            ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
+            if (NetworkGuard.apiAllowed()) {
+                DianaPartyConnector.connectToAPI();
+            }
+            return;
+        }
+        if (!DianaPartyConnector.isInParty()) {
+            ChatUtils.sendMessage("§cYou are not in a Diana Party.");
+            return;
+        }
+        if (args.length < 2) {
+            ChatUtils.sendMessage("§cPlease enter a valid party member IGN");
+            return;
+        }
+        CompletableFuture<String> future = DianaPartyConnector.kickFromParty(args[1].toLowerCase());
+        if(future == null){
+            ChatUtils.sendMessage("§cYou are not in a Diana Party.");
+            return;
+        }
+        future.thenAccept(response -> {
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+            JsonObject data = json.getAsJsonObject("data");
+            int code = data.get("code").getAsInt();
+            if(code == 200){
+                String kickedPlayer = data.get("kicked").getAsString();
+                ChatUtils.sendMessage("§aSuccessfully Kicked " + kickedPlayer + " from the party.");
+            }else {
+                String msg = json.getAsJsonObject("data").get("message").getAsString();
+                ChatUtils.sendMessage("§cError While Kicking Player§7[§c" + code + "§7]: §c" + msg);
+            }
+        });
     }
 
     public void transferParty(String[] args) {

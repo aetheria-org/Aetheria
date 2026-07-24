@@ -103,6 +103,7 @@ public class ElectionUtils {
    public void onGuiOpen(GuiOpenEvent event) {
        check = true;
    }
+
    @SubscribeEvent
    public void onBackgroundDrawn(GuiScreenEvent.BackgroundDrawnEvent e){
        if(!NetworkGuard.apiAllowed()) return;

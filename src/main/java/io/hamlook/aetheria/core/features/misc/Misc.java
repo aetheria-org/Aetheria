@@ -117,8 +117,8 @@ public class Misc {
     @Category(name = "Ghost Tracker", desc = "Settings for Ghost Tracker overlay")
     public GhostTrackerConfig ghostTrackerConfig = new GhostTrackerConfig();
 
-    @Expose
-    @Category(name = "Party Member Outline", desc = "Highlight your party members with a colored outline while they're visible on screen (not through walls)")
+//    @Expose
+//    @Category(name = "Party Member Outline", desc = "Highlight your party members with a colored outline while they're visible on screen (not through walls)")
     public PartyMemberOutlineConfig partyMemberOutline = new PartyMemberOutlineConfig();
 
     public static class SbProfileData {
