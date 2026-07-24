@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.utils.render;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.emoji.CustomEmoji;
@@ -341,8 +342,11 @@ public final class RenderUtils {
 
         CustomEmoji customEmoji = EmojiManager.getCustomEmoji(nameOrAlias);
         if (customEmoji != null) {
-            ResourceLocation texture = EmojiLinks.getSpriteResource(EmojiLinks.CUSTOM_SHEET);
             int sheetW = EmojiManager.getSheetWidth(EmojiLinks.CUSTOM_SHEET);
+            if (sheetW <= 0 || customEmoji.sprites.isEmpty()) {
+                Aetheria.logger.info("[EMOJI] Cannot render custom emoji :" + nameOrAlias + ": — sheetW=" + sheetW + ", sprites=" + customEmoji.sprites.size());
+                return false;
+            }
 
             int frameIndex = 0;
             if (customEmoji.animated && customEmoji.frametime > 0) {
@@ -351,19 +355,25 @@ public final class RenderUtils {
             }
             SpritePos pos = customEmoji.sprites.get(frameIndex);
 
-            GlStateManager.pushMatrix();
-            GlStateManager.color(1f, 1f, 1f, 1f);
-            Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
-
             float uMin = (float) pos.x / sheetW;
             float uMax = (float)(pos.x + customEmoji.width) / sheetW;
             float vMin = (float) pos.y / sheetW;
             float vMax = (float)(pos.y + customEmoji.height) / sheetW;
+            if (uMax > 1f || vMax > 1f) {
+                Aetheria.logger.info("[EMOJI] UV OOB for :" + nameOrAlias + ": sheetW=" + sheetW + " pos=(" + pos.x + "," + pos.y + ") size=" + customEmoji.width + "x" + customEmoji.height + " uMax=" + uMax + " vMax=" + vMax);
+                return false;
+            }
+
+            ResourceLocation texture = EmojiLinks.getSpriteResource(EmojiLinks.CUSTOM_SHEET);
+            GlStateManager.pushMatrix();
+            GlStateManager.color(1f, 1f, 1f, 1f);
+            Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
+
             drawTexturedRect(x, y, size, size, uMin, uMax, vMin, vMax, GL11.GL_LINEAR);
             GlStateManager.popMatrix();
             return true;
         }
-
+        Aetheria.logger.info("[EMOJI] Emoji is NULL");
         return false;
     }
 

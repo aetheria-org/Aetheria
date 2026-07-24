@@ -171,7 +171,6 @@ public class EmojiManager {
                 JsonArray arr = JsonParser.parseString(json).getAsJsonArray();
                 if (arr == null || arr.isEmpty()) return;
 
-                int customCount = 0;
                 for (JsonElement element : arr) {
                     JsonObject object = element.getAsJsonObject();
                     if (!object.has("short_name") || !object.has("sprite_coords")) continue;
@@ -196,7 +195,6 @@ public class EmojiManager {
                     emoji.animated = animated;
                     emoji.frametime = frametime;
                     customEmojis.put(shortName, emoji);
-                    customCount++;
 
                     if (object.has("short_names")) {
                         JsonArray names = object.get("short_names").getAsJsonArray();
@@ -206,9 +204,49 @@ public class EmojiManager {
                     }
                 }
                 if (!customEmojis.isEmpty()) loaded.set(true);
+                validateCustomSheetSize();
             }
         } catch (Exception e) {
             Aetheria.logger.info("[EMOJI] Failed to load custom emojis: " + e.getMessage());
+        }
+    }
+
+    private static void validateCustomSheetSize() {
+        if (customEmojis.isEmpty()) return;
+        int maxRequired = 0;
+        for (CustomEmoji emoji : customEmojis.values()) {
+            for (SpritePos pos : emoji.sprites) {
+                int right = pos.x + emoji.width;
+                int bottom = pos.y + emoji.height;
+                if (right > maxRequired) maxRequired = right;
+                if (bottom > maxRequired) maxRequired = bottom;
+            }
+        }
+        int actualWidth = getSheetWidth(EmojiLinks.CUSTOM_SHEET);
+        if (actualWidth < maxRequired) {
+            Aetheria.logger.info("[EMOJI] Custom sheet too small (" + actualWidth + " px), need at least " + maxRequired + ", re-downloading...");
+            File file = EmojiLinks.getSpriteFile(EmojiLinks.CUSTOM_SHEET);
+            if (file.exists()) file.delete();
+            downloadSheet(EmojiLinks.CUSTOM_SHEET);
+            try {
+                BufferedImage img = ImageIO.read(file);
+                if (img != null && img.getWidth() >= maxRequired) {
+                    sheetSizes.put(EmojiLinks.CUSTOM_SHEET, img.getWidth());
+                    EmojiLinks.SHEET_SIZE = img.getWidth();
+                    BufferedImage fImg = img;
+                    Minecraft.getMinecraft().addScheduledTask(() -> {
+                        try {
+                            DynamicTexture texture = new DynamicTexture(fImg);
+                            ResourceLocation loc = EmojiLinks.getSpriteResource(EmojiLinks.CUSTOM_SHEET);
+                            Minecraft.getMinecraft().getTextureManager().loadTexture(loc, texture);
+                        } catch (Exception e) {
+                            Aetheria.logger.info("[EMOJI] Error re-uploading custom sheet: " + e.getMessage());
+                        }
+                    });
+                }
+            } catch (IOException e) {
+                Aetheria.logger.info("[EMOJI] Failed to reload custom sheet: " + e.getMessage());
+            }
         }
     }
 
@@ -223,6 +261,8 @@ public class EmojiManager {
                 BufferedImage sheetImage = ImageIO.read(spriteFile);
                 if (sheetImage == null || sheetImage.getWidth() < 32) continue;
                 images.put(sheet, sheetImage);
+                sheetSizes.put(sheet, sheetImage.getWidth());
+                Aetheria.logger.info("[EMOJI] Sheet Size for " + sheet + " = " + sheetSizes.get(sheet));
             } catch (IOException e) {
                 Aetheria.logger.info("[EMOJI] Error Loading " + sheet + " from file at path: " + spriteFile.getPath());
                 Aetheria.logger.info("[EMOJI] Error: " + e.getMessage());
@@ -236,6 +276,7 @@ public class EmojiManager {
                         String sheetName = entry.getKey();
                         BufferedImage img = entry.getValue();
                         sheetSizes.put(sheetName, img.getWidth());
+                        Aetheria.logger.info("[EMOJI] Sheet Size for " + sheetName + " = " + sheetSizes.get(sheetName));
                         EmojiLinks.SHEET_SIZE = img.getWidth();
                         DynamicTexture texture = new DynamicTexture(img);
                         ResourceLocation location = EmojiLinks.getSpriteResource(sheetName);
@@ -263,6 +304,7 @@ public class EmojiManager {
                 File path = EmojiLinks.getSpriteFile(sheet);
                 EmojiLinks.SHEET_SIZE = image.getWidth();
                 sheetSizes.put(sheet, image.getWidth());
+                Aetheria.logger.info("[EMOJI] Sheet Size for " + sheet + " = " + sheetSizes.get(sheet));
                 ImageIO.write(image, "png", path);
                 Aetheria.logger.info("[EMOJI] Successfully downloaded Sheet for " + sheet);
             }else {
@@ -417,8 +459,5 @@ public class EmojiManager {
             this.sheetY = sheetY;
         }
 
-        public SpritePos getSpritePos() {
-            return new SpritePos(sheetX, sheetY);
-        }
     }
 }
