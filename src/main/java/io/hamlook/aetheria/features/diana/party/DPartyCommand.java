@@ -30,12 +30,12 @@ public class DPartyCommand extends ASMCommand {
     }
 
     private String getArgs() {
-        return "<join|create|leave|disband|transfer|kick>";
+        return "<join|create|leave|disband|transfer|kick|setpass>";
     }
 
     @Override
     public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
-        String[] options = new String[] {"join", "create", "leave", "disband","transfer","kick"};
+        String[] options = new String[] {"join", "create", "leave", "disband","transfer","kick","setpass"};
         if(args.length == 0) return Arrays.asList(options);
         if(args.length == 1){
             String argument = args[0];
@@ -68,6 +68,9 @@ public class DPartyCommand extends ASMCommand {
                 break;
             case "kick":
                 kickFromParty(args);
+                break;
+            case "setpass":
+                setPartyPass(args);
                 break;
         }
     }
@@ -103,6 +106,41 @@ public class DPartyCommand extends ASMCommand {
             }else {
                 String msg = json.getAsJsonObject("data").get("message").getAsString();
                 ChatUtils.sendMessage("§cError While Kicking Player§7[§c" + code + "§7]: §c" + msg);
+            }
+        });
+    }
+
+    public void setPartyPass(String[] args) {
+        if (!DianaPartyConnector.isConnected) {
+            ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
+            if (NetworkGuard.apiAllowed()) {
+                DianaPartyConnector.connectToAPI();
+            }
+            return;
+        }
+        if (!DianaPartyConnector.isInParty()) {
+            ChatUtils.sendMessage("§cYou are not in a Diana Party.");
+            return;
+        }
+        if (args.length < 2) {
+            ChatUtils.sendMessage("§cPlease enter a valid password.");
+            return;
+        }
+        CompletableFuture<String> future = DianaPartyConnector.setPartyPass(args[1].toLowerCase());
+        if(future == null){
+            ChatUtils.sendMessage("§cYou are not in a Diana Party.");
+            return;
+        }
+        future.thenAccept(response -> {
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+            JsonObject data = json.getAsJsonObject("data");
+            int code = data.get("code").getAsInt();
+            if(code == 200){
+                String newPass = data.get("newPass").getAsString();
+                ChatUtils.sendMessage("§aSuccessfully Updated Password to " + newPass);
+            }else {
+                String msg = json.getAsJsonObject("data").get("message").getAsString();
+                ChatUtils.sendMessage("§cError While Changing Password§7[§c" + code + "§7]: §c" + msg);
             }
         });
     }
@@ -217,7 +255,11 @@ public class DPartyCommand extends ASMCommand {
             return;
         }
         String pID = args[1];
-        CompletableFuture<String> future = DianaPartyConnector.joinParty(pID);
+        String password = "";
+        if(args.length > 2){
+            password = args[2];
+        }
+        CompletableFuture<String> future = DianaPartyConnector.joinParty(pID,password);
         if (future == null){
             ChatUtils.sendMessage("§cEncountered an error while joining party, Please try again in 15 seconds.");
             return;
@@ -255,7 +297,11 @@ public class DPartyCommand extends ASMCommand {
             return;
         }
         String pName = args[1];
-        CompletableFuture<String> future = DianaPartyConnector.createParty(pName);
+        String password = "";
+        if(args.length > 2){
+            password = args[2];
+        }
+        CompletableFuture<String> future = DianaPartyConnector.createParty(pName,password);
         if (future == null){
             ChatUtils.sendMessage("§cEncountered an error while creating party, Please try again in 15 seconds.");
             return;

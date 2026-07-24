@@ -6,13 +6,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.network.NetworkGuard;
-import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.client.Minecraft;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -58,7 +55,7 @@ public class DianaPartyConnector {
         },intervalSeconds,TimeUnit.SECONDS);
     }
 
-    public static CompletableFuture<String> joinParty(String partyID){
+    public static CompletableFuture<String> joinParty(String partyID, String password){
         if(!isConnected){
             connectToAPI();
             return null;
@@ -67,22 +64,32 @@ public class DianaPartyConnector {
         JsonObject cmd = new JsonObject();
         cmd.addProperty("command", "dpartyjoin");
         cmd.addProperty("partyID", partyID);
+        cmd.addProperty("pass", password);
         cmd.addProperty("member", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
 
         return partyClient.sendAndRecieve(GSON.toJson(cmd));
     }
 
-    public static CompletableFuture<String> createParty(String pName){
+    public static CompletableFuture<String> createParty(String pName, String password){
         if(!isConnected) connectToAPI();
 
         JsonObject obj = new JsonObject();
         obj.addProperty("command", "dpartycreate");
         obj.addProperty("partyName", pName);
+        obj.addProperty("pass", password);
         obj.addProperty("creator", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
 
         return partyClient.sendAndRecieve(GSON.toJson(obj));
     }
 
+    public static CompletableFuture<String> setPartyPass(String password) {
+        if(!isConnected) connectToAPI();
+
+        JsonObject obj = new JsonObject();
+        obj.addProperty("command", "dpartypass");
+        obj.addProperty("password", password);
+        return partyClient.sendAndRecieve(GSON.toJson(obj));
+    }
     public static CompletableFuture<String> leaveParty() {
         if(!isConnected) connectToAPI();
 
@@ -172,6 +179,15 @@ public class DianaPartyConnector {
         if(type.equalsIgnoreCase("dpartyJoin")){
             String player = json.get("player").getAsString();
             ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + " has joined the Diana Party.");
+        }
+        if(type.equalsIgnoreCase("dPartyKicked")){
+            String player = json.get("player").getAsString();
+            String user = Minecraft.getMinecraft().getSession().getUsername().toLowerCase();
+            if(user.equalsIgnoreCase(player)){
+                ChatUtils.sendMessage("§b[D-Party Chat] §cYou have been kicked from the Diana Party.");
+            }else {
+                ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + " has been kicked from the Diana Party.");
+            }
         }
     }
 
