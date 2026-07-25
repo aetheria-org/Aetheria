@@ -1,10 +1,10 @@
-package io.hamlook.aetheria.features.diana.party;
+package io.hamlook.aetheria;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.hamlook.aetheria.features.diana.party.DianaPartyConnector;
 import io.hamlook.aetheria.repo.CapeAPI;
 import net.minecraft.client.Minecraft;
-import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
@@ -13,18 +13,19 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class DianaPartyClient extends WebSocketClient {
+public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
+    public static boolean isConnected = false;
     private final Map<String, CompletableFuture<String>> pendingRequests = new ConcurrentHashMap<>();
 
-    public DianaPartyClient() {
+    public WebSocketClient() {
         super(URI.create(CapeAPI.getWebsocketURL()));
         addHeader("username", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
     }
 
     @Override
     public void onOpen(ServerHandshake handshakedata) {
-        DianaPartyConnector.isConnected = true;
+        isConnected = true;
     }
 
     @Override
@@ -37,13 +38,14 @@ public class DianaPartyClient extends WebSocketClient {
                 return;
             }
         }
-        DianaPartyConnector.process(message);
+        if(DianaPartyConnector.process(message)) return;
+
     }
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        DianaPartyConnector.processClose(code,reason,remote);
-        DianaPartyConnector.isConnected = false;
+        DianaPartyConnector.processClose(code);
+        isConnected = false;
     }
 
     public CompletableFuture<String> sendAndRecieve(String message) {

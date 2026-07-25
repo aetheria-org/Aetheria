@@ -46,6 +46,7 @@ public class EmojiManager {
     private static final Map<String, Emoji> emojis = new ConcurrentHashMap<>();
     private static final Map<String, String> aliases = new ConcurrentHashMap<>();
     private static final Map<String, CustomEmoji> customEmojis = new ConcurrentHashMap<>();
+    public  static final Map<String,String> idToShortcode = new ConcurrentHashMap<>();
     private static final Map<String, String> customAliases = new ConcurrentHashMap<>();
     private static final Map<String, Integer> sheetSizes = new ConcurrentHashMap<>();
 
@@ -176,6 +177,7 @@ public class EmojiManager {
                     if (!object.has("short_name") || !object.has("sprite_coords")) continue;
 
                     String shortName = object.get("short_name").getAsString();
+                    String discordID = object.has("discord_id") ? object.get("discord_id").getAsString() : "";
                     JsonArray coordsArr = object.get("sprite_coords").getAsJsonArray();
                     List<SpritePos> sprites = new ArrayList<>();
                     for (JsonElement coord : coordsArr) {
@@ -186,9 +188,12 @@ public class EmojiManager {
                     int height = object.get("height").getAsInt();
                     boolean animated = object.has("animated") && object.get("animated").getAsBoolean();
                     int frametime = animated && object.has("frametime") ? object.get("frametime").getAsInt() : 0;
-
+                    if(!discordID.isEmpty()){
+                        idToShortcode.put(discordID,shortName);
+                    }
                     CustomEmoji emoji = new CustomEmoji();
                     emoji.shortcode = shortName;
+                    emoji.discordID = discordID;
                     emoji.sprites = sprites;
                     emoji.width = width;
                     emoji.height = height;

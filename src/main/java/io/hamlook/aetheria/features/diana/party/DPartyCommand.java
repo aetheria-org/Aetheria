@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.diana.party;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.WebSocketClient;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.network.NetworkGuard;
@@ -76,7 +77,7 @@ public class DPartyCommand extends ASMCommand {
     }
 
     public void kickFromParty(String[] args) {
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
@@ -111,7 +112,7 @@ public class DPartyCommand extends ASMCommand {
     }
 
     public void setPartyPass(String[] args) {
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
@@ -146,7 +147,7 @@ public class DPartyCommand extends ASMCommand {
     }
 
     public void transferParty(String[] args) {
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
@@ -181,7 +182,7 @@ public class DPartyCommand extends ASMCommand {
         });
     }
     public void disbandParty() {
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
@@ -210,7 +211,7 @@ public class DPartyCommand extends ASMCommand {
     }
 
     public void leaveParty() {
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
@@ -243,7 +244,7 @@ public class DPartyCommand extends ASMCommand {
             ChatUtils.sendMessage("§cPlease enter a valid party ID");
             return;
         }
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
@@ -285,7 +286,7 @@ public class DPartyCommand extends ASMCommand {
             ChatUtils.sendMessage("§cPlease enter a valid party name");
             return;
         }
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
