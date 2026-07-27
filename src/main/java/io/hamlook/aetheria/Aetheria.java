@@ -1,7 +1,6 @@
 package io.hamlook.aetheria;
 
 import io.hamlook.aetheria.features.chat.chatfilters.ChatFilterManager;
-import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
 import io.hamlook.aetheria.features.diana.party.DianaPartyConnector;
 import io.hamlook.aetheria.features.chat.emoji.EmojiManager;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
@@ -57,8 +56,10 @@ public class Aetheria {
         ItemRegistry.initialise();
         ChatFilterManager.initialise();
         ElectionUtils.initialise();
-        GlobalChat.initialise();
+//        GlobalChat.initialise();
+//        SyncChecker.init();
         DianaPartyConnector.initialise();
+//        ImageManager.initialise();
         new CitManager();
         if (ATHRConfig.feature.misc.currentPet.showCurrentPet) PetCache.getInstance().warmupTextures();
         MinecraftForge.EVENT_BUS.register(GuiWaiter.INSTANCE);

@@ -156,39 +156,44 @@ public class DianaPartyConnector {
     }
 
     public static boolean process(String message) {
-        JsonObject json = JsonParser.parseString(message).getAsJsonObject();
-        if(json == null) return false;
-        String type = json.get("type").getAsString().toLowerCase();
-        if(type.equalsIgnoreCase("dchatMessage")){
-            String player = json.get("player").getAsString();
-            String msg = json.get("message").getAsString();
-            ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + ": §f" + msg);
-            return true;
-        }
-        if(type.equalsIgnoreCase("dpartyLeave")){
-            String player = json.get("player").getAsString();
-            ChatUtils.sendMessage("§b[D-Party Chat] §c" + player + " has left the Diana Party.");
-            return true;
-        }
-        if(type.equalsIgnoreCase("dpartydisband")){
-            String player = json.get("player").getAsString();
-            ChatUtils.sendMessage("§b[D-Party Chat] §cThis Party has been disbanded by " + player);
-            return true;
-        }
-        if(type.equalsIgnoreCase("dpartyJoin")){
-            String player = json.get("player").getAsString();
-            ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + " has joined the Diana Party.");
-            return true;
-        }
-        if(type.equalsIgnoreCase("dPartyKicked")){
-            String player = json.get("player").getAsString();
-            String user = Minecraft.getMinecraft().getSession().getUsername().toLowerCase();
-            if(user.equalsIgnoreCase(player)){
-                ChatUtils.sendMessage("§b[D-Party Chat] §cYou have been kicked from the Diana Party.");
-            }else {
-                ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + " has been kicked from the Diana Party.");
+        try {
+            JsonObject json = JsonParser.parseString(message).getAsJsonObject();
+            if (json == null) return false;
+            if (!json.has("type")) return false;
+            String type = json.get("type").getAsString().toLowerCase();
+            if (type.equalsIgnoreCase("dchatMessage")) {
+                String player = json.get("player").getAsString();
+                String msg = json.get("message").getAsString();
+                ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + ": §f" + msg);
+                return true;
             }
-            return true;
+            if (type.equalsIgnoreCase("dpartyLeave")) {
+                String player = json.get("player").getAsString();
+                ChatUtils.sendMessage("§b[D-Party Chat] §c" + player + " has left the Diana Party.");
+                return true;
+            }
+            if (type.equalsIgnoreCase("dpartydisband")) {
+                String player = json.get("player").getAsString();
+                ChatUtils.sendMessage("§b[D-Party Chat] §cThis Party has been disbanded by " + player);
+                return true;
+            }
+            if (type.equalsIgnoreCase("dpartyJoin")) {
+                String player = json.get("player").getAsString();
+                ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + " has joined the Diana Party.");
+                return true;
+            }
+            if (type.equalsIgnoreCase("dPartyKicked")) {
+                String player = json.get("player").getAsString();
+                String user = Minecraft.getMinecraft().getSession().getUsername().toLowerCase();
+                if (user.equalsIgnoreCase(player)) {
+                    ChatUtils.sendMessage("§b[D-Party Chat] §cYou have been kicked from the Diana Party.");
+                } else {
+                    ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + " has been kicked from the Diana Party.");
+                }
+                return true;
+            }
+        } catch (Exception e) {
+            return false;
         }
         return false;
     }

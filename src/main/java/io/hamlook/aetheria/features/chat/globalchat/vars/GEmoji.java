@@ -5,12 +5,10 @@ public class GEmoji {
 
     public String id;
     public boolean animated;
-    public transient AnimatedImage animatedImage;
 
     public GEmoji(String id,boolean animated) {
         this.id = id;
         this.animated = animated;
-        animatedImage = null;
     }
 
     public String constructURL(){

@@ -2,6 +2,7 @@ package io.hamlook.aetheria;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
 import io.hamlook.aetheria.features.diana.party.DianaPartyConnector;
 import io.hamlook.aetheria.repo.CapeAPI;
 import net.minecraft.client.Minecraft;
@@ -35,10 +36,11 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             CompletableFuture<String> future = pendingRequests.remove(requestId);
             if (future != null) {
                 future.complete(message);
-                return;
             }
         }
-        if(DianaPartyConnector.process(message)) return;
+        Aetheria.logger.info("[Websocket] Test Log: " + message);
+        DianaPartyConnector.process(message);
+//        GlobalChat.process(message);
 
     }
 

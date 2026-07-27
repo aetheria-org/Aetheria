@@ -1,15 +1,13 @@
 package io.hamlook.aetheria.features.chat.globalchat.vars;
 
-import com.google.gson.annotations.SerializedName;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 
 @AllArgsConstructor
 @EqualsAndHashCode
-public class MessageData {
+public class Attachment {
 
-    @SerializedName("msg")
-    public Message message;
-    public Long timestamp;
+    public String id;
+    public String url;
 
 }
