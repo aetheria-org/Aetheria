@@ -24,7 +24,7 @@ public class DianaPartyConnector {
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public static void checkForDiana() {
-        if(ElectionUtils.currentMayor.equals("Diana")){
+        if("Diana".equals(ElectionUtils.currentMayor)){
             isDiana = true;
         }
         if(ElectionUtils.perks != null){
