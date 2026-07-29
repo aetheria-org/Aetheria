@@ -139,7 +139,7 @@ public class PriceMap {
             HARDCODED_PRICES.put("ENCHANTED_SUGAR", 640.0);
             HARDCODED_PRICES.put("ENCHANTED_SUGAR_CANE", 102_400.0);
 
-            HARDCODED_PRICES.put("INK_SACK:3", 3.0); // Cocoa Beans
+            HARDCODED_PRICES.put("INK_SACK__3", 3.0); // Cocoa Beans
             HARDCODED_PRICES.put("ENCHANTED_COCOA", 480.0);
             HARDCODED_PRICES.put("ENCHANTED_COOKIE", 76_800.0);
 

@@ -45,7 +45,7 @@ public class Crop {
             case "PUMPKIN": return new ItemStack(Item.getItemFromBlock(Blocks.pumpkin));
             case "MELON": return new ItemStack(Items.melon);
             case "SUGAR_CANE": return new ItemStack(Items.reeds);
-            case "INK_SACK:3": return new ItemStack(Items.dye, 1, 3);
+            case "INK_SACK__3": return new ItemStack(Items.dye, 1, 3);
             case "CACTUS": return new ItemStack(Item.getItemFromBlock(Blocks.cactus));
             case "RED_MUSHROOM": return new ItemStack(Item.getItemFromBlock(Blocks.red_mushroom));
             case "BROWN_MUSHROOM": return new ItemStack(Item.getItemFromBlock(Blocks.brown_mushroom));
@@ -65,7 +65,7 @@ public class Crop {
             new Crop("PUMPKIN", "ENCHANTED_PUMPKIN", "Enchanted Pumpkin", "POLISHED_PUMPKIN", "Polished Pumpkin", "Pumpkin"),
             new Crop("MELON", "ENCHANTED_MELON", "Enchanted Melon", "ENCHANTED_MELON_BLOCK", "Enchanted Melon Block", "Melon"),
             new Crop("SUGAR_CANE", "ENCHANTED_SUGAR", "Enchanted Sugar", "ENCHANTED_SUGAR_CANE", "Enchanted Sugar Cane", "Sugar Cane"),
-            new Crop("INK_SACK:3", "ENCHANTED_COCOA", "Enchanted Cocoa Beans", "ENCHANTED_COOKIE", "Enchanted Cookie", "Cocoa Beans"),
+            new Crop("INK_SACK__3", "ENCHANTED_COCOA", "Enchanted Cocoa Beans", "ENCHANTED_COOKIE", "Enchanted Cookie", "Cocoa Beans"),
             new Crop("CACTUS", "ENCHANTED_CACTUS_GREEN", "Enchanted Cactus Green", "ENCHANTED_CACTUS", "Enchanted Cactus", "Cactus"),
             new Crop("RED_MUSHROOM", "ENCHANTED_RED_MUSHROOM", "Enchanted Red Mushroom", "ENCHANTED_RED_MUSHROOM_BLOCK", "Enchanted Red Mushroom Block", "Red Mushroom"),
             new Crop("BROWN_MUSHROOM", "ENCHANTED_BROWN_MUSHROOM", "Enchanted Brown Mushroom", "ENCHANTED_BROWN_MUSHROOM_BLOCK", "Enchanted Brown Mushroom Block", "Brown Mushroom"),
