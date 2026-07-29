@@ -94,7 +94,7 @@ public final class SkyblockData {
 
     public enum Location {
         HUB("skyblock-", "skyblock_sandbox-", "skyblocktest-"), DUNGEON("sbdungeon-", "sbdungeon_sandbox-", "sbdungeon_test-"), DWARVEN("sbm-", "sbm_sandbox-", "sbm_test-"), CRYSTAL_HOLLOWS("sbch-", "sbch_sandbox-", "sbtest_alpha-"), CRIMSON_ISLE("sbcris-", "sbcris_sandbox-", "sbcris_test-"), PRIVATE_ISLAND("sbi-", "sbi_sandbox-", "sbi_test-"), DUNGEON_HUB("sbdh-", "sbdh_sandbox-", "sbdh_test-"), BARN("sbfarms-", "sbfarms_sandbox-", "sbfarms_test-"), PARK("sbpark-", "sbpark_sandbox-", "sbpark_test-"), SPIDERS_DEN("sbspiders-", "sbspiders_sandbox-", "sbspiders_test-"), THE_END("sbend-", "sbend_sandbox-", "sbend_test-"), JERRY("sbj-", "sbj_sandbox-", "sbj_test-"), GOLD_MINE("sbmines-", "sbmines_sandbox-", "sbmines_test-"),
-        GARDEN("gdn-", "gdn_sandbox-", "gdn_test-"),
+        GARDEN("sbg-", "sbg_sandbox-", "sbg_test-"),
         NONE("", "", "");
 
         public final String main, sandbox, alpha;
