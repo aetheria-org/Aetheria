@@ -5,7 +5,6 @@ import io.hamlook.aetheria.core.moulconfig.editors.GuiPositionEditor;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
 import io.hamlook.aetheria.features.chat.chatfilters.ui.ChatFilterGUI;
-import io.hamlook.aetheria.features.chat.globalchat.ui.ChatUI;
 import io.hamlook.aetheria.features.diana.DianaStats;
 import io.hamlook.aetheria.features.diana.GuiDianaOverlayEditor;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
@@ -131,10 +130,6 @@ public class ATHRConfig {
     public static void openGui() {
         screenToOpen = new GuiScreenElementWrapper(new ConfigEditor(feature));
     }
-    public static void openTestUI() {
-        screenToOpen = new ChatUI();
-    }
-
     public static void openCategory(String categoryName) {
         screenToOpen = new GuiScreenElementWrapper(new ConfigEditor(feature, categoryName));
     }
