@@ -1,6 +1,7 @@
 package io.hamlook.aetheria;
 
 import io.hamlook.aetheria.features.chat.chatfilters.ChatFilterManager;
+import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.features.diana.party.DianaPartyConnector;
 import io.hamlook.aetheria.features.chat.emoji.EmojiManager;
@@ -58,6 +59,7 @@ public class Aetheria {
         ChatFilterManager.initialise();
         ElectionUtils.initialise();
         DianaPartyConnector.initialise();
+        GlobalChat.initialise();
         ImageManager.initialise();
         new CitManager();
         if (ATHRConfig.feature.misc.currentPet.showCurrentPet) PetCache.getInstance().warmupTextures();

@@ -1,0 +1,241 @@
+package com.example.mod.util; // Change this to your mod's package structural scheme
+
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rsyntaxtextarea.Token;
+import org.fife.ui.rsyntaxtextarea.TokenMaker;
+import org.fife.ui.rsyntaxtextarea.TokenMakerFactory;
+import org.fife.ui.rsyntaxtextarea.TokenTypes;
+
+import javax.swing.text.Segment;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Headless parser bridging RSyntaxTextArea tokenizers to Minecraft's FontRenderer.
+ * Bypasses AWT/Swing rendering constraints to run entirely within Forge's OpenGL loops.
+ */
+public class CodeParser {
+
+    private TokenMaker currentTokenMaker;
+    private final TokenMakerFactory factory;
+
+    /**
+     * Data wrapper holding the raw text snippet and its corresponding Minecraft hex color.
+     */
+    public static class HighlightedToken {
+        public final String text;
+        public final int mcColor;
+
+        public HighlightedToken(String text, int mcColor) {
+            this.text = text;
+            this.mcColor = mcColor;
+        }
+    }
+
+    public CodeParser(String languageKeyword) {
+        this.factory = TokenMakerFactory.getDefaultInstance();
+        setLanguage(languageKeyword);
+    }
+
+    /**
+     * Dynamically shifts the grammar model parsing state based on a loose text keyword.
+     */
+    public void setLanguage(String keyword) {
+        String styleKey = getStyleKeyFromKeyword(keyword);
+        this.currentTokenMaker = factory.getTokenMaker(styleKey);
+    }
+
+    /**
+     * Core processing loop transforming a plain document block into an OpenGL-ready token matrix.
+     * Accurately retains multiline tracking context (e.g. cross-line block comments or triple quotes).
+     */
+    public List<List<HighlightedToken>> parseDocument(List<String> documentLines) {
+        List<List<HighlightedToken>> parsedLines = new ArrayList<>();
+
+        // Start the root look-behind tracker state at the default baseline NULL index
+        int cumulativeLineState = TokenTypes.NULL;
+
+        for (String line : documentLines) {
+            List<HighlightedToken> lineTokens = new ArrayList<>();
+            char[] chars = line.toCharArray();
+            Segment segment = new Segment(chars, 0, chars.length);
+
+            // Fetch the lexical tokens utilizing the cached preceding structural state
+            Token token = currentTokenMaker.getTokenList(segment, cumulativeLineState, 0);
+
+            while (token != null && token.isPaintable()) {
+                String tokenText = token.getLexeme();
+                int mcColor = getMinecraftColorForType(token.getType());
+                lineTokens.add(new HighlightedToken(tokenText, mcColor));
+                token = token.getNextToken();
+            }
+
+            parsedLines.add(lineTokens);
+
+            // Advance the state tracker forward to safely begin the subsequent line context
+            cumulativeLineState = currentTokenMaker.getLastTokenTypeOnLine(segment, cumulativeLineState);
+        }
+
+        return parsedLines;
+    }
+
+    /**
+     * Maps RSyntaxTextArea abstract types directly to 24-bit Hex RGB values.
+     * Modify these color mappings to fit your preferred editor theme design palette.
+     */
+    private int getMinecraftColorForType(int tokenType) {
+        switch (tokenType) {
+            case TokenTypes.KEYWORD1:
+            case TokenTypes.KEYWORD2:
+            case TokenTypes.KEYWORD3:
+            case TokenTypes.KEYWORD4:
+                return 0x569CD6; // IDE Light Blue Keywords
+
+            case TokenTypes.LITERAL_STRING_DOUBLE_QUOTE:
+            case TokenTypes.LITERAL_CHAR:
+            case TokenTypes.LITERAL_BACKQUOTE:
+                return 0xD69D85; // Orange Strings
+
+            case TokenTypes.COMMENT_EOL:
+            case TokenTypes.COMMENT_MULTILINE:
+            case TokenTypes.COMMENT_DOCUMENTATION:
+            case TokenTypes.COMMENT_KEYWORD:
+                return 0x57A64A; // Emerald Green Comments
+
+            case TokenTypes.LITERAL_NUMBER_DECIMAL_INT:
+            case TokenTypes.LITERAL_NUMBER_FLOAT:
+            case TokenTypes.LITERAL_NUMBER_HEXADECIMAL:
+                return 0xB5CEA8; // Light Sage Numbers
+
+            case TokenTypes.DATA_TYPE:
+                return 0x4EC9B0; // Teal for Structs/Data Classes
+
+            case TokenTypes.FUNCTION:
+                return 0xDCDCAA; // Pale Yellow Functions
+
+            case TokenTypes.OPERATOR:
+                return 0xB4B4B4; // Slate Grey Operators
+
+            case TokenTypes.ANNOTATION:
+                return 0x9CDCFE; // Sky Blue Annotations
+
+            case TokenTypes.VARIABLE:
+                return 0x9CDCFE; // Cyan Variables
+
+            default:
+                return 0xFFFFFF; // Default Fallback Crisp White
+        }
+    }
+
+    /**
+     * Universal registry matching user shorthand inputs to every built-in grammar profile.
+     */
+    private String getStyleKeyFromKeyword(String keyword) {
+        if (keyword == null) return SyntaxConstants.SYNTAX_STYLE_NONE;
+
+        switch (keyword.toLowerCase().trim()) {
+            case "as3": case "actionscript": case "actionscript3":
+                return SyntaxConstants.SYNTAX_STYLE_ACTIONSCRIPT;
+            case "asm": case "asm86": case "x86": case "assembly":
+                return SyntaxConstants.SYNTAX_STYLE_ASSEMBLER_X86;
+            case "asm6502": case "6502":
+                return SyntaxConstants.SYNTAX_STYLE_ASSEMBLER_6502;
+            case "bbcode":
+                return SyntaxConstants.SYNTAX_STYLE_BBCODE;
+            case "c":
+                return SyntaxConstants.SYNTAX_STYLE_C;
+            case "clj": case "clojure":
+                return SyntaxConstants.SYNTAX_STYLE_CLOJURE;
+            case "cpp": case "c++": case "cc":
+                return SyntaxConstants.SYNTAX_STYLE_CPLUSPLUS;
+            case "cs": case "c#": case "csharp":
+                return SyntaxConstants.SYNTAX_STYLE_CSHARP;
+            case "css":
+                return SyntaxConstants.SYNTAX_STYLE_CSS;
+            case "csv":
+                return SyntaxConstants.SYNTAX_STYLE_CSV;
+            case "d": case "dlang":
+                return SyntaxConstants.SYNTAX_STYLE_D;
+            case "dart":
+                return SyntaxConstants.SYNTAX_STYLE_DART;
+            case "delphi": case "pascal": case "pas":
+                return SyntaxConstants.SYNTAX_STYLE_DELPHI;
+            case "docker": case "dockerfile":
+                return SyntaxConstants.SYNTAX_STYLE_DOCKERFILE;
+            case "dtd":
+                return SyntaxConstants.SYNTAX_STYLE_DTD;
+            case "fortran": case "f77": case "f90":
+                return SyntaxConstants.SYNTAX_STYLE_FORTRAN;
+            case "groovy": case "gvy":
+                return SyntaxConstants.SYNTAX_STYLE_GROOVY;
+            case "hosts":
+                return SyntaxConstants.SYNTAX_STYLE_HOSTS;
+            case "htaccess":
+                return SyntaxConstants.SYNTAX_STYLE_HTACCESS;
+            case "html": case "htm":
+                return SyntaxConstants.SYNTAX_STYLE_HTML;
+            case "ini": case "properties":
+                return SyntaxConstants.SYNTAX_STYLE_INI;
+            case "java":
+                return SyntaxConstants.SYNTAX_STYLE_JAVA;
+            case "js": case "javascript":
+                return SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT;
+            case "json":
+                return SyntaxConstants.SYNTAX_STYLE_JSON;
+            case "jshintrc":
+                return SyntaxConstants.SYNTAX_STYLE_JSHINTRC;
+            case "jsp":
+                return SyntaxConstants.SYNTAX_STYLE_JSP;
+            case "kt": case "kotlin":
+                return SyntaxConstants.SYNTAX_STYLE_KOTLIN;
+            case "latex": case "tex":
+                return SyntaxConstants.SYNTAX_STYLE_LATEX;
+            case "less":
+                return SyntaxConstants.SYNTAX_STYLE_LESS;
+            case "lisp": case "lsp":
+                return SyntaxConstants.SYNTAX_STYLE_LISP;
+            case "lua":
+                return SyntaxConstants.SYNTAX_STYLE_LUA;
+            case "make": case "makefile":
+                return SyntaxConstants.SYNTAX_STYLE_MAKEFILE;
+            case "md": case "markdown":
+                return SyntaxConstants.SYNTAX_STYLE_MARKDOWN;
+            case "mxml":
+                return SyntaxConstants.SYNTAX_STYLE_MXML;
+            case "nsis":
+                return SyntaxConstants.SYNTAX_STYLE_NSIS;
+            case "pascal_smart":
+                return SyntaxConstants.SYNTAX_STYLE_PEARL;
+            case "pl": case "perl":
+                return SyntaxConstants.SYNTAX_STYLE_PERL;
+            case "php":
+                return SyntaxConstants.SYNTAX_STYLE_PHP;
+            case "py": case "python":
+                return SyntaxConstants.SYNTAX_STYLE_PYTHON;
+            case "rb": case "ruby":
+                return SyntaxConstants.SYNTAX_STYLE_RUBY;
+            case "rs": case "rust":
+                return SyntaxConstants.SYNTAX_STYLE_RUST;
+            case "sas":
+                return SyntaxConstants.SYNTAX_STYLE_SAS;
+            case "scala":
+                return SyntaxConstants.SYNTAX_STYLE_SCALA;
+            case "sh": case "bash": case "shell":
+                return SyntaxConstants.SYNTAX_STYLE_UNIX_SHELL;
+            case "sql":
+                return SyntaxConstants.SYNTAX_STYLE_SQL;
+            case "tcl":
+                return SyntaxConstants.SYNTAX_STYLE_TCL;
+            case "ts": case "typescript":
+                return SyntaxConstants.SYNTAX_STYLE_TYPESCRIPT;
+            case "vbs": case "vbscript":
+                return SyntaxConstants.SYNTAX_STYLE_VBSCRIPT;
+            case "xml":
+                return SyntaxConstants.SYNTAX_STYLE_XML;
+            case "yaml": case "yml":
+                return SyntaxConstants.SYNTAX_STYLE_YAML;
+            default:
+                return SyntaxConstants.SYNTAX_STYLE_NONE;
+        }
+    }
+}

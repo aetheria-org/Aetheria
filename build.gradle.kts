@@ -93,6 +93,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.30")
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
     shadowImpl("com.google.code.gson:gson:2.10.1") { isTransitive = false }
+    shadowImpl("com.fifesoft:rsyntaxtextarea:3.3.3") { isTransitive = false }
 }
 
 // Tasks:
@@ -158,6 +159,7 @@ tasks.shadowJar {
     relocate("org.java_websocket")
     relocate("org.slf4j")
     relocate("com.tianscar.imageio")
+    relocate("org.fife.ui.rsyntaxtextarea")
 }
 
 tasks.assemble.get().dependsOn(tasks.remapJar)

@@ -46,6 +46,7 @@ public class GCImage {
     public int height = 0;
 
     public boolean isLoaded = false;
+    public boolean loadFailed = false;
 
     private static final Pattern META_TAG_PATTERN = Pattern.compile(
             "<meta[^>]*(?:property|name)=[\"'](?:og:image|twitter:image)[\"'][^>]*>",
@@ -128,11 +129,23 @@ public class GCImage {
 
             } catch (Exception e) {
                 Aetheria.logger.warning("[GCImage] Failed to load image from " + url + ": " + e);
-                if(url.endsWith(".gif")){
+                if (url.toLowerCase().endsWith(".gif")) {
                     Aetheria.logger.warning("[GCImage] Trying to fetch animated webp instead.");
-                    String urlWithoutEnd = url.substring(0, url.length() - 4);
-                    createGCImage((urlWithoutEnd+".webp?animated=true"),circularMask,expectedAnimated);
+                    String webpUrl = url.substring(0, url.length() - 4) + ".webp?animated=true";
+                    try {
+                        byte[] retryBytes = downloadBytes(webpUrl);
+                        if (isWebP(retryBytes)) {
+                            decodeWebP(gcImage, retryBytes, webpUrl);
+                        } else {
+                            decodeViaImageIO(gcImage, retryBytes, webpUrl);
+                        }
+                        finalizeLoad(gcImage);
+                        return;
+                    } catch (Exception retryEx) {
+                        Aetheria.logger.warning("[GCImage] Retry as webp also failed for " + url + ": " + retryEx);
+                    }
                 }
+                gcImage.loadFailed = true;
                 e.printStackTrace();
             }
         }, "GCImage-Downloader-" + gcImage.id).start();
@@ -155,6 +168,7 @@ public class GCImage {
                 String mediaUrl = resolveOgImageUrl(pageUrl);
                 if (mediaUrl == null) {
                     Aetheria.logger.warning("[GCImage] Could not resolve an image from page: " + pageUrl);
+                    gcImage.loadFailed = true;
                     return;
                 }
 
@@ -169,6 +183,7 @@ public class GCImage {
 
             } catch (Exception e) {
                 Aetheria.logger.warning("[GCImage] Failed to load embed from " + pageUrl + ": " + e);
+                gcImage.loadFailed = true;
                 e.printStackTrace();
             }
         }, "GCImage-PageResolver-" + gcImage.id).start();
@@ -211,6 +226,10 @@ public class GCImage {
 
     private static void finalizeLoad(GCImage gcImage) {
         Minecraft.getMinecraft().addScheduledTask(() -> {
+            if (gcImage.images.isEmpty()) {
+                gcImage.loadFailed = true;
+                return;
+            }
             for (int i = 0; i < gcImage.images.size(); i++) {
                 BufferedImage bimg = gcImage.images.get(i);
                 if (gcImage.circularMask) {
