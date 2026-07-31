@@ -1,15 +1,26 @@
 package io.hamlook.aetheria.features.chat.globalchat.ui;
 
+import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
+import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
+import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
+import io.hamlook.aetheria.features.chat.globalchat.util.DiscordMarkdown;
+import io.hamlook.aetheria.features.chat.globalchat.vars.IEmoji;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Multi-line chat input with full text selection (mouse drag + keyboard),
@@ -35,6 +46,9 @@ public class ChatInputField extends Gui {
     private int manualScroll = 0;
     private List<String> lines = new ArrayList<>();
     private List<Integer> lineStarts = new ArrayList<>();
+
+    private static final Pattern EMOJI_TOKEN = Pattern.compile(":([a-zA-Z0-9_~]+):");
+    private final Map<String, String> emojiImageCache = new HashMap<>();
 
     public ChatInputField(int x, int y, int width, int height) {
         this.x = x;
@@ -71,6 +85,12 @@ public class ChatInputField extends Gui {
 
     public boolean hasSelection() {
         return anchor != -1 && anchor != caret;
+    }
+
+    /** Selects the range [start, end); used by the emoji autocomplete to replace ":prefix". */
+    public void select(int start, int end) {
+        anchor = Math.max(0, Math.min(text.length(), start));
+        caret = Math.max(0, Math.min(text.length(), end));
     }
 
     public String getSelectedText() {
@@ -251,18 +271,18 @@ public class ChatInputField extends Gui {
                 int selStart = Math.max(ss, ls);
                 int selEnd = Math.min(se, ls + line.length());
                 if (selEnd > selStart) {
-                    int sx = x + PAD_X + stringWidth(line, selStart - ls);
-                    int ex = x + PAD_X + stringWidth(line, selEnd - ls);
+                    int sx = x + PAD_X + stringWidth(line, selStart - ls, ls);
+                    int ex = x + PAD_X + stringWidth(line, selEnd - ls, ls);
                     drawRect(sx, ly, ex, ly + fr.FONT_HEIGHT, 0x50FFFFFF);
                 }
             }
 
             if (i == ci && (System.currentTimeMillis() / 500) % 2 == 0) {
-                int cx = x + PAD_X + stringWidth(line, caret - ls);
+                int cx = x + PAD_X + stringWidth(line, caret - ls, ls);
                 drawRect(cx, ly, cx + 1, ly + fr.FONT_HEIGHT, 0xFFE0E0E0);
             }
 
-            fr.drawString(line, x + PAD_X, ly, 0xFFE0E0E0);
+            drawLineWithEmoji(line, x + PAD_X, ly, ls);
         }
 
         if (maxScroll > 0) {
@@ -283,8 +303,8 @@ public class ChatInputField extends Gui {
         int pos = 0;
         for (String raw : text.toString().split("\n", -1)) {
             String rest = raw;
-            while (fr.getStringWidth(rest) > w) {
-                String fit = fr.trimStringToWidth(rest, w);
+            while (emojiWidth(rest, pos) > w) {
+                String fit = fitToWidth(rest, w, pos);
                 if (fit.isEmpty()) fit = rest.substring(0, 1);
                 lines.add(fit);
                 lineStarts.add(pos);
@@ -335,7 +355,7 @@ public class ChatInputField extends Gui {
         if (relX <= 0) return ls;
         int best = line.length();
         for (int ci = 1; ci <= line.length(); ci++) {
-            if (fr.getStringWidth(line.substring(0, ci)) >= relX) {
+            if (emojiWidth(line.substring(0, ci), ls) >= relX) {
                 best = ci;
                 break;
             }
@@ -372,8 +392,8 @@ public class ChatInputField extends Gui {
         return Math.min(text.length(), p);
     }
 
-    private int stringWidth(String line, int count) {
-        return fr.getStringWidth(line.substring(0, Math.max(0, Math.min(count, line.length()))));
+    private int stringWidth(String line, int count, int absStart) {
+        return emojiWidth(line.substring(0, Math.max(0, Math.min(count, line.length()))), absStart);
     }
 
     private void ensureCaretVisible() {
@@ -386,5 +406,156 @@ public class ChatInputField extends Gui {
             manualScroll = scrollLines;
         }
         if (scrollLines < 0) scrollLines = 0;
+    }
+
+    // ------------------------------------------------------------- emojis
+
+    private static boolean isEmojiChar(char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '~';
+    }
+
+    private boolean isEmoji(String name) {
+        return name != null && GlobalChat.usableEmojis.containsKey(name);
+    }
+
+    private String emojiUrl(String name) {
+        IEmoji emoji = GlobalChat.usableEmojis.get(name);
+        return emoji == null ? null : emoji.toEmoji().url;
+    }
+
+    /** Original (newline-split) line index for an absolute character position. */
+    private int originalLineOf(int absPos) {
+        int line = 0;
+        for (int i = 0; i < absPos && i < text.length(); i++) {
+            if (text.charAt(i) == '\n') line++;
+        }
+        return line;
+    }
+
+    /** True if the original line at origLine is inside a fenced ``` code block. */
+    private boolean inFenceAt(int origLine) {
+        boolean fence = false;
+        int start = 0;
+        for (int l = 0; l < origLine; l++) {
+            int end = text.indexOf("\n", start);
+            if (end < 0) end = text.length();
+            if (text.substring(start, end).trim().startsWith("```")) fence = !fence;
+            start = end + 1;
+        }
+        return fence;
+    }
+
+    /** True if absPos (within its original line) is inside an inline `code` span. */
+    private boolean inInlineCodeAt(int origLine, int absPos) {
+        int start = 0;
+        for (int l = 0; l < origLine; l++) {
+            int end = text.indexOf("\n", start);
+            if (end < 0) return false;
+            start = end + 1;
+        }
+        boolean code = false;
+        for (int i = start; i < absPos && i < text.length(); i++) {
+            if (text.charAt(i) == '`') code = !code;
+        }
+        return code;
+    }
+
+    /**
+     * Splits a line into text/emoji segments, skipping emoji tokens that are
+     * escaped (preceded by a backslash), inside a fenced code block, or inside
+     * an inline code span. Consistent with {@link #emojiWidth}.
+     */
+    private List<Object[]> scanSegments(String line, int absStart) {
+        List<Object[]> segs = new ArrayList<>();
+        int origLine = originalLineOf(absStart);
+        if (inFenceAt(origLine)) {
+            segs.add(new Object[]{"T", line});
+            return segs;
+        }
+        boolean code = inInlineCodeAt(origLine, absStart);
+        Matcher m = EMOJI_TOKEN.matcher(line);
+        int last = 0;
+        while (m.find()) {
+            for (int k = last; k < m.start(); k++) {
+                if (line.charAt(k) == '`') code = !code;
+            }
+            if (code) continue;
+            int absPos = absStart + m.start();
+            if (absPos > 0 && text.charAt(absPos - 1) == '\\') continue;
+            if (!isEmoji(m.group(1))) continue;
+            if (m.start() > last) {
+                segs.add(new Object[]{"T", line.substring(last, m.start())});
+            }
+            segs.add(new Object[]{"E", emojiUrl(m.group(1))});
+            last = m.end();
+        }
+        if (last < line.length()) segs.add(new Object[]{"T", line.substring(last)});
+        return segs;
+    }
+
+    /** Width of the text treating rendered emoji tokens as a single fixed-size glyph. */
+    private int emojiWidth(String s, int absStart) {
+        int w = 0;
+        for (Object[] seg : scanSegments(s, absStart)) {
+            if ("E".equals(seg[0])) {
+                w += DiscordMarkdown.EMOJI_SIZE;
+            } else {
+                w += fr.getStringWidth((String) seg[1]);
+            }
+        }
+        return w;
+    }
+
+    /** Shrinks the string until it fits the width, never splitting a rendered emoji token at the cut point. */
+    private String fitToWidth(String rest, int w, int absStart) {
+        String fit = rest;
+        while (fit.length() > 1 && emojiWidth(fit, absStart) > w) {
+            int cut = fit.length() - 1;
+            if (fit.charAt(cut) == ':') {
+                int s = cut - 1;
+                while (s >= 0 && isEmojiChar(fit.charAt(s))) s--;
+                if (s >= 0 && fit.charAt(s) == ':' && s < cut - 1) {
+                    cut = s;
+                }
+            }
+            fit = fit.substring(0, cut);
+        }
+        return fit;
+    }
+
+    /** Draws the line, rendering emoji tokens as images and everything else as text. */
+    private void drawLineWithEmoji(String line, int x, int y, int absStart) {
+        for (Object[] seg : scanSegments(line, absStart)) {
+            if ("E".equals(seg[0])) {
+                drawInlineEmoji((String) seg[1], x, y - 3);
+                x += DiscordMarkdown.EMOJI_SIZE;
+            } else {
+                String text = (String) seg[1];
+                fr.drawString(text, x, y, 0xFFE0E0E0);
+                x += fr.getStringWidth(text);
+            }
+        }
+    }
+
+    private void drawInlineEmoji(String url, int x, int y) {
+        if (url == null || url.isEmpty()) return;
+        String id = emojiImageCache.get(url);
+        if (id == null) {
+            id = GCImage.createGCImage(url, false);
+            emojiImageCache.put(url, id);
+        }
+        GCImage img = ImageManager.images.get(id);
+        if (img == null || !img.isLoaded || img.width == 0) {
+            drawRect(x, y, x + DiscordMarkdown.EMOJI_SIZE, y + DiscordMarkdown.EMOJI_SIZE, 0x22FFFFFF);
+            return;
+        }
+        ResourceLocation tex = img.getTextureToRender(false);
+        if (tex == null) return;
+        Minecraft.getMinecraft().getTextureManager().bindTexture(tex);
+        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManager.enableBlend();
+        drawScaledCustomSizeModalRect(x, y, 0, 0, img.width, img.height,
+                DiscordMarkdown.EMOJI_SIZE, DiscordMarkdown.EMOJI_SIZE, img.width, img.height);
+        GlStateManager.disableBlend();
     }
 }

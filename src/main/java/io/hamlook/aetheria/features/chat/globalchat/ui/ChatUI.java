@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.chat.globalchat.ui;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
 import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
@@ -12,7 +13,12 @@ import io.hamlook.aetheria.features.chat.globalchat.vars.Attachment;
 import io.hamlook.aetheria.features.chat.globalchat.vars.Channel;
 import io.hamlook.aetheria.features.chat.globalchat.vars.ChatLine;
 import io.hamlook.aetheria.features.chat.globalchat.vars.ChatMessage;
+import io.hamlook.aetheria.features.chat.globalchat.vars.Embed;
+import io.hamlook.aetheria.features.chat.globalchat.vars.EmojiRef;
+import io.hamlook.aetheria.features.chat.globalchat.vars.IEmoji;
 import io.hamlook.aetheria.features.chat.globalchat.vars.Sticker;
+import io.hamlook.aetheria.repo.CapeAPI;
+import io.hamlook.aetheria.utils.ElectionUtils;
 
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
@@ -25,6 +31,9 @@ import org.lwjgl.opengl.GL11;
 
 import java.awt.Color;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -36,6 +45,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A Discord-style GUI for the global chat feature: a channel list down the left,
@@ -62,10 +73,19 @@ public class ChatUI extends GuiScreen {
     private static final int MESSAGE_GAP = 18;
     private static final int CONTINUATION_GAP = 4;
     private static final int MESSAGE_BOTTOM_PAD = 20;
+    private static final long JUMP_HIGHLIGHT_MS = 2200L;
     private static final int MARKDOWN_BAR_H = 108;
     private static final int ATTACHMENT_BOX_H = 120;
+    private static final int MAX_IMAGE_DRAW_H = 260;
     private static final int EMBED_BOX_H = 56;
+    private static final int WEBSITE_EMBED_H = 128;
     private static final int STICKER_BOX_H = 90;
+    private static final int EMOJI_BUTTON_W = 26;
+    private static final int EMOJI_PANEL_COLS = 10;
+    private static final int EMOJI_PANEL_ROWS = 5;
+    private static final int EMOJI_PANEL_CELL = 22;
+    private static final int EMOJI_PANEL_W = EMOJI_PANEL_COLS * EMOJI_PANEL_CELL + 8;
+    private static final int EMOJI_PANEL_H = EMOJI_PANEL_ROWS * EMOJI_PANEL_CELL + 8;
 
     private static final String[] CODE_LANGUAGES = {
             "txt", "java", "json", "js", "python", "c", "cpp", "csharp",
@@ -88,6 +108,21 @@ public class ChatUI extends GuiScreen {
     private final Map<ChatMessage, LayoutCache> layoutCache = new IdentityHashMap<>();
     private final Set<Span> revealedSpoilers = Collections.newSetFromMap(new IdentityHashMap<>());
     private final List<ClickRect> clickRects = new ArrayList<>();
+    private final Map<String, Embed> embedCache = new ConcurrentHashMap<>();
+    private String jumpToMessageId = null;
+    private int jumpTargetTop = Integer.MIN_VALUE;
+    private String highlightMessageId = null;
+    private long jumpHighlightStart = 0L;
+    private boolean emojiPanelOpen = false;
+    private int emojiScroll = 0;
+    private ChatMessage pendingReply = null;
+    private ChatMessage editingMessage = null;
+    private ChatInputField editField;
+    private int editBoxX = 0;
+    private int editBoxY = 0;
+    private int editBoxWidth = 300;
+    private int editBoxHeight = 35;
+    private boolean editBoxVisible = false;
 
     public static void open() {
         net.minecraft.client.Minecraft.getMinecraft().displayGuiScreen(new ChatUI());
@@ -105,7 +140,8 @@ public class ChatUI extends GuiScreen {
         int inputX = SIDEBAR_WIDTH + PADDING;
         int boxY = height - INPUT_HEIGHT - PADDING;
         int inputWidth = width - SIDEBAR_WIDTH - PADDING * 2;
-        inputField = new ChatInputField(inputX + 8, boxY + 2, inputWidth - 16, INPUT_HEIGHT - 4);
+        inputField = new ChatInputField(inputX + 8, boxY + 2, inputWidth - 16 - EMOJI_BUTTON_W - 10, INPUT_HEIGHT - 4);
+        editField = new ChatInputField(editBoxX, editBoxY, editBoxWidth, INPUT_HEIGHT);
     }
 
     @Override
@@ -121,6 +157,7 @@ public class ChatUI extends GuiScreen {
     @Override
     public void updateScreen() {
         inputField.updateDrag();
+        if (editField != null) editField.updateDrag();
         if (pendingLinkUrl != null) {
             String url = pendingLinkUrl;
             pendingLinkUrl = null;
@@ -133,9 +170,18 @@ public class ChatUI extends GuiScreen {
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
         super.mouseClicked(mouseX, mouseY, mouseButton);
+        if (editingMessage != null) {
+            if (editBoxVisible && editField.mouseClicked(mouseX, mouseY, mouseButton)) return;
+            editingMessage = null;
+            return;
+        }
         if (inputField.mouseClicked(mouseX, mouseY, mouseButton)) return;
         if (mouseButton == 0) {
-            for (ClickRect cr : clickRects) {
+            if (emojiPanelOpen && !inEmojiPanel(mouseX, mouseY) && !inEmojiButton(mouseX, mouseY)) {
+                emojiPanelOpen = false;
+            }
+            for (int i = clickRects.size() - 1; i >= 0; i--) {
+                ClickRect cr = clickRects.get(i);
                 if (cr.contains(mouseX, mouseY)) {
                     cr.action.run();
                     break;
@@ -147,7 +193,22 @@ public class ChatUI extends GuiScreen {
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
         if (keyCode == Keyboard.KEY_ESCAPE) {
+            if (editingMessage != null) {
+                editingMessage = null;
+                return;
+            }
+            if (pendingReply != null) {
+                pendingReply = null;
+                return;
+            }
             mc.displayGuiScreen(null);
+            return;
+        }
+        if (editingMessage != null) {
+            if (editField.keyTyped(typedChar, keyCode)) return;
+            if (keyCode == Keyboard.KEY_RETURN || keyCode == Keyboard.KEY_NUMPADENTER) {
+                submitEdit();
+            }
             return;
         }
         if (inputField.keyTyped(typedChar, keyCode)) return;
@@ -163,6 +224,16 @@ public class ChatUI extends GuiScreen {
         if (wheel == 0) return;
         int mx = Mouse.getEventX() * width / mc.displayWidth;
         int my = Mouse.getEventY() * height / mc.displayHeight;
+        if (editingMessage != null && editBoxVisible && editField.isHovered(mx, my)) {
+            editField.mouseWheel(wheel);
+            return;
+        }
+        if (inEmojiPanel(mx, my)) {
+            int rowsTotal = (GlobalChat.usableEmojis.size() + EMOJI_PANEL_COLS - 1) / EMOJI_PANEL_COLS;
+            int maxScroll = Math.max(0, rowsTotal - EMOJI_PANEL_ROWS);
+            emojiScroll = Math.max(0, Math.min(maxScroll, emojiScroll + (wheel > 0 ? -1 : 1)));
+            return;
+        }
         if (inputField.isHovered(mx, my)) {
             inputField.mouseWheel(wheel);
             return;
@@ -174,11 +245,46 @@ public class ChatUI extends GuiScreen {
 
     private void sendCurrentMessage() {
         if (selectedChannel == null) return;
-        String text = inputField.getText().trim();
+        String raw = inputField.getText();
+        String text = raw.trim();
         if (text.isEmpty()) return;
-        ChatMessage message = new ChatMessage(text, selectedChannel.channelID, null);
+        ChatMessage reply = (pendingReply != null && pendingReply.discordID != null && !pendingReply.discordID.isEmpty())
+                ? pendingReply : null;
+        ChatMessage message = new ChatMessage(text, selectedChannel.channelID, reply);
+        message.populateEmojiRefs(raw);
         message.sendMessage();
         inputField.setText("");
+        pendingReply = null;
+    }
+
+    private void submitEdit() {
+        if (editingMessage == null) return;
+        String newContent = editField.getText().trim();
+        ChatMessage msg = editingMessage;
+        editingMessage = null;
+        if (newContent.isEmpty()) return;
+        GlobalChat.editMessage(msg, newContent);
+        msg.content = newContent;
+        msg.edited = true;
+        msg.contentVersion++;
+    }
+
+    private void deleteMessageAction(ChatMessage msg) {
+        Channel channel = GlobalChat.channels.get(msg.channelId);
+        if (channel != null) channel.removeMessage(msg.messageID, msg.discordID);
+        GlobalChat.deleteMessage(msg);
+        if (editingMessage == msg) editingMessage = null;
+    }
+
+    private void startEdit(ChatMessage msg) {
+        if (editingMessage != null) return;
+        editingMessage = msg;
+        editField.setText(msg.content == null ? "" : msg.content);
+    }
+
+    private static boolean isOwnMessage(ChatMessage msg) {
+        return msg.author != null && msg.author.equalsIgnoreCase(
+                net.minecraft.client.Minecraft.getMinecraft().getSession().getUsername());
     }
 
     // --------------------------------------------------------------- render
@@ -187,14 +293,54 @@ public class ChatUI extends GuiScreen {
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawRect(0, 0, width, height, 0xFF313338);
 
+        if (selectedChannel != null && !GlobalChat.channels.containsValue(selectedChannel)) {
+            Channel replacement = null;
+            for (Channel c : GlobalChat.channels.values()) {
+                if (c.channelName != null && c.channelName.equals(selectedChannel.channelName)) {
+                    replacement = c;
+                    break;
+                }
+            }
+            if (replacement == null && !GlobalChat.channels.isEmpty()) {
+                replacement = GlobalChat.channels.values().iterator().next();
+            }
+            selectedChannel = replacement;
+        }
+
         clickRects.clear();
         drawSidebar(mouseX, mouseY);
         drawHeader(mouseX, mouseY);
         drawMessages(mouseX, mouseY);
-        drawInputArea();
+        drawInputArea(mouseX, mouseY);
+        drawReplyBanner(mouseX, mouseY);
 
         inputField.draw();
+        if (editingMessage != null && editField != null && editBoxVisible) {
+            editField.x = editBoxX;
+            editField.y = editBoxY;
+            editField.width = editBoxWidth;
+            editField.height = editBoxHeight;
+            drawRect(editBoxX, editBoxY, editBoxX + editBoxWidth, editBoxY + editBoxHeight, 0xFF383A40);
+            editField.draw();
+        }
+        drawEmojiPanel(mouseX, mouseY);
+        drawEmojiAutocomplete(mouseX, mouseY);
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    private void drawReplyBanner(int mouseX, int mouseY) {
+        if (pendingReply == null) return;
+        int boxY = height - INPUT_HEIGHT - PADDING;
+        int bx = SIDEBAR_WIDTH + PADDING;
+        int by = boxY - 26;
+        drawRect(bx, by, width - PADDING, boxY, 0xFF2B2D31);
+        drawRect(bx, by, bx + 3, boxY, 0xFF5865F2);
+        String label = "Replying to " + (pendingReply.author == null ? "a message" : pendingReply.author);
+        fontRendererObj.drawStringWithShadow(label, bx + 10, by + 9, 0xFFB5BAC1);
+        int cx = width - PADDING - 26;
+        boolean hover = mouseX >= cx && mouseX <= cx + 18 && mouseY >= by + 4 && mouseY <= by + 20;
+        fontRendererObj.drawStringWithShadow("X", cx + 6, by + 8, hover ? 0xFFFFFFFF : 0xFF949BA4);
+        clickRects.add(new ClickRect(cx, by + 4, 18, 16, () -> pendingReply = null));
     }
 
     private void drawSidebar(int mouseX, int mouseY) {
@@ -300,6 +446,107 @@ public class ChatUI extends GuiScreen {
         clickRects.add(new ClickRect(x, y, w, h, action));
     }
 
+    // -------------------------------------------------------------- emojis
+
+    private boolean inEmojiButton(int mouseX, int mouseY) {
+        int boxY = height - INPUT_HEIGHT - PADDING;
+        int bx = width - PADDING - EMOJI_BUTTON_W - 4;
+        int by = boxY + (INPUT_HEIGHT - EMOJI_BUTTON_W) / 2 + 1;
+        return mouseX >= bx && mouseX <= bx + EMOJI_BUTTON_W && mouseY >= by && mouseY <= by + EMOJI_BUTTON_W;
+    }
+
+    private boolean inEmojiPanel(int mouseX, int mouseY) {
+        if (!emojiPanelOpen) return false;
+        int boxY = height - INPUT_HEIGHT - PADDING;
+        int px = Math.max(SIDEBAR_WIDTH, width - PADDING - EMOJI_PANEL_W);
+        int py = boxY - EMOJI_PANEL_H - 6;
+        return mouseX >= px && mouseX <= px + EMOJI_PANEL_W && mouseY >= py && mouseY <= py + EMOJI_PANEL_H;
+    }
+
+    /** Scrollable grid of all usable emojis; clicking one inserts ":name:" at the caret. */
+    private void drawEmojiPanel(int mouseX, int mouseY) {
+        if (!emojiPanelOpen) return;
+        List<EmojiRef> emojis = sortedEmojis();
+        if (emojis.isEmpty()) return;
+
+        int boxY = height - INPUT_HEIGHT - PADDING;
+        int px = Math.max(SIDEBAR_WIDTH, width - PADDING - EMOJI_PANEL_W);
+        int py = boxY - EMOJI_PANEL_H - 6;
+        drawRect(px, py, px + EMOJI_PANEL_W, py + EMOJI_PANEL_H, 0xFF17181C);
+
+        int rowsTotal = (emojis.size() + EMOJI_PANEL_COLS - 1) / EMOJI_PANEL_COLS;
+        int maxScroll = Math.max(0, rowsTotal - EMOJI_PANEL_ROWS);
+        if (emojiScroll > maxScroll) emojiScroll = maxScroll;
+
+        for (int r = 0; r < EMOJI_PANEL_ROWS; r++) {
+            for (int c = 0; c < EMOJI_PANEL_COLS; c++) {
+                int idx = (r + emojiScroll) * EMOJI_PANEL_COLS + c;
+                if (idx >= emojis.size()) break;
+                EmojiRef ref = emojis.get(idx);
+                int cx = px + 4 + c * EMOJI_PANEL_CELL;
+                int cy = py + 4 + r * EMOJI_PANEL_CELL;
+                boolean hover = mouseX >= cx && mouseX <= cx + EMOJI_PANEL_CELL && mouseY >= cy && mouseY <= cy + EMOJI_PANEL_CELL;
+                if (hover) drawRect(cx, cy, cx + EMOJI_PANEL_CELL, cy + EMOJI_PANEL_CELL, 0xFF35373C);
+                drawInlineEmoji(ref.url, cx + (EMOJI_PANEL_CELL - 16) / 2, cy + (EMOJI_PANEL_CELL - 16) / 2);
+                clickRects.add(new ClickRect(cx, cy, EMOJI_PANEL_CELL, EMOJI_PANEL_CELL,
+                        () -> inputField.replaceSelection(":" + ref.name + ":")));
+            }
+        }
+    }
+
+    /** Discord-style suggestion dropdown while typing ":prefix" (no closing colon yet). */
+    private void drawEmojiAutocomplete(int mouseX, int mouseY) {
+        String text = inputField.getText();
+        int caret = inputField.getCaret();
+        int start = caret;
+        while (start > 0 && isEmojiWordChar(text.charAt(start - 1))) start--;
+        if (start == caret || start <= 0 || text.charAt(start - 1) != ':') return;
+        String prefix = text.substring(start, caret);
+
+        List<EmojiRef> matches = new ArrayList<>();
+        for (Map.Entry<String, IEmoji> entry : GlobalChat.usableEmojis.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) matches.add(entry.getValue().toEmoji());
+        }
+        if (matches.isEmpty()) return;
+        matches.sort(Comparator.comparing(a -> a.name));
+        if (matches.size() > 8) matches = new ArrayList<>(matches.subList(0, 8));
+
+        int dw = 200;
+        int boxY = height - INPUT_HEIGHT - PADDING;
+        int dx = Math.max(SIDEBAR_WIDTH, Math.min(inputField.x, width - PADDING - dw));
+        int rowH = 18;
+        int dh = matches.size() * rowH + 6;
+        int dy = boxY - dh - 6;
+        drawRect(dx, dy, dx + dw, dy + dh, 0xFF17181C);
+        for (int i = 0; i < matches.size(); i++) {
+            EmojiRef ref = matches.get(i);
+            int ry = dy + 3 + i * rowH;
+            boolean hover = mouseX >= dx && mouseX <= dx + dw && mouseY >= ry && mouseY <= ry + rowH;
+            if (hover) drawRect(dx, ry, dx + dw, ry + rowH, 0xFF35373C);
+            drawInlineEmoji(ref.url, dx + 4, ry + 1);
+            fontRendererObj.drawStringWithShadow(":" + ref.name + ":", dx + 24, ry + 5, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
+            final int selStart = start - 1;
+            final int selEnd = caret;
+            clickRects.add(new ClickRect(dx, ry, dw, rowH, () -> {
+                inputField.select(selStart, selEnd);
+                inputField.replaceSelection(":" + ref.name + ":");
+            }));
+        }
+    }
+
+    private List<EmojiRef> sortedEmojis() {
+        List<EmojiRef> list = new ArrayList<>();
+        for (IEmoji emoji : GlobalChat.usableEmojis.values()) {
+            list.add(emoji.toEmoji());
+        }
+        list.sort(Comparator.comparing(a -> a.name));
+        return list;
+    }
+
+    private static boolean isEmojiWordChar(char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '~';
+    }
+
     private void applyFormatting(String open, String close) {
         String sel = inputField.hasSelection() ? inputField.getSelectedText() : "";
         if (sel.isEmpty()) {
@@ -333,17 +580,30 @@ public class ChatUI extends GuiScreen {
         clickRects.add(new ClickRect(closeX, 7, 16, 16, () -> mc.displayGuiScreen(null)));
     }
 
-    private void drawInputArea() {
+    private void drawInputArea(int mouseX, int mouseY) {
         int boxY = height - INPUT_HEIGHT - PADDING;
         drawRect(SIDEBAR_WIDTH, boxY - PADDING, width, height, 0xFF313338);
         drawRect(SIDEBAR_WIDTH + PADDING, boxY, width - PADDING, boxY + INPUT_HEIGHT, 0xFF383A40);
+
+        int bx = width - PADDING - EMOJI_BUTTON_W - 4;
+        int by = boxY + (INPUT_HEIGHT - EMOJI_BUTTON_W) / 2 + 1;
+        boolean hover = mouseX >= bx && mouseX <= bx + EMOJI_BUTTON_W && mouseY >= by && mouseY <= by + EMOJI_BUTTON_W;
+        drawRect(bx, by, bx + EMOJI_BUTTON_W, by + EMOJI_BUTTON_W, hover || emojiPanelOpen ? 0xFF404249 : 0xFF2B2D31);
+        int fx = bx + (EMOJI_BUTTON_W - 14) / 2;
+        int fy = by + (EMOJI_BUTTON_W - 14) / 2;
+        drawRect(fx, fy, fx + 14, fy + 14, 0xFFF2C94C);
+        drawRect(fx + 3, fy + 4, fx + 5, fy + 6, 0xFF1E1F22);
+        drawRect(fx + 9, fy + 4, fx + 11, fy + 6, 0xFF1E1F22);
+        drawRect(fx + 4, fy + 9, fx + 10, fy + 10, 0xFF1E1F22);
+        clickRects.add(new ClickRect(bx, by, EMOJI_BUTTON_W, EMOJI_BUTTON_W, () -> emojiPanelOpen = !emojiPanelOpen));
     }
 
     private void drawMessages(int mouseX, int mouseY) {
+        editBoxVisible = false;
         int areaX = SIDEBAR_WIDTH;
         int areaY = HEADER_HEIGHT;
         int areaW = width - SIDEBAR_WIDTH;
-        int areaBottom = height - INPUT_HEIGHT - PADDING * 2;
+        int areaBottom = height - INPUT_HEIGHT - PADDING * 2 - (pendingReply != null ? 26 : 0);
         int contentBottom = areaBottom - MESSAGE_BOTTOM_PAD;
         int areaH = areaBottom - areaY;
         if (areaH <= 0) return;
@@ -360,6 +620,7 @@ public class ChatUI extends GuiScreen {
 
         int cursorBottom = contentBottom + scrollPixels;
         int total = 0;
+        jumpTargetTop = Integer.MIN_VALUE;
 
         for (int i = lines.size() - 1; i >= 0; i--) {
             ChatMessage msg = lines.get(i).message;
@@ -370,11 +631,15 @@ public class ChatUI extends GuiScreen {
                     || !older.author.equals(msg.author) || (msg.timestamp - older.timestamp) > GROUP_GAP_MS;
 
             LayoutCache layout = getLayout(msg, contentWidth);
-            int bh = blockHeight(msg, layout, groupStart);
+            int bh = blockHeight(msg, layout, groupStart, contentWidth);
             int top = cursorBottom - bh;
 
             if (top < areaBottom && cursorBottom > areaY) {
                 renderMessage(msg, layout, areaX + PADDING, top, contentWidth, groupStart, mouseX, mouseY);
+            }
+
+            if (jumpToMessageId != null && msg.discordID != null && msg.discordID.equals(jumpToMessageId)) {
+                jumpTargetTop = top - scrollPixels;
             }
 
             int gap = groupStart ? MESSAGE_GAP : CONTINUATION_GAP;
@@ -385,6 +650,14 @@ public class ChatUI extends GuiScreen {
         disableScissor();
 
         int maxScroll = Math.max(0, total + MESSAGE_BOTTOM_PAD - areaH);
+        if (jumpToMessageId != null) {
+            if (jumpTargetTop != Integer.MIN_VALUE) {
+                scrollPixels = areaY - jumpTargetTop;
+                highlightMessageId = jumpToMessageId;
+                jumpHighlightStart = System.currentTimeMillis();
+            }
+            jumpToMessageId = null;
+        }
         if (scrollPixels > maxScroll) scrollPixels = maxScroll;
         if (scrollPixels < 0) scrollPixels = 0;
 
@@ -410,31 +683,132 @@ public class ChatUI extends GuiScreen {
         return msg.replying ? fontRendererObj.FONT_HEIGHT + 3 : 0;
     }
 
+    /** Content to render: for replies, drops the leading "https://discord.com/channels/..." hyperlink prefix the server prepends on Discord. */
+    private String displayContent(ChatMessage msg) {
+        String content = msg.content;
+        if (content != null && msg.replying && msg.replyingMessage != null && !msg.replyingMessage.isEmpty()
+                && msg.channelId != null) {
+            String prefix = "https://discord.com/channels/1479556885769093192/" + msg.channelId + "/" + msg.replyingMessage;
+            if (content.startsWith(prefix)) {
+                int end = content.indexOf('\n', prefix.length());
+                if (end < 0) end = content.length();
+                content = content.substring(end).trim();
+            }
+        }
+        return content;
+    }
+
+    /**
+     * Click on a link: plain click on a Discord message link jumps to that message in the UI when it is
+     * in a global channel's local history (switching channels if needed); shift+click (or any non-message link)
+     * opens the link-confirm screen for opening it in Discord.
+     */
+    private void handleLinkClick(String url) {
+        if (url == null) return;
+        boolean shift = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+        if (!shift && url.startsWith("https://discord.com/channels/")) {
+            String[] parts = url.split("/");
+            if (parts.length >= 2) {
+                String channelId = parts[parts.length - 2];
+                String messageId = parts[parts.length - 1];
+                Channel channel = GlobalChat.channels.get(channelId);
+                if (channel != null) {
+                    for (ChatLine line : channel.messageHistory) {
+                        if (line.message != null && messageId.equals(line.message.discordID)) {
+                            if (channel != selectedChannel) selectedChannel = channel;
+                            jumpToMessageId = messageId;
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        pendingLinkUrl = url;
+    }
+
     private int headerAllowance(boolean groupStart) {
         if (!groupStart) return 2;
         return 2 + fontRendererObj.FONT_HEIGHT + DiscordMarkdown.LINE_SPACING;
     }
 
-    private int blockHeight(ChatMessage msg, LayoutCache layout, boolean groupStart) {
-        return replyAllowance(msg) + headerAllowance(groupStart) + layout.totalHeight;
+    private int blockHeight(ChatMessage msg, LayoutCache layout, boolean groupStart, int contentWidth) {
+        int contentH = layout.totalHeight;
+        if (singleImageLink(msg, layout)) contentH -= layout.textHeight;
+        for (Embed embed : embedList(msg, layout)) {
+            if ("image".equals(embed.type)) {
+                contentH += imageEmbedHeight(embed.url, contentWidth) - ATTACHMENT_BOX_H;
+            }
+        }
+        return replyAllowance(msg) + headerAllowance(groupStart) + contentH;
+    }
+
+    /** Natural drawn height (width-capped) of a loaded image embed, or the placeholder height while loading/failed. */
+    private int imageEmbedHeight(String url, int maxWidth) {
+        GCImage img = getImage(url, false);
+        if (img != null && img.isLoaded && img.width > 0 && img.height > 0) {
+            return naturalImageHeight(img, maxWidth);
+        }
+        return ATTACHMENT_BOX_H;
+    }
+
+    private int naturalImageHeight(GCImage img, int maxWidth) {
+        int cap = Math.min(maxWidth, 260);
+        int drawW = Math.min(img.width, cap);
+        int drawH = Math.round(drawW / (img.width / (float) img.height));
+        if (drawH > MAX_IMAGE_DRAW_H) drawH = MAX_IMAGE_DRAW_H;
+        return drawH;
+    }
+
+    /** True when the message is a single bare image link that got converted into an image embed (hide the link text). */
+    private boolean singleImageLink(ChatMessage msg, LayoutCache layout) {
+        if (layout.lines.size() != 1) return false;
+        List<Span> spans = layout.lines.get(0).spans;
+        if (spans == null || spans.size() != 1) return false;
+        Span span = spans.get(0);
+        if (!span.bareLink || span.linkUrl == null) return false;
+        List<Embed> embeds = embedList(msg, layout);
+        return embeds.size() == 1 && "image".equals(embeds.get(0).type);
     }
 
     private void renderMessage(ChatMessage msg, LayoutCache layout, int x, int y, int contentWidth, boolean groupStart, int mouseX, int mouseY) {
         int textX = x + AVATAR_SIZE + 8;
         int replyAlw = replyAllowance(msg);
         int headerAlw = headerAllowance(groupStart);
-        int rowHeight = replyAlw + headerAlw + layout.totalHeight;
+        boolean hideContent = singleImageLink(msg, layout);
+        int rowHeight = replyAlw + headerAlw + layout.totalHeight - (hideContent ? layout.textHeight : 0);
 
         boolean hovered = mouseX >= x - 4 && mouseX < x + AVATAR_SIZE + 8 + contentWidth + PADDING
                 && mouseY >= y - 2 && mouseY < y + rowHeight;
         if (hovered) {
             drawRect(x - 4, y - 2, x + AVATAR_SIZE + 8 + contentWidth + PADDING, y + rowHeight, 0x14FFFFFF);
+            drawMessageActions(msg, x + AVATAR_SIZE + 8 + contentWidth, y, mouseX, mouseY);
+        }
+
+        if (highlightMessageId != null && highlightMessageId.equals(msg.discordID)) {
+            long elapsed = System.currentTimeMillis() - jumpHighlightStart;
+            if (elapsed >= JUMP_HIGHLIGHT_MS) {
+                highlightMessageId = null;
+            } else {
+                float fade = 1f - elapsed / (float) JUMP_HIGHLIGHT_MS;
+                int alpha = (int) (fade * (0.35f + 0.65f * Math.abs(Math.sin(elapsed / 150.0))) * 36);
+                if (alpha > 2) {
+                    drawRect(x - 4, y - 2, x + AVATAR_SIZE + 8 + contentWidth + PADDING, y + rowHeight,
+                            (alpha << 24) | 0xFFFFFF);
+                }
+            }
         }
 
         if (msg.replying) {
             ChatMessage original = findByDiscordId(msg.replyingMessage);
-            String replyText = "↰ " + (original != null && original.author != null ? original.author : "a message");
-            fontRendererObj.drawStringWithShadow(replyText, textX, y + 1, 0xFF949BA4);
+            String replyName = original != null && original.author != null ? original.author : "a message";
+            String replyLabel = "\u21B0 " + replyName;
+            fontRendererObj.drawStringWithShadow(replyLabel, textX, y + 1, 0xFF949BA4);
+            if (msg.replyingMessage != null && !msg.replyingMessage.isEmpty()) {
+                final String replyUrl = "https://discord.com/channels/1479556885769093192/"
+                        + msg.channelId + "/" + msg.replyingMessage;
+                clickRects.add(new ClickRect(textX, y + 1, fontRendererObj.getStringWidth(replyLabel),
+                        fontRendererObj.FONT_HEIGHT, () -> handleLinkClick(replyUrl)));
+            }
         }
 
         int afterReplyY = y + replyAlw;
@@ -445,25 +819,32 @@ public class ChatUI extends GuiScreen {
             int nameColor = userColor(author);
             fontRendererObj.drawStringWithShadow(author, textX, afterReplyY + 2, nameColor);
             int nameWidth = fontRendererObj.getStringWidth(author);
-            fontRendererObj.drawStringWithShadow(formatTimestamp(msg.timestamp), textX + nameWidth + 8, afterReplyY + 3, 0xFF949BA4);
+            String headerTime = formatTimestamp(msg.timestamp);
+            if (msg.client != null && !msg.client.isEmpty()) headerTime += " (" + msg.client + ")";
+            if (msg.edited) headerTime += " (edited)";
+            fontRendererObj.drawStringWithShadow(headerTime, textX + nameWidth + 8, afterReplyY + 3, 0xFF949BA4);
         } else if (hovered) {
-            fontRendererObj.drawStringWithShadow(formatTimeShort(msg.timestamp), x, afterReplyY + 2, 0xFF6D6F78);
+            String time = formatTimeShort(msg.timestamp);
+            if (msg.edited) time += " (edited)";
+            fontRendererObj.drawStringWithShadow(time, x, afterReplyY + 2, 0xFF6D6F78);
         }
 
         int cursorY = afterReplyY + headerAlw;
 
-        for (int li = 0; li < layout.lines.size(); li++) {
-            RenderLine line = layout.lines.get(li);
-            if (line.codeTokens != null) {
-                drawCodeLine(line, textX, cursorY, contentWidth);
-            } else {
-                drawRenderLine(line, textX, cursorY, contentWidth);
+        if (!hideContent) {
+            for (int li = 0; li < layout.lines.size(); li++) {
+                RenderLine line = layout.lines.get(li);
+                if (line.codeTokens != null) {
+                    drawCodeLine(line, textX, cursorY, contentWidth);
+                } else {
+                    drawRenderLine(line, textX, cursorY, contentWidth);
+                }
+                if (line.type == LineType.CODE_BLOCK
+                        && (li == 0 || layout.lines.get(li - 1).type != LineType.CODE_BLOCK)) {
+                    drawCodeCopyButton(layout.lines, li, textX, cursorY, contentWidth, mouseX, mouseY);
+                }
+                cursorY += DiscordMarkdown.lineHeight(line.type, fontRendererObj);
             }
-            if (line.type == LineType.CODE_BLOCK
-                    && (li == 0 || layout.lines.get(li - 1).type != LineType.CODE_BLOCK)) {
-                drawCodeCopyButton(layout.lines, li, textX, cursorY, contentWidth, mouseX, mouseY);
-            }
-            cursorY += DiscordMarkdown.lineHeight(line.type, fontRendererObj);
         }
 
         if (!msg.attachments.isEmpty()) {
@@ -484,6 +865,61 @@ public class ChatUI extends GuiScreen {
                 drawImageBlock(st.name, st.url, textX, cursorY, Math.min(contentWidth, 96), STICKER_BOX_H, false);
                 cursorY += STICKER_BOX_H + 6;
             }
+        }
+
+        for (Embed embed : embedList(msg, layout)) {
+            if ("image".equals(embed.type)) {
+                drawImageBlock(embed.name, embed.url, textX, cursorY, contentWidth, ATTACHMENT_BOX_H, false, true);
+                cursorY += imageEmbedHeight(embed.url, contentWidth) + 6;
+            } else if ("website".equals(embed.type) || "rich".equals(embed.type)) {
+                int ew = Math.min(contentWidth, 360);
+                int eh = embedHeight(embed, ew);
+                drawWebEmbed(embed, textX, cursorY, ew, eh);
+                cursorY += eh + 6;
+            }
+        }
+
+        if (msg == editingMessage) {
+            editBoxX = x - 4;
+            editBoxY = y - 2;
+            editBoxWidth = AVATAR_SIZE + 8 + contentWidth + PADDING + 8;
+            editBoxHeight = rowHeight + 4;
+            editBoxVisible = true;
+        }
+    }
+
+    /** Reply/Edit/Delete buttons shown on hover at the top-right of a message block. */
+    private void drawMessageActions(ChatMessage msg, int rightEdge, int blockTop, int mouseX, int mouseY) {
+        List<String> labels = new ArrayList<>();
+        List<Runnable> actions = new ArrayList<>();
+        if (isOwnMessage(msg)) {
+            labels.add("Edit");
+            actions.add(() -> startEdit(msg));
+            labels.add("Delete");
+            actions.add(() -> deleteMessageAction(msg));
+        }
+        labels.add("Reply");
+        actions.add(() -> pendingReply = msg);
+
+        int gap = 4;
+        int bh = 15;
+        int totalW = 0;
+        List<Integer> widths = new ArrayList<>();
+        for (String label : labels) {
+            int w = fontRendererObj.getStringWidth(label) + 12;
+            widths.add(w);
+            totalW += w + gap;
+        }
+        int bx = rightEdge - totalW + gap;
+        int by = blockTop + 1;
+        for (int i = 0; i < labels.size(); i++) {
+            int w = widths.get(i);
+            boolean hover = mouseX >= bx && mouseX <= bx + w && mouseY >= by && mouseY <= by + bh;
+            drawRect(bx, by, bx + w, by + bh, hover ? 0xFF404249 : 0xFF2B2D31);
+            fontRendererObj.drawStringWithShadow(labels.get(i), bx + 6, by + 3,
+                    hover ? 0xFFFFFFFF : 0xFFB5BAC1);
+            clickRects.add(new ClickRect(bx, by, w, bh, actions.get(i)));
+            bx += w + gap;
         }
     }
 
@@ -584,11 +1020,15 @@ public class ChatUI extends GuiScreen {
             int w = fontRendererObj.getStringWidth(formatted);
 
             if (span.linkUrl != null) {
-                fontRendererObj.drawStringWithShadow(formatted, cursorX, y, 0xFF00A8FC);
-                drawRect(cursorX, y + fontRendererObj.FONT_HEIGHT - 1, cursorX + w, y + fontRendererObj.FONT_HEIGHT, 0xFF00A8FC);
+                if (span.plainLink) {
+                    fontRendererObj.drawStringWithShadow(formatted, cursorX, y, baseColor);
+                } else {
+                    fontRendererObj.drawStringWithShadow(formatted, cursorX, y, 0xFF00A8FC);
+                    drawRect(cursorX, y + fontRendererObj.FONT_HEIGHT - 1, cursorX + w, y + fontRendererObj.FONT_HEIGHT, 0xFF00A8FC);
+                }
                 if (registerClicks) {
                     int rx = cursorX, ry = y, rw = w, rh = fontRendererObj.FONT_HEIGHT;
-                    clickRects.add(new ClickRect(rx, ry, rw, rh, () -> pendingLinkUrl = span.linkUrl));
+                    clickRects.add(new ClickRect(rx, ry, rw, rh, () -> handleLinkClick(span.linkUrl)));
                 }
                 cursorX += w;
                 continue;
@@ -613,17 +1053,20 @@ public class ChatUI extends GuiScreen {
 
     private static class LayoutCache {
         int width;
+        int contentVersion;
         List<RenderLine> lines;
+        int textHeight;
         int totalHeight;
     }
 
     private LayoutCache getLayout(ChatMessage msg, int width) {
         LayoutCache cache = layoutCache.get(msg);
-        if (cache != null && cache.width == width) return cache;
+        if (cache != null && cache.width == width && cache.contentVersion == msg.contentVersion) return cache;
 
         cache = new LayoutCache();
         cache.width = width;
-        cache.lines = DiscordMarkdown.parse(msg.content, msg.emojiRefs, fontRendererObj, width);
+        cache.contentVersion = msg.contentVersion;
+        cache.lines = DiscordMarkdown.parse(displayContent(msg), msg.emojiRefs, fontRendererObj, width);
 
         int textHeight = 0;
         for (RenderLine line : cache.lines) {
@@ -640,8 +1083,13 @@ public class ChatUI extends GuiScreen {
         if (msg.stickers != null && !msg.stickers.isEmpty()) {
             extra += msg.stickers.size() * (STICKER_BOX_H + 6);
         }
+        for (Embed embed : embedList(msg, cache)) {
+            if ("image".equals(embed.type)) extra += ATTACHMENT_BOX_H + 6;
+            else if ("website".equals(embed.type) || "rich".equals(embed.type)) extra += embedHeight(embed, Math.min(width, 360)) + 6;
+        }
 
         cache.totalHeight = textHeight + extra;
+        cache.textHeight = textHeight;
         layoutCache.put(msg, cache);
         return cache;
     }
@@ -690,6 +1138,11 @@ public class ChatUI extends GuiScreen {
 
     /** Always reserves exactly boxHeight vertically, regardless of the image's real aspect ratio, so layout stays stable while media loads async. */
     private void drawImageBlock(String name, String url, int x, int y, int maxWidth, int boxHeight, boolean circular) {
+        drawImageBlock(name, url, x, y, maxWidth, boxHeight, circular, false);
+    }
+
+    /** With naturalSize the loaded image is drawn at its own aspect ratio (width-capped), not forced into a fixed-height box. */
+    private void drawImageBlock(String name, String url, int x, int y, int maxWidth, int boxHeight, boolean circular, boolean naturalSize) {
         GCImage img = getImage(url, circular);
         int cap = Math.min(maxWidth, 260);
 
@@ -707,9 +1160,16 @@ public class ChatUI extends GuiScreen {
         }
 
         float ratio = img.width / (float) img.height;
-        int drawH = boxHeight;
-        int drawW = Math.round(drawH * ratio);
-        if (drawW > cap) { drawW = cap; drawH = Math.round(drawW / ratio); }
+        int drawH;
+        int drawW;
+        if (naturalSize) {
+            drawH = naturalImageHeight(img, maxWidth);
+            drawW = Math.round(drawH * ratio);
+        } else {
+            drawH = boxHeight;
+            drawW = Math.round(drawH * ratio);
+            if (drawW > cap) { drawW = cap; drawH = Math.round(drawW / ratio); }
+        }
 
         ResourceLocation tex = img.getTextureToRender(true);
         if (tex != null) {
@@ -754,8 +1214,8 @@ public class ChatUI extends GuiScreen {
 
         drawRect(x + 10, y + 9, x + 36, y + 35, 0xFF2B2D31);
         fontRendererObj.drawStringWithShadow(label,
-                x + 10 + (26 - fontRendererObj.getStringWidth(label)) / 2,
-                y + 9 + (26 - fontRendererObj.FONT_HEIGHT) / 2, 0xFFB5BAC1);
+                x + 10 + (26 - fontRendererObj.getStringWidth(label)) / 2f,
+                y + 9 + (26 - fontRendererObj.FONT_HEIGHT) / 2f, 0xFFB5BAC1);
 
         int tx = x + 46;
         fontRendererObj.drawStringWithShadow(fontRendererObj.trimStringToWidth(name, maxWidth - 60), tx, y + 7, 0xFFDCDDDE);
@@ -777,6 +1237,274 @@ public class ChatUI extends GuiScreen {
         drawRect(x, y, x + w, y + 16, hover ? 0xFF404249 : 0xFF2B2D31);
         fontRendererObj.drawStringWithShadow(label, x + 7, y + 4, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
         clickRects.add(new ClickRect(x, y, w, 16, action));
+    }
+
+    // -------------------------------------------------------------- embeds
+
+    /** Embeds to render for a message: server-provided ones, or the auto-detected first link. */
+    private List<Embed> embedList(ChatMessage msg, LayoutCache layout) {
+        if (msg.embeds != null && !msg.embeds.isEmpty()) {
+            List<Embed> out = new ArrayList<>();
+            for (Embed e : msg.embeds) {
+                if (e != null && e.url != null && e.url.startsWith("https://discord.com/channels/")) continue;
+                if (e != null && "rich".equals(e.type)) {
+                    String mediaUrl = mediaUrlOf(e);
+                    if (mediaUrl != null) {
+                        Embed img = new Embed("image", mediaUrl);
+                        img.name = (e.title != null && !e.title.isEmpty()) ? e.title
+                                : (e.siteName != null && !e.siteName.isEmpty()) ? e.siteName : null;
+                        out.add(img);
+                        continue;
+                    }
+                }
+                out.add(e);
+            }
+            if (!out.isEmpty()) return out;
+        }
+        Embed e = embedForFirstLink(layout);
+        return e == null ? Collections.<Embed>emptyList() : Collections.singletonList(e);
+    }
+
+    /**
+     * Resolves a "rich" embed to a directly renderable media URL, or null if it should stay a website box.
+     * Matches when the embed URL itself is an image, or the embed carries only media (no title/description/fields)
+     * with an image thumbnail, or it comes from a known image/gif sharing host (tenor/giphy/imgur).
+     */
+    private static String mediaUrlOf(Embed e) {
+        if (DiscordMarkdown.isImageUrl(e.url)) return e.url;
+        if (e.imageUrl == null || !DiscordMarkdown.isImageUrl(e.imageUrl)) return null;
+        boolean mediaOnly = (e.title == null || e.title.isEmpty())
+                && (e.description == null || e.description.isEmpty())
+                && (e.fields == null || e.fields.isEmpty());
+        if (mediaOnly) return e.imageUrl;
+        String host = hostOf(e.url);
+        return "tenor.com".equals(host) || "giphy.com".equals(host) || "imgur.com".equals(host)
+                || "media.tenor.com".equals(host) || "i.giphy.com".equals(host) || "i.imgur.com".equals(host)
+                ? e.imageUrl : null;
+    }
+
+    /** Finds the first hyperlink span in a message's layout and resolves its embed (cached/async for websites, sync for images). */
+    private Embed embedForFirstLink(LayoutCache layout) {
+        for (RenderLine line : layout.lines) {
+            for (Span span : line.spans) {
+                if (span.linkUrl == null) continue;
+                String url = span.linkUrl;
+                if (url.startsWith("https://discord.com/channels/")) continue;
+                Embed cached = embedCache.get(url);
+                if (cached != null) return cached;
+                if (DiscordMarkdown.isImageUrl(url)) {
+                    Embed e = new Embed("image", url);
+                    e.name = span.text;
+                    embedCache.put(url, e);
+                    return e;
+                }
+                Embed e = new Embed("website", url);
+                e.loading = true;
+                embedCache.put(url, e);
+                fetchWebsiteEmbed(url);
+                return e;
+            }
+        }
+        return null;
+    }
+
+    private void fetchWebsiteEmbed(String url) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                URL u = new URL(CapeAPI.getAPIUrl("embed?url=" + URLEncoder.encode(url, "UTF-8")));
+                HttpURLConnection connection = (HttpURLConnection) u.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
+                connection.setRequestProperty("Accept", "application/json");
+                connection.setReadTimeout(8000);
+                connection.setConnectTimeout(8000);
+                if (connection.getResponseCode() == 200) {
+                    Embed e = GlobalChat.GSON.fromJson(ElectionUtils.readResponse(connection), Embed.class);
+                    embedCache.put(url, e != null && e.type != null ? e : new Embed("failed", url));
+                } else {
+                    embedCache.put(url, new Embed("failed", url));
+                }
+            } catch (Exception ex) {
+                embedCache.put(url, new Embed("failed", url));
+            }
+        });
+    }
+
+    /** Discord-style website/rich embed: accent bar, site name, title, description, fields, thumbnail. */
+    private void drawWebEmbed(Embed e, int x, int y, int maxWidth, int height) {
+        drawRect(x, y, x + maxWidth, y + height, 0xFF232428);
+        drawRect(x, y, x + 3, y + height, 0xFF5865F2);
+
+        if (e == null || "failed".equals(e.type)) {
+            fontRendererObj.drawStringWithShadow("No preview available", x + 10, y + 8, 0xFF949BA4);
+            return;
+        }
+        if (e.loading) {
+            fontRendererObj.drawStringWithShadow("Loading preview...", x + 10, y + 8, 0xFF949BA4);
+            return;
+        }
+
+        int thumb = 72;
+        int textW = maxWidth - thumb - 18;
+
+        String site = (e.siteName == null || e.siteName.isEmpty()) ? hostOf(e.url) : e.siteName;
+        if (site == null || site.isEmpty()) site = "Link";
+        fontRendererObj.drawStringWithShadow(site, x + 10, y + 6, 0xFF949BA4);
+        int ty = y + 16;
+        if (e.title != null && !e.title.isEmpty()) {
+            ty = drawWrapped(e.title, x + 10, ty, textW, 2, 0xFFF2F3F5, true) + 3;
+        }
+        if (e.description != null && !e.description.isEmpty()) {
+            ty = drawWrapped(e.description, x + 10, ty, textW, 2, 0xFFB5BAC1, false);
+        }
+        if (e.fields != null && !e.fields.isEmpty()) {
+            ty += 3;
+            drawEmbedFields(e, x + 10, ty, textW);
+        }
+        if (e.imageUrl != null && !e.imageUrl.isEmpty()) {
+            drawEmbedThumb(e.imageUrl, x + maxWidth - thumb - 8, y + 8, thumb);
+        }
+    }
+
+    /** Renders Discord-style fields; consecutive inline fields share a row (2 columns). */
+    private void drawEmbedFields(Embed e, int x, int y, int textW) {
+        if (e.fields == null || e.fields.isEmpty()) return;
+        int i = 0;
+        while (i < e.fields.size()) {
+            Embed.EmbedField f = e.fields.get(i);
+            if (!f.inline) {
+                drawEmbedField(f, x, y, textW);
+                y += fieldHeight(f, textW) + 3;
+                i++;
+                continue;
+            }
+            Embed.EmbedField second = (i + 1 < e.fields.size() && e.fields.get(i + 1).inline) ? e.fields.get(i + 1) : null;
+            int w = second != null ? (textW - 8) / 2 : textW;
+            int h = fieldHeight(f, w);
+            drawEmbedField(f, x, y, w);
+            if (second != null) {
+                drawEmbedField(second, x + w + 8, y, textW - w - 8);
+                h = Math.max(h, fieldHeight(second, textW - w - 8));
+            }
+            y += h + 3;
+            i += second != null ? 2 : 1;
+        }
+    }
+
+    private void drawEmbedField(Embed.EmbedField f, int x, int y, int w) {
+        if (f.name != null && !f.name.isEmpty()) {
+            fontRendererObj.drawStringWithShadow(f.name, x, y, 0xFFF2F3F5);
+            y += fontRendererObj.FONT_HEIGHT + 2;
+        }
+        if (f.value != null && !f.value.isEmpty()) {
+            drawWrapped(f.value, x, y, w, 2, 0xFFB5BAC1, false);
+        }
+    }
+
+    /** Height of a single field block (name + up to 2 value lines). */
+    private int fieldHeight(Embed.EmbedField f, int w) {
+        int h = 0;
+        if (f.name != null && !f.name.isEmpty()) h += fontRendererObj.FONT_HEIGHT + 2;
+        if (f.value != null && !f.value.isEmpty()) h += wrappedLines(f.value, w, 2) * (fontRendererObj.FONT_HEIGHT + 2);
+        return h;
+    }
+
+    private int wrappedLines(String text, int maxWidth, int maxLines) {
+        String rest = text.trim();
+        int lines = 0;
+        while (lines < maxLines && !rest.isEmpty()) {
+            String fit = fontRendererObj.trimStringToWidth(rest, maxWidth);
+            rest = rest.substring(Math.min(fit.length(), rest.length())).trim();
+            lines++;
+        }
+        return lines;
+    }
+
+    /** Total measured height for an embed (fields can make rich embeds taller than the base box). */
+    private int embedHeight(Embed e, int maxWidth) {
+        if (e == null || "failed".equals(e.type)) return WEBSITE_EMBED_H;
+        if (e.loading) return WEBSITE_EMBED_H;
+        int thumb = 72;
+        int textW = maxWidth - thumb - 18;
+        int y = 16;
+        if (e.title != null && !e.title.isEmpty()) {
+            y += wrappedLines(e.title, textW, 2) * (fontRendererObj.FONT_HEIGHT + 2) + 3;
+        }
+        if (e.description != null && !e.description.isEmpty()) {
+            y += wrappedLines(e.description, textW, 2) * (fontRendererObj.FONT_HEIGHT + 2);
+        }
+        if (e.fields != null && !e.fields.isEmpty()) {
+            y += 3;
+            int i = 0;
+            while (i < e.fields.size()) {
+                Embed.EmbedField f = e.fields.get(i);
+                if (!f.inline) {
+                    y += fieldHeight(f, textW) + 3;
+                    i++;
+                    continue;
+                }
+                Embed.EmbedField second = (i + 1 < e.fields.size() && e.fields.get(i + 1).inline) ? e.fields.get(i + 1) : null;
+                int w = second != null ? (textW - 8) / 2 : textW;
+                int h = fieldHeight(f, w);
+                if (second != null) h = Math.max(h, fieldHeight(second, textW - w - 8));
+                y += h + 3;
+                i += second != null ? 2 : 1;
+            }
+        }
+        int minWithThumb = (e.imageUrl != null && !e.imageUrl.isEmpty()) ? 8 + thumb + 8 : WEBSITE_EMBED_H;
+        return Math.max(WEBSITE_EMBED_H, Math.max(minWithThumb, y + 8));
+    }
+
+    private int drawWrapped(String text, int x, int y, int maxWidth, int maxLines, int color, boolean bold) {
+        String rest = text.trim();
+        String prefix = bold ? "\u00A7l" : "";
+        for (int l = 0; l < maxLines && !rest.isEmpty(); l++) {
+            String fit = fontRendererObj.trimStringToWidth(rest, maxWidth);
+            if (l == maxLines - 1 && fit.length() < rest.length()) {
+                while (fit.length() > 1 && fontRendererObj.getStringWidth(prefix + fit + "...") > maxWidth) {
+                    fit = fit.substring(0, fit.length() - 1);
+                }
+                fit = fit + "...";
+            }
+            fontRendererObj.drawStringWithShadow(prefix + fit, x, y, color);
+            y += fontRendererObj.FONT_HEIGHT + 2;
+            rest = rest.substring(Math.min(fit.length(), rest.length())).trim();
+        }
+        return y;
+    }
+
+    private void drawEmbedThumb(String url, int x, int y, int size) {
+        GCImage img = getImage(url, false);
+        if (img == null || !img.isLoaded || img.width == 0 || img.height == 0) {
+            drawRect(x, y, x + size, y + size, 0xFF2B2D31);
+            return;
+        }
+        ResourceLocation tex = img.getTextureToRender(true);
+        if (tex == null) return;
+        float ratio = img.width / (float) img.height;
+        int h = size;
+        int w = Math.round(h * ratio);
+        if (w > size) {
+            w = size;
+            h = Math.round(w / ratio);
+        }
+        int ox = x + (size - w) / 2;
+        int oy = y + (size - h) / 2;
+        mc.getTextureManager().bindTexture(tex);
+        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManager.enableBlend();
+        drawScaledCustomSizeModalRect(ox, oy, 0, 0, img.width, img.height, w, h, img.width, img.height);
+        GlStateManager.disableBlend();
+    }
+
+    private static String hostOf(String url) {
+        if (url == null) return "";
+        int s = url.indexOf("://");
+        int start = s >= 0 ? s + 3 : 0;
+        int end = url.indexOf('/', start);
+        if (end < 0) end = url.length();
+        String host = url.substring(start, end);
+        return host.startsWith("www.") ? host.substring(4) : host;
     }
 
     // -------------------------------------------------------------- helpers

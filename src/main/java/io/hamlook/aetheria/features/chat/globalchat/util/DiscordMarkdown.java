@@ -33,6 +33,8 @@ public class DiscordMarkdown {
         public boolean bold, italic, underline, strikethrough, spoiler, code;
         public String imageUrl;      // non-null => render as an inline image (custom emoji) instead of text
         public String linkUrl;       // non-null => render as a clickable hyperlink [text](url)
+        public boolean plainLink;    // clickable link that still renders in the normal text style
+        public boolean bareLink;     // link created from a raw URL in the text (not a [text](url) token)
         public boolean spaceBefore;  // whether a single space should be drawn before this token
 
         public Span() {}
@@ -43,7 +45,7 @@ public class DiscordMarkdown {
             s.bold = bold; s.italic = italic; s.underline = underline;
             s.strikethrough = strikethrough; s.spoiler = spoiler; s.code = code;
             s.imageUrl = imageUrl; s.spaceBefore = spaceBefore;
-            s.linkUrl = linkUrl;
+            s.linkUrl = linkUrl; s.plainLink = plainLink; s.bareLink = bareLink;
             return s;
         }
     }
@@ -58,6 +60,8 @@ public class DiscordMarkdown {
 
     private static final Pattern EMOJI_PATTERN = Pattern.compile(":([a-zA-Z0-9_~]+):");
     private static final Pattern NUMBERED_PATTERN = Pattern.compile("^\\d{1,3}\\. ");
+    private static final Pattern URL_PATTERN = Pattern.compile("https?://[^\\s<>\"']+");
+    private static final String ESCAPABLE = "\\*_~>#`|:[]()";
     private static final int LIST_INDENT = 12;
 
     private DiscordMarkdown() {}
@@ -153,61 +157,122 @@ public class DiscordMarkdown {
         return text;
     }
 
+    /** Strips trailing punctuation Discord-style so "see https://x.com)." links to https://x.com. */
+    private static String trimUrlPunctuation(String url) {
+        int end = url.length();
+        while (end > 0 && ".,;:!?)'\"".indexOf(url.charAt(end - 1)) >= 0) end--;
+        return url.substring(0, end);
+    }
+
+    /** Display text for a bare URL: the file name for image links (or "image"), the URL otherwise. */
+    private static String linkLabel(String url) {
+        if (!isImageUrl(url)) return url;
+        String base = url;
+        int q = base.indexOf('?');
+        if (q >= 0) base = base.substring(0, q);
+        int hash = base.indexOf('#');
+        if (hash >= 0) base = base.substring(0, hash);
+        int slash = base.lastIndexOf('/');
+        if (slash >= 0 && slash < base.length() - 1) return base.substring(slash + 1);
+        return "image";
+    }
+
+    /** True if the URL points at a decodable image (by extension). */
+    public static boolean isImageUrl(String url) {
+        if (url == null) return false;
+        String base = url;
+        int q = base.indexOf('?');
+        if (q >= 0) base = base.substring(0, q);
+        int dot = base.lastIndexOf('.');
+        if (dot < 0 || dot >= base.length() - 1) return false;
+        switch (base.substring(dot + 1).toLowerCase()) {
+            case "png": case "jpg": case "jpeg": case "gif": case "webp": case "bmp":
+                return true;
+            default: return false;
+        }
+    }
+
     // ---------------------------------------------------------------- inline
 
     private static List<Span> parseInline(String text, Map<String, EmojiRef> emojis) {
-        List<String> emojiUrls = new ArrayList<>();
-        if (emojis != null && !emojis.isEmpty()) {
-            Matcher m = EMOJI_PATTERN.matcher(text);
-            StringBuffer sb = new StringBuffer();
-            while (m.find()) {
-                EmojiRef ref = emojis.get(m.group(1));
-                if (ref != null) {
-                    emojiUrls.add(ref.url);
-                    m.appendReplacement(sb, "\uE000");
-                } else {
-                    m.appendReplacement(sb, Matcher.quoteReplacement(m.group(0)));
-                }
-            }
-            m.appendTail(sb);
-            text = sb.toString();
-        }
-
         List<Span> spans = new ArrayList<>();
         StringBuilder buf = new StringBuilder();
         boolean bold = false, italic = false, underline = false, strike = false, spoiler = false, code = false;
-        int emojiIdx = 0;
         int i = 0, n = text.length();
+        Matcher urlMatcher = URL_PATTERN.matcher(text);
 
         while (i < n) {
             char c = text.charAt(i);
 
-            if (c == '\uE000') {
-                flush(buf, spans, bold, italic, underline, strike, spoiler, code);
-                Span img = new Span("");
-                img.imageUrl = emojiIdx < emojiUrls.size() ? emojiUrls.get(emojiIdx++) : null;
-                if (img.imageUrl != null) spans.add(img);
-                i++;
-                continue;
-            }
+            if (!code) {
+                if (c == '\\' && i + 1 < n && ESCAPABLE.indexOf(text.charAt(i + 1)) >= 0) {
+                    buf.append(text.charAt(i + 1));
+                    i += 2;
+                    continue;
+                }
 
-            if (c == '[' && !code) {
-                int closeBracket = text.indexOf(']', i + 1);
-                int openParen = closeBracket + 1;
-                if (closeBracket > i + 1 && openParen < n && text.charAt(openParen) == '(') {
-                    int closeParen = text.indexOf(')', openParen + 1);
-                    if (closeParen > openParen + 1) {
-                        flush(buf, spans, bold, italic, underline, strike, spoiler, code);
-                        Span link = new Span(text.substring(i + 1, closeBracket));
-                        link.linkUrl = text.substring(openParen + 1, closeParen);
-                        spans.add(link);
-                        i = closeParen + 1;
-                        continue;
+                if (c == ':' && emojis != null && !emojis.isEmpty()) {
+                    Matcher em = EMOJI_PATTERN.matcher(text);
+                    em.region(i, n);
+                    if (em.lookingAt()) {
+                        EmojiRef ref = emojis.get(em.group(1));
+                        if (ref != null) {
+                            flush(buf, spans, bold, italic, underline, strike, spoiler, code);
+                            Span img = new Span("");
+                            img.imageUrl = ref.url;
+                            spans.add(img);
+                            i = em.end();
+                            continue;
+                        }
                     }
                 }
-            }
 
-            if (!code) {
+                if (c == '[') {
+                    int closeBracket = text.indexOf(']', i + 1);
+                    int openParen = closeBracket + 1;
+                    if (closeBracket > i + 1 && openParen < n && text.charAt(openParen) == '(') {
+                        int closeParen = text.indexOf(')', openParen + 1);
+                        if (closeParen > openParen + 1) {
+                            flush(buf, spans, bold, italic, underline, strike, spoiler, code);
+                            Span link = new Span(text.substring(i + 1, closeBracket));
+                            link.linkUrl = text.substring(openParen + 1, closeParen);
+                            spans.add(link);
+                            i = closeParen + 1;
+                            continue;
+                        }
+                    }
+                }
+
+                urlMatcher.region(i, n);
+                if (urlMatcher.lookingAt()) {
+                    String raw = urlMatcher.group();
+                    boolean angleWrapped = i > 0 && text.charAt(i - 1) == '<'
+                            && i + raw.length() < n && text.charAt(i + raw.length()) == '>';
+                    boolean discordMessageLink = raw.startsWith("https://discord.com/channels/");
+                    if (discordMessageLink) {
+                        flush(buf, spans, bold, italic, underline, strike, spoiler, code);
+                        Span link = new Span(raw);
+                        link.linkUrl = raw;
+                        link.plainLink = true;
+                        link.bareLink = true;
+                        spans.add(link);
+                        i += raw.length();
+                        continue;
+                    }
+                    if (angleWrapped) {
+                        buf.append(raw);
+                        i += raw.length();
+                        continue;
+                    }
+                    String url = trimUrlPunctuation(raw);
+                    flush(buf, spans, bold, italic, underline, strike, spoiler, code);
+                    Span link = new Span(linkLabel(url));
+                    link.linkUrl = url;
+                    link.bareLink = true;
+                    spans.add(link);
+                    i += raw.length();
+                    continue;
+                }
                 if (c == '`') {
                     flush(buf, spans, bold, italic, underline, strike, spoiler, code);
                     code = true; i++; continue;

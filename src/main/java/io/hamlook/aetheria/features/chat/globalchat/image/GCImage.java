@@ -195,8 +195,8 @@ public class GCImage {
         HttpURLConnection connection = (HttpURLConnection) u.openConnection();
         connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
         connection.setRequestProperty("Accept", "text/html,application/xhtml+xml");
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(15000);
 
         StringBuilder html = new StringBuilder();
         try (InputStream is = new BufferedInputStream(connection.getInputStream())) {
@@ -262,8 +262,8 @@ public class GCImage {
         HttpURLConnection connection = (HttpURLConnection) imageUrl.openConnection();
         connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
         connection.setRequestProperty("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8");
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(15000);
 
         try (InputStream is = new BufferedInputStream(connection.getInputStream());
              ByteArrayOutputStream baos = new ByteArrayOutputStream()) {

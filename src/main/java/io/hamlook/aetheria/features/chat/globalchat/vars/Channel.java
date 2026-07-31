@@ -65,6 +65,11 @@ public class Channel {
                         && (line.message.discordID == null || line.message.discordID.isEmpty())) {
                     line.message.discordID = message.discordID;
                 }
+                if (!message.content.equals(line.message.content)) {
+                    line.message.content = message.content;
+                    line.message.contentVersion++;
+                    line.message.edited = true;
+                }
                 return;
             }
         }
