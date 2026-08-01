@@ -7,13 +7,21 @@ import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.features.chat.globalchat.ui.ChatUI;
 import io.hamlook.aetheria.features.chat.globalchat.vars.*;
 import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.repo.CapeAPI;
+import io.hamlook.aetheria.utils.ElectionUtils;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
+import net.minecraft.client.Minecraft;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RegisterCommand
 public class GChatCommand extends ASMCommand {
@@ -35,30 +43,39 @@ public class GChatCommand extends ASMCommand {
 
     @Override
     public void execute(ICommandSender sender, String[] args) throws CommandException {
-        ATHRConfig.screenToOpen = new ChatUI();
+        if(!NetworkGuard.apiAllowed()){
+            ChatUtils.sendMessage("§cYou cannot use Global Chat without API Access, Enable API Access in Config First.");
+            return;
+        }
+        ChatUtils.sendMessage("§7Checking Global Chat access...");
+        CompletableFuture.runAsync(() -> {
+            int status = checkAccess();
+            Minecraft.getMinecraft().addScheduledTask(() -> {
+                if (status == 403) {
+                    ChatUtils.sendMessage("§cYou are banned from Global Chat.");
+                } else {
+                    GlobalChat.refreshChannels(false);
+                    ATHRConfig.screenToOpen = new ChatUI();
+                }
+            });
+        });
     }
 
-    private void sendTestMessageToAPI() {
-        IEmoji emoji = GlobalChat.usableEmojis.get("shocked");
-        ChatMessage message = new ChatMessage("test " + emoji.shortcode,"1531297414764433539",null);
-        message.addAttachments(
-                Collections.singletonList(
-                        new Attachment(
-                                "image",
-                                ImageManager.images.get(GCImage.createGCImage("https://cdn.discordapp.com/attachments/1491451721606762616/1532146885073178644/image.png?ex=6a6c733b&is=6a6b21bb&hm=925ffaff0c49d1670bde3dd7b20ed9c81b85dbeb54481ca1474e56819188be36&"))
-                        )
-                )
-        );
-        HashMap<String, EmojiRef> emojiRefHashMap = new HashMap<>();
-        EmojiRef ref = emoji.toEmoji();
-        emojiRefHashMap.put(ref.name,ref);
-        message.addEmojiRefs(emojiRefHashMap);
-        GlobalChat.sendMessage(message);
-        ChatMessage message1 = new ChatMessage("","1531297414764433539",null);
-        HashMap<String, Sticker> stickers = new HashMap<>();
-        Sticker sticker = new Sticker("859649755562508289","nono");
-        stickers.put(sticker.id,sticker);
-        message1.addStickers(stickers);
-        GlobalChat.sendMessage(message1);
+    /** Server-side access check. The server is the source of truth; this is only a cosmetic pre-check. */
+    private int checkAccess() {
+        try {
+            URL url = new URL(CapeAPI.getAPIUrl("chat-access"));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("User-Agent", "Aetheria/" + io.hamlook.aetheria.Aetheria.VERSION);
+            connection.setRequestProperty("username", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
+            connection.setReadTimeout(10000);
+            connection.setConnectTimeout(10000);
+            int code = connection.getResponseCode();
+            ElectionUtils.readResponse(connection);
+            return code;
+        } catch (Exception e) {
+            return -1;
+        }
     }
 }

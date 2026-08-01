@@ -7,6 +7,15 @@ import lombok.AllArgsConstructor;
 public class Attachment {
 
     public String name,url,proxyURL,imageType;
+    /** File size in bytes as reported by Discord (0 = unknown). */
+    public long size;
+
+    public Attachment(String name, String url, String proxyURL, String imageType) {
+        this.name = name;
+        this.url = url;
+        this.proxyURL = proxyURL;
+        this.imageType = imageType;
+    }
     public Attachment(String name, GCImage image){
         this.name = name;
         this.url = image.url;

@@ -8,6 +8,7 @@ import io.hamlook.aetheria.repo.CapeAPI;
 import net.minecraft.client.Minecraft;
 import org.java_websocket.handshake.ServerHandshake;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
     public static boolean isConnected = false;
+    private static boolean connecting = false;
     private final Map<String, CompletableFuture<String>> pendingRequests = new ConcurrentHashMap<>();
 
     public WebSocketClient() {
@@ -25,8 +27,20 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
     }
 
     @Override
+    public void connect() {
+        try {
+            super.connect();
+            connecting = true;
+        } catch (Exception e) {
+            connecting = false;
+            throw e;
+        }
+    }
+
+    @Override
     public void onOpen(ServerHandshake handshakedata) {
         isConnected = true;
+        connecting = false;
     }
 
     @Override
@@ -47,16 +61,52 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
     public void onClose(int code, String reason, boolean remote) {
         DianaPartyConnector.processClose(code);
         isConnected = false;
+        connecting = false;
+        IOException closed = new IOException("Websocket closed (" + code + ")");
+        for (CompletableFuture<String> future : pendingRequests.values()) {
+            future.completeExceptionally(closed);
+        }
+        pendingRequests.clear();
     }
 
     public CompletableFuture<String> sendAndRecieve(String message) {
+        if (!isConnected || !isOpen()) {
+            Aetheria.logger.warning("[Websocket] Not connected, dropping send.");
+            return null;
+        }
         String id = UUID.randomUUID().toString();
         CompletableFuture<String> future = new CompletableFuture<>();
         pendingRequests.put(id, future);
-        String formattedMessage = attachIdToJson(message, id);
-        send(formattedMessage);
+        try {
+            String formattedMessage = attachIdToJson(message, id);
+            send(formattedMessage);
+        } catch (Exception e) {
+            pendingRequests.remove(id);
+            Aetheria.logger.warning("[Websocket] Send failed: " + e.getMessage());
+            return null;
+        }
 
         return future;
+    }
+
+    /** Recreates and reconnects the socket if it is closed or never connected. Safe to call repeatedly. */
+    public static void reconnectIfNeeded() {
+        try {
+            if (Aetheria.webSocketClient != null && (WebSocketClient.isConnected || connecting)) {
+                return;
+            }
+            if (Aetheria.webSocketClient != null) {
+                try {
+                    Aetheria.webSocketClient.close(1012, "Reconnecting");
+                } catch (Exception ignored) {
+                }
+            }
+            Aetheria.webSocketClient = new WebSocketClient();
+            Aetheria.logger.info("[Websocket] Reconnecting to Global Chat API");
+            Aetheria.webSocketClient.connect();
+        } catch (Exception e) {
+            Aetheria.logger.warning("[Websocket] Reconnect failed: " + e.getMessage());
+        }
     }
 
     private String attachIdToJson(String message, String id) {
@@ -76,5 +126,6 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
     @Override
     public void onError(Exception ex) {
         DianaPartyConnector.processError(ex);
+        connecting = false;
     }
 }

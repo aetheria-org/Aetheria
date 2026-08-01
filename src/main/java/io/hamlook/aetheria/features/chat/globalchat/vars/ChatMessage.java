@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 public class ChatMessage {
 
     public String messageID,discordID;
-    public String channelId,author,replyingMessage,avatar;
+    public String channelId,author,authorDisplay,replyingMessage,avatar;
     public String content;
     /** "discord" or "minecraft" — which client sent this message. */
     public String client;
@@ -29,6 +29,13 @@ public class ChatMessage {
     /** Bumped whenever this message's content changes; layout caches key off it. */
     public transient int contentVersion;
 
+    /** Timestamp render caches (transient — never serialized to the server). */
+    public transient long tsDayNum = Long.MIN_VALUE;
+    public transient long tsHeaderKey = Long.MIN_VALUE;
+    public transient String tsHeaderText;
+    public transient String tsTimeText;
+    public transient String tsDateText;
+
     public ChatMessage(String content,String channelID,ChatMessage repliedMessage) {
         this.content = content;
         this.channelId = channelID;
@@ -36,6 +43,8 @@ public class ChatMessage {
         this.replyingMessage = replying ? repliedMessage.discordID : null;
         this.discordID = null;
         this.author = Minecraft.getMinecraft().getSession().getUsername();
+        // Display name keeps the original capitalization (the server lowercases "author" for identity).
+        this.authorDisplay = this.author;
         this.client = "minecraft";
         this.avatar = CapeAPI.getAPIUrl("avatar") + "/" + author + ".png";
         this.messageID = author + "-" + System.nanoTime() + "-" + channelID;
@@ -50,7 +59,7 @@ public class ChatMessage {
         return this;
     }
 
-    private static final Pattern EMOJI_TOKEN = Pattern.compile(":([a-zA-Z0-9_~]+):");
+    private static final Pattern EMOJI_TOKEN = Pattern.compile(":([a-zA-Z0-9_~+-]+):");
 
     /** Scans the raw text for ":shortcode:" tokens and maps them to emoji refs, skipping escaped, fenced-code and inline-code tokens. */
     public void populateEmojiRefs(String rawText) {
@@ -90,8 +99,8 @@ public class ChatMessage {
         return this;
     }
 
-    public void sendMessage() {
-        GlobalChat.sendMessage(this);
+    public boolean sendMessage() {
+        return GlobalChat.sendMessage(this);
     }
 
     public List<ChatLine> getLines() {

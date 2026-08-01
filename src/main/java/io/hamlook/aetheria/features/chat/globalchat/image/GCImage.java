@@ -7,6 +7,7 @@ import io.hamlook.aetheria.Aetheria;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.opengl.GL11;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -30,7 +31,15 @@ import java.util.regex.Pattern;
 
 public class GCImage {
 
-    public static final int MAX_DIMENSION = 200;
+    /**
+     * Static images are decoded at their true/full resolution so the chat can
+     * always draw a quality 1:1 downscale (bilinear). Cap is only a safety net
+     * against absurd dimensions / out-of-memory.
+     */
+    public static final int MAX_STATIC_DIMENSION = 4096;
+
+    /** Animated images are capped much lower so frame memory stays sane. */
+    public static final int MAX_ANIMATED_DIMENSION = 1024;
 
     public List<BufferedImage> images;
     public List<ResourceLocation> frames = new ArrayList<>();
@@ -238,6 +247,9 @@ public class GCImage {
                 DynamicTexture dynamicTexture = new DynamicTexture(bimg);
                 ResourceLocation resLoc = Minecraft.getMinecraft().getTextureManager()
                         .getDynamicTextureLocation("gcimage_" + gcImage.id + "_" + i, dynamicTexture);
+                Minecraft.getMinecraft().getTextureManager().bindTexture(resLoc);
+                GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+                GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
                 gcImage.frames.add(resLoc);
             }
             gcImage.images.clear();
@@ -294,8 +306,8 @@ public class GCImage {
                 int cw = animated.getCanvasWidth();
                 int ch = animated.getCanvasHeight();
                 float capScale = 1f;
-                if (Math.max(cw, ch) > MAX_DIMENSION) {
-                    capScale = MAX_DIMENSION / (float) Math.max(cw, ch);
+                if (Math.max(cw, ch) > MAX_ANIMATED_DIMENSION) {
+                    capScale = MAX_ANIMATED_DIMENSION / (float) Math.max(cw, ch);
                     cw = Math.round(cw * capScale);
                     ch = Math.round(ch * capScale);
                 }
@@ -309,7 +321,7 @@ public class GCImage {
                 int validFrames = 0;
                 for (int i = 0; i < webpFrames.size(); i++) {
                     BufferedImage rawFrame = webpFrames.get(i).getImage();
-                    gcImage.images.add(capScale < 1f ? scaleDown(rawFrame, MAX_DIMENSION) : rawFrame);
+                    gcImage.images.add(capScale < 1f ? scaleDown(rawFrame, MAX_ANIMATED_DIMENSION) : rawFrame);
                     if (delays != null && i < delays.length && delays[i] > 0) {
                         totalDelay += delays[i];
                         validFrames++;
@@ -323,8 +335,8 @@ public class GCImage {
 
         try {
             BufferedImage image = WebPCodec.decodeImage(rawBytes);
-            if (Math.max(image.getWidth(), image.getHeight()) > MAX_DIMENSION) {
-                image = scaleDown(image, MAX_DIMENSION);
+            if (Math.max(image.getWidth(), image.getHeight()) > MAX_STATIC_DIMENSION) {
+                image = scaleDown(image, MAX_STATIC_DIMENSION);
             }
             gcImage.images.add(image);
             gcImage.frameDelay = -1;
@@ -386,8 +398,8 @@ public class GCImage {
                 int canvasWidth = reader.getWidth(0);
                 int canvasHeight = reader.getHeight(0);
                 float capScale = 1f;
-                if (Math.max(canvasWidth, canvasHeight) > MAX_DIMENSION) {
-                    capScale = MAX_DIMENSION / (float) Math.max(canvasWidth, canvasHeight);
+                if (Math.max(canvasWidth, canvasHeight) > MAX_ANIMATED_DIMENSION) {
+                    capScale = MAX_ANIMATED_DIMENSION / (float) Math.max(canvasWidth, canvasHeight);
                     canvasWidth = Math.round(canvasWidth * capScale);
                     canvasHeight = Math.round(canvasHeight * capScale);
                 }
@@ -396,6 +408,9 @@ public class GCImage {
 
                 BufferedImage canvas = new BufferedImage(canvasWidth, canvasHeight, BufferedImage.TYPE_INT_ARGB);
                 java.awt.Graphics2D g = canvas.createGraphics();
+                if (capScale < 1f) {
+                    g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                }
 
                 int totalDelay = 0;
                 int validFrames = 0;
@@ -436,8 +451,8 @@ public class GCImage {
             } else {
                 BufferedImage image = reader.read(0);
                 if (image != null) {
-                    if (Math.max(image.getWidth(), image.getHeight()) > MAX_DIMENSION) {
-                        image = scaleDown(image, MAX_DIMENSION);
+                    if (Math.max(image.getWidth(), image.getHeight()) > MAX_STATIC_DIMENSION) {
+                        image = scaleDown(image, MAX_STATIC_DIMENSION);
                     }
                     gcImage.images.add(image);
                     gcImage.frameDelay = -1;

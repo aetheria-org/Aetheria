@@ -5,6 +5,7 @@ import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.features.chat.globalchat.util.DiscordMarkdown;
 import io.hamlook.aetheria.features.chat.globalchat.vars.IEmoji;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
@@ -46,8 +47,10 @@ public class ChatInputField extends Gui {
     private int manualScroll = 0;
     private List<String> lines = new ArrayList<>();
     private List<Integer> lineStarts = new ArrayList<>();
+    /** Set on any text mutation so relayout() only recomputes when the content actually changed. */
+    private boolean layoutDirty = true;
 
-    private static final Pattern EMOJI_TOKEN = Pattern.compile(":([a-zA-Z0-9_~]+):");
+    private static final Pattern EMOJI_TOKEN = Pattern.compile(":([a-zA-Z0-9_~+-]+):");
     private final Map<String, String> emojiImageCache = new HashMap<>();
 
     public ChatInputField(int x, int y, int width, int height) {
@@ -70,6 +73,7 @@ public class ChatInputField extends Gui {
         text.append(t);
         caret = text.length();
         anchor = -1;
+        layoutDirty = true;
         ensureCaretVisible();
     }
 
@@ -114,6 +118,7 @@ public class ChatInputField extends Gui {
         text.replace(s, e, rep);
         caret = s + rep.length();
         anchor = -1;
+        layoutDirty = true;
         ensureCaretVisible();
     }
 
@@ -153,6 +158,7 @@ public class ChatInputField extends Gui {
                     int p = ctrl ? prevWord(caret) : caret - 1;
                     text.delete(p, caret);
                     caret = p;
+                    layoutDirty = true;
                     ensureCaretVisible();
                 }
                 return true;
@@ -162,6 +168,7 @@ public class ChatInputField extends Gui {
                 } else if (caret < text.length()) {
                     int p = ctrl ? nextWord(caret) : caret + 1;
                     text.delete(caret, p);
+                    layoutDirty = true;
                     ensureCaretVisible();
                 }
                 return true;
@@ -297,6 +304,8 @@ public class ChatInputField extends Gui {
     // ------------------------------------------------------------ helpers
 
     private void relayout() {
+        if (!layoutDirty) return;
+        layoutDirty = false;
         lines.clear();
         lineStarts.clear();
         int w = Math.max(20, width - PAD_X * 2);
@@ -353,14 +362,23 @@ public class ChatInputField extends Gui {
         int ls = lineStarts.get(lineIdx);
         int relX = mouseX - (x + PAD_X);
         if (relX <= 0) return ls;
-        int best = line.length();
-        for (int ci = 1; ci <= line.length(); ci++) {
-            if (emojiWidth(line.substring(0, ci), ls) >= relX) {
-                best = ci;
-                break;
+        int charIdx = 0;
+        int w = 0;
+        for (Object[] seg : scanSegments(line, ls)) {
+            if ("E".equals(seg[0])) {
+                w += DiscordMarkdown.EMOJI_SIZE;
+                if (w >= relX) return ls + charIdx + ((String) seg[1]).length() + 2;
+                charIdx += ((String) seg[1]).length() + 2;
+            } else {
+                String t = (String) seg[1];
+                for (int k = 0; k < t.length(); k++) {
+                    w += fr.getStringWidth(String.valueOf(t.charAt(k)));
+                    charIdx++;
+                    if (w >= relX) return ls + charIdx;
+                }
             }
         }
-        return ls + best;
+        return ls + charIdx;
     }
 
     private void moveVertical(int dir, boolean shift) {
@@ -411,7 +429,7 @@ public class ChatInputField extends Gui {
     // ------------------------------------------------------------- emojis
 
     private static boolean isEmojiChar(char c) {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '~';
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '~' || c == '+' || c == '-';
     }
 
     private boolean isEmoji(String name) {
@@ -486,7 +504,7 @@ public class ChatInputField extends Gui {
             if (m.start() > last) {
                 segs.add(new Object[]{"T", line.substring(last, m.start())});
             }
-            segs.add(new Object[]{"E", emojiUrl(m.group(1))});
+            segs.add(new Object[]{"E", m.group(1), emojiUrl(m.group(1))});
             last = m.end();
         }
         if (last < line.length()) segs.add(new Object[]{"T", line.substring(last)});
@@ -527,7 +545,7 @@ public class ChatInputField extends Gui {
     private void drawLineWithEmoji(String line, int x, int y, int absStart) {
         for (Object[] seg : scanSegments(line, absStart)) {
             if ("E".equals(seg[0])) {
-                drawInlineEmoji((String) seg[1], x, y - 3);
+                drawInlineEmoji((String) seg[2], (String) seg[1], x, y - 3);
                 x += DiscordMarkdown.EMOJI_SIZE;
             } else {
                 String text = (String) seg[1];
@@ -537,8 +555,9 @@ public class ChatInputField extends Gui {
         }
     }
 
-    private void drawInlineEmoji(String url, int x, int y) {
+    private void drawInlineEmoji(String url, String name, int x, int y) {
         if (url == null || url.isEmpty()) return;
+        if (name != null && RenderUtils.drawEmoji(name, x, y, DiscordMarkdown.EMOJI_SIZE)) return;
         String id = emojiImageCache.get(url);
         if (id == null) {
             id = GCImage.createGCImage(url, false);

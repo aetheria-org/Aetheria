@@ -151,7 +151,7 @@ public class DianaPartyConnector {
         }
         if(!isDiana && !isRitual) return;
         if(!NetworkGuard.apiAllowed()) return;
-        Aetheria.logger.info("[D-Party] Trying to connect to Diana Party API");
+        Aetheria.logger.info("[D-Party] Trying to connect to Websocket API");
         Aetheria.webSocketClient.connect();
     }
 

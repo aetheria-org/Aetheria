@@ -9,12 +9,16 @@ import java.util.List;
  */
 public class Embed {
 
-    /** "image", "website", "rich" or "failed" (no preview available). */
+    /** "image", "website", "rich", "file", "video" or "failed" (no preview available). */
     public String type;
     /** The original link this embed belongs to. */
     public String url;
-    /** Display name for image embeds (file name or "image"). */
+    /** Display name for image/file embeds (file name or "image"). */
     public String name;
+    /** Upper-case file extension for "file"/"video" embeds (e.g. "PNG", "MP4"). */
+    public String fileType;
+    /** File size in bytes for "file"/"video" embeds (0 = unknown). */
+    public long fileSize;
     /** Site / provider name (og:site_name). */
     public String siteName;
     public String title;

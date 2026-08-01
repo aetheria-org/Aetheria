@@ -32,6 +32,7 @@ public class DiscordMarkdown {
         public String text = "";
         public boolean bold, italic, underline, strikethrough, spoiler, code;
         public String imageUrl;      // non-null => render as an inline image (custom emoji) instead of text
+        public String emojiName;     // shortcode (no colons) of the emoji, for spritesheet rendering; null for other images
         public String linkUrl;       // non-null => render as a clickable hyperlink [text](url)
         public boolean plainLink;    // clickable link that still renders in the normal text style
         public boolean bareLink;     // link created from a raw URL in the text (not a [text](url) token)
@@ -45,6 +46,7 @@ public class DiscordMarkdown {
             s.bold = bold; s.italic = italic; s.underline = underline;
             s.strikethrough = strikethrough; s.spoiler = spoiler; s.code = code;
             s.imageUrl = imageUrl; s.spaceBefore = spaceBefore;
+            s.emojiName = emojiName;
             s.linkUrl = linkUrl; s.plainLink = plainLink; s.bareLink = bareLink;
             return s;
         }
@@ -58,7 +60,7 @@ public class DiscordMarkdown {
         public RenderLine(LineType type) { this.type = type; }
     }
 
-    private static final Pattern EMOJI_PATTERN = Pattern.compile(":([a-zA-Z0-9_~]+):");
+    private static final Pattern EMOJI_PATTERN = Pattern.compile(":([a-zA-Z0-9_~+-]+):");
     private static final Pattern NUMBERED_PATTERN = Pattern.compile("^\\d{1,3}\\. ");
     private static final Pattern URL_PATTERN = Pattern.compile("https?://[^\\s<>\"']+");
     private static final String ESCAPABLE = "\\*_~>#`|:[]()";
@@ -177,19 +179,51 @@ public class DiscordMarkdown {
         return "image";
     }
 
-    /** True if the URL points at a decodable image (by extension). */
-    public static boolean isImageUrl(String url) {
-        if (url == null) return false;
+    /** Lowercased file extension of a URL (query/hash stripped), or null if it has no extension. */
+    public static String extensionOf(String url) {
+        if (url == null) return null;
         String base = url;
         int q = base.indexOf('?');
         if (q >= 0) base = base.substring(0, q);
+        int hash = base.indexOf('#');
+        if (hash >= 0) base = base.substring(0, hash);
         int dot = base.lastIndexOf('.');
-        if (dot < 0 || dot >= base.length() - 1) return false;
-        switch (base.substring(dot + 1).toLowerCase()) {
+        if (dot < 0 || dot >= base.length() - 1) return null;
+        String ext = base.substring(dot + 1).toLowerCase();
+        if (ext.length() > 5) return null;
+        for (int i = 0; i < ext.length(); i++) {
+            char c = ext.charAt(i);
+            if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))) return null;
+        }
+        return ext;
+    }
+
+    /** True if the URL points at a decodable image (by extension). */
+    public static boolean isImageUrl(String url) {
+        String ext = extensionOf(url);
+        if (ext == null) return false;
+        switch (ext) {
             case "png": case "jpg": case "jpeg": case "gif": case "webp": case "bmp":
                 return true;
             default: return false;
         }
+    }
+
+    /** True if the URL points at a playable video file (by extension). */
+    public static boolean isVideoUrl(String url) {
+        String ext = extensionOf(url);
+        if (ext == null) return false;
+        switch (ext) {
+            case "mp4": case "webm": case "mkv": case "mov": case "avi":
+            case "m4v": case "wmv": case "flv": case "ts":
+                return true;
+            default: return false;
+        }
+    }
+
+    /** True if the URL points at an image, animated image or video (the only media types the client renders/downloads). */
+    public static boolean isMediaUrl(String url) {
+        return isImageUrl(url) || isVideoUrl(url);
     }
 
     // ---------------------------------------------------------------- inline
@@ -220,6 +254,7 @@ public class DiscordMarkdown {
                             flush(buf, spans, bold, italic, underline, strike, spoiler, code);
                             Span img = new Span("");
                             img.imageUrl = ref.url;
+                            img.emojiName = em.group(1);
                             spans.add(img);
                             i = em.end();
                             continue;

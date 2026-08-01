@@ -373,7 +373,6 @@ public final class RenderUtils {
             GlStateManager.popMatrix();
             return true;
         }
-        Aetheria.logger.info("[EMOJI] Emoji is NULL");
         return false;
     }
 
