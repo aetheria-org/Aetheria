@@ -73,7 +73,7 @@ public class SkyblockXpInChat {
             Misc.SbProfileData fresh = new Misc.SbProfileData();
             fresh.lastSbLevel = pendingLevel;
             fresh.lastSbXp = pendingXp;
-            ATHRConfig.feature.misc.sbProfileData.put(profile, fresh);
+            ATHRConfig.feature.misc.sbProfileData.put(SkyblockData.getEnvironmentKey() + ":" + profile, fresh);
             ATHRConfig.saveConfig();
             pendingLevel = -1;
             pendingXp = -1;
@@ -84,7 +84,7 @@ public class SkyblockXpInChat {
         pendingXp = -1;
         pendingTime = 0L;
 
-        Misc.SbProfileData data = ATHRConfig.feature.misc.sbProfileData.computeIfAbsent(profile, k -> new Misc.SbProfileData());
+        Misc.SbProfileData data = ATHRConfig.feature.misc.sbProfileData.computeIfAbsent(SkyblockData.getEnvironmentKey() + ":" + profile, k -> new Misc.SbProfileData());
 
         if (data.lastSbLevel == -1 || data.lastSbXp == -1) {
             data.lastSbLevel = level;

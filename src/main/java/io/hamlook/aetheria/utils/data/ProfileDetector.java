@@ -1,12 +1,6 @@
 package io.hamlook.aetheria.utils.data;
 
-import io.hamlook.aetheria.features.diana.DianaStats;
-import io.hamlook.aetheria.features.fishing.trophy.TrophyFishStorage;
-import io.hamlook.aetheria.features.mining.powder.PowderStats;
-import io.hamlook.aetheria.features.mining.pristine.PristineStats;
-import io.hamlook.aetheria.features.misc.ghosttracker.GhostStats;
-import io.hamlook.aetheria.features.misc.pet.CurrentPetTracker;
-import io.hamlook.aetheria.features.misc.pet.PetCache;
+import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
@@ -15,6 +9,23 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @RegisterEvents
 public class ProfileDetector {
+
+    public static void saveAllProfileData() {
+        StorageManager.saveAllProfileData();
+        StorageData.saveContainers();
+    }
+
+    public static void loadAllProfileData() {
+        StorageManager.loadAllProfileData();
+        StorageData.loadContainers();
+    }
+
+    public static void onEnvironmentChanged(SkyblockData.Environment oldEnvironment, SkyblockData.Environment newEnvironment) {
+        if (SkyblockData.getCurrentProfile().isEmpty()) return;
+        saveAllProfileData();
+        SkyblockData.setEnvironment(newEnvironment);
+        loadAllProfileData();
+    }
 
     @SubscribeEvent
     public void onChat(ClientChatReceivedEvent event) {
@@ -27,27 +38,13 @@ public class ProfileDetector {
             String oldProfile = SkyblockData.getCurrentProfile();
 
             if (!oldProfile.isEmpty()) {
-                CurrentPetTracker.getInstance().save();
-                PetCache.getInstance().save();
-                TrophyFishStorage.getInstance().save();
-                PowderStats.getInstance().save();
-                PristineStats.getInstance().save();
-                GhostStats.getInstance().save();
-                DianaStats.getInstance().save();
-                StorageData.saveContainers();
+                saveAllProfileData();
             }
 
             SkyblockData.setCurrentProfile(newProfile);
 
-            CurrentPetTracker.getInstance().load();
-            PetCache.getInstance().load();
-            TrophyFishStorage.getInstance().load();
-            PowderStats.getInstance().load();
-            PristineStats.getInstance().load();
-            GhostStats.getInstance().load();
-            DianaStats.getInstance().load();
             StorageData.containers.clear();
-            StorageData.loadContainers();
+            loadAllProfileData();
         }
     }
 }

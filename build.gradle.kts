@@ -159,7 +159,7 @@ tasks.shadowJar {
     relocate("org.java_websocket")
     relocate("org.slf4j")
     relocate("com.tianscar.imageio")
-    relocate("org.fife.ui.rsyntaxtextarea")
+    relocate("org.fife")
 }
 
 tasks.assemble.get().dependsOn(tasks.remapJar)

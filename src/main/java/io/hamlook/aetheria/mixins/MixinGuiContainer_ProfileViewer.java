@@ -4,6 +4,7 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -28,7 +29,7 @@ public class MixinGuiContainer_ProfileViewer extends GuiScreen {
     private static final String ITEM_TITLE = "View player profile";
 
     @Unique
-    public GuiButton justEnoughfakepixel$button;
+    public GuiButton aetheria$button;
     @Shadow
     public int guiLeft;
 
@@ -46,14 +47,15 @@ public class MixinGuiContainer_ProfileViewer extends GuiScreen {
         ContainerChest chest = ContainerUtils.getOpenChest((GuiScreen)(Object) this);
         if (chest != null) {
             Aetheria.logger.info(chest.getLowerChestInventory().getName());
-            if (chest.getLowerChestInventory().getName().equals("View Profile")) {
-                this.justEnoughfakepixel$button = new GuiButton(1000,
+            if (chest.getLowerChestInventory().getName().equals("View Profile")
+                    && !SkyblockData.getEnvironment().isTest()) {
+                this.aetheria$button = new GuiButton(1000,
                         this.guiLeft - 200,
                         this.guiTop,
                         80,20,
                         "Parse Profile");
 
-                this.buttonList.add(justEnoughfakepixel$button);
+                this.buttonList.add(aetheria$button);
             }
         }
     }
@@ -61,9 +63,9 @@ public class MixinGuiContainer_ProfileViewer extends GuiScreen {
 
     @Inject(method = "mouseReleased",at = @At("HEAD"))
     public void mouseReleased(int mouseX, int mouseY, int state, CallbackInfo ci) {
-        if(justEnoughfakepixel$button == null) return;
-        if(mouseX > justEnoughfakepixel$button.xPosition && mouseX < justEnoughfakepixel$button.xPosition + justEnoughfakepixel$button.width
-                && mouseY > justEnoughfakepixel$button.yPosition && mouseY < justEnoughfakepixel$button.yPosition + justEnoughfakepixel$button.height) {
+        if(aetheria$button == null) return;
+        if(mouseX > aetheria$button.xPosition && mouseX < aetheria$button.xPosition + aetheria$button.width
+                && mouseY > aetheria$button.yPosition && mouseY < aetheria$button.yPosition + aetheria$button.height) {
             ProfileParser.parse("Diyansh",this.inventorySlots);
         }
     }

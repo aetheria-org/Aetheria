@@ -8,6 +8,7 @@ import io.hamlook.aetheria.features.misc.itemlog.ItemPickupLog;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -47,6 +48,7 @@ public class RareDropTracker {
 
         RareDropTrackerConfig config = ATHRConfig.feature.qol.rareDropTracker;
         if (!config.enabled) return;
+        if (!SkyblockData.isOnSkyblock()) return;
 
         String id = internalId.toLowerCase();
         RareDropTrackerConfig.TrackedItem tracked = config.trackedItems.get(id);

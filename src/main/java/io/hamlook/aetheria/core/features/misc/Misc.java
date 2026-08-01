@@ -71,9 +71,14 @@ public class Misc {
     public boolean disableEntityFire = true;
 
     @Expose
+    @ConfigOption(name = "Player Size Only in Skyblock", desc = "Only apply player size scaling while on Skyblock")
+    @ConfigEditorBoolean
+    public boolean playerSizeOnlyInSkyblock = true;
+
+    @Expose
     @ConfigOption(name = "SkyBlock XP in Chat", desc = "Sends SkyBlock XP gains from the action bar into chat")
     @ConfigEditorBoolean
-    public boolean skyblockXpInChat = false;
+    public boolean skyblockXpInChat = true;
 
     @Expose
     public Map<String, SbProfileData> sbProfileData = new HashMap<>();

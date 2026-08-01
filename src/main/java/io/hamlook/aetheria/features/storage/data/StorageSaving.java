@@ -7,6 +7,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.data.DataPaths;
 import io.hamlook.aetheria.features.storage.utils.SContainer;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
@@ -24,10 +25,17 @@ public class StorageSaving {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private static File getStorageFolder() {
-        String username = Minecraft.getMinecraft().getSession().getUsername();
         String profile = SkyblockData.getCurrentProfile();
         if (profile.isEmpty()) profile = "_unknown";
-        return new File(ATHRConfig.configDirectory, "profiles/" + profile + "/storage/" + username);
+        File folder = DataPaths.storageDir(ATHRConfig.configDirectory, SkyblockData.getEnvironmentKey(), profile);
+        if (!folder.exists()) {
+            String username = Minecraft.getMinecraft().getSession().getUsername();
+            DataPaths.migrate(
+                    DataPaths.storageDir(ATHRConfig.configDirectory, "normal", profile),
+                    new File(ATHRConfig.configDirectory, "profiles/" + profile + "/storage/" + username),
+                    new File(ATHRConfig.configDirectory, "storage/" + username));
+        }
+        return folder;
     }
 
     public static LinkedHashMap<String, SContainer> loadStorageData() {
@@ -44,20 +52,8 @@ public class StorageSaving {
         });
         File folder = getStorageFolder();
         if (!folder.exists()) {
-            String username = Minecraft.getMinecraft().getSession().getUsername();
-            File oldFolder = new File(ATHRConfig.configDirectory, "storage/" + username);
-            if (oldFolder.exists()) {
-                folder.mkdirs();
-                File[] oldFiles = oldFolder.listFiles();
-                if (oldFiles != null) {
-                    for (File f : oldFiles) {
-                        if (f.isFile()) f.renameTo(new File(folder, f.getName()));
-                    }
-                }
-            } else {
-                folder.mkdirs();
-                return new LinkedHashMap<>();
-            }
+            folder.mkdirs();
+            return new LinkedHashMap<>();
         }
 
         File[] files = folder.listFiles();
