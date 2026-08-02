@@ -27,7 +27,7 @@ public class EmojiConfig {
     @Expose
     @ConfigOption(name = "Suggestion Bar BG", desc = "Choose which color the suggestion bar's background uses")
     @ConfigAnnotations.ConfigEditorColour
-    public String suggestionBarBG = "0:120:255:255:255";
+    public String suggestionBarBG = "0:120:8:8:8";
 
     @Expose
     @ConfigOption(name = "Bar Border", desc = "Add a border to the suggestion list")
@@ -37,5 +37,15 @@ public class EmojiConfig {
     @Expose
     @ConfigOption(name = "Suggestion Bar Border", desc = "Choose which color the suggestion bar's border uses")
     @ConfigAnnotations.ConfigEditorColour
-    public String suggestionBarBorder = "0:255:255:255:255";
+    public String suggestionBarBorder = "255:255:175:66:123";
+
+    @Expose
+    @ConfigOption(name = "Row Highlight Color", desc = "Choose which color highlights the hovered row in the suggestion bar")
+    @ConfigAnnotations.ConfigEditorColour
+    public String rowHighlightColor = "239:64:255:215:0";
+
+    @Expose
+    @ConfigOption(name = "Suggestion Bar Scale", desc = "Scale of the suggestion popup")
+    @ConfigAnnotations.ConfigEditorSliderAnnotation(minValue = 0.5f, maxValue = 2.0f, minStep = 0.1f)
+    public float suggestionBarScale = 1f;
 }

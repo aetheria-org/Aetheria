@@ -4,64 +4,59 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.emoji.EmojiSuggestionBar;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.GuiTextField;
-import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Drives the emoji shortcode suggestion popup in the chat box: renders it
- * above the input field, completes the top match on Tab, and completes
- * whichever entry is clicked.
- */
 @Mixin(GuiChat.class)
 public class MixinGuiChat_EmojiSuggestions {
 
     @Shadow
     protected GuiTextField inputField;
 
-    private static boolean enabled() {
-        return ATHRConfig.feature != null
-                && ATHRConfig.feature.chat.emojiConfig.enabled
-                && ATHRConfig.feature.chat.emojiConfig.suggestionsEnabled;
+    @Unique
+    private static boolean aetheria$disabled() {
+        return ATHRConfig.feature == null || !ATHRConfig.feature.chat.emojiConfig.enabled || !ATHRConfig.feature.chat.emojiConfig.suggestionsEnabled;
     }
 
     @Inject(method = "keyTyped", at = @At("HEAD"), cancellable = true)
     private void ATHR$onKeyTypedHead(char typedChar, int keyCode, CallbackInfo ci) {
-        if (!enabled() || inputField == null) return;
-
-        if (keyCode == Keyboard.KEY_TAB && EmojiSuggestionBar.hasSuggestion()) {
-            EmojiSuggestionBar.complete(inputField);
+        if (aetheria$disabled() || inputField == null) return;
+        if (EmojiSuggestionBar.handleKeyTypedPre(keyCode, inputField)) {
             ci.cancel();
         }
     }
 
     @Inject(method = "keyTyped", at = @At("RETURN"))
     private void ATHR$onKeyTypedReturn(char typedChar, int keyCode, CallbackInfo ci) {
-        if (!enabled() || inputField == null) return;
-        if (keyCode == Keyboard.KEY_RETURN || keyCode == Keyboard.KEY_ESCAPE) {
-            EmojiSuggestionBar.clear();
-            return;
-        }
-        EmojiSuggestionBar.update(inputField.getText(), inputField.getCursorPosition());
+        if (aetheria$disabled() || inputField == null) return;
+        EmojiSuggestionBar.handleKeyTypedPost(keyCode, inputField);
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void ATHR$onMouseClicked(int mouseX, int mouseY, int mouseButton, CallbackInfo ci) {
-        if (!enabled() || inputField == null || mouseButton != 0) return;
+        if (aetheria$disabled() || inputField == null) return;
+        if (EmojiSuggestionBar.handleMouseClick(mouseX, mouseY, mouseButton, inputField)) {
+            ci.cancel();
+        }
+    }
 
-        int index = EmojiSuggestionBar.hitTest(mouseX, mouseY);
-        if (index >= 0) {
-            EmojiSuggestionBar.complete(inputField, index);
+    @Inject(method = "handleMouseInput", at = @At("HEAD"), cancellable = true)
+    private void ATHR$onHandleMouseInput(CallbackInfo ci) {
+        if (aetheria$disabled()) return;
+        if (EmojiSuggestionBar.handleMouseWheel(Mouse.getEventDWheel())) {
             ci.cancel();
         }
     }
 
     @Inject(method = "drawScreen", at = @At("RETURN"))
     private void ATHR$drawSuggestions(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        if (!enabled()) return;
+        if (aetheria$disabled()) return;
         EmojiSuggestionBar.render(inputField, mouseX, mouseY);
+        EmojiSuggestionBar.tickDrag(mouseY);
     }
 }

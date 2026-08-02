@@ -4,6 +4,7 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import java.awt.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ChromaColour {
 
@@ -11,6 +12,10 @@ public class ChromaColour {
     private static final int MIN_CHROMA_SECS = 1;
     private static final int MAX_CHROMA_SECS = 60;
     public static long startTime = -1;
+
+    private static final ConcurrentHashMap<String, int[]> DECOMPOSED = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Integer> STATIC_ARGB = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, float[]> CHROMA_BASE = new ConcurrentHashMap<>();
 
     public static String special(int chromaSpeed, int alpha, int rgb) {
         return special(chromaSpeed, alpha, (rgb & 0xFF0000) >> 16, (rgb & 0x00FF00) >> 8, (rgb & 0x0000FF));
@@ -25,11 +30,14 @@ public class ChromaColour {
     }
 
     private static int[] decompose(String csv) {
+        int[] cached = DECOMPOSED.get(csv);
+        if (cached != null) return cached;
         String[] split = csv.split(":");
         int[] arr = new int[split.length];
         for (int i = 0; i < split.length; i++) {
             arr[i] = Integer.parseInt(split[split.length - 1 - i], RADIX);
         }
+        DECOMPOSED.put(csv, arr);
         return arr;
     }
 
@@ -48,16 +56,26 @@ public class ChromaColour {
 
     public static int specialToChromaRGB(String special) {
         if (startTime < 0) startTime = System.currentTimeMillis();
+        Integer cached = STATIC_ARGB.get(special);
+        if (cached != null) return cached;
         int[] d = decompose(special);
-        int chr = d[4], a = d[3], r = d[2], g = d[1], b = d[0];
-        float[] hsv = Color.RGBtoHSB(r, g, b, null);
-        if (chr > 0) {
-            float seconds = getSecondsForSpeed(chr);
-            hsv[0] += (System.currentTimeMillis() - startTime) / 1000f / seconds;
-            hsv[0] %= 1;
-            if (hsv[0] < 0) hsv[0] += 1;
+        int chr = d[4], a = d[3];
+        if (chr == 0) {
+            int argb = (a & 0xFF) << 24 | (d[2] & 0xFF) << 16 | (d[1] & 0xFF) << 8 | (d[0] & 0xFF);
+            STATIC_ARGB.put(special, argb);
+            return argb;
         }
-        return (a & 0xFF) << 24 | (Color.HSBtoRGB(hsv[0], hsv[1], hsv[2]) & 0x00FFFFFF);
+        float[] base = CHROMA_BASE.get(special);
+        if (base == null) {
+            float[] hsv = Color.RGBtoHSB(d[2], d[1], d[0], null);
+            base = new float[]{hsv[0], hsv[1], hsv[2]};
+            CHROMA_BASE.put(special, base);
+        }
+        float seconds = getSecondsForSpeed(chr);
+        float hue = base[0] + (System.currentTimeMillis() - startTime) / 1000f / seconds;
+        hue %= 1;
+        if (hue < 0) hue += 1;
+        return (a & 0xFF) << 24 | (Color.HSBtoRGB(hue, base[1], base[2]) & 0x00FFFFFF);
     }
 
     public static int rotateHue(int argb, int degrees) {
