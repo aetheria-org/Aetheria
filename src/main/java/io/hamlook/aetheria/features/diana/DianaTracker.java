@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.diana;
 
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -114,7 +115,7 @@ public class DianaTracker {
         }
         DianaStats stats = DianaStats.getInstance();
 
-        if (stats.isTracking() && stats.isDianaMayor()) {
+        if (stats.isTracking() && ElectionUtils.isDianaMayor()) {
             if (LOOT_SHARE.matcher(msg).find()) {
                 stats.onLootshare();
                 if (LootshareDetect.wasInqKilledByOther()) {

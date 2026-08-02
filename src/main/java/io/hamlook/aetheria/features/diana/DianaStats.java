@@ -5,10 +5,10 @@ import io.hamlook.aetheria.core.GsonBuilder;
 import io.hamlook.aetheria.core.ProfileManagedStorage;
 import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.features.price.PriceMap;
+import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import io.hamlook.aetheria.utils.data.TablistParser;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
@@ -107,7 +107,7 @@ public class DianaStats extends ProfileManagedStorage implements StorageManager.
     }
 
     public boolean isDianaMayor() {
-        return TablistParser.isDianaMayor();
+        return ElectionUtils.isDianaMayor();
     }
 
     public void onClientLogin() {

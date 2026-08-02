@@ -5,6 +5,7 @@ import com.google.common.collect.Ordering;
 import io.hamlook.aetheria.features.scoreboard.BankParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ElectionUtils;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
@@ -44,16 +45,11 @@ public class TablistParser {
     private static int sbCurrentXp = 0;
     @Getter
     private static int sbMaxXp = 0;
-    private static String currentMayor = "";
     @Getter
     private static String serverPrefix = "";
     @Setter
     private static java.util.function.BiConsumer<Long, Long> gemstonePowderChangeListener = null;
     private int tickCounter = 0;
-
-    public static boolean isDianaMayor() {
-        return "Diana".equals(currentMayor);
-    }
 
     public static boolean isEventActive(String eventName) {
         return activeEvent != null && activeEvent.contains(eventName);
@@ -247,8 +243,8 @@ public class TablistParser {
                     BankParser.setPurse(amt.isEmpty() ? line.substring(colon + 2) : amt);
                     continue;
                 }
-                if (line.startsWith("Current Mayor: ")) {
-                    currentMayor = line.substring("Current Mayor: ".length()).trim();
+                if (line.startsWith("Current Mayor: ") || line.startsWith("Winner: ")) {
+                    ElectionUtils.updateMayorFromTablist(line.substring(line.indexOf(": ") + 2).trim());
                     continue;
                 }
                 if (line.startsWith("SB Level:")) {
@@ -316,7 +312,7 @@ public class TablistParser {
         sbLevel = 0;
         sbCurrentXp = 0;
         sbMaxXp = 0;
-        currentMayor = "";
+        ElectionUtils.clearTablistMayor();
         serverPrefix = "";
         BankParser.clear();
     }

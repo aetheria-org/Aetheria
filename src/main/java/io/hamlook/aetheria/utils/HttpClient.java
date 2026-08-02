@@ -41,7 +41,7 @@ public class HttpClient {
         return new FetchResult(body, newEtag != null ? newEtag : etag, true);
     }
 
-    public void post(String url, String body, String contentType) throws Exception {
+    public int post(String url, String body, String contentType) throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", contentType);
@@ -51,8 +51,9 @@ public class HttpClient {
         try (OutputStream os = conn.getOutputStream()) {
             os.write(body.getBytes(StandardCharsets.UTF_8));
         }
-        conn.getResponseCode();
+        int code = conn.getResponseCode();
         conn.disconnect();
+        return code;
     }
 
     public static class FetchResult {
