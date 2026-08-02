@@ -7,11 +7,20 @@ import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 public class ChatUtils {
+
+    private static final ScheduledExecutorService PARTY_MSG_EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "ATHR-PartyMsg");
+        t.setDaemon(true);
+        return t;
+    });
 
     public static final Pattern PLAYER_MSG_STRIPPED = Pattern.compile("^(?:\\[\\d+\\]\\s*)?" + "(?:\\S\\s+)?" + "(?:\\[[^\\]]*\\]\\s*)?" + "(\\w{1,16})" + "[^\\w:]*" + ":\\s*" + "(.+)$");
     private static final Pattern PARTY_MSG = Pattern.compile("^Party > (?:\\[[^]]*])?\\s*(\\w{1,16}):\\s*(.+)$");
@@ -156,11 +165,11 @@ public class ChatUtils {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.thePlayer == null) return;
 
-        java.util.concurrent.Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+        PARTY_MSG_EXECUTOR.schedule(() -> {
             if (mc.thePlayer != null) {
                 mc.thePlayer.sendChatMessage("/pc " + message);
             }
-        }, delayMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        }, delayMs, TimeUnit.MILLISECONDS);
     }
 
     public static void sendPartyMessage(String message) {
