@@ -40,7 +40,7 @@ public class EmojiParser {
     private static final String DATA_URL = "https://raw.githubusercontent.com/iamcal/emoji-data/master/emoji_pretty.json";
     private static final File DATA_FILE = new File(ATHRConfig.configDirectory, "emoji_pretty.json");
     private static final String IMG_BASE = "https://raw.githubusercontent.com/iamcal/emoji-data/master/img-twitter-72/";
-    private static final char VARIATION_SELECTOR = '\uFE0F';
+    private static final char VARIATION_SELECTOR = '️';
     private static final Pattern SHORTCODE_PATTERN = Pattern.compile(":([a-zA-Z0-9_~+-]+):");
 
     private static final Map<String, String> unicodeToName = new ConcurrentHashMap<>();
@@ -81,7 +81,7 @@ public class EmojiParser {
     }
 
     private static void fetchEmojiDataAsync() {
-        new Thread(() -> {
+        ThreadUtils.run("Aetheria-Emoji-Fetch", () -> {
             try {
                 HttpClient.FetchResult result = new HttpClient().fetch(DATA_URL, null);
                 if (result == null || result.body() == null || result.body().isEmpty()) {
@@ -106,7 +106,7 @@ public class EmojiParser {
             } finally {
                 fetching.set(false);
             }
-        }, "Aetheria-Emoji-Fetch").start();
+        });
     }
 
     private static List<IEmoji> parseJson(String content) {
@@ -121,7 +121,7 @@ public class EmojiParser {
             String surrogates = toSurrogates(unified);
             if (surrogates.isEmpty()) continue;
             JsonArray names = obj.getAsJsonArray("short_names");
-            if (names == null || names.size() == 0) continue;
+            if (names == null || names.isEmpty()) continue;
             String primary = names.get(0).getAsString();
             registerKey(surrogates, primary);
             if (obj.has("non_qualified") && !obj.get("non_qualified").isJsonNull()) {

@@ -7,6 +7,7 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 
 import java.io.BufferedReader;
@@ -21,8 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CapeManager {
@@ -40,18 +39,12 @@ public class CapeManager {
     private static final Gson gson = new Gson();
     public static int capeCalls = 0;
 
-    private static final ExecutorService networkExecutor = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "ATHR-CapeNetworkThread");
-        t.setDaemon(true);
-        return t;
-    });
-
     public static void equipCape(String playerName, Cape cape) {
         activeCapes.put(playerName, cape.id);
         lastFetched = System.currentTimeMillis();
 
         CLIENT_SIDE_CAPE_ID = cape.id;
-        networkExecutor.execute(() -> {
+        ThreadUtils.run(() -> {
             if (!pushCapeToAPI(playerName, cape.id)) {
                 Aetheria.logger.info("[CapeManager] Failed to push cape for " + playerName);
                 activeCapes.put(playerName, "none");
@@ -61,7 +54,7 @@ public class CapeManager {
 
     public static void removeCape(String playerName) {
         activeCapes.put(playerName, "none");
-        networkExecutor.execute(() -> deleteCapeFromAPI(playerName));
+        ThreadUtils.run(() -> deleteCapeFromAPI(playerName));
     }
 
     public static void fetchCapeAsync(String playerName) {
@@ -73,7 +66,7 @@ public class CapeManager {
         }
         if (existing == null) activeCapes.put(playerName, "pending");
         if (isFetching.compareAndSet(false, true)) {
-            networkExecutor.execute(() -> {
+            ThreadUtils.run(() -> {
                 try {
                     fetchIDFromAPI();
                 } finally {
@@ -193,7 +186,7 @@ public class CapeManager {
         POLL_INTERVAL_MS = ATHRConfig.feature.cosmetics.capes.reloadInterval * 60000L;
         capes.clear();
 
-        new Thread(CapeLoader::loadAllCapes, "CapeLoader-Init").start();
+        ThreadUtils.run("CapeLoader-Init", CapeLoader::loadAllCapes);
     }
 
     public static void register(Cape cape){

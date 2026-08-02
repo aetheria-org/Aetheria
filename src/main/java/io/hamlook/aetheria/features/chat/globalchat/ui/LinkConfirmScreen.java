@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.chat.globalchat.ui;
 
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.gui.GuiScreen;
 
 import java.awt.Desktop;
@@ -61,12 +62,12 @@ public class LinkConfirmScreen extends GuiScreen {
     }
 
     private void openBrowser() {
-        new Thread(() -> {
+        ThreadUtils.run("Link-Open", () -> {
             try {
                 Desktop.getDesktop().browse(new URI(url));
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, "Link-Open").start();
+        });
     }
 }

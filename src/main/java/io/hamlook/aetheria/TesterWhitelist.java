@@ -2,6 +2,7 @@ package io.hamlook.aetheria;
 
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -34,7 +35,7 @@ public class TesterWhitelist {
     private static void checkWhitelist() {
         String playerName = Minecraft.getMinecraft().getSession().getProfile().getName().toLowerCase();
 
-        new Thread(() -> {
+        ThreadUtils.run(() -> {
             try {
                 String urlString = API_URL + "?username=" + playerName;
                 HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
@@ -60,7 +61,7 @@ public class TesterWhitelist {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
     }
 
     private static void crashGame(String reason) {

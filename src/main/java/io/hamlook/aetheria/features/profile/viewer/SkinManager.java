@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.profile.viewer;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.resources.DefaultPlayerSkin;
@@ -41,7 +42,7 @@ public class SkinManager {
 
     private static void fetchSkinAsync(String username) {
         if (!NetworkGuard.networkingEnabled()) return;
-        new Thread(() -> {
+        ThreadUtils.run("ATHR-SkinFetcher-" + username, () -> {
             try {
                 if (!SKIN_DIR.exists()) {
                     SKIN_DIR.mkdirs();
@@ -85,6 +86,6 @@ public class SkinManager {
                     fetching.remove(username);
                 }
             }
-        }, "ATHR-SkinFetcher-" + username).start();
+        });
     }
 }

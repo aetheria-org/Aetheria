@@ -7,6 +7,7 @@ import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.Utils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
@@ -22,8 +23,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class GuiInvButtonEditor extends GuiScreen {
@@ -46,11 +45,6 @@ public class GuiInvButtonEditor extends GuiScreen {
     private final GuiElementTextField commandTextField = new GuiElementTextField("", editorXSize - 14, 16, GuiElementTextField.SCALE_TEXT);
     private final GuiElementTextField iconTextField = new GuiElementTextField("", editorXSize - 14, 16, GuiElementTextField.SCALE_TEXT);
     private final List<String> searchedIcons = new ArrayList<>();
-    private final ExecutorService searchES = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "ATHR-BtnSearch");
-        t.setDaemon(true);
-        return t;
-    });
     private final AtomicInteger searchId = new AtomicInteger(0);
     private int guiLeft, guiTop;
     private int editorLeft, editorTop;
@@ -406,7 +400,7 @@ public class GuiInvButtonEditor extends GuiScreen {
         final String q = iconTextField.getText().trim().toLowerCase();
         final int type = iconTypeIndex;
 
-        searchES.submit(() -> {
+        ThreadUtils.run(() -> {
             if (searchId.get() != gen) return;
             List<String> results = new ArrayList<>();
 

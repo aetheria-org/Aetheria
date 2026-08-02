@@ -7,6 +7,7 @@ import io.hamlook.aetheria.features.price.vars.recieve.PriceEntry;
 import io.hamlook.aetheria.features.price.vars.recieve.PriceReceiveData;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import lombok.Getter;
 
 import java.io.*;
@@ -34,7 +35,7 @@ public class PriceMap {
 
     public static void fetch() {
         if (ATHRConfig.feature != null && !NetworkGuard.apiAllowed()) return;
-        new Thread(() -> {
+        ThreadUtils.run(() -> {
             try {
                 URL url = new URL(CapeAPI.getAPIUrl("price"));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -72,7 +73,7 @@ public class PriceMap {
                 Aetheria.logger.info(Arrays.toString(e.getStackTrace()));
                 fetchFailCount++;
             }
-        }).start();
+        });
     }
 
     private static void writeToJson(Object obj,String fileName) {

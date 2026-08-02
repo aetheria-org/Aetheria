@@ -7,6 +7,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.utils.ElectionUtils;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
@@ -20,8 +21,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -51,12 +50,11 @@ public class EmojiManager {
     private static final Map<String, Integer> sheetSizes = new ConcurrentHashMap<>();
 
     private static final AtomicBoolean loaded = new AtomicBoolean(false);
-    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public static final String[] EMOJI_THEMES = {EmojiLinks.DISCORD_SHEET,EmojiLinks.GOOGLE_SHEET,EmojiLinks.IOS_SHEET, EmojiLinks.CUSTOM_SHEET};
 
     public static void init() {
-        executor.execute(EmojiManager::startInitialisation);
+        ThreadUtils.run(EmojiManager::startInitialisation);
     }
 
     public static void startInitialisation() {

@@ -6,6 +6,7 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.profile.data.ItemData;
 import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.utils.ThreadUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -49,7 +50,7 @@ public class ItemRegistry {
         return itemRegistry.get(ItemResolver.resolveId(id, displayName));
     }
     public static void initialise() {
-        new Thread(() -> {
+        ThreadUtils.run("ATHR-ItemRegistry-Loader", () -> {
             long threadStart = System.currentTimeMillis();
             Aetheria.logger.info("[ATHR-DEBUG] Initialization thread started.");
 
@@ -145,7 +146,6 @@ public class ItemRegistry {
                                 String firstLore = item.baseLore.get(0);
                                 if (firstLore.trim().length() > 2) {
                                     item.displayName = firstLore.trim();
-                                    // Remove the duplicate name from the lore so it doesn't render twice!
                                     List<String> mutableLore = new ArrayList<>(item.baseLore);
                                     mutableLore.remove(0);
                                     item.baseLore = mutableLore;
@@ -197,7 +197,7 @@ public class ItemRegistry {
                 Aetheria.logger.severe("[ATHR-DEBUG] Exception loading items: " + e.getClass().getSimpleName() + " - " + e.getMessage());
                 e.printStackTrace();
             }
-        }, "ATHR-ItemRegistry-Loader").start();
+        });
     }
 
     private static void parseLoreMeta(SkyblockItem item) {

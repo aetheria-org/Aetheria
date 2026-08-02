@@ -8,6 +8,7 @@ import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.features.profile.WaiterLogs;
 import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.repo.CapeAPI;
+import io.hamlook.aetheria.utils.ThreadUtils;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,7 +36,7 @@ public class SupabaseHandler {
 
         lastUploaded.put(playerName, now);
 
-        new Thread(() -> {
+        ThreadUtils.run("ProfilePush-" + playerName, () -> {
             try {
                 Aetheria.logger.info("[SupabaseHandler] Initiating upload for: " + playerName);
                 WaiterLogs.addLog("[SupabaseHandler] Initiating upload for: " + playerName);
@@ -51,11 +52,9 @@ public class SupabaseHandler {
                     lastUploaded.remove(playerName);
                 }
             } finally {
-                // --- THE FIX ---
-                // Force the background thread to save the logs to the file once it finishes!
                 WaiterLogs.saveLogs();
             }
-        }, "ProfilePush-" + playerName).start();
+        });
     }
 
     private static void trySaveProfile(ProfileData data) {

@@ -8,6 +8,7 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.data.NoPriceData;
 import io.hamlook.aetheria.utils.HttpClient;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
@@ -22,8 +23,6 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @RegisterEvents
@@ -32,11 +31,6 @@ public class ApiHandler {
     private static final String CONFIG_URL = "https://raw.githubusercontent.com/aetheria-org/Aetheria/main/data/repo.json";
     private static final Gson GSON = new Gson();
     private static final HttpClient HTTP = new HttpClient();
-    private static final ExecutorService POOL = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "ATHR-Analytics");
-        t.setDaemon(true);
-        return t;
-    });
 
     private static String baseUrl = null;
     private static volatile Set<String> effectiveIds = null;
@@ -62,11 +56,11 @@ public class ApiHandler {
     public static void onServerJoin() {
         if (ATHRConfig.feature == null) return;
         if (!NetworkGuard.telemetryAllowed()) return;
-        POOL.submit(ApiHandler::sendAnalytics);
+        ThreadUtils.run(ApiHandler::sendAnalytics);
     }
 
     private static void fetchNoPriceAsync() {
-        POOL.submit(() -> {
+        ThreadUtils.run(() -> {
             if (!NetworkGuard.apiAllowed()) {
                 effectiveIds = Collections.emptySet();
                 return;

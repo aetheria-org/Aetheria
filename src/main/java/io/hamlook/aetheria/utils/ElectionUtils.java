@@ -37,7 +37,7 @@ public class ElectionUtils {
     private static boolean mayorFromApi = false;
 
     public static void initialise() {
-        new Thread(() -> {
+        ThreadUtils.run("Aetheria-Mayor-Fetch", () -> {
             currentMayor = fetchCurrentMayor();
             mayorFromApi = currentMayor != null;
             Aetheria.logger.info("[Current Mayor] " + currentMayor);
@@ -48,7 +48,7 @@ public class ElectionUtils {
             } else {
                 Aetheria.logger.info("[Perks] Could not load Perks.");
             }
-        }, "Aetheria-Mayor-Fetch").start();
+        });
     }
 
     private static Perks fetchPerks() {

@@ -5,6 +5,7 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ChatComponentText;
 
@@ -19,8 +20,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class ProfileViewerAPI {
 
@@ -52,16 +51,10 @@ public class ProfileViewerAPI {
             .create();
     // -----------------------------------------------------------------------
 
-    private static final ExecutorService networkExecutor = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "ATHR-ProfileViewerAPI");
-        t.setDaemon(true);
-        return t;
-    });
-
     public static void fetchPlayerListAsync() {
         if (!cachedPlayerList.isEmpty()) return;
         if (!NetworkGuard.apiAllowed()) return;
-        networkExecutor.execute(() -> {
+        ThreadUtils.run(() -> {
             try {
                 URL url = new URL("https://capeapi.qzz.io/game/players");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -93,7 +86,7 @@ public class ProfileViewerAPI {
     public static void fetchFromAPI(String username){
         if (!NetworkGuard.apiAllowed()) return;
         if(System.currentTimeMillis() - lastFetches.getOrDefault(username,0L) <= FETCH_INTERVAL) return;
-        networkExecutor.execute(() -> {
+        ThreadUtils.run(() -> {
             try{
                 PlayerProfile profile = fetchUser(username);
                 if(profile == null){

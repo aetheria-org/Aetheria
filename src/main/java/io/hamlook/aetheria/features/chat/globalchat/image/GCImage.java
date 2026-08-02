@@ -4,6 +4,7 @@ import dev.matrixlab.webp4j.WebPCodec;
 import dev.matrixlab.webp4j.model.AnimatedWebPData;
 import dev.matrixlab.webp4j.model.AnimatedWebPFrame;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
@@ -119,7 +120,7 @@ public class GCImage {
         gcImage.circularMask = circularMask;
         ImageManager.images.put(gcImage.id, gcImage);
 
-        new Thread(() -> {
+        ThreadUtils.run("GCImage-Downloader-" + gcImage.id, () -> {
             try {
                 byte[] rawBytes = downloadBytes(url);
 
@@ -157,7 +158,7 @@ public class GCImage {
                 gcImage.loadFailed = true;
                 e.printStackTrace();
             }
-        }, "GCImage-Downloader-" + gcImage.id).start();
+        });
         return gcImage.id;
     }
 
@@ -172,7 +173,7 @@ public class GCImage {
         gcImage.url = pageUrl;
         ImageManager.images.put(gcImage.id, gcImage);
 
-        new Thread(() -> {
+        ThreadUtils.run("GCImage-PageResolver-" + gcImage.id, () -> {
             try {
                 String mediaUrl = resolveOgImageUrl(pageUrl);
                 if (mediaUrl == null) {
@@ -195,7 +196,7 @@ public class GCImage {
                 gcImage.loadFailed = true;
                 e.printStackTrace();
             }
-        }, "GCImage-PageResolver-" + gcImage.id).start();
+        });
         return gcImage.id;
     }
 
