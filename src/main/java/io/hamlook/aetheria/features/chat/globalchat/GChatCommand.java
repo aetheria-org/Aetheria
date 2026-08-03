@@ -10,6 +10,7 @@ import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.ElectionUtils;
+import io.hamlook.aetheria.utils.CommunityAccess;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.command.CommandException;
@@ -47,35 +48,61 @@ public class GChatCommand extends ASMCommand {
             ChatUtils.sendMessage("§cYou cannot use Global Chat without API Access, Enable API Access in Config First.");
             return;
         }
+        CommunityAccess.runIfAllowed(
+                "§cGlobal Chat requires your account to be Synced (use /sync) or to be on SkyBlock.",
+                this::openChatUi
+        );
+    }
+
+    private void openChatUi() {
         ChatUtils.sendMessage("§7Checking Global Chat access...");
         CompletableFuture.runAsync(() -> {
-            int status = checkAccess();
+            CheckResult result = checkAccess();
             Minecraft.getMinecraft().addScheduledTask(() -> {
-                if (status == 403) {
-                    ChatUtils.sendMessage("§cYou are banned from Global Chat.");
+                if (result.status == 403) {
+                    GlobalChat.pushSystemNotice(result.message != null ? result.message : "You are banned from Global Chat.");
                 } else {
                     GlobalChat.refreshChannels(false);
-                    ATHRConfig.screenToOpen = new ChatUI();
                 }
+                ATHRConfig.screenToOpen = new ChatUI();
             });
         });
     }
 
     /** Server-side access check. The server is the source of truth; this is only a cosmetic pre-check. */
-    private int checkAccess() {
+    private static class CheckResult {
+        final int status;
+        final String message;
+        CheckResult(int status, String message) {
+            this.status = status;
+            this.message = message;
+        }
+    }
+
+    private CheckResult checkAccess() {
         try {
             URL url = new URL(CapeAPI.getAPIUrl("chat-access"));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("User-Agent", "Aetheria/" + io.hamlook.aetheria.Aetheria.VERSION);
             connection.setRequestProperty("username", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
+            connection.setRequestProperty("x-timezone-offset", String.valueOf(io.hamlook.aetheria.utils.TimeUtils.getLocalOffsetMinutes()));
             connection.setReadTimeout(10000);
             connection.setConnectTimeout(10000);
             int code = connection.getResponseCode();
-            ElectionUtils.readResponse(connection);
-            return code;
+            String body = ElectionUtils.readResponse(connection);
+            String message = null;
+            if (body != null && !body.trim().isEmpty() && (body.contains("error") || body.contains("message"))) {
+                try {
+                    com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(body).getAsJsonObject();
+                    if (obj.has("error")) message = obj.get("error").getAsString();
+                    else if (obj.has("message")) message = obj.get("message").getAsString();
+                } catch (Exception ignored) {
+                }
+            }
+            return new CheckResult(code, message);
         } catch (Exception e) {
-            return -1;
+            return new CheckResult(-1, null);
         }
     }
 }

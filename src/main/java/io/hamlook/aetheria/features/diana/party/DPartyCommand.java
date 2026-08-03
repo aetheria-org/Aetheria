@@ -7,6 +7,7 @@ import io.hamlook.aetheria.WebSocketClient;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.utils.CommunityAccess;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -31,12 +32,12 @@ public class DPartyCommand extends ASMCommand {
     }
 
     private String getArgs() {
-        return "<join|create|leave|disband|transfer|kick|setpass>";
+        return "<join|create|leave|disband|transfer|kick|setpass|list>";
     }
 
     @Override
     public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
-        String[] options = new String[] {"join", "create", "leave", "disband","transfer","kick","setpass"};
+        String[] options = new String[] {"join", "create", "leave", "disband","transfer","kick","setpass","list"};
         if(args.length == 0) return Arrays.asList(options);
         if(args.length == 1){
             String argument = args[0];
@@ -51,7 +52,15 @@ public class DPartyCommand extends ASMCommand {
             ChatUtils.sendMessage("§cPlease Enter a Sub Command");
             return;
         }
-        switch (args[0].toLowerCase()) {
+        CommunityAccess.runIfAllowed(
+                "§cDiana Parties require your account to be Synced (use /sync) or to be on SkyBlock.",
+                () -> runCommand(args)
+        );
+    }
+
+    private void runCommand(String[] args) {
+        try {
+            switch (args[0].toLowerCase()) {
             case "create":
                 createParty(args);
                 break;
@@ -73,7 +82,22 @@ public class DPartyCommand extends ASMCommand {
             case "setpass":
                 setPartyPass(args);
                 break;
+            case "list":
+            case "gui":
+                openListGui();
+                break;
+            }
+        } catch (CommandException e) {
+            ChatUtils.sendMessage("§c" + e.getMessage());
         }
+    }
+
+    /** Opens the Diana party browser GUI. */
+    public void openListGui() {
+        if (!WebSocketClient.isConnected && NetworkGuard.apiAllowed()) {
+            DianaPartyConnector.connectToAPI();
+        }
+        io.hamlook.aetheria.features.diana.party.ui.DPartyGUI.open();
     }
 
     public void kickFromParty(String[] args) {

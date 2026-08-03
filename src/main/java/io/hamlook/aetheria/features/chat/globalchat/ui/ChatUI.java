@@ -456,6 +456,7 @@ public class ChatUI extends GuiScreen {
         drawSidebar(mouseX, mouseY);
         drawHeader(mouseX, mouseY);
         drawMessages(mouseX, mouseY);
+        drawSystemNotices(mouseX, mouseY);
         drawInputArea(mouseX, mouseY);
         drawReplyBanner(mouseX, mouseY);
 
@@ -1050,6 +1051,45 @@ public class ChatUI extends GuiScreen {
         boolean closeHover = mouseX >= closeX && mouseX < closeX + 16 && mouseY >= 7 && mouseY < 23;
         fontRendererObj.drawStringWithShadow("X", closeX + 4, 10, closeHover ? 0xFFFFFFFF : 0xFF949BA4);
         clickRects.add(new ClickRect(closeX, 7, 16, 16, () -> mc.displayGuiScreen(null)));
+    }
+
+    /** Renders server/system notices (mute/ban/permission errors) in the message area so they are visible
+     *  even when the user has no channels. Shows up to the 3 most recent. */
+    private void drawSystemNotices(int mouseX, int mouseY) {
+        List<String> notices = GlobalChat.systemNotices;
+        if (notices.isEmpty()) return;
+
+        int areaX = SIDEBAR_WIDTH + PADDING;
+        int boxW = width - SIDEBAR_WIDTH - PADDING * 2;
+        int lines = Math.min(3, notices.size());
+        int lineH = 18;
+        int boxH = lines * lineH + 12;
+        int boxY = HEADER_HEIGHT + 6;
+
+        drawRect(areaX - 4, boxY, areaX - 4 + boxW + 8, boxY + boxH, 0xFF232428);
+        drawRect(areaX - 4, boxY, areaX - 2, boxY + boxH, 0xFF5865F2);
+        fontRendererObj.drawStringWithShadow("SYSTEM", areaX, boxY + 4, 0xFF949BA4);
+
+        int start = Math.max(0, notices.size() - lines);
+        int y = boxY + 4 + lineH;
+        for (int i = start; i < notices.size(); i++) {
+            String text = notices.get(i);
+            String trimmed = fontRendererObj.trimStringToWidth(text, boxW - 8);
+            fontRendererObj.drawStringWithShadow(trimmed, areaX, y, 0xFFDCDDDE);
+            y += lineH;
+        }
+
+        int closeX = areaX - 4 + boxW + 4;
+        boolean hover = mouseX >= closeX && mouseX <= closeX + 16 && mouseY >= boxY && mouseY <= boxY + 16;
+        fontRendererObj.drawStringWithShadow("X", closeX + 4, boxY + 4, hover ? 0xFFFFFFFF : 0xFF949BA4);
+        clickRects.add(new ClickRect(closeX - 12, boxY + 2, 28, 16, () -> dismissSystemNotices()));
+    }
+
+    private void dismissSystemNotices() {
+        if (!GlobalChat.systemNotices.isEmpty()) {
+            GlobalChat.systemNotices.remove(GlobalChat.systemNotices.size() - 1);
+            GlobalChat.systemNoticesVersion++;
+        }
     }
 
     private void drawInputArea(int mouseX, int mouseY) {

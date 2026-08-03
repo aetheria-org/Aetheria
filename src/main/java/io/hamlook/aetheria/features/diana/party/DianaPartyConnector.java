@@ -68,6 +68,18 @@ public class DianaPartyConnector {
         return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(cmd));
     }
 
+    /** Subscribes to live party-list pushes and returns the current list (code 200 + parties array). */
+    public static CompletableFuture<String> listParties() {
+        if(!WebSocketClient.isConnected){
+            connectToAPI();
+            return null;
+        }
+
+        JsonObject obj = new JsonObject();
+        obj.addProperty("command", "dpartylist");
+        return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
+    }
+
     public static CompletableFuture<String> createParty(String pName, String password){
         if(!WebSocketClient.isConnected) connectToAPI();
 
@@ -155,6 +167,17 @@ public class DianaPartyConnector {
         Aetheria.webSocketClient.connect();
     }
 
+    /** Optional listener for live party-list pushes while a GUI is open. */
+    private static volatile PartyListListener partyListListener = null;
+
+    public interface PartyListListener {
+        void onPartyList(java.util.List<JsonObject> parties);
+    }
+
+    public static void setPartyListListener(PartyListListener listener) {
+        partyListListener = listener;
+    }
+
     public static boolean process(String message) {
         try {
             JsonObject json = JsonParser.parseString(message).getAsJsonObject();
@@ -167,7 +190,17 @@ public class DianaPartyConnector {
                 ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + ": §f" + msg);
                 return true;
             }
-            if (type.equalsIgnoreCase("dpartyLeave")) {
+            if (type.equalsIgnoreCase("dpartyupdate")) {
+                if (partyListListener != null && json.has("parties") && json.get("parties").isJsonArray()) {
+                    java.util.List<JsonObject> parties = new java.util.ArrayList<>();
+                    for (com.google.gson.JsonElement e : json.get("parties").getAsJsonArray()) {
+                        if (e.isJsonObject()) parties.add(e.getAsJsonObject());
+                    }
+                    Minecraft.getMinecraft().addScheduledTask(() -> partyListListener.onPartyList(parties));
+                }
+                return true;
+            }
+            if (type.equalsIgnoreCase("dpartyleave")) {
                 String player = json.get("player").getAsString();
                 ChatUtils.sendMessage("§b[D-Party Chat] §c" + player + " has left the Diana Party.");
                 return true;
@@ -177,12 +210,12 @@ public class DianaPartyConnector {
                 ChatUtils.sendMessage("§b[D-Party Chat] §cThis Party has been disbanded by " + player);
                 return true;
             }
-            if (type.equalsIgnoreCase("dpartyJoin")) {
+            if (type.equalsIgnoreCase("dpartyjoin")) {
                 String player = json.get("player").getAsString();
                 ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + " has joined the Diana Party.");
                 return true;
             }
-            if (type.equalsIgnoreCase("dPartyKicked")) {
+            if (type.equalsIgnoreCase("dpartykicked")) {
                 String player = json.get("player").getAsString();
                 String user = Minecraft.getMinecraft().getSession().getUsername().toLowerCase();
                 if (user.equalsIgnoreCase(player)) {
@@ -190,6 +223,12 @@ public class DianaPartyConnector {
                 } else {
                     ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + " has been kicked from the Diana Party.");
                 }
+                return true;
+            }
+            if (type.equalsIgnoreCase("dpartytransfer")) {
+                String player = json.get("player").getAsString();
+                String newCreator = json.has("newCreator") ? json.get("newCreator").getAsString() : "another player";
+                ChatUtils.sendMessage("§b[D-Party Chat] §aParty ownership has been transferred from " + player + " to " + newCreator + ".");
                 return true;
             }
         } catch (Exception e) {

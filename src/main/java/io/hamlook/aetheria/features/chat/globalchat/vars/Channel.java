@@ -56,6 +56,7 @@ public class Channel {
             connection.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
             connection.setRequestProperty("Accept", "application/json");
             connection.setRequestProperty("username", GlobalChat.getUsername());
+            connection.setRequestProperty("x-timezone-offset", String.valueOf(io.hamlook.aetheria.utils.TimeUtils.getLocalOffsetMinutes()));
             connection.setReadTimeout(10000);
             connection.setConnectTimeout(10000);
             if(connection.getResponseCode() == 200){

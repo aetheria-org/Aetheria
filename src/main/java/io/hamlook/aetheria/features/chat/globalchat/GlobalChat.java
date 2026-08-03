@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,6 +29,10 @@ public class GlobalChat {
     public static ConcurrentHashMap<String,Channel> channels = new ConcurrentHashMap<>();
     /** Bumped whenever the channel list changes shape or channel metadata; lets UI caches invalidate cheaply. */
     public static volatile int channelsVersion = 0;
+    /** Persistent server-driven system notices (mute/ban/permission errors) shown in the G-Chat sidebar. */
+    public static final CopyOnWriteArrayList<String> systemNotices = new CopyOnWriteArrayList<>();
+    /** Highest system-notice sequence seen; lets the UI poll for new ones cheaply. */
+    public static volatile long systemNoticesVersion = 0;
     public static final Gson GSON = new Gson();
     public static HashMap<String,ChatMessage> pendingMessages = new HashMap<>();
     public static HashMap<String, IEmoji> usableEmojis = new HashMap<>();
@@ -140,6 +145,7 @@ public class GlobalChat {
         connection2.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
         connection2.setRequestProperty("Accept", "application/json");
         connection2.setRequestProperty("username", getUsername());
+        connection2.setRequestProperty("x-timezone-offset", String.valueOf(io.hamlook.aetheria.utils.TimeUtils.getLocalOffsetMinutes()));
         connection2.setReadTimeout(10000);
         connection2.setConnectTimeout(10000);
         if(connection2.getResponseCode() != 200){
@@ -236,13 +242,21 @@ public class GlobalChat {
                if(code != 200){
                    String error = data.has("message") ? data.get("message").getAsString() : "Unknown error";
                    Aetheria.logger.warning("[G-Chat] Error Sending Message: " + error);
-                   ChatUtils.sendMessage("§c[G-Chat] " + error);
+                   pushSystemNotice(error);
                }else{
                    pendingMessages.put(chatMessage.messageID,chatMessage);
                }
            }
         });
         return true;
+    }
+
+    /** Shows a server/system message in the G-Chat sidebar instead of mc-chat (mc-chat is invisible to the user). */
+    public static void pushSystemNotice(String text) {
+        if (text == null || text.trim().isEmpty()) return;
+        systemNotices.add(text.trim());
+        while (systemNotices.size() > 20) systemNotices.remove(0);
+        systemNoticesVersion++;
     }
 
     /** Attempts a reconnect and reports whether the socket is usable for sends. */
@@ -313,6 +327,12 @@ public class GlobalChat {
             }
             if("discord::refresh-channels".equals(command)){
                 refreshChannels(false);
+                return;
+            }
+            if("discord::punishment-lifted".equals(command)){
+                String message = responseJson.has("message") ? responseJson.get("message").getAsString() : "Your Global Chat punishment has been lifted.";
+                pushSystemNotice(message);
+                ChatUtils.sendMessage("§a[G-Chat] " + message);
                 return;
             }
         }
