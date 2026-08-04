@@ -56,11 +56,11 @@ public class ChatUtils {
     }
 
     public static boolean isMsgReceived(String msg) {
-        return MSG_RECEIVED.matcher(msg).matches();
+        return MSG_RECEIVED.matcher(msg).matches() || MSG_RECEIVED_STRIPPED.matcher(msg).matches();
     }
 
     public static boolean isMsgSent(String msg) {
-        return MSG_SENT.matcher(msg).matches();
+        return MSG_SENT.matcher(msg).matches() || MSG_SENT_STRIPPED.matcher(msg).matches();
     }
 
     public static String getPartyBody(String msg) {
