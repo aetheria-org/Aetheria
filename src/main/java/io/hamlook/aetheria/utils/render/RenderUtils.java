@@ -1,6 +1,12 @@
 package io.hamlook.aetheria.utils.render;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.features.chat.emoji.CustomEmoji;
+import io.hamlook.aetheria.features.chat.emoji.EmojiLinks;
+import io.hamlook.aetheria.features.chat.emoji.EmojiManager;
+import io.hamlook.aetheria.features.chat.emoji.SpritePos;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
@@ -41,8 +47,7 @@ public final class RenderUtils {
         GlStateManager.color(1f, 1f, 1f, 1f);
 
         ResourceLocation texture = useGoldTexture ? SEARCH_BAR_TEX_GOLD : SEARCH_BAR_TEX;
-        if (useTexture && drawSearchBarTexture(texture, x, y, w, h)) {
-        } else {
+        if (!useTexture || !drawSearchBarTexture(texture, x, y, w, h)) {
             Gui.drawRect(x, y, x + w, y + h, 0xFF2C2C2C);
             Gui.drawRect(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF111111);
         }
@@ -310,6 +315,65 @@ public final class RenderUtils {
         GlStateManager.enableTexture2D();
         GlStateManager.disableBlend();
         GlStateManager.popMatrix();
+    }
+
+    // Binds and draws the texture for a :name:/alias emoji token at (x, y) as a
+    // size x size square. Returns false (drawing nothing) if the emoji isn't
+    // known/loaded yet, so callers can fall back to rendering the raw text.
+    public static boolean drawEmoji(String nameOrAlias, float x, float y, float size) {
+        EmojiManager.Emoji emoji = EmojiManager.getEmoji(nameOrAlias);
+        if (emoji != null) {
+            String sheetName = EmojiManager.EMOJI_THEMES[ATHRConfig.feature.chat.emojiConfig.emojiTheme];
+            ResourceLocation texture = EmojiLinks.getSpriteResource(sheetName);
+            int sheetW = EmojiManager.getSheetWidth(sheetName);
+
+            GlStateManager.pushMatrix();
+            GlStateManager.color(1f, 1f, 1f, 1f);
+            Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
+
+            float uMin = (float) emoji.sheetX / sheetW;
+            float uMax = (float)(emoji.sheetX + EmojiLinks.SHEET_RESOLUTION) / sheetW;
+            float vMin = (float) emoji.sheetY / sheetW;
+            float vMax = (float)(emoji.sheetY + EmojiLinks.SHEET_RESOLUTION) / sheetW;
+            drawTexturedRect(x, y, size, size, uMin, uMax, vMin, vMax, GL11.GL_LINEAR);
+            GlStateManager.popMatrix();
+            return true;
+        }
+
+        CustomEmoji customEmoji = EmojiManager.getCustomEmoji(nameOrAlias);
+        if (customEmoji != null) {
+            int sheetW = EmojiManager.getSheetWidth(EmojiLinks.CUSTOM_SHEET);
+            if (sheetW <= 0 || customEmoji.sprites.isEmpty()) {
+                Aetheria.logger.info("[EMOJI] Cannot render custom emoji :" + nameOrAlias + ": — sheetW=" + sheetW + ", sprites=" + customEmoji.sprites.size());
+                return false;
+            }
+
+            int frameIndex = 0;
+            if (customEmoji.animated && customEmoji.frametime > 0) {
+                int elapsed = EmojiManager.getAnimationTime();
+                frameIndex = Math.floorDiv(elapsed, customEmoji.frametime) % customEmoji.sprites.size();
+            }
+            SpritePos pos = customEmoji.sprites.get(frameIndex);
+
+            float uMin = (float) pos.x / sheetW;
+            float uMax = (float)(pos.x + customEmoji.width) / sheetW;
+            float vMin = (float) pos.y / sheetW;
+            float vMax = (float)(pos.y + customEmoji.height) / sheetW;
+            if (uMax > 1f || vMax > 1f) {
+                Aetheria.logger.info("[EMOJI] UV OOB for :" + nameOrAlias + ": sheetW=" + sheetW + " pos=(" + pos.x + "," + pos.y + ") size=" + customEmoji.width + "x" + customEmoji.height + " uMax=" + uMax + " vMax=" + vMax);
+                return false;
+            }
+
+            ResourceLocation texture = EmojiLinks.getSpriteResource(EmojiLinks.CUSTOM_SHEET);
+            GlStateManager.pushMatrix();
+            GlStateManager.color(1f, 1f, 1f, 1f);
+            Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
+
+            drawTexturedRect(x, y, size, size, uMin, uMax, vMin, vMax, GL11.GL_LINEAR);
+            GlStateManager.popMatrix();
+            return true;
+        }
+        return false;
     }
 
     public static int renderStringTrimWidth(String str, boolean shadow, int x, int y, int width, int color, int maxLines) {

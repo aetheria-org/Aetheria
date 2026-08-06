@@ -130,7 +130,6 @@ public class ATHRConfig {
     public static void openGui() {
         screenToOpen = new GuiScreenElementWrapper(new ConfigEditor(feature));
     }
-
     public static void openCategory(String categoryName) {
         screenToOpen = new GuiScreenElementWrapper(new ConfigEditor(feature, categoryName));
     }
@@ -369,6 +368,8 @@ public class ATHRConfig {
         if (feature == null) return;
         Minecraft.getMinecraft().displayGuiScreen(new PrivacyNoticeScreen(Minecraft.getMinecraft().currentScreen));
     }
+
+
 
     @SubscribeEvent
     public void onGuiOpen(GuiOpenEvent event) {

@@ -9,7 +9,7 @@ public class DungeonMapConfig {
     @Expose
     @ConfigOption(name = "Enable Map",desc = "Enable rendering of dungeon map")
     @ConfigEditorBoolean
-    public boolean enabled = true;
+    public boolean enabled = false;
 
     @Expose
     public Position dungeonMapPos = new Position(5, 400);
@@ -52,22 +52,22 @@ public class DungeonMapConfig {
     @Expose
     @ConfigOption(name = "Show Player Head",desc = "Show Player Heads in the Dungeon Map")
     @ConfigEditorBoolean
-    public boolean showPlayerHead = true;
+    public boolean showPlayerHead = false;
 
     @Expose
     @ConfigOption(name = "Show Player Username",desc = "Show Player's Username in Dungeon Map")
     @ConfigEditorBoolean
-    public boolean showPlayerUsername = true;
+    public boolean showPlayerUsername = false;
 
     @Expose
     @ConfigOption(name = "Show Player Rank",desc = "Show Player's rank in username display in Dungeon Map")
     @ConfigEditorBoolean
-    public boolean showPlayerRank = true;
+    public boolean showPlayerRank = false;
 
     @Expose
     @ConfigOption(name = "Show Visited Room Names",desc = "Display the name of each room you have visited on the dungeon map")
     @ConfigEditorBoolean
-    public boolean showVisitedRoomNames = true;
+    public boolean showVisitedRoomNames = false;
 
     @Expose
     @ConfigOption(name = "Room Name Font Size",desc = "Control how big the room name display is")

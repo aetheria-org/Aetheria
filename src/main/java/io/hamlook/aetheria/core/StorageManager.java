@@ -38,11 +38,9 @@ import java.util.TimerTask;
  *   2. Add one line to the enum below.
  *   3. That's it. ATHRMod.java does not need to change.
  *<p>
- * Mirrors: ConfigFileType + ConfigManager (SkyHanni).
  */
 public enum StorageManager {
 
-    // ── enum entries ─────────────────────────────────────────────────────────
     WAYPOINTS      (WaypointStorage.getInstance()),
     INV_BUTTONS    (InventoryButtonStorage.getInstance()),
     DIANA_STATS    (DianaStats.getInstance()),
@@ -55,15 +53,12 @@ public enum StorageManager {
     FARMING_TRACKER(FarmingTrackerData.getInstance()),
     ORGANIC_MATTER_TRACKER(OrganicMatterTrackerData.getInstance()),
     GHOST_STATS    (GhostStats.getInstance());
-    // ─────────────────────────────────────────────────────────────────────────
 
     private final Managed instance;
 
     StorageManager(Managed instance) {
         this.instance = instance;
     }
-
-    // ── static boot helpers ───────────────────────────────────────────────────
 
     /** Call once in preInit. Calls initFile() on every registered storage. */
     public static void initAll(File configDir) {
@@ -77,6 +72,24 @@ public enum StorageManager {
     public static void loadAll() {
         for (StorageManager entry : values()) {
             entry.instance.load();
+        }
+    }
+
+    /** Calls save() on every profile-managed storage. */
+    public static void saveAllProfileData() {
+        for (StorageManager entry : values()) {
+            if (entry.instance instanceof ProfileManagedStorage) {
+                ((ProfileManagedStorage) entry.instance).save();
+            }
+        }
+    }
+
+    /** Calls load() on every profile-managed storage. */
+    public static void loadAllProfileData() {
+        for (StorageManager entry : values()) {
+            if (entry.instance instanceof ProfileManagedStorage) {
+                entry.instance.load();
+            }
         }
     }
 
@@ -102,8 +115,6 @@ public enum StorageManager {
             }
         }, 60_000L, 60_000L);
     }
-
-    // ── shared I/O utilities (mirrors SkyHanni's ConfigManager) ──────────────
 
     /**
      * Loads a JSON file into the given class. On corruption, renames the bad
@@ -176,8 +187,6 @@ public enum StorageManager {
             System.err.println("[ATHR] Backed up corrupted file to " + backup.getName());
         } catch (Exception ignored) {}
     }
-
-    // ── interfaces ────────────────────────────────────────────────────────────
 
     /**
      * Every storage singleton must implement this so the enum can drive it.

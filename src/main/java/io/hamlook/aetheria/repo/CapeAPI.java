@@ -14,13 +14,12 @@ public class CapeAPI {
     }
 
     public static String getAPIUrl(String endpoint) {
-        RepoData url = RepoHandler.get(ATHRRepo.KEY_REPO, RepoData.class, new RepoData());
-        return url.capeApi + (url.capeApi.endsWith("/") || endpoint.startsWith("/") ? "" : "/") + endpoint;
+        String api = getAPIUrl();
+        return api + (api.endsWith("/") || endpoint.startsWith("/") ? "" : "/") + endpoint;
     }
 
     public static String getWebsocketURL() {
-        RepoData url = RepoHandler.get(ATHRRepo.KEY_REPO, RepoData.class, new RepoData());
-        String capeAPI = url.capeApi;
+        String capeAPI = getAPIUrl();
         if(capeAPI.startsWith("http")){
             capeAPI = capeAPI.replace("http","ws");
         }

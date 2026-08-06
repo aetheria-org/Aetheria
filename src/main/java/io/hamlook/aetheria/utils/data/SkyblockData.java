@@ -14,6 +14,9 @@ import java.util.stream.IntStream;
 
 public final class SkyblockData {
 
+    private static String currentProfile = "";
+    private static Environment currentEnvironment = Environment.UNKNOWN;
+
     private SkyblockData() {
     }
 
@@ -70,8 +73,6 @@ public final class SkyblockData {
         return getScoreboardLines().stream().map(s -> net.minecraft.util.StringUtils.stripControlCodes(s).trim()).collect(Collectors.toList());
     }
 
-    private static String currentProfile = "";
-
     public static String getCurrentProfile() {
         return currentProfile;
     }
@@ -80,8 +81,42 @@ public final class SkyblockData {
         currentProfile = profile;
     }
 
+    public static Environment getEnvironment() {
+        return currentEnvironment;
+    }
+
+    public static void setEnvironment(Environment environment) {
+        currentEnvironment = environment;
+    }
+
+    public static String getEnvironmentKey() {
+        switch (currentEnvironment) {
+            case SANDBOX:
+                return "sandbox";
+            case ALPHA:
+                return "alpha";
+            default:
+                return "normal";
+        }
+    }
+
+    public static Environment detectEnvironment(String serverPrefix) {
+        if (serverPrefix == null) return Environment.NORMAL;
+        if (serverPrefix.contains("sandbox")) return Environment.SANDBOX;
+        if (serverPrefix.contains("test") || serverPrefix.contains("alpha")) return Environment.ALPHA;
+        return Environment.NORMAL;
+    }
+
+    public static String getIgn() {
+        String name = Minecraft.getMinecraft().getSession().getUsername();
+        return name == null ? "" : name;
+    }
+
     public static boolean isOnSkyblock() {
-        return getCurrentLocation() != Location.NONE;
+        if (getCurrentLocation() != Location.NONE) return true;
+        String prefix = TablistParser.getServerPrefix();
+        return prefix != null && !prefix.isEmpty()
+                && (prefix.startsWith("skyblock") || prefix.startsWith("sb"));
     }
 
     public static boolean isInDungeon() {
@@ -92,11 +127,16 @@ public final class SkyblockData {
         return getCleanScoreboardLines().stream().anyMatch(line -> line.contains("The Mist"));
     }
 
+    public enum Environment {
+        NORMAL, SANDBOX, ALPHA, UNKNOWN;
+
+        public boolean isTest() {
+            return this == SANDBOX || this == ALPHA;
+        }
+    }
+
     public enum Location {
-        HUB("skyblock-", "skyblock_sandbox-", "skyblocktest-"), DUNGEON("sbdungeon-", "sbdungeon_sandbox-", "sbdungeon_test-"), DWARVEN("sbm-", "sbm_sandbox-", "sbm_test-"), CRYSTAL_HOLLOWS("sbch-", "sbch_sandbox-", "sbtest_alpha-"), CRIMSON_ISLE("sbcris-", "sbcris_sandbox-", "sbcris_test-"), PRIVATE_ISLAND("sbi-", "sbi_sandbox-", "sbi_test-"), DUNGEON_HUB("sbdh-", "sbdh_sandbox-", "sbdh_test-"), BARN("sbfarms-", "sbfarms_sandbox-", "sbfarms_test-"), PARK("sbpark-", "sbpark_sandbox-", "sbpark_test-"), SPIDERS_DEN("sbspiders-", "sbspiders_sandbox-", "sbspiders_test-"), THE_END("sbend-", "sbend_sandbox-", "sbend_test-"), JERRY("sbj-", "sbj_sandbox-", "sbj_test-"), GOLD_MINE("sbmines-", "sbmines_sandbox-", "sbmines_test-"),
-        // PLACEHOLDER: prefixes unverified, confirm with /locraw while standing in the Garden and replace these before merging.
-        GARDEN("sbgarden-", "sbgarden_sandbox-", "sbgarden_test-"),
-        NONE("", "", "");
+        HUB("skyblock-", "skyblock_sandbox-", "skyblocktest-"), DUNGEON("sbdungeon-", "sbdungeon_sandbox-", "sbdungeon_test-"), DWARVEN("sbm-", "sbm_sandbox-", "sbm_test-"), CRYSTAL_HOLLOWS("sbch-", "sbch_sandbox-", "sbtest_alpha-"), CRIMSON_ISLE("sbcris-", "sbcris_sandbox-", "sbcris_test-"), PRIVATE_ISLAND("sbi-", "sbi_sandbox-", "sbi_test-"), DUNGEON_HUB("sbdh-", "sbdh_sandbox-", "sbdh_test-"), BARN("sbfarms-", "sbfarms_sandbox-", "sbfarms_test-"), PARK("sbpark-", "sbpark_sandbox-", "sbpark_test-"), SPIDERS_DEN("sbspiders-", "sbspiders_sandbox-", "sbspiders_test-"), THE_END("sbend-", "sbend_sandbox-", "sbend_test-"), JERRY("sbj-", "sbj_sandbox-", "sbj_test-"), GOLD_MINE("sbmines-", "sbmines_sandbox-", "sbmines_test-"), GARDEN("gdn-", "gdn_sandbox-", "gdn_test-"), NONE("", "", "");
 
         public final String main, sandbox, alpha;
 

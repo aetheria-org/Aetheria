@@ -10,6 +10,10 @@ public class ChatConfig {
     public final ChatFilterConfig chatFilterConfig = new  ChatFilterConfig();
 
     @Expose
+    @Category(name = "Emojis", desc = "Render :emoji_name: as textures in chat, with suggestions while typing")
+    public final EmojiConfig emojiConfig = new EmojiConfig();
+
+    @Expose
     @ConfigOption(name = "Chat Compacting", desc = "Collapse repeated identical chat messages into one with a counter")
     @ConfigEditorBoolean
     public boolean compactingEnabled = true;

@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.core;
 
+import io.hamlook.aetheria.utils.data.DataPaths;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 
 import java.io.File;
@@ -17,17 +18,12 @@ public abstract class ProfileManagedStorage implements StorageManager.Managed {
         this.configDir = configDir;
     }
 
+    public abstract void save();
+
     protected File resolveFile() {
         String profile = SkyblockData.getCurrentProfile();
         if (profile.isEmpty()) return null;
-        File target = new File(new File(configDir, "profiles/" + profile), fileName);
-        if (!target.exists()) {
-            File legacy = new File(configDir, fileName);
-            if (legacy.exists()) {
-                target.getParentFile().mkdirs();
-                legacy.renameTo(target);
-            }
-        }
-        return target;
+        DataPaths.migrate(DataPaths.profileFile(configDir, "normal", profile, fileName), new File(configDir, "profiles/" + profile + "/" + fileName), new File(configDir, fileName));
+        return DataPaths.profileFile(configDir, SkyblockData.getEnvironmentKey(), profile, fileName);
     }
 }

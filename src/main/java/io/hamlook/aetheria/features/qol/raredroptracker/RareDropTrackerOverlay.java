@@ -5,6 +5,7 @@ import io.hamlook.aetheria.core.features.qol.RareDropTrackerConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 
@@ -55,7 +56,15 @@ public class RareDropTrackerOverlay extends Overlay {
 
     @Override
     protected boolean isEnabled() {
-        return ATHRConfig.feature.qol.rareDropTracker.enabled && ATHRConfig.feature.qol.rareDropTracker.showOverlay;
+        return ATHRConfig.feature.qol.rareDropTracker.enabled
+                && ATHRConfig.feature.qol.rareDropTracker.showOverlay
+                && SkyblockData.isOnSkyblock()
+                && hasAnyDrops();
+    }
+
+    private boolean hasAnyDrops() {
+        return ATHRConfig.feature.qol.rareDropTracker.trackedItems.values().stream()
+                .anyMatch(i -> i.count > 0);
     }
 
     @Override

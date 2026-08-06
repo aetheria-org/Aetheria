@@ -19,6 +19,7 @@ import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
@@ -154,7 +155,7 @@ public class PriceDetector {
             Aetheria.logger.info("Sending " + bazaarMap.size() + " bazaar and " + auctionMap.size() + " auction entries to API");
         }
 
-        new Thread(() -> {
+        ThreadUtils.run(() -> {
             int maxRetries = 5;
             int attempt = 0;
             boolean successOrStop = false;
@@ -202,7 +203,7 @@ public class PriceDetector {
                     Aetheria.logger.info("Failed to send prices: " + e.getMessage());
                 }
             }
-        }).start();
+        });
 
         bazaarMap.clear();
         auctionMap.clear();

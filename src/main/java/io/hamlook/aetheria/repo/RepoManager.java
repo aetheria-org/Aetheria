@@ -4,10 +4,13 @@ import com.google.gson.GsonBuilder;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.JsonCache;
+import io.hamlook.aetheria.utils.ThreadUtils;
 
 import java.lang.reflect.Type;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RepoManager {
@@ -15,11 +18,6 @@ public class RepoManager {
     private final JsonCache cache = new JsonCache(new GsonBuilder().create());
     private final ConcurrentMap<String, Source> sources = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, List<Runnable>> listeners = new ConcurrentHashMap<>();
-    private final ExecutorService pool = new ThreadPoolExecutor(1, 2, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<>(32), r -> {
-        Thread t = new Thread(r, "ATHR-IO");
-        t.setDaemon(true);
-        return t;
-    }, new ThreadPoolExecutor.DiscardOldestPolicy());
 
     public void register(String key, String url) {
         sources.put(key, new Source(url));
@@ -52,15 +50,11 @@ public class RepoManager {
         return cache.resolve(key, type, () -> fallback);
     }
 
-    public void shutdown() {
-        pool.shutdownNow();
-    }
-
     private void doFetch(String key) {
         if (!NetworkGuard.githubAllowed()) return;
         Source src = sources.get(key);
         if (src == null || !src.claim()) return;
-        pool.execute(() -> {
+        ThreadUtils.run(() -> {
             try {
                 HttpClient.FetchResult result = http.fetch(src.url, src.etag);
                 if (result.modified() && result.body() != null) {

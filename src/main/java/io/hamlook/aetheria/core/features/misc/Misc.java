@@ -71,9 +71,14 @@ public class Misc {
     public boolean disableEntityFire = true;
 
     @Expose
+    @ConfigOption(name = "Player Size Only in Skyblock", desc = "Only apply player size scaling while on Skyblock")
+    @ConfigEditorBoolean
+    public boolean playerSizeOnlyInSkyblock = true;
+
+    @Expose
     @ConfigOption(name = "SkyBlock XP in Chat", desc = "Sends SkyBlock XP gains from the action bar into chat")
     @ConfigEditorBoolean
-    public boolean skyblockXpInChat = false;
+    public boolean skyblockXpInChat = true;
 
     @Expose
     public Map<String, SbProfileData> sbProfileData = new HashMap<>();
@@ -117,8 +122,8 @@ public class Misc {
     @Category(name = "Ghost Tracker", desc = "Settings for Ghost Tracker overlay")
     public GhostTrackerConfig ghostTrackerConfig = new GhostTrackerConfig();
 
-    @Expose
-    @Category(name = "Party Member Outline", desc = "Highlight your party members with a colored outline while they're visible on screen (not through walls)")
+//    @Expose
+//    @Category(name = "Party Member Outline", desc = "Highlight your party members with a colored outline while they're visible on screen (not through walls)")
     public PartyMemberOutlineConfig partyMemberOutline = new PartyMemberOutlineConfig();
 
     public static class SbProfileData {

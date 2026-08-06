@@ -3,9 +3,12 @@ package io.hamlook.aetheria.features.diana.party;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.WebSocketClient;
 import io.hamlook.aetheria.command.ASMCommand;
+import io.hamlook.aetheria.features.diana.party.ui.DPartyGUI;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.utils.CommunityAccess;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -30,12 +33,12 @@ public class DPartyCommand extends ASMCommand {
     }
 
     private String getArgs() {
-        return "<join|create|leave|disband|transfer>";
+        return "<join|create|leave|disband|transfer|kick|setpass|list>";
     }
 
     @Override
     public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
-        String[] options = new String[] {"join", "create", "leave", "disband","transfer"};
+        String[] options = new String[] {"join", "create", "leave", "disband","transfer","kick","setpass","list"};
         if(args.length == 0) return Arrays.asList(options);
         if(args.length == 1){
             String argument = args[0];
@@ -46,11 +49,19 @@ public class DPartyCommand extends ASMCommand {
 
     @Override
     public void execute(ICommandSender sender, String[] args) throws CommandException {
+        CommunityAccess.runIfAllowed(
+                "§cDiana Parties require your account to be Synced (use /sync) or to be on SkyBlock.",
+                () -> runCommand(args)
+        );
+    }
+
+    private void runCommand(String[] args) {
         if(args.length < 1) {
-            ChatUtils.sendMessage("§cPlease Enter a Sub Command");
+            openListGui();
             return;
         }
-        switch (args[0].toLowerCase()) {
+        try {
+            switch (args[0].toLowerCase()) {
             case "create":
                 createParty(args);
                 break;
@@ -66,11 +77,102 @@ public class DPartyCommand extends ASMCommand {
             case "transfer":
                 transferParty(args);
                 break;
+            case "kick":
+                kickFromParty(args);
+                break;
+            case "setpass":
+                setPartyPass(args);
+                break;
+            case "list":
+            case "gui":
+                openListGui();
+                break;
+            }
+        } catch (CommandException e) {
+            ChatUtils.sendMessage("§c" + e.getMessage());
         }
     }
 
+    /** Opens the Diana party browser GUI. */
+    public void openListGui() {
+        if (!WebSocketClient.isConnected && NetworkGuard.apiAllowed()) {
+            DianaPartyConnector.connectToAPI();
+        }
+        DPartyGUI.open();
+    }
+
+    public void kickFromParty(String[] args) {
+        if (!WebSocketClient.isConnected) {
+            ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
+            if (NetworkGuard.apiAllowed()) {
+                DianaPartyConnector.connectToAPI();
+            }
+            return;
+        }
+        if (!DianaPartyConnector.isInParty()) {
+            ChatUtils.sendMessage("§cYou are not in a Diana Party.");
+            return;
+        }
+        if (args.length < 2) {
+            ChatUtils.sendMessage("§cPlease enter a valid party member IGN");
+            return;
+        }
+        CompletableFuture<String> future = DianaPartyConnector.kickFromParty(args[1].toLowerCase());
+        if(future == null){
+            ChatUtils.sendMessage("§cYou are not in a Diana Party.");
+            return;
+        }
+        future.thenAccept(response -> {
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+            JsonObject data = json.getAsJsonObject("data");
+            int code = data.get("code").getAsInt();
+            if(code == 200){
+                String kickedPlayer = data.get("kicked").getAsString();
+                ChatUtils.sendMessage("§aSuccessfully Kicked " + kickedPlayer + " from the party.");
+            }else {
+                String msg = json.getAsJsonObject("data").get("message").getAsString();
+                ChatUtils.sendMessage("§cError While Kicking Player§7[§c" + code + "§7]: §c" + msg);
+            }
+        });
+    }
+
+    public void setPartyPass(String[] args) {
+        if (!WebSocketClient.isConnected) {
+            ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
+            if (NetworkGuard.apiAllowed()) {
+                DianaPartyConnector.connectToAPI();
+            }
+            return;
+        }
+        if (!DianaPartyConnector.isInParty()) {
+            ChatUtils.sendMessage("§cYou are not in a Diana Party.");
+            return;
+        }
+        if (args.length < 2) {
+            ChatUtils.sendMessage("§cPlease enter a valid password.");
+            return;
+        }
+        CompletableFuture<String> future = DianaPartyConnector.setPartyPass(args[1].toLowerCase());
+        if(future == null){
+            ChatUtils.sendMessage("§cYou are not in a Diana Party.");
+            return;
+        }
+        future.thenAccept(response -> {
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+            JsonObject data = json.getAsJsonObject("data");
+            int code = data.get("code").getAsInt();
+            if(code == 200){
+                String newPass = data.get("newPass").getAsString();
+                ChatUtils.sendMessage("§aSuccessfully Updated Password to " + newPass);
+            }else {
+                String msg = json.getAsJsonObject("data").get("message").getAsString();
+                ChatUtils.sendMessage("§cError While Changing Password§7[§c" + code + "§7]: §c" + msg);
+            }
+        });
+    }
+
     public void transferParty(String[] args) {
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
@@ -105,7 +207,7 @@ public class DPartyCommand extends ASMCommand {
         });
     }
     public void disbandParty() {
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
@@ -134,7 +236,7 @@ public class DPartyCommand extends ASMCommand {
     }
 
     public void leaveParty() {
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
@@ -167,7 +269,7 @@ public class DPartyCommand extends ASMCommand {
             ChatUtils.sendMessage("§cPlease enter a valid party ID");
             return;
         }
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
@@ -179,7 +281,11 @@ public class DPartyCommand extends ASMCommand {
             return;
         }
         String pID = args[1];
-        CompletableFuture<String> future = DianaPartyConnector.joinParty(pID);
+        String password = "";
+        if(args.length > 2){
+            password = args[2];
+        }
+        CompletableFuture<String> future = DianaPartyConnector.joinParty(pID,password);
         if (future == null){
             ChatUtils.sendMessage("§cEncountered an error while joining party, Please try again in 15 seconds.");
             return;
@@ -205,7 +311,7 @@ public class DPartyCommand extends ASMCommand {
             ChatUtils.sendMessage("§cPlease enter a valid party name");
             return;
         }
-        if (!DianaPartyConnector.isConnected) {
+        if (!WebSocketClient.isConnected) {
             ChatUtils.sendMessage("§cYou are not connected to the api, please try again. If the issue persists, make sure you have API usage allowed");
             if (NetworkGuard.apiAllowed()) {
                 DianaPartyConnector.connectToAPI();
@@ -217,7 +323,11 @@ public class DPartyCommand extends ASMCommand {
             return;
         }
         String pName = args[1];
-        CompletableFuture<String> future = DianaPartyConnector.createParty(pName);
+        String password = "";
+        if(args.length > 2){
+            password = args[2];
+        }
+        CompletableFuture<String> future = DianaPartyConnector.createParty(pName,password);
         if (future == null){
             ChatUtils.sendMessage("§cEncountered an error while creating party, Please try again in 15 seconds.");
             return;

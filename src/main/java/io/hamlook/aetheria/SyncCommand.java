@@ -7,6 +7,7 @@ import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -69,7 +70,7 @@ public class SyncCommand extends ASMCommand {
 
         String playerName = sender.getName();
         String syncCode = generateSyncCode();
-        new Thread(() -> {
+        ThreadUtils.run(() -> {
             try {
                 URL url = new URL(CapeAPI.getAPIUrl("pending-sync"));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -113,7 +114,7 @@ public class SyncCommand extends ASMCommand {
 
                 Minecraft.getMinecraft().addScheduledTask(() -> ChatUtils.sendMessage("§c[SkyAtlas] An error occurred while contacting the sync server."));
             }
-        }).start();
+        });
     }
 
     private String generateSyncCode() {

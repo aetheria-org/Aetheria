@@ -87,11 +87,13 @@ dependencies {
 
     // Kotlin standard library, must be shadowed into the JAR
     shadowImpl(kotlin("stdlib"))
-
+    shadowImpl("com.tianscar.imageio:imageio-apng:1.0.1") { isTransitive = false }
+    shadowImpl("dev.matrixlab.webp4j:webp4j-core:2.5.0") { isTransitive = false }
     compileOnly("org.projectlombok:lombok:1.18.30")
     annotationProcessor("org.projectlombok:lombok:1.18.30")
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
     shadowImpl("com.google.code.gson:gson:2.10.1") { isTransitive = false }
+    shadowImpl("com.fifesoft:rsyntaxtextarea:3.3.3") { isTransitive = false }
 }
 
 // Tasks:
@@ -144,6 +146,7 @@ tasks.shadowJar {
     archiveClassifier.set("non-obfuscated-with-deps")
     configurations = listOf(shadowImpl)
     from(rootProject.file("LICENSE.txt"))
+    mergeServiceFiles()
     doLast {
         configurations.forEach {
             println("Copying dependencies into mod: ${it.files}")
@@ -155,6 +158,8 @@ tasks.shadowJar {
     relocate("com.google.gson")
     relocate("org.java_websocket")
     relocate("org.slf4j")
+    relocate("com.tianscar.imageio")
+    relocate("org.fife")
 }
 
 tasks.assemble.get().dependsOn(tasks.remapJar)

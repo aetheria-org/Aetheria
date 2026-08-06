@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.misc.itemList;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.ThreadUtils;
 
 import java.awt.Desktop;
 import java.net.URI;
@@ -17,7 +18,6 @@ public class WikiPane {
     public static void open(SkyblockItem item) {
         if (item == null) return;
 
-        // Walk up to the family representative so all rarities of a pet share one URL
         SkyblockItem target = item;
         if (item.familyId != null) {
             ItemFamily fam = ItemRegistry.familyRegistry.get(item.familyId);
@@ -30,15 +30,13 @@ public class WikiPane {
         if (url == null || url.isEmpty()) return;
 
         final String finalUrl = url;
-        Thread t = new Thread(() -> {
+        ThreadUtils.run("WikiPane-Open", () -> {
             try {
                 Desktop.getDesktop().browse(new URI(finalUrl));
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, "WikiPane-Open");
-        t.setDaemon(true);
-        t.start();
+        });
     }
 
     private static String resolveUrl(SkyblockItem item) {

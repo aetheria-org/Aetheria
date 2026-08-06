@@ -5,10 +5,11 @@ import io.hamlook.aetheria.core.GsonBuilder;
 import io.hamlook.aetheria.core.ProfileManagedStorage;
 import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.features.price.PriceMap;
+import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import io.hamlook.aetheria.utils.data.TablistParser;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
@@ -107,7 +108,7 @@ public class DianaStats extends ProfileManagedStorage implements StorageManager.
     }
 
     public boolean isDianaMayor() {
-        return TablistParser.isDianaMayor();
+        return ElectionUtils.isDianaMayor();
     }
 
     public void onClientLogin() {
@@ -140,13 +141,13 @@ public class DianaStats extends ProfileManagedStorage implements StorageManager.
         data.totalInqsLootshared++;
         save();
 
-        new Thread(() -> {
+        ThreadUtils.run(() -> {
             try {
                 Thread.sleep(2_000L);
             } catch (InterruptedException ignored) {
             }
             hasTrackedInqLs = false;
-        }).start();
+        });
     }
 
     public void updateActivity() {

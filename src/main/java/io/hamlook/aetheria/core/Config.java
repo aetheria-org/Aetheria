@@ -38,24 +38,12 @@ public class Config {
     public final Scoreboard scoreboard = new Scoreboard();
 
     @Expose
-    @Category(name = "Chat Utils", desc = "Chat compacting, timestamps, chat heads, copy & visual tweaks")
-    public final ChatConfig chat = new ChatConfig();
-
-    @Expose
     @Category(name = "Misc", desc = "Misc features")
     public final Misc misc = new Misc();
 
     @Expose
     @Category(name = "Storage", desc = "Storage Overlay features")
     public final Storage storage = new Storage();
-
-    @Expose
-    @Category(name = "Cosmetics", desc = "Capes and Cosmetics Feature")
-    public final Cosmetics cosmetics = new Cosmetics();
-
-    @Expose
-    @Category(name = "Waypoints", desc = "Waypoints config & GUI")
-    public final Waypoints waypoints = new Waypoints();
 
     @Expose
     @Category(name = "Mining", desc = "Mining features")
@@ -78,12 +66,24 @@ public class Config {
     public final Fishing fishing = new Fishing();
 
     @Expose
+    @Category(name = "Network & Privacy", desc = "Manage network calls")
+    public final NetworkConfig network = new NetworkConfig();
+
+    @Expose
+    @Category(name = "Chat Utils", desc = "Chat compacting, timestamps, chat heads, copy & visual tweaks")
+    public final ChatConfig chat = new ChatConfig();
+
+    @Expose
     @Category(name = "Overlays", desc = "Various Overlay features")
     public final Overlays overlays = new Overlays();
 
     @Expose
-    @Category(name = "Privacy", desc = "Manage network calls")
-    public final NetworkConfig network = new NetworkConfig();
+    @Category(name = "Cosmetics", desc = "Capes and Cosmetics Feature")
+    public final Cosmetics cosmetics = new Cosmetics();
+
+    @Expose
+    @Category(name = "Waypoints", desc = "Waypoints config & GUI")
+    public final Waypoints waypoints = new Waypoints();
 
     @Expose
     @Category(name = "Debug", desc = "Debug tools")

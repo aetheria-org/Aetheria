@@ -43,7 +43,7 @@ public class OrganicMatterValues {
         put("ENCHANTED_BROWN_MUSHROOM", 160);
         put("ENCHANTED_BROWN_MUSHROOM_BLOCK", 5_184);
 
-        put("INK_SACK:3", 0.4);
+        put("INK_SACK__3", 0.4);
         put("ENCHANTED_COCOA", 64);
 
         put("CACTUS", 0.5);

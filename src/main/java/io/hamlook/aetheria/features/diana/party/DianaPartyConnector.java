@@ -5,14 +5,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.WebSocketClient;
 import io.hamlook.aetheria.network.NetworkGuard;
-import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.client.Minecraft;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -22,30 +20,30 @@ public class DianaPartyConnector {
 
     public static boolean isDiana = true;
     public static boolean isRitual = true;
-    public static boolean isConnected = false;
-    public static DianaPartyClient partyClient;
     public static Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public static void checkForDiana() {
-        if(ElectionUtils.currentMayor.equals("Diana")){
+        if(ElectionUtils.isDianaMayor()){
             isDiana = true;
         }
         if(ElectionUtils.perks != null){
-            if(ElectionUtils.perks.perks.contains("Mythological Ritual")){
-                isRitual = true;
+            for(String perk : ElectionUtils.perks.perks){
+                if (perk.toLowerCase().contains("mythological") && perk.toLowerCase().contains("ritual")) {
+                    isRitual = true;
+                    break;
+                }
             }
         }
     }
 
     public static void initialise(){
         if(!NetworkGuard.apiAllowed()) return;
-//        checkForDiana();
-        connectToAPI();
+        checkForDiana();
         long intervalSeconds = 120;
         scheduler.schedule(() -> {
             try {
-                if (!isConnected) {
+                if (!WebSocketClient.isConnected) {
                     Aetheria.logger.severe("[D-Party] API disconnected. Attempting reconnection...");
                     connectToAPI();
                 }
@@ -55,8 +53,8 @@ public class DianaPartyConnector {
         },intervalSeconds,TimeUnit.SECONDS);
     }
 
-    public static CompletableFuture<String> joinParty(String partyID){
-        if(!isConnected){
+    public static CompletableFuture<String> joinParty(String partyID, String password){
+        if(!WebSocketClient.isConnected){
             connectToAPI();
             return null;
         }
@@ -64,60 +62,89 @@ public class DianaPartyConnector {
         JsonObject cmd = new JsonObject();
         cmd.addProperty("command", "dpartyjoin");
         cmd.addProperty("partyID", partyID);
+        cmd.addProperty("pass", password);
         cmd.addProperty("member", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
 
-        return partyClient.sendAndRecieve(GSON.toJson(cmd));
+        return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(cmd));
     }
 
-    public static CompletableFuture<String> createParty(String pName){
-        if(!isConnected) connectToAPI();
+    /** Subscribes to live party-list pushes and returns the current list (code 200 + parties array). */
+    public static CompletableFuture<String> listParties() {
+        if(!WebSocketClient.isConnected){
+            connectToAPI();
+            return null;
+        }
+
+        JsonObject obj = new JsonObject();
+        obj.addProperty("command", "dpartylist");
+        return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
+    }
+
+    public static CompletableFuture<String> createParty(String pName, String password){
+        if(!WebSocketClient.isConnected) connectToAPI();
 
         JsonObject obj = new JsonObject();
         obj.addProperty("command", "dpartycreate");
         obj.addProperty("partyName", pName);
+        obj.addProperty("pass", password);
         obj.addProperty("creator", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
 
-        return partyClient.sendAndRecieve(GSON.toJson(obj));
+        return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
     }
 
+    public static CompletableFuture<String> setPartyPass(String password) {
+        if(!WebSocketClient.isConnected) connectToAPI();
+
+        JsonObject obj = new JsonObject();
+        obj.addProperty("command", "dpartypass");
+        obj.addProperty("password", password);
+        return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
+    }
     public static CompletableFuture<String> leaveParty() {
-        if(!isConnected) connectToAPI();
+        if(!WebSocketClient.isConnected) connectToAPI();
 
         JsonObject obj = new JsonObject();
         obj.addProperty("command", "dpartyleave");
-        return partyClient.sendAndRecieve(GSON.toJson(obj));
+        return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
     }
     public static CompletableFuture<String> disbandParty() {
-        if(!isConnected) connectToAPI();
+        if(!WebSocketClient.isConnected) connectToAPI();
 
         JsonObject obj = new JsonObject();
         obj.addProperty("command", "dpartydisband");
-        return partyClient.sendAndRecieve(GSON.toJson(obj));
+        return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
     }
 
     public static CompletableFuture<String> transferParty(String member){
-        if(!isConnected) connectToAPI();
+        if(!WebSocketClient.isConnected) connectToAPI();
         JsonObject obj = new JsonObject();
         obj.addProperty("command", "dpartytransfer");
         obj.addProperty("newCreator",member);
-        return partyClient.sendAndRecieve(GSON.toJson(obj));
+        return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
+    }
+
+    public static CompletableFuture<String> kickFromParty(String player) {
+        if(!WebSocketClient.isConnected) connectToAPI();
+        JsonObject obj = new JsonObject();
+        obj.addProperty("command", "dpartykick");
+        obj.addProperty("player",player.toLowerCase());
+        return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
     }
 
     public static CompletableFuture<String> sendMessage(String msg) {
-        if(!isConnected) connectToAPI();
+        if(!WebSocketClient.isConnected) connectToAPI();
 
         JsonObject obj = new JsonObject();
         obj.addProperty("command", "dpartychat");
         obj.addProperty("message", msg);
-        //TODO: Maybe Attach Ranks
         obj.addProperty("player", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
 
-        return partyClient.sendAndRecieve(GSON.toJson(obj));
+        return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
     }
 
     public static boolean isInParty() {
         try {
-            String response = partyClient.sendAndRecieve("{\"command\": \"dPartyCheck\"}").get(10, TimeUnit.SECONDS);
+            String response = Aetheria.webSocketClient.sendAndRecieve("{\"command\": \"dPartyCheck\"}").get(10, TimeUnit.SECONDS);
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
             JsonObject data = json.get("data").getAsJsonObject();
             return data.get("code").getAsInt() == 200;
@@ -128,54 +155,103 @@ public class DianaPartyConnector {
     }
 
     public static void connectToAPI() {
-        if(partyClient == null || !isConnected){
-            partyClient = new DianaPartyClient();
+        if(Aetheria.webSocketClient == null || !WebSocketClient.isConnected){
+            Aetheria.webSocketClient = new WebSocketClient();
         }
+        if(!isDiana && !isRitual){
+            checkForDiana();
+        }
+        if(!isDiana && !isRitual) return;
         if(!NetworkGuard.apiAllowed()) return;
-        Aetheria.logger.info("[D-Party] Trying to connect to Diana Party API");
-        partyClient.connect();
+        Aetheria.logger.info("[D-Party] Trying to connect to Websocket API");
+        Aetheria.webSocketClient.connect();
     }
 
-    //TODO: Process Diana Party Chat Stuff
-    public static void process(String message) {
-        JsonObject json = JsonParser.parseString(message).getAsJsonObject();
-        if(json == null) return;
-        String type = json.get("type").getAsString().toLowerCase();
-        if(type.equalsIgnoreCase("dchatMessage")){
-            String player = json.get("player").getAsString();
-            String msg = json.get("message").getAsString();
-            ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + ": §f" + msg);
-        }
-        if(type.equalsIgnoreCase("dpartyLeave")){
-            String player = json.get("player").getAsString();
-            ChatUtils.sendMessage("§b[D-Party Chat] §c" + player + " has left the Diana Party.");
-        }
-        if(type.equalsIgnoreCase("dpartydisband")){
-            String player = json.get("player").getAsString();
-            ChatUtils.sendMessage("§b[D-Party Chat] §cThis Party has been disbanded by " + player);
-        }
-        if(type.equalsIgnoreCase("dpartyJoin")){
-            String player = json.get("player").getAsString();
-            ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + " has joined the Diana Party.");
-        }
+    /** Optional listener for live party-list pushes while a GUI is open. */
+    private static volatile PartyListListener partyListListener = null;
+
+    public interface PartyListListener {
+        void onPartyList(java.util.List<JsonObject> parties);
     }
 
-    //TODO: Process Diana Party Error Stuff
+    public static void setPartyListListener(PartyListListener listener) {
+        partyListListener = listener;
+    }
+
+    public static boolean process(String message) {
+        try {
+            JsonObject json = JsonParser.parseString(message).getAsJsonObject();
+            if (json == null) return false;
+            if (!json.has("type")) return false;
+            String type = json.get("type").getAsString().toLowerCase();
+            if (type.equalsIgnoreCase("dchatMessage")) {
+                String player = json.get("player").getAsString();
+                String msg = json.get("message").getAsString();
+                ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + ": §f" + msg);
+                return true;
+            }
+            if (type.equalsIgnoreCase("dpartyupdate")) {
+                if (partyListListener != null && json.has("parties") && json.get("parties").isJsonArray()) {
+                    java.util.List<JsonObject> parties = new java.util.ArrayList<>();
+                    for (com.google.gson.JsonElement e : json.get("parties").getAsJsonArray()) {
+                        if (e.isJsonObject()) parties.add(e.getAsJsonObject());
+                    }
+                    Minecraft.getMinecraft().addScheduledTask(() -> partyListListener.onPartyList(parties));
+                }
+                return true;
+            }
+            if (type.equalsIgnoreCase("dpartyleave")) {
+                String player = json.get("player").getAsString();
+                ChatUtils.sendMessage("§b[D-Party Chat] §c" + player + " has left the Diana Party.");
+                return true;
+            }
+            if (type.equalsIgnoreCase("dpartydisband")) {
+                String player = json.get("player").getAsString();
+                ChatUtils.sendMessage("§b[D-Party Chat] §cThis Party has been disbanded by " + player);
+                return true;
+            }
+            if (type.equalsIgnoreCase("dpartyjoin")) {
+                String player = json.get("player").getAsString();
+                ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + " has joined the Diana Party.");
+                return true;
+            }
+            if (type.equalsIgnoreCase("dpartykicked")) {
+                String player = json.get("player").getAsString();
+                String user = Minecraft.getMinecraft().getSession().getUsername().toLowerCase();
+                if (user.equalsIgnoreCase(player)) {
+                    ChatUtils.sendMessage("§b[D-Party Chat] §cYou have been kicked from the Diana Party.");
+                } else {
+                    ChatUtils.sendMessage("§b[D-Party Chat] §a" + player + " has been kicked from the Diana Party.");
+                }
+                return true;
+            }
+            if (type.equalsIgnoreCase("dpartytransfer")) {
+                String player = json.get("player").getAsString();
+                String newCreator = json.has("newCreator") ? json.get("newCreator").getAsString() : "another player";
+                ChatUtils.sendMessage("§b[D-Party Chat] §aParty ownership has been transferred from " + player + " to " + newCreator + ".");
+                return true;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
+    }
+
     public static void processError(Exception ex) {
         ChatUtils.sendMessage("§b[D-Party Chat]§c Error in Diana Party Finder: " + ex.getMessage());
         ChatUtils.sendMessage("§cReconnecting to API.");
-        if (partyClient != null) {
-            partyClient.close(1012, "Restarting");
+        if (Aetheria.webSocketClient != null) {
+            Aetheria.webSocketClient.close(1012, "Restarting");
         }
         connectToAPI();
     }
 
-    //TODO: Process Diana Party Disconnect Stuff
-    public static void processClose(int code, String reason, boolean remote) {
+    public static void processClose(int code) {
         if(code == 1012){
-            isConnected = false;
+            WebSocketClient.isConnected = false;
         }
     }
+
 
 
 }

@@ -3,6 +3,7 @@ package io.hamlook.aetheria;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
@@ -19,9 +20,8 @@ public class ModUpdater {
 
 
     public static void updateAndRestart(boolean shutdown) {
-        new Thread(() -> {
+        ThreadUtils.run(() -> {
             try {
-                // 1. Target the specific GitHub API for Aetheria
                 URL url = new URL("https://api.github.com/repos/aetheria-org/Aetheria/releases/latest");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
@@ -29,7 +29,6 @@ public class ModUpdater {
 
                 if (conn.getResponseCode() != 200) return;
 
-                // 2. Parse the response
                 InputStreamReader reader = new InputStreamReader(conn.getInputStream());
                 JsonObject response = new JsonParser().parse(reader).getAsJsonObject();
                 reader.close();
@@ -41,7 +40,6 @@ public class ModUpdater {
                     return;
                 }
 
-                // 4. Locate the JAR asset
                 JsonArray assets = response.getAsJsonArray("assets");
                 if (assets.size() == 0) return;
                 JsonObject jarAsset = null;
@@ -58,7 +56,6 @@ public class ModUpdater {
                 String downloadUrl = jarAsset.get("browser_download_url").getAsString();
                 String newFileName = jarAsset.get("name").getAsString();
 
-                // 5. Download the file
                 File modsDir = new File(Minecraft.getMinecraft().mcDataDir, "mods");
                 File newModFile = new File(modsDir, newFileName);
 
@@ -76,7 +73,6 @@ public class ModUpdater {
                     }
                 }
 
-                // 6. Handle old file cleanup
                 ModContainer myMod = Loader.instance().getIndexedModList().get(Aetheria.MODID);
                 if (myMod != null) {
                     File oldJar = myMod.getSource();
@@ -86,12 +82,11 @@ public class ModUpdater {
                 }
 
                 if(shutdown) {
-                    // 7. Shutdown if needed
                     Minecraft.getMinecraft().shutdown();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
     }
 }

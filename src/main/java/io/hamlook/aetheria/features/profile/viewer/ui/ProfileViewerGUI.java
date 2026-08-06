@@ -12,6 +12,7 @@ import io.hamlook.aetheria.features.profile.viewer.ui.tabs.*;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
@@ -72,7 +73,7 @@ public class ProfileViewerGUI extends GuiScreen {
         uiScale = ATHRConfig.feature.overlays.pvScale * ResolutionUtils.getXStatic(1);
         ProfileViewerAPI.fetchPlayerListAsync();
 
-        new Thread(() -> {
+        ThreadUtils.run("ATHR-GUI-FetchThread", () -> {
             try {
                 if (ProfileViewerAPI.profileHashMap.containsKey(username)) {
                     this.playerProfile = ProfileViewerAPI.profileHashMap.get(username);
@@ -93,7 +94,7 @@ public class ProfileViewerGUI extends GuiScreen {
             } finally {
                 this.isFetching = false;
             }
-        }, "ATHR-GUI-FetchThread").start();
+        });
     }
 
     public static float getScaleHeader() {

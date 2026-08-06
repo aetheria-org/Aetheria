@@ -32,8 +32,4 @@ public class RepoHandler {
     public static <T> T get(String key, Type t, T fb) {
         return MANAGER.get(key, t, fb);
     }
-
-    public static void shutdown() {
-        MANAGER.shutdown();
-    }
 }

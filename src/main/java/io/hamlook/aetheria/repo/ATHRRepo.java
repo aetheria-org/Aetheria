@@ -9,7 +9,7 @@ public class ATHRRepo {
     public static final String KEY_TAGS = "tags";
     public static final String KEY_REPO = "repo";
     public static final String KEY_OTHER = "other";
-    private static final String BASE = "https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/main/";
+    public static final String BASE = "https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/main/";
 
     private ATHRRepo() {
     }
