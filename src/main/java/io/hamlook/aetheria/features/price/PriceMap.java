@@ -55,8 +55,6 @@ public class PriceMap {
                         PriceReceiveData fetchedData = gson.fromJson(sb.toString(), PriceReceiveData.class);
                         if(fetchedData != null) {
                             Aetheria.logger.info("[PriceDetector] Loaded entries items from new DB aren't null");
-                            writeToJson(fetchedData,"fetchedData.json");
-                            writeToJson(sb.toString(),"fetchedDataString.txt");
                             synchronized (newPriceData) {
                                 newPriceData.clear();
                                 newPriceData.putAll(fetchedData);

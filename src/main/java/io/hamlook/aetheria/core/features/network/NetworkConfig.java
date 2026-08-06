@@ -6,6 +6,10 @@ import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
 public class NetworkConfig {
 
     @Expose
+    @Category(name = "Global Chat", desc = "Configuration for the Global Chat feature")
+    public GlobalChatConfig globalChatConfig = new GlobalChatConfig();
+
+    @Expose
     @ConfigOption(name = "Offline Mode", desc = "Disables all network calls. Most mod features will not work.")
     @ConfigEditorBoolean
     public boolean offlineMode = false;

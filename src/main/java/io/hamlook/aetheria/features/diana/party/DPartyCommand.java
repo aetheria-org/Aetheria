@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.WebSocketClient;
 import io.hamlook.aetheria.command.ASMCommand;
+import io.hamlook.aetheria.features.diana.party.ui.DPartyGUI;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.utils.CommunityAccess;
@@ -48,10 +49,6 @@ public class DPartyCommand extends ASMCommand {
 
     @Override
     public void execute(ICommandSender sender, String[] args) throws CommandException {
-        if(args.length < 1) {
-            ChatUtils.sendMessage("§cPlease Enter a Sub Command");
-            return;
-        }
         CommunityAccess.runIfAllowed(
                 "§cDiana Parties require your account to be Synced (use /sync) or to be on SkyBlock.",
                 () -> runCommand(args)
@@ -59,6 +56,10 @@ public class DPartyCommand extends ASMCommand {
     }
 
     private void runCommand(String[] args) {
+        if(args.length < 1) {
+            openListGui();
+            return;
+        }
         try {
             switch (args[0].toLowerCase()) {
             case "create":
@@ -97,7 +98,7 @@ public class DPartyCommand extends ASMCommand {
         if (!WebSocketClient.isConnected && NetworkGuard.apiAllowed()) {
             DianaPartyConnector.connectToAPI();
         }
-        io.hamlook.aetheria.features.diana.party.ui.DPartyGUI.open();
+        DPartyGUI.open();
     }
 
     public void kickFromParty(String[] args) {

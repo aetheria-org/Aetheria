@@ -88,7 +88,7 @@ public final class CommunityAccess {
             int code = connection.getResponseCode();
             if (code == 200) {
                 String body = ElectionUtils.readResponse(connection);
-                if (body != null && !body.trim().isEmpty()) {
+                if (!body.trim().isEmpty()) {
                     return JsonParser.parseString(body).getAsJsonObject().get("synced").getAsBoolean();
                 }
             }

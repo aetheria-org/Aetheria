@@ -886,7 +886,7 @@ public class ChatUI extends GuiScreen {
                 int cy = py + 4 + r * STICKER_PANEL_CELL;
                 boolean hover = mouseX >= cx && mouseX <= cx + STICKER_PANEL_CELL && mouseY >= cy && mouseY <= cy + STICKER_PANEL_CELL;
                 if (hover) drawRect(cx, cy, cx + STICKER_PANEL_CELL, cy + STICKER_PANEL_CELL, 0xFF35373C);
-                drawImageBlock(st.name, st.url, cx + 3, cy + 3, STICKER_PANEL_CELL - 6, STICKER_PANEL_CELL - 6, false);
+                drawImageBlock(st.name, st.url, cx + 3, cy + 3, STICKER_PANEL_CELL - 6, STICKER_PANEL_CELL - 6, false, mouseX, mouseY);
                 clickRects.add(new ClickRect(cx, cy, STICKER_PANEL_CELL, STICKER_PANEL_CELL, () -> sendSticker(st)));
             }
         }
@@ -1423,7 +1423,7 @@ public class ChatUI extends GuiScreen {
 
         if (!msg.stickers.isEmpty()) {
             for (Sticker st : msg.stickers.values()) {
-                drawImageBlock(st.name, st.url, textX, cursorY, Math.min(contentWidth, 96), STICKER_BOX_H, false);
+                drawImageBlock(st.name, st.url, textX, cursorY, Math.min(contentWidth, 96), STICKER_BOX_H, false, mouseX, mouseY);
                 cursorY += STICKER_BOX_H + 6;
             }
         }
@@ -1437,7 +1437,7 @@ public class ChatUI extends GuiScreen {
             } else if ("website".equals(embed.type) || "rich".equals(embed.type)) {
                 int ew = Math.min(contentWidth, 360);
                 int eh = embedHeight(embed, ew);
-                drawWebEmbed(embed, textX, cursorY, ew, eh);
+                drawWebEmbed(embed, textX, cursorY, ew, eh, mouseX, mouseY);
                 cursorY += eh + 6;
             }
         }
@@ -1705,12 +1705,12 @@ public class ChatUI extends GuiScreen {
     }
 
     /** Always reserves exactly boxHeight vertically, regardless of the image's real aspect ratio, so layout stays stable while media loads async. */
-    private void drawImageBlock(String name, String url, int x, int y, int maxWidth, int boxHeight, boolean circular) {
-        drawImageBlock(name, url, x, y, maxWidth, boxHeight, circular, false);
+    private void drawImageBlock(String name, String url, int x, int y, int maxWidth, int boxHeight, boolean circular, int mouseX, int mouseY) {
+        drawImageBlock(name, url, x, y, maxWidth, boxHeight, circular, false, mouseX, mouseY);
     }
 
     /** With naturalSize the loaded image is drawn at its own aspect ratio (width-capped), not forced into a fixed-height box. */
-    private void drawImageBlock(String name, String url, int x, int y, int maxWidth, int boxHeight, boolean circular, boolean naturalSize) {
+    private void drawImageBlock(String name, String url, int x, int y, int maxWidth, int boxHeight, boolean circular, boolean naturalSize, int mouseX, int mouseY) {
         GCImage img = getImage(url, circular);
         int cap = Math.min(maxWidth, MAX_IMAGE_DRAW_W);
 
@@ -1739,7 +1739,7 @@ public class ChatUI extends GuiScreen {
             if (drawW > cap) { drawW = cap; drawH = Math.round(drawW / ratio); }
         }
 
-        ResourceLocation tex = img.getTextureToRender(true);
+        ResourceLocation tex = img.getTextureToRender(mouseX >= x && mouseX <= x + drawW && mouseY >= y && mouseY <= y + drawH);
         if (tex != null) {
             mc.getTextureManager().bindTexture(tex);
             GlStateManager.color(1f, 1f, 1f, 1f);
@@ -1768,7 +1768,7 @@ public class ChatUI extends GuiScreen {
         if (imgs.size() == 1) {
             ImageRef ref = imgs.get(0);
             int h = imageGridHeight(imgs, maxWidth);
-            drawImageBlock(ref.name, ref.url, x, y, maxWidth, h, false, true);
+            drawImageBlock(ref.name, ref.url, x, y, maxWidth, h, false, true, mouseX, mouseY);
             clickRects.add(new ClickRect(x, y, Math.min(maxWidth, MAX_IMAGE_DRAW_W), h, () -> openImageViewer(imgs, 0)));
             return;
         }
@@ -1786,7 +1786,8 @@ public class ChatUI extends GuiScreen {
                 fontRendererObj.drawStringWithShadow(label, cx + (cell - fontRendererObj.getStringWidth(label)) / 2f,
                         cy + cell / 2f - 4, 0xFF6D6F78);
             } else {
-                ResourceLocation tex = img.getTextureToRender(true);
+                boolean cellHover = mouseX >= cx && mouseX <= cx + cell && mouseY >= cy && mouseY <= cy + cell;
+                ResourceLocation tex = img.getTextureToRender(cellHover);
                 if (tex != null) {
                     float ratio = img.width / (float) img.height;
                     int srcW, srcH, srcX = 0, srcY = 0;
@@ -2048,7 +2049,7 @@ public class ChatUI extends GuiScreen {
     }
 
     /** Discord-style website/rich embed: accent bar, site name, title, description, fields, thumbnail. */
-    private void drawWebEmbed(Embed e, int x, int y, int maxWidth, int height) {
+    private void drawWebEmbed(Embed e, int x, int y, int maxWidth, int height, int mouseX, int mouseY) {
         drawRect(x, y, x + maxWidth, y + height, 0xFF232428);
         drawRect(x, y, x + 3, y + height, 0xFF5865F2);
 
@@ -2079,7 +2080,7 @@ public class ChatUI extends GuiScreen {
             drawEmbedFields(e, x + 10, ty, textW);
         }
         if (e.imageUrl != null && !e.imageUrl.isEmpty()) {
-            drawEmbedThumb(e.imageUrl, x + maxWidth - thumb - 8, y + 8, thumb);
+            drawEmbedThumb(e.imageUrl, x + maxWidth - thumb - 8, y + 8, thumb, mouseX, mouseY);
         }
     }
 
@@ -2204,14 +2205,12 @@ public class ChatUI extends GuiScreen {
         return h;
     }
 
-    private void drawEmbedThumb(String url, int x, int y, int size) {
+    private void drawEmbedThumb(String url, int x, int y, int size, int mouseX, int mouseY) {
         GCImage img = getImage(url, false);
         if (img == null || !img.isLoaded || img.width == 0 || img.height == 0) {
             drawRect(x, y, x + size, y + size, 0xFF2B2D31);
             return;
         }
-        ResourceLocation tex = img.getTextureToRender(true);
-        if (tex == null) return;
         float ratio = img.width / (float) img.height;
         int h = size;
         int w = Math.round(h * ratio);
@@ -2221,6 +2220,8 @@ public class ChatUI extends GuiScreen {
         }
         int ox = x + (size - w) / 2;
         int oy = y + (size - h) / 2;
+        ResourceLocation tex = img.getTextureToRender(mouseX >= ox && mouseX <= ox + w && mouseY >= oy && mouseY <= oy + h);
+        if (tex == null) return;
         mc.getTextureManager().bindTexture(tex);
         GlStateManager.color(1f, 1f, 1f, 1f);
         GlStateManager.enableBlend();

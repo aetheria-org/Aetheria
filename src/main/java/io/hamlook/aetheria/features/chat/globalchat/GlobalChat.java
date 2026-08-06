@@ -3,11 +3,13 @@ package io.hamlook.aetheria.features.chat.globalchat;
 import com.google.gson.*;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.WebSocketClient;
+import io.hamlook.aetheria.features.chat.globalchat.ui.Notification;
 import io.hamlook.aetheria.features.chat.globalchat.vars.*;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.EmojiParser;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.chat.ExpiringArrayList;
 import net.minecraft.client.Minecraft;
 
 import java.net.HttpURLConnection;
@@ -38,6 +40,7 @@ public class GlobalChat {
     public static HashMap<String, IEmoji> usableEmojis = new HashMap<>();
     public static HashMap<String, Sticker> usableStickers = new HashMap<>();
 
+    public static List<Notification> notifications = new ExpiringArrayList<>();
     /** Lower-cased Minecraft session username (the identity the server enforces against). */
     public static String getUsername() {
         return Minecraft.getMinecraft().getSession().getUsername().toLowerCase();
@@ -332,6 +335,7 @@ public class GlobalChat {
             if("discord::punishment-lifted".equals(command)){
                 String message = responseJson.has("message") ? responseJson.get("message").getAsString() : "Your Global Chat punishment has been lifted.";
                 pushSystemNotice(message);
+                notifications.add(Notification.createPunishmentNotif(message));
                 ChatUtils.sendMessage("§a[G-Chat] " + message);
                 return;
             }

@@ -4,6 +4,7 @@ import dev.matrixlab.webp4j.WebPCodec;
 import dev.matrixlab.webp4j.model.AnimatedWebPData;
 import dev.matrixlab.webp4j.model.AnimatedWebPFrame;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -32,15 +33,6 @@ import java.util.regex.Pattern;
 
 public class GCImage {
 
-    /**
-     * Static images are decoded at their true/full resolution so the chat can
-     * always draw a quality 1:1 downscale (bilinear). Cap is only a safety net
-     * against absurd dimensions / out-of-memory.
-     */
-    public static final int MAX_STATIC_DIMENSION = 4096;
-
-    /** Animated images are capped much lower so frame memory stays sane. */
-    public static final int MAX_ANIMATED_DIMENSION = 1024;
 
     public List<BufferedImage> images;
     public List<ResourceLocation> frames = new ArrayList<>();
@@ -58,6 +50,7 @@ public class GCImage {
     public boolean isLoaded = false;
     public boolean loadFailed = false;
 
+    public static final int[] QUALITIES = {240,360,480,720,1080,1440,3,840};
     private static final Pattern META_TAG_PATTERN = Pattern.compile(
             "<meta[^>]*(?:property|name)=[\"'](?:og:image|twitter:image)[\"'][^>]*>",
             Pattern.CASE_INSENSITIVE);
@@ -84,7 +77,7 @@ public class GCImage {
     public ResourceLocation getTextureToRender(boolean isHovered) {
         if (!isLoaded || frames.isEmpty()) return null;
         if (frames.size() == 1) return frames.get(0);
-        if (ImageManager.reduceAnimations && !isHovered) return frames.get(0);
+        if (ATHRConfig.feature != null && ATHRConfig.feature.network.globalChatConfig.reducedAnimations && !isHovered) return frames.get(0);
 
         return frames.get(curFrame);
     }
@@ -300,7 +293,9 @@ public class GCImage {
             Aetheria.logger.warning("[GCImage] webp4j native support unavailable on this platform for: " + url);
             return;
         }
-
+        int MAX_STATIC_DIMENSION = QUALITIES[ATHRConfig.feature.network.globalChatConfig.maxImageGifQuality];
+        /* Animated images are capped much lower so frame memory stays sane. */
+        int MAX_ANIMATED_DIMENSION = MAX_STATIC_DIMENSION/4;
         try {
             AnimatedWebPData animated = WebPCodec.decodeAnimatedWebP(rawBytes);
             if (animated.getFrameCount() > 1) {
@@ -391,6 +386,9 @@ public class GCImage {
         ImageReader reader = chosenReader;
         ImageInputStream iis = ImageIO.createImageInputStream(new ByteArrayInputStream(rawBytes));
         reader.setInput(iis);
+        int MAX_STATIC_DIMENSION = QUALITIES[ATHRConfig.feature.network.globalChatConfig.maxImageGifQuality];
+        /* Animated images are capped much lower so frame memory stays sane. */
+        int MAX_ANIMATED_DIMENSION = MAX_STATIC_DIMENSION/4;
 
         try {
             int numFrames = reader.getNumImages(true);

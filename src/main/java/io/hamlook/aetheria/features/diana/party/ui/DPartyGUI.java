@@ -3,42 +3,63 @@ package io.hamlook.aetheria.features.diana.party.ui;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.WebSocketClient;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.diana.party.DianaPartyConnector;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.render.NineSliceUtils;
+import io.hamlook.aetheria.utils.render.ResolutionUtils;
+import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Lists every active Diana party (name, creator, members) fetched from the
- * cape API, with a Join button per party. Password-protected parties open a
- * small password prompt; open parties join directly.
+ * Compact non-fullscreen party finder styled after ChatFilterGUI (BetterContainers
+ * 9-slice background). Lists every active Diana party in a scrollable grid with a
+ * Join button per party; your own party shows a Leave/Disband button instead, and
+ * joining is blocked while you are already in a party.
  */
 public class DPartyGUI extends GuiScreen {
 
-    private static final int HEADER_H = 30;
-    private static final int ROW_H = 58;
-    private static final int PADDING = 10;
-    private static final int JOIN_W = 62;
+    private static final int COLUMNS = 2;
+
+    private int boxX, boxY, boxW, boxH;
+    private int listX, listY, listW, listH;
+    private int gridX;
+    private int gridY;
+    private int gridPadY;
+    private int cardW, cardH, rowH, gapX;
+    private int btnW, btnH;
+    private float textScale;
 
     private final List<PartyEntry> parties = new ArrayList<>();
     private boolean loading = true;
     private String loadError = null;
-    private int scroll = 0;
+    private int scrollY = 0;
+    private int dragMode = 0;
+    private int dragStartY = 0;
+    private int dragStartScrollY = 0;
 
     private String toast = null;
     private long toastUntil = 0;
 
     private PartyEntry passwordPromptParty = null;
     private GuiTextField passwordField;
-    private boolean joining = false;
+    private boolean busy = false;
 
     public static class PartyEntry {
         public String partyID;
@@ -49,10 +70,40 @@ public class DPartyGUI extends GuiScreen {
         public List<String> members = new ArrayList<>();
     }
 
+    public static void open() {
+        ATHRConfig.screenToOpen = new DPartyGUI();
+    }
+
     @Override
     public void initGui() {
         Keyboard.enableRepeatEvents(true);
         passwordField = new GuiTextField(0, fontRendererObj, 0, 0, 180, 16);
+
+        boxW = getScaledX(525);
+        boxH = getScaledY(390);
+        boxX = (width - boxW) / 2;
+        boxY = (height - boxH) / 2;
+
+        textScale = ResolutionUtils.getXStatic(1) * 2.6f;
+
+        listX = boxX + getScaledX(10);
+        listY = boxY + getScaledY(54);
+        listW = boxW - getScaledX(20);
+        listH = boxH - getScaledY(64);
+
+        int gridPadX = getScaledX(6);
+        gridPadY = getScaledY(6);
+        gridX = listX + gridPadX;
+        gridY = listY + gridPadY;
+
+        gapX = getScaledX(12);
+        cardW = (listW - gridPadX * 2 - gapX) / COLUMNS;
+        cardH = getScaledY(54);
+        rowH = cardH + getScaledY(10);
+
+        btnW = getScaledX(76);
+        btnH = getScaledY(26);
+
         DianaPartyConnector.setPartyListListener(this::applyParties);
         fetchParties();
     }
@@ -68,14 +119,54 @@ public class DPartyGUI extends GuiScreen {
         return false;
     }
 
-    public static void open() {
-        net.minecraft.client.Minecraft.getMinecraft().displayGuiScreen(new DPartyGUI());
+    @Override
+    public void updateScreen() {
+        passwordField.updateCursorCounter();
+    }
+
+    private int getScaledX(double entry) {
+        return (int) (ResolutionUtils.getXStatic(1) * entry * 2.0);
+    }
+
+    private int getScaledY(double entry) {
+        return (int) (ResolutionUtils.getYStatic(1) * entry * 2.0);
+    }
+
+    private String myName() {
+        return Minecraft.getMinecraft().getSession().getUsername().toLowerCase();
+    }
+
+    private boolean isMyParty(PartyEntry party) {
+        if (party.creator != null && party.creator.equalsIgnoreCase(myName())) return true;
+        for (String m : party.members) {
+            if (m.equalsIgnoreCase(myName())) return true;
+        }
+        return false;
+    }
+
+    private PartyEntry findMyParty() {
+        for (PartyEntry p : parties) {
+            if (isMyParty(p)) return p;
+        }
+        return null;
+    }
+
+    private int gridRows() {
+        return (parties.size() + COLUMNS - 1) / COLUMNS;
+    }
+
+    private int totalH() {
+        return gridRows() * rowH + gridPadY * 2;
+    }
+
+    private int maxScroll() {
+        return Math.max(0, totalH() - listH);
     }
 
     /** Applies a live party-list push from the server (called on the MC thread). */
-    private void applyParties(List<JsonObject> parties) {
+    private void applyParties(List<JsonObject> fetched) {
         this.parties.clear();
-        for (JsonObject o : parties) {
+        for (JsonObject o : fetched) {
             PartyEntry p = new PartyEntry();
             p.partyID = o.has("partyID") ? o.get("partyID").getAsString() : "";
             p.name = o.has("name") ? o.get("name").getAsString() : "Unknown";
@@ -87,8 +178,10 @@ public class DPartyGUI extends GuiScreen {
             }
             this.parties.add(p);
         }
+        this.parties.sort(Comparator.comparingInt(p -> isMyParty(p) ? 0 : 1));
         loading = false;
         loadError = null;
+        scrollY = Math.max(0, Math.min(scrollY, maxScroll()));
     }
 
     private void fetchParties() {
@@ -135,6 +228,23 @@ public class DPartyGUI extends GuiScreen {
 
     // ---------------------------------------------------------------- input
 
+    private int[] refreshButtonRect() {
+        return new int[]{boxX + boxW - getScaledX(125), boxY + getScaledY(12), getScaledX(80), getScaledY(28)};
+    }
+
+    private int[] closeButtonRect() {
+        int s = refreshButtonRect()[3];
+        return new int[]{boxX + boxW - s - getScaledX(10), boxY + getScaledY(12), s, s};
+    }
+
+    private int[] buttonRect(int cardX, int cardY) {
+        return new int[]{cardX + cardW - btnW - getScaledX(10), cardY + (cardH - btnH) / 2, btnW, btnH};
+    }
+
+    private boolean inRect(int mouseX, int mouseY, int[] r) {
+        return mouseX >= r[0] && mouseX <= r[0] + r[2] && mouseY >= r[1] && mouseY <= r[1] + r[3];
+    }
+
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
         if (mouseButton != 0) return;
@@ -152,35 +262,57 @@ public class DPartyGUI extends GuiScreen {
             return;
         }
 
-        int closeX = width - 24;
-        if (mouseX >= closeX && mouseX < closeX + 16 && mouseY >= 7 && mouseY < 23) {
-            mc.displayGuiScreen(null);
-            return;
-        }
-        if (mouseX >= width - 74 && mouseX <= width - 40 && mouseY >= 8 && mouseY <= 22) {
+        if (inRect(mouseX, mouseY, refreshButtonRect())) {
             fetchParties();
             return;
         }
+        if (inRect(mouseX, mouseY, closeButtonRect())) {
+            mc.displayGuiScreen(null);
+            return;
+        }
 
-        int listTop = HEADER_H;
-        int areaW = width - PADDING * 2;
-        int y = listTop - scroll;
-        for (PartyEntry party : parties) {
-            if (y + ROW_H > listTop && y < height - PADDING) {
-                int bx = width - PADDING - JOIN_W - 8;
-                int by = y + (ROW_H - 22) / 2;
-                if (mouseX >= bx && mouseX <= bx + JOIN_W && mouseY >= by && mouseY <= by + 22) {
-                    if (party.hasPassword) {
-                        passwordPromptParty = party;
-                        passwordField.setText("");
-                        passwordField.setFocused(true);
-                    } else {
-                        joinParty(party, "");
+        if (tryStartScrollbarDrag(mouseX, mouseY, boxX + boxW - getScaledX(18), listY, listH, totalH(), scrollY, maxScroll())) {
+            dragMode = 1;
+            dragStartY = mouseY;
+            dragStartScrollY = scrollY;
+            return;
+        }
+
+        if (mouseX >= listX && mouseX <= listX + listW && mouseY >= listY && mouseY <= listY + listH) {
+            PartyEntry mine = findMyParty();
+            for (int r = 0; r < gridRows(); r++) {
+                int cy = gridY + r * rowH - scrollY;
+                if (mouseY < cy || mouseY > cy + cardH) continue;
+                for (int c = 0; c < COLUMNS; c++) {
+                    int index = r * COLUMNS + c;
+                    if (index >= parties.size()) break;
+                    PartyEntry party = parties.get(index);
+                    int cx = gridX + c * (cardW + gapX);
+                    if (inRect(mouseX, mouseY, buttonRect(cx, cy))) {
+                        if (isMyParty(party)) {
+                            if (party.creator != null && party.creator.equalsIgnoreCase(myName())) {
+                                disbandParty();
+                            } else {
+                                leaveParty();
+                            }
+                        } else if (mine != null) {
+                            flashToast("§cYou're already in a Diana Party. Leave or disband it first.");
+                        } else if (party.hasPassword) {
+                            passwordPromptParty = party;
+                            passwordField.setText("");
+                            passwordField.setFocused(true);
+                        } else {
+                            joinParty(party, "");
+                        }
+                        return;
                     }
-                    break;
                 }
             }
-            y += ROW_H + 6;
+            if (maxScroll() > 0) {
+                dragMode = 2;
+                dragStartY = mouseY;
+                dragStartScrollY = scrollY;
+            }
         }
     }
 
@@ -207,24 +339,27 @@ public class DPartyGUI extends GuiScreen {
         super.handleMouseInput();
         int wheel = Mouse.getEventDWheel();
         if (wheel == 0 || passwordPromptParty != null) return;
-        int total = parties.size() * (ROW_H + 6);
-        int maxScroll = Math.max(0, total - (height - HEADER_H - PADDING));
-        scroll = Math.max(0, Math.min(maxScroll, scroll + (wheel > 0 ? -24 : 24)));
+        scrollY = Math.max(0, Math.min(maxScroll(), scrollY + (wheel > 0 ? -getScaledY(24) : getScaledY(24))));
     }
 
     private void joinParty(PartyEntry party, String password) {
-        if (joining) return;
-        joining = true;
+        if (busy) return;
+        if (findMyParty() != null) {
+            passwordPromptParty = null;
+            flashToast("§cYou're already in a Diana Party. Leave or disband it first.");
+            return;
+        }
+        busy = true;
         CompletableFuture<String> future = DianaPartyConnector.joinParty(party.partyID, password);
         if (future == null) {
-            joining = false;
+            busy = false;
             flashToast("§cNot connected to the API. Reconnecting...");
             passwordPromptParty = null;
             DianaPartyConnector.connectToAPI();
             return;
         }
         future.whenComplete((response, ex) -> mc.addScheduledTask(() -> {
-            joining = false;
+            busy = false;
             passwordPromptParty = null;
             if (ex != null) {
                 flashToast("§cCould not join party.");
@@ -249,6 +384,72 @@ public class DPartyGUI extends GuiScreen {
         }));
     }
 
+    private void leaveParty() {
+        if (busy) return;
+        busy = true;
+        CompletableFuture<String> future = DianaPartyConnector.leaveParty();
+        if (future == null) {
+            busy = false;
+            flashToast("§cNot connected to the API. Reconnecting...");
+            DianaPartyConnector.connectToAPI();
+            return;
+        }
+        future.whenComplete((response, ex) -> mc.addScheduledTask(() -> {
+            busy = false;
+            if (ex != null) {
+                flashToast("§cCould not leave party.");
+                return;
+            }
+            try {
+                JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+                JsonObject data = json.getAsJsonObject("data");
+                int code = data.get("code").getAsInt();
+                if (code == 200) {
+                    flashToast("§aYou left the party.");
+                    fetchParties();
+                } else {
+                    String msg = data.has("message") ? data.get("message").getAsString() : "Could not leave party.";
+                    flashToast("§c" + msg);
+                }
+            } catch (Exception parseErr) {
+                flashToast("§cCould not leave party.");
+            }
+        }));
+    }
+
+    private void disbandParty() {
+        if (busy) return;
+        busy = true;
+        CompletableFuture<String> future = DianaPartyConnector.disbandParty();
+        if (future == null) {
+            busy = false;
+            flashToast("§cNot connected to the API. Reconnecting...");
+            DianaPartyConnector.connectToAPI();
+            return;
+        }
+        future.whenComplete((response, ex) -> mc.addScheduledTask(() -> {
+            busy = false;
+            if (ex != null) {
+                flashToast("§cCould not disband party.");
+                return;
+            }
+            try {
+                JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+                JsonObject data = json.getAsJsonObject("data");
+                int code = data.get("code").getAsInt();
+                if (code == 200) {
+                    flashToast("§aParty disbanded.");
+                    fetchParties();
+                } else {
+                    String msg = data.has("message") ? data.get("message").getAsString() : "Could not disband party.";
+                    flashToast("§c" + msg);
+                }
+            } catch (Exception parseErr) {
+                flashToast("§cCould not disband party.");
+            }
+        }));
+    }
+
     private void flashToast(String text) {
         toast = text;
         toastUntil = System.currentTimeMillis() + 4000;
@@ -261,11 +462,34 @@ public class DPartyGUI extends GuiScreen {
         return new int[]{(width - bw) / 2, (height - bh) / 2, bw, bh};
     }
 
+    private ResourceLocation bcNineSlice() {
+        return Resources.betterContainerNineSlice(ATHRConfig.feature.qol.betterContainers.style);
+    }
+
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        drawRect(0, 0, width, height, 0xFF313338);
+        drawDefaultBackground();
+        GlStateManager.color(0.18f, 0.18f, 0.18f, 1f);
+        NineSliceUtils.draw(bcNineSlice(), boxX, boxY, boxW, boxH, 6, 18);
+        GlStateManager.color(1f, 1f, 1f, 1f);
+
         drawHeader(mouseX, mouseY);
-        drawPartyList(mouseX, mouseY);
+
+        GlStateManager.color(0.12f, 0.12f, 0.12f, 1f);
+        NineSliceUtils.draw(bcNineSlice(), listX, listY, listW, listH, 6, 18);
+        GlStateManager.color(1f, 1f, 1f, 1f);
+
+        if (loading) {
+            TextRenderUtils.drawStringScaleAware("Loading parties...", listX + getScaledX(14), listY + getScaledY(14), textScale * 0.85f, false);
+        } else if (loadError != null) {
+            TextRenderUtils.drawStringScaled(loadError, fontRendererObj, listX + getScaledX(14), listY + getScaledY(14), true, 0xFFFF6B6B, textScale * 0.85f);
+        } else if (parties.isEmpty()) {
+            TextRenderUtils.drawStringScaleAware("No Diana parties are active right now.", listX + getScaledX(14), listY + getScaledY(14), textScale * 0.85f, false);
+        } else {
+            drawPartyGrid(mouseX, mouseY);
+        }
+
+        drawScrollbar(boxX + boxW - getScaledX(18), listY, listH, totalH(), scrollY, maxScroll());
 
         if (passwordPromptParty != null) {
             drawPasswordPrompt(mouseX, mouseY);
@@ -273,81 +497,112 @@ public class DPartyGUI extends GuiScreen {
 
         if (toast != null && System.currentTimeMillis() < toastUntil) {
             int tw = fontRendererObj.getStringWidth(toast);
-            int tx = Math.max(PADDING, (width - tw) / 2 - 12);
-            drawRect(tx - 6, height - 30, tx + tw + 12, height - 12, 0xE62B2D31);
-            fontRendererObj.drawStringWithShadow(toast, tx, height - 25, 0xFFFFFFFF);
+            int tx = Math.max(getScaledX(10), (width - tw) / 2 - 12);
+            drawRect(tx - 6, height - getScaledY(30), tx + tw + 12, height - getScaledY(12), 0xE62B2D31);
+            fontRendererObj.drawStringWithShadow(toast, tx, height - getScaledY(25), 0xFFFFFFFF);
         }
 
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
     private void drawHeader(int mouseX, int mouseY) {
-        drawRect(0, 0, width, HEADER_H, 0xFF2B2D31);
-        drawRect(0, HEADER_H - 1, width, HEADER_H, 0xFF1E1F22);
-        fontRendererObj.drawStringWithShadow("Diana Parties", PADDING, (HEADER_H - fontRendererObj.FONT_HEIGHT) / 2f, 0xFFFFFFFF);
+        TextRenderUtils.drawStringScaleAware("Diana Parties", boxX + getScaledX(20), boxY + getScaledY(16), textScale * 0.9f, false);
 
-        boolean refreshHover = mouseX >= width - 74 && mouseX <= width - 40 && mouseY >= 8 && mouseY <= 22;
-        drawRect(width - 74, 8, width - 40, 22, refreshHover ? 0xFF404249 : 0xFF35373C);
-        fontRendererObj.drawStringWithShadow("Refresh", width - 68, 12, 0xFFB5BAC1);
+        int[] refresh = refreshButtonRect();
+        boolean refreshHover = inRect(mouseX, mouseY, refresh);
+        GlStateManager.color(refreshHover ? 0.27f : 0.21f, refreshHover ? 0.27f : 0.21f, refreshHover ? 0.31f : 0.21f, 1f);
+        NineSliceUtils.draw(bcNineSlice(), refresh[0], refresh[1], refresh[2], refresh[3], 6, 18);
+        GlStateManager.color(1f, 1f, 1f, 1f);
+        TextRenderUtils.drawCenteredStringScaleAware("Refresh", refresh[0] + refresh[2] / 2f, refresh[1] + refresh[3] / 2f, textScale * 0.7f, false);
 
-        int closeX = width - 24;
-        boolean closeHover = mouseX >= closeX && mouseX < closeX + 16 && mouseY >= 7 && mouseY < 23;
-        fontRendererObj.drawStringWithShadow("X", closeX + 4, 10, closeHover ? 0xFFFFFFFF : 0xFF949BA4);
+        int[] close = closeButtonRect();
+        boolean closeHover = inRect(mouseX, mouseY, close);
+        GlStateManager.color(closeHover ? 0.88f : 0.21f, closeHover ? 0.35f : 0.21f, closeHover ? 0.35f : 0.21f, 1f);
+        NineSliceUtils.draw(bcNineSlice(), close[0], close[1], close[2], close[3], 6, 18);
+        GlStateManager.color(1f, 1f, 1f, 1f);
+        TextRenderUtils.drawCenteredStringScaleAware("✕", close[0] + close[2] / 2f, close[1] + close[3] / 2f, textScale * 0.85f, false);
     }
 
-    private void drawPartyList(int mouseX, int mouseY) {
-        int listTop = HEADER_H;
-        int areaW = width - PADDING * 2;
+    private void drawPartyGrid(int mouseX, int mouseY) {
+        startScissor(listX, listY, listW, listH);
 
-        if (loading) {
-            fontRendererObj.drawStringWithShadow("Loading parties...", PADDING, listTop + 14, 0xFF949BA4);
-            return;
-        }
-        if (loadError != null) {
-            fontRendererObj.drawStringWithShadow(loadError, PADDING, listTop + 14, 0xFFFF6B6B);
-            return;
-        }
-        if (parties.isEmpty()) {
-            fontRendererObj.drawStringWithShadow("No Diana parties are active right now.", PADDING, listTop + 14, 0xFF949BA4);
-            return;
-        }
-
-        int y = listTop - scroll;
-        for (PartyEntry party : parties) {
-            if (y + ROW_H > listTop && y < height - PADDING) {
-                drawPartyRow(party, y, areaW, mouseX, mouseY);
+        for (int r = 0; r < gridRows(); r++) {
+            int cy = gridY + r * rowH - scrollY;
+            if (cy + cardH < listY || cy > listY + listH) continue;
+            for (int c = 0; c < COLUMNS; c++) {
+                int index = r * COLUMNS + c;
+                if (index >= parties.size()) break;
+                drawPartyCard(parties.get(index), gridX + c * (cardW + gapX), cy, mouseX, mouseY);
             }
-            y += ROW_H + 6;
         }
+        stopScissor();
     }
 
-    private void drawPartyRow(PartyEntry party, int y, int areaW, int mouseX, int mouseY) {
-        drawRect(PADDING, y, PADDING + areaW, y + ROW_H, 0xFF2B2D31);
-        drawRect(PADDING, y, PADDING + 3, y + ROW_H, party.hasPassword ? 0xFFF2C94C : 0xFF5865F2);
+    private void drawPartyCard(PartyEntry party, int cx, int cy, int mouseX, int mouseY) {
+        boolean mine = isMyParty(party);
 
-        int textW = areaW - JOIN_W - 24;
+        GlStateManager.color(mine ? 0.24f : 0.22f, mine ? 0.24f : 0.22f, mine ? 0.28f : 0.22f, 1f);
+        NineSliceUtils.draw(bcNineSlice(), cx, cy, cardW, cardH, 6, 18);
+        GlStateManager.color(1f, 1f, 1f, 1f);
+
+        int textMaxW = cardW - btnW - getScaledX(24);
+        int textX = cx + getScaledX(12);
 
         String title = party.name + (party.hasPassword ? " \uD83D\uDD12" : "");
-        fontRendererObj.drawStringWithShadow(fontRendererObj.trimStringToWidth(title, textW), PADDING + 12, y + 6, 0xFFFFFFFF);
-
         String creator = "by " + (party.creator == null ? "unknown" : party.creator);
-        fontRendererObj.drawStringWithShadow(creator, PADDING + 12, y + 18, 0xFF949BA4);
 
         String membersText;
-        if (party.members.isEmpty()) {
-            membersText = party.memberCount > 0 ? party.memberCount + " member(s)" : "0 members";
+        if (mine) {
+            membersText = party.creator != null && party.creator.equalsIgnoreCase(myName())
+                    ? "§6You created this party"
+                    : "§aYou are in this party";
+        } else if (party.members.isEmpty()) {
+            membersText = party.memberCount > 0 ? party.memberCount + " member(s)" : "No members yet";
         } else {
-            membersText = party.memberCount + " member(s): " + String.join(", ", party.members);
+            membersText = party.memberCount + ": " + String.join(", ", party.members);
         }
-        fontRendererObj.drawStringWithShadow(fontRendererObj.trimStringToWidth(membersText, textW), PADDING + 12, y + 30, 0xFFB5BAC1);
 
-        int bx = width - PADDING - JOIN_W - 8;
-        int by = y + (ROW_H - 22) / 2;
-        boolean hover = mouseX >= bx && mouseX <= bx + JOIN_W && mouseY >= by && mouseY <= by + 22;
-        drawRect(bx, by, bx + JOIN_W, by + 22, hover ? 0xFF5865F2 : 0xFF404249);
-        fontRendererObj.drawStringWithShadow(party.hasPassword ? "Join \uD83D\uDD12" : "Join",
-                bx + (JOIN_W - fontRendererObj.getStringWidth(party.hasPassword ? "Join \uD83D\uDD12" : "Join")) / 2f,
-                by + 7, 0xFFFFFFFF);
+        float titleScale = textScale * 1.1f;
+        float subScale = textScale * 0.75f;
+        title = fontRendererObj.trimStringToWidth(title, (int) (textMaxW / titleScale));
+        creator = fontRendererObj.trimStringToWidth(creator, (int) (textMaxW / subScale));
+        membersText = fontRendererObj.trimStringToWidth(membersText, (int) (textMaxW / subScale));
+
+        TextRenderUtils.drawStringScaled(title, fontRendererObj, textX, cy + getScaledY(8), true, 0xFFFFFFFF, titleScale);
+        TextRenderUtils.drawStringScaled(creator, fontRendererObj, textX, cy + getScaledY(22), true, 0xFF949BA4, subScale);
+        TextRenderUtils.drawStringScaled(membersText, fontRendererObj, textX, cy + getScaledY(36), true, 0xFFB5BAC1, subScale);
+
+        int[] btn = buttonRect(cx, cy);
+        boolean onBtn = inRect(mouseX, mouseY, btn);
+
+        String label;
+        float r, g, b;
+        if (mine) {
+            boolean isCreator = party.creator != null && party.creator.equalsIgnoreCase(myName());
+            label = isCreator ? "Disband" : "Leave";
+            r = 0.55f;
+            g = 0.23f;
+            b = 0.23f;
+            if (onBtn) {
+                r = 0.88f;
+                g = 0.35f;
+                b = 0.35f;
+            }
+        } else {
+            label = party.hasPassword ? "Join \uD83D\uDD12" : "Join";
+            r = 0.25f;
+            g = 0.26f;
+            b = 0.29f;
+            if (onBtn) {
+                r = 0.35f;
+                g = 0.40f;
+                b = 0.95f;
+            }
+        }
+        GlStateManager.color(r, g, b, 1f);
+        NineSliceUtils.draw(bcNineSlice(), btn[0], btn[1], btnW, btnH, 6, 18);
+        GlStateManager.color(1f, 1f, 1f, 1f);
+        TextRenderUtils.drawCenteredStringScaleAware("§" + (mine ? "c" : "a" ) +label, btn[0] + btnW / 2f, btn[1] + btnH / 2f, textScale * 0.7f, false);
     }
 
     private void drawPasswordPrompt(int mouseX, int mouseY) {
@@ -367,10 +622,45 @@ public class DPartyGUI extends GuiScreen {
         int joinX = box[0] + box[2] / 2 - 78, joinY = box[1] + box[3] - 30;
         boolean joinHover = mouseX >= joinX && mouseX <= joinX + 74 && mouseY >= joinY && mouseY <= joinY + 20;
         drawRect(joinX, joinY, joinX + 74, joinY + 20, joinHover ? 0xFF5865F2 : 0xFF404249);
-        drawCenteredString(fontRendererObj, joining ? "..." : "Join", joinX + 37, joinY + 6, 0xFFFFFFFF);
+        drawCenteredString(fontRendererObj, busy ? "..." : "Join", joinX + 37, joinY + 6, 0xFFFFFFFF);
 
         boolean cancelHover = mouseX >= joinX + 82 && mouseX <= joinX + 156 && mouseY >= joinY && mouseY <= joinY + 20;
         drawRect(joinX + 82, joinY, joinX + 156, joinY + 20, cancelHover ? 0xFF35373C : 0xFF2B2D31);
         drawCenteredString(fontRendererObj, "Cancel", joinX + 119, joinY + 6, 0xFFFFFFFF);
+    }
+
+    // ------------------------------------------------------------ scrollbar
+
+    private void startScissor(int x, int y, int width, int height) {
+        ScaledResolution res = new ScaledResolution(mc);
+        int scale = res.getScaleFactor();
+
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(x * scale, mc.displayHeight - (y + height) * scale, width * scale, height * scale);
+    }
+
+    private void stopScissor() {
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+    }
+
+    private void drawScrollbar(int trackX, int listY, int listH, int totalH, int scrollY, int maxScroll) {
+        if (maxScroll <= 0) return;
+        int barW = getScaledX(5);
+        drawRect(trackX, listY, trackX + barW, listY + listH, 0x44000000);
+        int thumbH = Math.max(getScaledY(20), listH * listH / Math.max(listH, totalH));
+        int thumbY = listY + (int) ((float) scrollY / maxScroll * (listH - thumbH));
+        drawRect(trackX, thumbY, trackX + barW, thumbY + thumbH, 0xFFAAAAAA);
+    }
+
+    private boolean tryStartScrollbarDrag(int mouseX, int mouseY, int trackX, int listY, int listH, int totalH, int scrollY, int maxScroll) {
+        if (maxScroll <= 0) return false;
+        int barW = getScaledX(5);
+        int thumbH = Math.max(getScaledY(20), listH * listH / Math.max(listH, totalH));
+        int thumbY = listY + (int) ((float) scrollY / maxScroll * (listH - thumbH));
+        return mouseX >= trackX - getScaledX(4) && mouseX <= trackX + barW + getScaledX(4) && mouseY >= thumbY && mouseY <= thumbY + thumbH;
+    }
+
+    private int clampScroll(int scroll, int maxScroll) {
+        return Math.max(0, Math.min(scroll, maxScroll));
     }
 }

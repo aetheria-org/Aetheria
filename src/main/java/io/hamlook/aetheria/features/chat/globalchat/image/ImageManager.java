@@ -11,7 +11,6 @@ public class ImageManager {
 
     public static HashMap<String,GCImage> images = new HashMap<>();
     public static ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    public static boolean reduceAnimations = false;
 
     /** URL → GCImage id cache shared by every screen (chat, image viewer, ...) so a URL is only downloaded/decoded once. */
     private static final Map<String, String> urlToImage = new ConcurrentHashMap<>();

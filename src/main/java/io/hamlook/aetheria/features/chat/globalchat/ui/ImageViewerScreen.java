@@ -86,10 +86,10 @@ public class ImageViewerScreen extends GuiScreen {
                 drawH = availH;
                 drawW = Math.round(drawH * ratio);
             }
-            ResourceLocation tex = img.getTextureToRender(true);
+            int ix = (width - drawW) / 2;
+            int iy = topMargin + (availH - drawH) / 2;
+            ResourceLocation tex = img.getTextureToRender(mouseX >= ix && mouseX <= ix + drawW && mouseY >= iy && mouseY <= iy + drawH);
             if (tex != null) {
-                int ix = (width - drawW) / 2;
-                int iy = topMargin + (availH - drawH) / 2;
                 mc.getTextureManager().bindTexture(tex);
                 GlStateManager.color(1f, 1f, 1f, 1f);
                 GlStateManager.enableBlend();
@@ -174,7 +174,8 @@ public class ImageViewerScreen extends GuiScreen {
             int tx = startX + i * (thumb + gap);
             GCImage img = getImage(images.get(i).url);
             if (img != null && img.isLoaded && img.width > 0 && img.height > 0) {
-                ResourceLocation tex = img.getTextureToRender(true);
+                boolean thumbHover = mouseX >= tx && mouseX <= tx + thumb && mouseY >= ty && mouseY <= ty + thumb;
+                ResourceLocation tex = img.getTextureToRender(thumbHover);
                 if (tex != null) {
                     float ratio = img.width / (float) img.height;
                     int srcW, srcH, srcX = 0, srcY = 0;
