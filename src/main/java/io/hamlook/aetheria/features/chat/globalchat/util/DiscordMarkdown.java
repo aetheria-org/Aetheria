@@ -1,5 +1,8 @@
 package io.hamlook.aetheria.features.chat.globalchat.util;
 
+import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
+import io.hamlook.aetheria.features.chat.globalchat.vars.Channel;
+import io.hamlook.aetheria.features.chat.globalchat.vars.ChatMessage;
 import io.hamlook.aetheria.features.chat.globalchat.vars.EmojiRef;
 import net.minecraft.client.gui.FontRenderer;
 
@@ -37,6 +40,18 @@ public class DiscordMarkdown {
         public boolean plainLink;    // clickable link that still renders in the normal text style
         public boolean bareLink;     // link created from a raw URL in the text (not a [text](url) token)
         public boolean spaceBefore;  // whether a single space should be drawn before this token
+        /** True when this span is a "@name" mention — rendered as a Discord-style mention pill, immune to markdown. */
+        public boolean mention;
+        /** Display name to show in the mention pill (null/empty => the raw token). */
+        public String mentionDisplay;
+        /** Non-null => a discord.com/channels/{guild}/{channel}[/{message}] link, rendered as "#channel" (or "#channel → bubble"). */
+        public String discordChannelId;
+        /** Non-null (with discordChannelId) => the linked message; the span renders a bubble and jumps to the message on click. */
+        public String discordMessageId;
+        /** Full original URL for message links (used to jump into local history). */
+        public String discordUrl;
+        /** Raw unicode of the emoji when it is a default (spritesheet-renderable) emoji; empty for remote custom emojis. */
+        public String emojiSurrogates;
 
         public Span() {}
         public Span(String text) { this.text = text; }
@@ -48,6 +63,10 @@ public class DiscordMarkdown {
             s.imageUrl = imageUrl; s.spaceBefore = spaceBefore;
             s.emojiName = emojiName;
             s.linkUrl = linkUrl; s.plainLink = plainLink; s.bareLink = bareLink;
+            s.mention = mention; s.mentionDisplay = mentionDisplay;
+            s.discordChannelId = discordChannelId; s.discordMessageId = discordMessageId;
+            s.discordUrl = discordUrl;
+            s.emojiSurrogates = emojiSurrogates;
             return s;
         }
     }
@@ -65,11 +84,26 @@ public class DiscordMarkdown {
     private static final Pattern URL_PATTERN = Pattern.compile("https?://[^\\s<>\"']+");
     private static final String ESCAPABLE = "\\*_~>#`|:[]()";
     private static final int LIST_INDENT = 12;
+    /** Horizontal padding (both sides) applied to mention pills when measuring width. */
+    public static final int MENTION_PILL_PADDING = 6;
+    /** The font used to render a resolved mention's display name in the pill. */
+    public static final String MENTION_FONT = "\u00a7r\u00a7f";
 
     private DiscordMarkdown() {}
 
     /** Parses + word-wraps a raw message body to fit within maxWidth pixels. */
     public static List<RenderLine> parse(String content, Map<String, EmojiRef> emojis, FontRenderer fr, int maxWidth) {
+        return parse(content, emojis, null, fr, maxWidth);
+    }
+
+    /**
+     * Parses + word-wraps a raw message body to fit within maxWidth pixels.
+     *
+     * @param mentionNames lowercase mention key ("@gina") -> display name shown in the mention pill; null to
+     *                     render the raw token. Keys are lowercase usernames AND display names.
+     */
+    public static List<RenderLine> parse(String content, Map<String, EmojiRef> emojis, Map<String, String> mentionNames,
+                                         FontRenderer fr, int maxWidth) {
         List<RenderLine> out = new ArrayList<>();
         if (content == null || content.isEmpty()) return out;
 
@@ -111,7 +145,7 @@ public class DiscordMarkdown {
             else if (isListStart(text)) { type = LineType.LIST; wrapWidth = maxWidth - LIST_INDENT; text = bulletize(text); }
             else if (text.startsWith("> ")) { type = LineType.QUOTE; text = text.substring(2); wrapWidth = maxWidth - 10; }
 
-            List<Span> runs = parseInline(text, emojis);
+            List<Span> runs = parseInline(text, emojis, mentionNames);
             List<Span> tokens = toWordTokens(runs);
             List<RenderLine> packed = packWords(tokens, type, fr, Math.max(20, wrapWidth));
             if (type == LineType.LIST) {
@@ -228,7 +262,7 @@ public class DiscordMarkdown {
 
     // ---------------------------------------------------------------- inline
 
-    private static List<Span> parseInline(String text, Map<String, EmojiRef> emojis) {
+    private static List<Span> parseInline(String text, Map<String, EmojiRef> emojis, Map<String, String> mentionNames) {
         List<Span> spans = new ArrayList<>();
         StringBuilder buf = new StringBuilder();
         boolean bold = false, italic = false, underline = false, strike = false, spoiler = false, code = false;
@@ -245,6 +279,26 @@ public class DiscordMarkdown {
                     continue;
                 }
 
+                if (c == '@' && (i == 0 || !isMentionWordChar(text.charAt(i - 1)))) {
+                    int j = i + 1;
+                    while (j < n && isMentionWordChar(text.charAt(j))) j++;
+                    if (j > i + 1) {
+                        // "@" followed by token chars => a mention, immune to markdown (so names like
+                        // "@_.whispering" never toggle italics) and rendered as a Discord-style pill.
+                        String token = text.substring(i + 1, j);
+                        while (token.length() > 1 && token.charAt(token.length() - 1) == '.') {
+                            token = token.substring(0, token.length() - 1);
+                        }
+                        flush(buf, spans, bold, italic, underline, strike, spoiler, code);
+                        Span m = new Span(token);
+                        m.mention = true;
+                        if (mentionNames != null) m.mentionDisplay = mentionNames.get(token.toLowerCase());
+                        spans.add(m);
+                        i = j;
+                        continue;
+                    }
+                }
+
                 if (c == ':' && emojis != null && !emojis.isEmpty()) {
                     Matcher em = EMOJI_PATTERN.matcher(text);
                     em.region(i, n);
@@ -255,6 +309,7 @@ public class DiscordMarkdown {
                             Span img = new Span("");
                             img.imageUrl = ref.url;
                             img.emojiName = em.group(1);
+                            img.emojiSurrogates = ref.surrogates;
                             spans.add(img);
                             i = em.end();
                             continue;
@@ -286,10 +341,7 @@ public class DiscordMarkdown {
                     boolean discordMessageLink = raw.startsWith("https://discord.com/channels/");
                     if (discordMessageLink) {
                         flush(buf, spans, bold, italic, underline, strike, spoiler, code);
-                        Span link = new Span(raw);
-                        link.linkUrl = raw;
-                        link.plainLink = true;
-                        link.bareLink = true;
+                        Span link = buildDiscordChannelLink(raw);
                         spans.add(link);
                         i += raw.length();
                         continue;
@@ -344,6 +396,42 @@ public class DiscordMarkdown {
         return spans;
     }
 
+    private static boolean isMentionWordChar(char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '.';
+    }
+
+    /**
+     * Turns a discord.com/channels/{guild}/{channel}[/{message}] URL into a
+     * "#channel" span (plus a message bubble when a message id is present), or
+     * a plain link when the channel isn't a Global Chat channel the user can
+     * open. The label is resolved here so word-wrapping measures the right text.
+     */
+    private static Span buildDiscordChannelLink(String raw) {
+        String[] parts = raw.split("/");
+        String channelId = parts.length >= 6 ? parts[5] : null;
+        String messageId = parts.length >= 7 ? parts[6] : null;
+        Channel channel = channelId != null ? GlobalChat.channels.get(channelId) : null;
+        if (channel == null || channel.channelName == null) {
+            Span fallback = new Span(raw);
+            fallback.linkUrl = raw;
+            fallback.plainLink = true;
+            fallback.bareLink = true;
+            return fallback;
+        }
+        Span link = new Span("#" + channel.channelName);
+        if (messageId != null) {
+            ChatMessage target = channel.byDiscordID.get(messageId);
+            String who = target != null
+                    ? (target.authorDisplay != null && !target.authorDisplay.isEmpty() ? target.authorDisplay : target.author)
+                    : null;
+            if (who != null && !who.isEmpty()) link.text = link.text + " \u2192 " + who;
+        }
+        link.discordChannelId = channelId;
+        link.discordMessageId = messageId;
+        link.discordUrl = raw;
+        return link;
+    }
+
     private static void flush(StringBuilder buf, List<Span> spans, boolean bold, boolean italic,
                               boolean underline, boolean strike, boolean spoiler, boolean code) {
         if (buf.length() == 0) return;
@@ -360,7 +448,7 @@ public class DiscordMarkdown {
         List<Span> tokens = new ArrayList<>();
         boolean pendingSpace = false;
         for (Span run : runs) {
-            if (run.imageUrl != null) {
+            if (run.imageUrl != null || run.mention || run.discordChannelId != null) {
                 Span t = run.copy();
                 t.spaceBefore = pendingSpace;
                 tokens.add(t);
@@ -388,6 +476,12 @@ public class DiscordMarkdown {
         return tokens;
     }
 
+    private static Span tokDisplay(Span tok) {
+        Span copy = tok.copy();
+        copy.text = tok.mentionDisplay;
+        return copy;
+    }
+
     private static List<RenderLine> packWords(List<Span> tokens, LineType type, FontRenderer fr, int maxWidth) {
         List<RenderLine> result = new ArrayList<>();
         RenderLine current = new RenderLine(type);
@@ -395,9 +489,11 @@ public class DiscordMarkdown {
         int spaceWidth = fr.getStringWidth(" ");
 
         for (Span tok : tokens) {
-            int tokWidth = tok.imageUrl != null ? EMOJI_SIZE : fr.getStringWidth(toFormatted(tok));
+            int tokWidth = tok.imageUrl != null ? EMOJI_SIZE
+                    : fr.getStringWidth(toFormatted(tok.mention && tok.mentionDisplay != null ? tokDisplay(tok) : tok))
+                        + (tok.mention ? MENTION_PILL_PADDING * 2 : 0);
 
-            if (tokWidth > maxWidth && tok.imageUrl == null) {
+            if (tokWidth > maxWidth && tok.imageUrl == null && !tok.mention && tok.discordChannelId == null) {
                 if (!current.spans.isEmpty()) { result.add(current); current = new RenderLine(type); width = 0; }
                 splitOversized(tok, result, type, fr, maxWidth);
                 continue;

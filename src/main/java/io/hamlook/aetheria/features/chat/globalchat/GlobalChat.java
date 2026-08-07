@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.chat.globalchat;
 import com.google.gson.*;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.WebSocketClient;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.globalchat.ui.Notification;
 import io.hamlook.aetheria.features.chat.globalchat.vars.*;
 import io.hamlook.aetheria.repo.CapeAPI;
@@ -36,11 +37,15 @@ public class GlobalChat {
     /** Highest system-notice sequence seen; lets the UI poll for new ones cheaply. */
     public static volatile long systemNoticesVersion = 0;
     public static final Gson GSON = new Gson();
-    public static HashMap<String,ChatMessage> pendingMessages = new HashMap<>();
-    public static HashMap<String, IEmoji> usableEmojis = new HashMap<>();
-    public static HashMap<String, Sticker> usableStickers = new HashMap<>();
+    public static ConcurrentHashMap<String,ChatMessage> pendingMessages = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<String, IEmoji> usableEmojis = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<String, Sticker> usableStickers = new ConcurrentHashMap<>();
 
-    public static List<Notification> notifications = new ExpiringArrayList<>();
+    public static ExpiringArrayList<Notification> notifications = new ExpiringArrayList<>();
+    /** True once the missed-mentions fetch ran this session (prevents duplicate toasts on reconnect). */
+    private static volatile boolean missedMentionsFetched = false;
+    /** True while a fetch is in flight; blocks a second concurrent request (e.g. onOpen + channel refresh racing). */
+    private static volatile boolean missedMentionsInFlight = false;
     /** Lower-cased Minecraft session username (the identity the server enforces against). */
     public static String getUsername() {
         return Minecraft.getMinecraft().getSession().getUsername().toLowerCase();
@@ -49,43 +54,80 @@ public class GlobalChat {
     public static void initialise(){
         try{
             usableEmojis.clear();
-            URL url = new URL(CapeAPI.getAPIUrl("emoji-list"));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
-            connection.setRequestProperty("Accept", "application/json");
-            connection.setReadTimeout(10000);
-            connection.setConnectTimeout(10000);
-            if(connection.getResponseCode() == 200){
-                String response = ElectionUtils.readResponse(connection);
-                JsonArray array = JsonParser.parseString(response).getAsJsonArray();
-                if(array == null || array.isEmpty()) return;
+            for (IEmoji emoji : EmojiParser.loadDefaults()) {
+                registerIEmoji(emoji);
+            }
+            Aetheria.logger.info("[GlobalChat]: " + usableEmojis.size() + " default emojis usable.");
+
+            URL url = new URL(CapeAPI.getAPIUrl("channels"));
+            loadChannels(url);
+            onSocketConnected();
+        }catch(Exception e){
+            Aetheria.logger.warning("[GlobalChat]: Failed to load channels: " + Arrays.toString(e.getStackTrace()));
+            e.printStackTrace();
+        }
+    }
+
+    /** Called whenever the websocket (re)connects: deferred resource loads + missed-mention catch-up. */
+    public static void onSocketConnected(){
+        loadRemoteResourcesIfNeeded();
+        fetchMissedMentions();
+    }
+
+    private static volatile boolean remoteResourcesLoaded = false;
+    private static volatile boolean remoteResourcesLoading = false;
+
+    /**
+     * Loads the API-provided emoji + sticker lists. Deferred until the
+     * websocket connects (see {@link #onSocketConnected()}) so a restarted API
+     * is re-fetched on reconnect instead of the lists staying empty until the
+     * game restarts. Also retried whenever the user opens the emoji/sticker
+     * panels, in case the first attempt failed. Only marked loaded on success.
+     */
+    public static void loadRemoteResourcesIfNeeded(){
+        if (remoteResourcesLoaded || remoteResourcesLoading) return;
+        remoteResourcesLoading = true;
+        CompletableFuture.runAsync(() -> {
+            try {
+                loadRemoteEmojis();
+                loadStickers();
+                remoteResourcesLoaded = true;
+                Aetheria.logger.info("[GlobalChat]: Remote emoji/sticker lists loaded.");
+            } catch (Exception e) {
+                Aetheria.logger.warning("[GlobalChat]: Failed to load remote emoji/sticker lists: " + e.getMessage());
+            } finally {
+                remoteResourcesLoading = false;
+            }
+        });
+    }
+
+    private static void loadRemoteEmojis() throws Exception {
+        URL url = new URL(CapeAPI.getAPIUrl("emoji-list"));
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
+        connection.setRequestProperty("Accept", "application/json");
+        connection.setReadTimeout(10000);
+        connection.setConnectTimeout(10000);
+        if(connection.getResponseCode() == 200){
+            String response = ElectionUtils.readResponse(connection);
+            JsonArray array = JsonParser.parseString(response).getAsJsonArray();
+            if(array != null && !array.isEmpty()){
                 for(JsonElement element : array){
                     IEmoji emoji = GSON.fromJson(element, IEmoji.class);
                     if(emoji == null) continue;
                     registerIEmoji(emoji);
                 }
                 Aetheria.logger.info("[GlobalChat]: Successfully loaded " + usableEmojis.size() + " emojis.");
-            }else{
-                Aetheria.logger.info("[GlobalChat]: Could not load emojis: " + connection.getResponseCode());
+            }else if(array == null || array.isEmpty()){
+                Aetheria.logger.warning("[GlobalChat]: Emoji list came back empty.");
             }
-
-            for (IEmoji emoji : EmojiParser.loadDefaults()) {
-                registerIEmoji(emoji);
-            }
-            Aetheria.logger.info("[GlobalChat]: " + usableEmojis.size() + " emojis usable in total.");
-
-            loadStickers(url);
-
-            url = new URL(CapeAPI.getAPIUrl("channels"));
-            loadChannels(url);
-        }catch(Exception e){
-            Aetheria.logger.warning("[GlobalChat]: Failed to load emoji-list/channels: " + Arrays.toString(e.getStackTrace()));
-            e.printStackTrace();
+        }else{
+            Aetheria.logger.info("[GlobalChat]: Could not load emojis: " + connection.getResponseCode());
         }
     }
 
-    private static void loadStickers(URL ignored) {
+    private static void loadStickers() {
         try{
             usableStickers.clear();
             URL url = new URL(CapeAPI.getAPIUrl("sticker-list"));
@@ -192,9 +234,10 @@ public class GlobalChat {
                     channels.put(id, new Channel(id, channel.get("name").getAsString(), canSend));
                 }
             }
-                channels.keySet().removeIf(id -> !keep.contains(id));
-                channelsVersion++;
-                Aetheria.logger.info("[GlobalChat]: Refreshed " + channels.size() + " channels.");
+            channels.keySet().removeIf(id -> !keep.contains(id));
+            channelsVersion++;
+            Aetheria.logger.info("[GlobalChat]: Refreshed " + channels.size() + " channels.");
+            fetchMissedMentions();
             }catch(Exception e){
                 Aetheria.logger.warning("[GlobalChat]: Failed to refresh channels: " + e.getMessage());
             }
@@ -315,6 +358,65 @@ public class GlobalChat {
         });
     }
 
+    /**
+     * Offline mention catch-up ("missed pings" on login): asks the server for
+     * @mentions / @everyone pings / replies-to-me newer than the stored
+     * watermark, toasts them, and reports the unread message count. The
+     * watermark advances only after a successful fetch, so a failed connect
+     * never loses pings. Fired once per session, from the socket open and from
+     * channel loading (whichever happens last, so channels exist when toasts resolve).
+     */
+    public static void fetchMissedMentions() {
+        if (missedMentionsFetched || missedMentionsInFlight) return;
+        if (channels.isEmpty()) return;
+        if (Aetheria.webSocketClient == null || !WebSocketClient.isConnected) return;
+        missedMentionsInFlight = true;
+        JsonObject obj = new JsonObject();
+        obj.addProperty("command", "discord::fetch-mentions");
+        obj.addProperty("since", ATHRConfig.feature.network.globalChatConfig.lastSeenPings);
+        final long requestedAt = System.currentTimeMillis();
+        CompletableFuture<String> future = Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
+        if (future == null) {
+            missedMentionsInFlight = false;
+            return;
+        }
+        future.whenComplete((response, error) -> {
+            missedMentionsInFlight = false;
+            if (error != null || response == null) return;
+            try {
+                JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
+                if (!responseJson.has("data")) return;
+                JsonObject data = responseJson.getAsJsonObject("data");
+                if (!data.has("code") || data.get("code").getAsInt() != 200) return;
+                if (data.has("mentions") && data.get("mentions").isJsonArray()) {
+                    for (JsonElement element : data.getAsJsonArray("mentions")) {
+                        if (!element.isJsonObject()) continue;
+                        ChatMessage message = GSON.fromJson(element, ChatMessage.class);
+                        if (message == null) continue;
+                        Channel channel = channels.get(message.channelId);
+                        if (channel == null) continue;
+                        channel.receiveMessage(message);
+                        Notification notification = Notification.createFromMessage(message, channel);
+                        if (notification != null) {
+                            synchronized (notifications) { notifications.add(notification); }
+                        }
+                    }
+                }
+                if (data.has("unreadCount") && data.get("unreadCount").getAsInt() > 0) {
+                    int unread = data.get("unreadCount").getAsInt();
+                    String summary = unread + " new message" + (unread == 1 ? "" : "s") + " while you were away";
+                    synchronized (notifications) {
+                        notifications.add(Notification.createTextNotif("Unread Messages", summary, 5000L));
+                    }
+                }
+                missedMentionsFetched = true;
+                ATHRConfig.feature.network.globalChatConfig.lastSeenPings = requestedAt;
+            } catch (Exception e) {
+                Aetheria.logger.warning("[GlobalChat]: Failed to process missed mentions: " + e.getMessage());
+            }
+        });
+    }
+
     public static void receive(String response){
         JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
         if(responseJson == null) return;
@@ -335,7 +437,7 @@ public class GlobalChat {
             if("discord::punishment-lifted".equals(command)){
                 String message = responseJson.has("message") ? responseJson.get("message").getAsString() : "Your Global Chat punishment has been lifted.";
                 pushSystemNotice(message);
-                notifications.add(Notification.createPunishmentNotif(message));
+                synchronized (notifications) { notifications.add(Notification.createPunishmentNotif(message)); }
                 ChatUtils.sendMessage("§a[G-Chat] " + message);
                 return;
             }
@@ -347,6 +449,10 @@ public class GlobalChat {
                 Channel channel = channels.get(message.channelId);
                 if(channel == null) return;
                 channel.receiveMessage(message);
+                Notification notification = Notification.createFromMessage(message, channel);
+                if(notification != null){
+                    synchronized (notifications) { notifications.add(notification); }
+                }
             }else {
                 MessageLink link = GSON.fromJson(responseJson, MessageLink.class);
                 if (link == null) return;

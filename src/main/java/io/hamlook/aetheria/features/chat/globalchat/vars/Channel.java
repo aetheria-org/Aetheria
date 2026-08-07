@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.chat.globalchat.vars;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
@@ -33,6 +34,11 @@ public class Channel {
     /** discordID → message: O(1) reply/link lookup index kept in sync with messageHistory. */
     public final Map<String, ChatMessage> byDiscordID = new ConcurrentHashMap<>();
 
+    /** Mentionable users of this channel (from the server's chat-history users list). */
+    public final List<ChannelUser> userList = new CopyOnWriteArrayList<>();
+    /** Lowercase username OR display name → user: powers the @ mention autocomplete. */
+    public final Map<String, ChannelUser> usersByKey = new ConcurrentHashMap<>();
+
     private volatile boolean fetching = false;
 
     public Channel(String channelID,String channelName) {
@@ -61,8 +67,23 @@ public class Channel {
             connection.setConnectTimeout(10000);
             if(connection.getResponseCode() == 200){
                 String response = ElectionUtils.readResponse(connection);
-                JsonArray array = JsonParser.parseString(response).getAsJsonArray();
-                if(array == null || array.isEmpty()) return;
+                JsonElement root = JsonParser.parseString(response);
+                if(root == null || !root.isJsonArray() && !root.isJsonObject()) return;
+                JsonArray array;
+                if(root.isJsonObject()){
+                    JsonObject obj = root.getAsJsonObject();
+                    array = obj.has("messages") && obj.get("messages").isJsonArray() ? obj.getAsJsonArray("messages") : new JsonArray();
+                    if(obj.has("users") && obj.get("users").isJsonArray()){
+                        for(JsonElement element : obj.getAsJsonArray("users")){
+                            if(!element.isJsonObject()) continue;
+                            ChannelUser user = GlobalChat.GSON.fromJson(element, ChannelUser.class);
+                            if(user != null) addUser(user);
+                        }
+                    }
+                }else{
+                    array = root.getAsJsonArray();
+                }
+                if(array.isEmpty()) return;
                 for(JsonElement element : array){
                     ChatMessage message = GlobalChat.GSON.fromJson(element, ChatMessage.class);
                     if(message == null) continue;
@@ -70,13 +91,23 @@ public class Channel {
                 }
                 messageHistory.sort(Comparator.comparingLong(a -> a.message == null ? Long.MAX_VALUE : a.message.timestamp));
                 trimToMax();
-                Aetheria.logger.info("[Channel]: Loaded " + messageHistory.size() + " messages from DB.");
+                Aetheria.logger.info("[Channel]: Loaded " + messageHistory.size() + " messages and " + userList.size() + " users from DB.");
             }
         }catch(Exception e){
             Aetheria.logger.warning("[GlobalChat]: Failed to load history for channel " + channelID);
             e.printStackTrace();
         }finally{
             fetching = false;
+        }
+    }
+
+    /** Registers a mentionable user under both its username and display name (lowercased keys). */
+    public void addUser(ChannelUser user) {
+        if (user == null || user.username == null || user.username.isEmpty()) return;
+        userList.add(user);
+        usersByKey.put(user.username.toLowerCase(), user);
+        if (user.displayname != null && !user.displayname.isEmpty()) {
+            usersByKey.put(user.displayname.toLowerCase(), user);
         }
     }
 
@@ -90,6 +121,7 @@ public class Channel {
         }
         message.populateEmojiRefs(message.content);
         if(message.content.isEmpty() && message.stickers.isEmpty() && message.attachments.isEmpty() && message.embeds.isEmpty()) return;
+        message.highlighted = message.pingsMe(GlobalChat.getUsername(), this);
         ChatMessage existing = byMessageID.get(message.messageID);
         if (existing != null) {
             if (message.discordID != null && !message.discordID.isEmpty()

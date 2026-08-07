@@ -100,6 +100,7 @@ public class Config {
             case "openWaypointGroupGui": ATHRConfig.openWaypointGroupGui(); break;
             case "openRareDropTrackerGui": ATHRConfig.openRareDropTrackerGui(); break;
             case "openRareDropTrackerOverlayEditor": ATHRConfig.openRareDropTrackerOverlayEditor(); break;
+            case "openNotificationsOverlayEditor": ATHRConfig.openNotificationsOverlayEditor(); break;
             case "openStatsEditor": ATHRConfig.openStatsEditor(); break;
             case "openHudEditor": ATHRConfig.openHudEditor(); break;
             case "openFetchurEditor": ATHRConfig.openFetchurEditor(); break;

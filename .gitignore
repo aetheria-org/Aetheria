@@ -3,7 +3,12 @@
 run/
 build/
 .gradle/
-.env
-
+.env/
+.settings/
+bin/
+.classpath
+.project
+.factorypath
 gradle.properties
 settings.gradle.kts
+

@@ -17,6 +17,8 @@ public class ExpiringArrayList<E extends ExpiringArrayList.Trackable> extends Ar
     }
 
     private void activePurge() {
-        super.removeIf(Trackable::isExpired);
+        synchronized (this) {
+            super.removeIf(Trackable::isExpired);
+        }
     }
 }

@@ -26,10 +26,7 @@ import net.minecraft.world.storage.MapData;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RegisterEvents
 public class DungeonMapOverlay extends Overlay {
@@ -44,6 +41,7 @@ public class DungeonMapOverlay extends Overlay {
     private double entranceCenterX = 0;
     private double entranceCenterZ = 0;
     private int lastPopulateTick = -40;
+    public List<String> players = new ArrayList<>();
 
     public DungeonMapOverlay() {
         super(128, 128);
