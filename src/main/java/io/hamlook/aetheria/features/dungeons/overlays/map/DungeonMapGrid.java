@@ -132,9 +132,16 @@ public class DungeonMapGrid {
             int py = startPixelY + entry.getKey().y * (roomPixelSize + connectorPixelSize);
             if (px >= 0 && py >= 0 && px < 128 && py < 128) {
                 int bgColor = colors[px][py].getRGB();
-                entry.getValue().color = bgColor;
+                RoomCell cell = entry.getValue();
+                cell.color = bgColor;
 
-                int detectedTick = 0;
+                Color bg = colors[px][py];
+                boolean isDarkGreyRoom = (bg.getRed() < 80 && bg.getGreen() < 80 && bg.getBlue() < 80);
+
+                int greenCount = 0;
+                int whiteCount = 0;
+                int darkMarkCount = 0;
+
                 for (int dx = 0; dx < roomPixelSize; dx++) {
                     for (int dy = 0; dy < roomPixelSize; dy++) {
                         int rx = px + dx;
@@ -146,19 +153,36 @@ public class DungeonMapGrid {
                                 int green = c.getGreen();
                                 int blue = c.getBlue();
 
-                                if (green > 130 && red < 120) {
-                                    detectedTick = 0xFF55FF55;
-                                    break;
+                                if (green > 130 && red < 120 && blue < 120) {
+                                    greenCount++;
                                 }
                                 else if (red > 180 && green > 180 && blue > 180) {
-                                    detectedTick = 0xFFFFFFFF;
+                                    whiteCount++;
+                                }
+                                else if (isDarkGreyRoom && red < 35 && green < 35 && blue < 35) {
+                                    darkMarkCount++;
                                 }
                             }
                         }
                     }
-                    if (detectedTick == 0xFF55FF55) break;
                 }
-                entry.getValue().tickColor = detectedTick;
+
+                if (greenCount >= 2) {
+                    cell.tickColor = 0xFF55FF55;
+                    cell.displayText = "✓";
+                }
+                else if (whiteCount >= 2) {
+                    cell.tickColor = 0xFFFFFFFF;
+                    cell.displayText = "✓";
+                }
+                else if (isDarkGreyRoom || darkMarkCount >= 2) {
+                    cell.tickColor = 0xFFAAAAAA;
+                    cell.displayText = "?";
+                }
+                else {
+                    cell.tickColor = 0;
+                    cell.displayText = "";
+                }
             }
         }
     }
@@ -336,6 +360,7 @@ public class DungeonMapGrid {
     public static class RoomCell {
         public int color = 0;
         public int tickColor = 0;
+        public String displayText = "";
         public RoomConnection up = new RoomConnection();
         public RoomConnection down = new RoomConnection();
         public RoomConnection left = new RoomConnection();

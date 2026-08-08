@@ -54,10 +54,6 @@ public class DungeonPlayerTracker {
         return false;
     }
 
-    /**
-     * Cross-references Tab List players against Scoreboard lines.
-     * Prevents scoreboard truncation bugs and random word parsing.
-     */
     private List<String> getOrderedPartyUsernames() {
         List<String> members = new ArrayList<>();
         Minecraft mc = Minecraft.getMinecraft();
@@ -73,7 +69,6 @@ public class DungeonPlayerTracker {
                 if (info == null || info.getGameProfile() == null) continue;
                 String tabName = info.getGameProfile().getName();
 
-                // Match tab name (or truncated tab name) inside the scoreboard line
                 if (line.contains(tabName) || (tabName.length() > 12 && line.contains(tabName.substring(0, 12)))) {
                     if (!members.contains(tabName)) {
                         members.add(tabName);
@@ -91,7 +86,6 @@ public class DungeonPlayerTracker {
 
         currentPositions.clear();
 
-        // Include ALL players in index order (Index 0 = Local Player, Index 1+ = Teammates)
         List<Vec4b> decorations = new ArrayList<>(mapDecorations.values());
 
         int decoIndex = 0;
@@ -101,7 +95,6 @@ public class DungeonPlayerTracker {
             Vec4b deco = decorations.get(decoIndex++);
             byte type = deco.func_176110_a();
 
-            // Accept standard map marker types (0 = White, 1 = Green, 3 = Head)
             if (type != 0 && type != 1 && type != 3) continue;
 
             float x = (float) deco.func_176112_b() / 2.0F + 64.0F;

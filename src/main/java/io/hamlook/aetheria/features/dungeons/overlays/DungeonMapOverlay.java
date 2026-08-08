@@ -109,7 +109,6 @@ public class DungeonMapOverlay extends Overlay {
         GlStateManager.popMatrix();
     }
 
-
     public static void renderPlayerHead(float x, float y, int color, float scale, ResourceLocation skin, float rotation) {
         if (skin == null) {
             skin = DefaultPlayerSkin.getDefaultSkinLegacy();
@@ -162,7 +161,7 @@ public class DungeonMapOverlay extends Overlay {
             lastPopulateTick = player.ticksExisted;
             if (ATHRConfig.feature.debug.dungeonMapDebug) {
                 ChatUtils.sendMessage("§7[§6MapDebug§7] Populated " + playerTracker.getPlayerNames().size() + " players: " +
-                    String.join(", ", playerTracker.getPlayerNames()));
+                        String.join(", ", playerTracker.getPlayerNames()));
             }
         }
 
@@ -211,9 +210,9 @@ public class DungeonMapOverlay extends Overlay {
                 EntityPlayer ep = playerTracker.getEntity(name);
                 String estate = (ep != null && !ep.isDead) ? "alive" : "decor";
                 ChatUtils.sendMessage("§7[§6MapDebug§7] " + name +
-                    " | pixel: " + pstr +
-                    " | src: " + estate +
-                    " | origin: " + String.format("%.1f", DungeonMapGrid.worldOriginX) + "," + String.format("%.1f", DungeonMapGrid.worldOriginZ));
+                        " | pixel: " + pstr +
+                        " | src: " + estate +
+                        " | origin: " + String.format("%.1f", DungeonMapGrid.worldOriginX) + "," + String.format("%.1f", DungeonMapGrid.worldOriginZ));
             }
         }
 
@@ -240,7 +239,7 @@ public class DungeonMapOverlay extends Overlay {
             Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(txt, cx - tw / 2f, cy - 4f, 0xFFFFFFFF);
         } else if (cachedGrid != null && cachedGrid.isValid()) {
             playerTracker.matchDecorations(info != null ? info.mapDecorations : null);
-            DungeonMapRenderer.render(cachedGrid, cx, cy, scale, player, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms());
+            DungeonMapRenderer.render(cachedGrid, cx, cy, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms());
         }
     }
 
