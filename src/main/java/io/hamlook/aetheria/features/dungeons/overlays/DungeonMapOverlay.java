@@ -17,11 +17,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.storage.MapData;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -41,7 +42,6 @@ public class DungeonMapOverlay extends Overlay {
     private double entranceCenterX = 0;
     private double entranceCenterZ = 0;
     private int lastPopulateTick = -40;
-    public List<String> players = new ArrayList<>();
 
     public DungeonMapOverlay() {
         super(128, 128);
@@ -109,7 +109,11 @@ public class DungeonMapOverlay extends Overlay {
         GlStateManager.popMatrix();
     }
 
-    public static void renderPlayerHead(float x, float y, int color, float scale, NetworkPlayerInfo info, float rotation) {
+
+    public static void renderPlayerHead(float x, float y, int color, float scale, ResourceLocation skin, float rotation) {
+        if (skin == null) {
+            skin = DefaultPlayerSkin.getDefaultSkinLegacy();
+        }
         int alpha = (color >> 24) & 0xFF;
         float headAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
         Minecraft mc = Minecraft.getMinecraft();
@@ -123,7 +127,7 @@ public class DungeonMapOverlay extends Overlay {
         GlStateManager.translate(cx, cy, 0f);
         GlStateManager.rotate(rotation, 0f, 0f, 1f);
         GlStateManager.translate(-cx, -cy, 0f);
-        mc.getTextureManager().bindTexture(info.getLocationSkin());
+        mc.getTextureManager().bindTexture(skin);
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
         GlStateManager.color(1.0f, 1.0f, 1.0f, headAlpha);
         Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 8f, 8f, 8, 8, (int) (scale * 8), (int) (scale * 8), 64f, 64f);

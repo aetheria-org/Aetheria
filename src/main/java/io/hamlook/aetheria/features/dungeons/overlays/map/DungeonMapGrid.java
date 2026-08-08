@@ -131,8 +131,34 @@ public class DungeonMapGrid {
             int px = startPixelX + entry.getKey().x * (roomPixelSize + connectorPixelSize);
             int py = startPixelY + entry.getKey().y * (roomPixelSize + connectorPixelSize);
             if (px >= 0 && py >= 0 && px < 128 && py < 128) {
-                entry.getValue().color = colors[px][py].getRGB();
-                entry.getValue().tickColor = 0;
+                int bgColor = colors[px][py].getRGB();
+                entry.getValue().color = bgColor;
+
+                int detectedTick = 0;
+                for (int dx = 0; dx < roomPixelSize; dx++) {
+                    for (int dy = 0; dy < roomPixelSize; dy++) {
+                        int rx = px + dx;
+                        int ry = py + dy;
+                        if (rx < 128 && ry < 128) {
+                            Color c = colors[rx][ry];
+                            if (c.getAlpha() > 80 && c.getRGB() != bgColor) {
+                                int red = c.getRed();
+                                int green = c.getGreen();
+                                int blue = c.getBlue();
+
+                                if (green > 130 && red < 120) {
+                                    detectedTick = 0xFF55FF55;
+                                    break;
+                                }
+                                else if (red > 180 && green > 180 && blue > 180) {
+                                    detectedTick = 0xFFFFFFFF;
+                                }
+                            }
+                        }
+                    }
+                    if (detectedTick == 0xFF55FF55) break;
+                }
+                entry.getValue().tickColor = detectedTick;
             }
         }
     }

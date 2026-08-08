@@ -9,8 +9,9 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.IChatComponent;
+import net.minecraft.util.ResourceLocation;
 
 import java.util.Collection;
 import java.util.List;
@@ -31,6 +32,8 @@ public class DungeonMapRenderer {
         GlStateManager.scale(scale, scale, 1f);
 
         Gui.drawRect(-2, -2, gridW + 2, gridH + 2, 0x80000000);
+
+        Minecraft mc = Minecraft.getMinecraft();
 
         for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
             DungeonMapGrid.RoomOffset off = entry.getKey();
@@ -53,6 +56,13 @@ public class DungeonMapRenderer {
                 int cyo = cell.right.type == DungeonMapGrid.ConnectionType.CORRIDOR ? (roomSize - ch) / 2 : 0;
                 Gui.drawRect(cx, ry + cyo, cx + connSize, ry + cyo + ch, cell.right.color | 0xFF000000);
             }
+
+            if (cell.tickColor != 0) {
+                String tickStr = "✓";
+                float fontX = rx + (roomSize / 2f) - (mc.fontRendererObj.getStringWidth(tickStr) / 2f);
+                float fontY = ry + (roomSize / 2f) - (mc.fontRendererObj.FONT_HEIGHT / 2f) + 1f;
+                mc.fontRendererObj.drawString(tickStr, (int) fontX, (int) fontY, cell.tickColor);
+            }
         }
 
         if (ATHRConfig.feature.dungeons.dungeonMapConfig.showVisitedRoomNames && visitedRooms != null) {
@@ -71,7 +81,6 @@ public class DungeonMapRenderer {
 
         float headScale = ATHRConfig.feature.dungeons.dungeonMapConfig.headScale * 1.25f;
         float headPixelSize = 8f * headScale;
-        Minecraft mc = Minecraft.getMinecraft();
         String selfName = self != null ? self.getName() : null;
 
         for (String name : playerNames) {
@@ -114,9 +123,12 @@ public class DungeonMapRenderer {
             if (info == null && tracker != null) {
                 info = tracker.getNetworkPlayerInfo(name, mc);
             }
-            if (info == null) continue;
+            ResourceLocation skin = (info != null && info.getLocationSkin() != null)
+                    ? info.getLocationSkin()
+                    : DefaultPlayerSkin.getDefaultSkinLegacy();
 
-            DungeonMapOverlay.renderPlayerHead(px - headPixelSize / 2f, pz - headPixelSize / 2f, -1, headScale, info, yaw);
+            DungeonMapOverlay.renderPlayerHead(px - headPixelSize / 2f, pz - headPixelSize / 2f, -1, headScale, skin, yaw);
+
 
             if (ATHRConfig.feature.dungeons.dungeonMapConfig.showPlayerUsername) {
                 String displayName = getDisplayName(name, info, entity);
@@ -133,11 +145,10 @@ public class DungeonMapRenderer {
     }
 
     private static String getDisplayName(String name, NetworkPlayerInfo info, EntityPlayer entity) {
-        IChatComponent display = info.getDisplayName();
-        if (display != null) {
-            return display.getFormattedText();
+        if (info != null && info.getDisplayName() != null) {
+            return info.getDisplayName().getFormattedText();
         }
-        if (entity != null) {
+        if (entity != null && entity.getDisplayName() != null) {
             return entity.getDisplayName().getFormattedText();
         }
         return name;
