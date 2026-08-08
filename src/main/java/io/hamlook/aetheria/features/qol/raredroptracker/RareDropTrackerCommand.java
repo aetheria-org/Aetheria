@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * the first 3 letters of an item's name, then track it so RareDropTracker can alert
  * you the moment your inventory update event shows you obtained it.
  */
-@RegisterCommand
+
 public class RareDropTrackerCommand extends ASMCommand {
 
     private static final String PREFIX = "§d[RareDrops] §7";
