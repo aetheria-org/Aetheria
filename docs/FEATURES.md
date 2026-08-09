@@ -165,7 +165,10 @@
 - `/asmbuttons` — Open the inventory button editor.
 - `/capes` — Open the cape manager.
 - `/asmprotect` — Protect the held item from drops and sales.
-- `/athrdebug` — Debug tools for copying tab list and footer data.
+- `/asmdebug` — Copy a general debug report to the clipboard.
+- `/asmcopyitem`, `/asmcopyinternalname` — Copy held-item info / internal SkyBlock id.
+- `/asmcopytablist`, `/asmcopytabfooter`, `/asmcopyactionbar`, `/asmcopybossbar`, `/asmcopyscoreboard` — Copy various HUD/UI text to the clipboard (all support `-nocolor`).
+- `/asmcopylocation`, `/asmcopynearbyentities` — Copy player position / nearby entity dumps.
 
 
 ## Party Commands
