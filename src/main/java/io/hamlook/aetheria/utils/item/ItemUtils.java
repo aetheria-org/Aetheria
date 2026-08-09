@@ -103,7 +103,9 @@ public class ItemUtils {
                 NBTTagCompound effectCompound = potionEffects.getCompoundTagAt(i);
                 if (effectCompound.hasKey("effect")) {
                     String effectName = effectCompound.getString("effect");
-                    id.append("_").append(effectName.toUpperCase());
+                    int effectLvL = effectCompound.getInteger("lvl");
+                    if(effectLvL == 0 || effectName == null || effectName.isEmpty()) continue;
+                    id.append("_").append(effectName.toUpperCase()).append(";").append(effectLvL);
                 }
             }
             return id.toString();

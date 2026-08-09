@@ -24,6 +24,8 @@ public class ChatMessage {
     public boolean pingHere;
     /** Server-provided list of mentioned usernames (lower-case); null when the server didn't send them. */
     public List<String> mentions;
+    /** Server-provided @token -> display name for mention pills; null/absent on old messages. */
+    public HashMap<String, String> mentionDisplays;
     /** Server-set: display name of the author of the message this one replies to, when resolvable. */
     public String replyingAuthor;
     /** Server-set: lower-case MC identity of the message this one replies to, when the target is an MC user. */
@@ -53,6 +55,7 @@ public class ChatMessage {
         this.channelId = channelID;
         this.replying = repliedMessage != null;
         this.replyingMessage = replying ? repliedMessage.discordID : null;
+        this.replyingTo = replying ? repliedMessage.author : null;
         this.discordID = null;
         this.author = Minecraft.getMinecraft().getSession().getUsername();
         // Display name keeps the original capitalization (the server lowercases "author" for identity).

@@ -289,12 +289,35 @@ public class DiscordMarkdown {
                         while (token.length() > 1 && token.charAt(token.length() - 1) == '.') {
                             token = token.substring(0, token.length() - 1);
                         }
+                        // Multi-word display names ("@Internet Protocol"): extend one word at a time
+                        // while the whole phrase is a known mentionable user; otherwise the prose
+                        // after a mention ("@GinaFro for the help") is never swallowed.
+                        if (mentionNames != null && !mentionNames.isEmpty()) {
+                            int k = i + 1 + token.length();
+                            while (k < n && text.charAt(k) == ' ') {
+                                int w = k;
+                                while (w < n && text.charAt(w) == ' ') w++;
+                                int e = w;
+                                while (e < n && isMentionWordChar(text.charAt(e))) e++;
+                                if (e == w) break;
+                                String extended = text.substring(i + 1, e).toLowerCase();
+                                while (extended.length() > 1 && extended.charAt(extended.length() - 1) == '.') {
+                                    extended = extended.substring(0, extended.length() - 1);
+                                }
+                                if (!mentionNames.containsKey(extended)) break;
+                                k = e;
+                                token = text.substring(i + 1, k);
+                                while (token.length() > 1 && token.charAt(token.length() - 1) == '.') {
+                                    token = token.substring(0, token.length() - 1);
+                                }
+                            }
+                        }
                         flush(buf, spans, bold, italic, underline, strike, spoiler, code);
                         Span m = new Span(token);
                         m.mention = true;
                         if (mentionNames != null) m.mentionDisplay = mentionNames.get(token.toLowerCase());
                         spans.add(m);
-                        i = j;
+                        i = i + 1 + token.length();
                         continue;
                     }
                 }
@@ -397,7 +420,7 @@ public class DiscordMarkdown {
     }
 
     private static boolean isMentionWordChar(char c) {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '.';
+        return Character.isLetterOrDigit(c) || c == '_' || c == '.';
     }
 
     /**
@@ -478,7 +501,7 @@ public class DiscordMarkdown {
 
     private static Span tokDisplay(Span tok) {
         Span copy = tok.copy();
-        copy.text = tok.mentionDisplay;
+        copy.text = "@" + (tok.mentionDisplay != null && !tok.mentionDisplay.isEmpty() ? tok.mentionDisplay : tok.text);
         return copy;
     }
 
@@ -490,7 +513,7 @@ public class DiscordMarkdown {
 
         for (Span tok : tokens) {
             int tokWidth = tok.imageUrl != null ? EMOJI_SIZE
-                    : fr.getStringWidth(toFormatted(tok.mention && tok.mentionDisplay != null ? tokDisplay(tok) : tok))
+                    : fr.getStringWidth(toFormatted(tok.mention ? tokDisplay(tok) : tok))
                         + (tok.mention ? MENTION_PILL_PADDING * 2 : 0);
 
             if (tokWidth > maxWidth && tok.imageUrl == null && !tok.mention && tok.discordChannelId == null) {

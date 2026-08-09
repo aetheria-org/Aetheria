@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -101,14 +102,56 @@ public class Channel {
         }
     }
 
-    /** Registers a mentionable user under both its username and display name (lowercased keys). */
+    /** Registers a mentionable user under its username and display name (lowercased keys; display also without spaces). */
     public void addUser(ChannelUser user) {
         if (user == null || user.username == null || user.username.isEmpty()) return;
         userList.add(user);
         usersByKey.put(user.username.toLowerCase(), user);
         if (user.displayname != null && !user.displayname.isEmpty()) {
             usersByKey.put(user.displayname.toLowerCase(), user);
+            usersByKey.put(user.displayname.toLowerCase().replace(" ", ""), user);
         }
+    }
+
+    /**
+     * Re-fetches the channel's mentionable users from the server in the
+     * background (reuses the chat-history response's users array, ignoring the
+     * messages). Channels are created once and their user lists would otherwise
+     * go stale forever if the server's list changes after launch — so the UI
+     * refreshes on every channel switch.
+     */
+    public void refreshUsers() {
+        CompletableFuture.runAsync(() -> {
+            try {
+                URL url = new URL(CapeAPI.getAPIUrl("chat-history?channelID=" + channelID));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
+                connection.setRequestProperty("Accept", "application/json");
+                connection.setRequestProperty("username", GlobalChat.getUsername());
+                connection.setConnectTimeout(10000);
+                connection.setReadTimeout(10000);
+                if (connection.getResponseCode() != 200) return;
+                String response = ElectionUtils.readResponse(connection);
+                JsonElement root = JsonParser.parseString(response);
+                if (root == null || !root.isJsonObject()) return;
+                JsonObject obj = root.getAsJsonObject();
+                if (!obj.has("users") || !obj.get("users").isJsonArray()) return;
+                List<ChannelUser> fresh = new ArrayList<>();
+                for (JsonElement element : obj.getAsJsonArray("users")) {
+                    if (!element.isJsonObject()) continue;
+                    ChannelUser user = GlobalChat.GSON.fromJson(element, ChannelUser.class);
+                    if (user != null && user.username != null && !user.username.isEmpty()) fresh.add(user);
+                }
+                if (fresh.isEmpty()) return; // never clobber a good list with an empty response
+                userList.clear();
+                usersByKey.clear();
+                for (ChannelUser user : fresh) addUser(user);
+                Aetheria.logger.info("[Channel]: Refreshed " + userList.size() + " mentionable users for " + channelName);
+            } catch (Exception e) {
+                Aetheria.logger.warning("[GlobalChat]: Failed to refresh users for channel " + channelID);
+            }
+        });
     }
 
     public void receiveMessage(ChatMessage message){
