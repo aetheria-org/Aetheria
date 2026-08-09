@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import org.lwjgl.opengl.GL11;
 
@@ -246,5 +247,103 @@ public final class WorldRenderUtils {
 
     public static void drawFilledBlock(BlockPos pos, Color color) {
         drawFilledBlocks(Collections.singletonList(new AxisAlignedBB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1)), color);
+    }
+
+    private static final ResourceLocation BEACON_BEAM_TEXTURE = new ResourceLocation("textures/entity/beacon_beam.png");
+
+    /**
+     * Draws a vanilla-style beacon beam spanning the block column {@code x..x+1},
+     * {@code z..z+1} starting at {@code y}. Depth testing stays enabled, so the
+     * beam is occluded by terrain and never renders through blocks.
+     */
+    public static void drawBeaconBeam(double x, double y, double z, Color color, float partialTicks, double height) {
+        if (mc.theWorld == null || mc.getRenderManager() == null) return;
+        double[] v = viewerPos();
+
+        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
+        GL11.glPushMatrix();
+        GL11.glTranslated(-v[0], -v[1], -v[2]);
+
+        mc.getTextureManager().bindTexture(BEACON_BEAM_TEXTURE);
+        GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
+
+        GlStateManager.disableLighting();
+        GlStateManager.disableCull();
+        GlStateManager.enableTexture2D();
+        GlStateManager.enableBlend();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.enableDepth();
+        GlStateManager.depthFunc(GL11.GL_LEQUAL);
+        GlStateManager.depthMask(false);
+
+        double time = mc.theWorld.getTotalWorldTime() + partialTicks;
+        double texShift = -time * 0.2 - Math.floor(-time * 0.1);
+        texShift -= Math.floor(texShift);
+
+        float r = color.getRed() / 255f, g = color.getGreen() / 255f, b = color.getBlue() / 255f;
+
+        Tessellator tess = Tessellator.getInstance();
+        WorldRenderer wr = tess.getWorldRenderer();
+
+        // Inner rotating core
+        double angle = time * 0.025 * -1.5;
+        double d4 = 0.5 + Math.cos(angle + Math.PI * 3 / 4) * 0.2;
+        double d5 = 0.5 + Math.sin(angle + Math.PI * 3 / 4) * 0.2;
+        double d6 = 0.5 + Math.cos(angle + Math.PI / 4) * 0.2;
+        double d7 = 0.5 + Math.sin(angle + Math.PI / 4) * 0.2;
+        double d8 = 0.5 + Math.cos(angle + Math.PI * 5 / 4) * 0.2;
+        double d9 = 0.5 + Math.sin(angle + Math.PI * 5 / 4) * 0.2;
+        double d10 = 0.5 + Math.cos(angle + Math.PI * 7 / 4) * 0.2;
+        double d11 = 0.5 + Math.sin(angle + Math.PI * 7 / 4) * 0.2;
+        double v0 = -1.0 + texShift;
+        double v1 = height * 2.5 + v0;
+
+        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
+        wr.pos(x + d4, y + height, z + d5).tex(1.0, v1).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d4, y, z + d5).tex(1.0, v0).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d6, y, z + d7).tex(0.0, v0).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d6, y + height, z + d7).tex(0.0, v1).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d10, y + height, z + d11).tex(1.0, v1).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d10, y, z + d11).tex(1.0, v0).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d8, y, z + d9).tex(0.0, v0).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d8, y + height, z + d9).tex(0.0, v1).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d6, y + height, z + d7).tex(1.0, v1).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d6, y, z + d7).tex(1.0, v0).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d10, y, z + d11).tex(0.0, v0).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d10, y + height, z + d11).tex(0.0, v1).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d8, y + height, z + d9).tex(1.0, v1).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d8, y, z + d9).tex(1.0, v0).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d4, y, z + d5).tex(0.0, v0).color(r, g, b, 1f).endVertex();
+        wr.pos(x + d4, y + height, z + d5).tex(0.0, v1).color(r, g, b, 1f).endVertex();
+        tess.draw();
+
+        // Outer translucent shell
+        double s0 = -1.0 + texShift;
+        double s1 = height + s0;
+        float sa = 0.25f;
+
+        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
+        wr.pos(x + 0.2, y + height, z + 0.2).tex(1.0, s1).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.2, y, z + 0.2).tex(1.0, s0).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.8, y, z + 0.2).tex(0.0, s0).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.8, y + height, z + 0.2).tex(0.0, s1).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.8, y + height, z + 0.8).tex(1.0, s1).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.8, y, z + 0.8).tex(1.0, s0).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.2, y, z + 0.8).tex(0.0, s0).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.2, y + height, z + 0.8).tex(0.0, s1).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.8, y + height, z + 0.2).tex(1.0, s1).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.8, y, z + 0.2).tex(1.0, s0).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.8, y, z + 0.8).tex(0.0, s0).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.8, y + height, z + 0.8).tex(0.0, s1).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.2, y + height, z + 0.8).tex(1.0, s1).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.2, y, z + 0.8).tex(1.0, s0).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.2, y, z + 0.2).tex(0.0, s0).color(r, g, b, sa).endVertex();
+        wr.pos(x + 0.2, y + height, z + 0.2).tex(0.0, s1).color(r, g, b, sa).endVertex();
+        tess.draw();
+
+        GlStateManager.depthMask(true);
+        GL11.glPopMatrix();
+        GL11.glPopAttrib();
+        GlStateManager.color(1f, 1f, 1f, 1f);
     }
 }
