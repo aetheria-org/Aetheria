@@ -4,6 +4,7 @@ import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
+import io.hamlook.aetheria.utils.item.NBTFormatter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.command.CommandException;
@@ -59,9 +60,9 @@ public class AsmCopyItemCommand extends ASMCommand {
         result.add("");
         if (item.hasTagCompound()) {
             result.add("nbt:");
-            result.add(item.getTagCompound().toString());
+            result.add(NBTFormatter.format(item.getTagCompound()));
         } else {
-            result.add("no NBT tag compound");
+            result.add("This item has no NBT data.");
         }
 
         String joined = String.join("\n", result);

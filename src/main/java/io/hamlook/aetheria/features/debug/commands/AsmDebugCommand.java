@@ -2,8 +2,8 @@ package io.hamlook.aetheria.features.debug.commands;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.command.ASMCommand;
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.DebugReportEvent;
+import io.hamlook.aetheria.features.misc.PerformanceHUD;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
@@ -18,9 +18,9 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraftforge.common.MinecraftForge;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * /asmdebug [search] — copies a single debug report to the clipboard.
@@ -30,7 +30,8 @@ import java.util.List;
 @RegisterCommand
 public class AsmDebugCommand extends ASMCommand {
 
-    private static final String PREFIX = EnumChatFormatting.GRAY + "[ASM Debug] " + EnumChatFormatting.RESET;
+    private static final double TPS_LIMIT = 15.0;
+    private static final double PING_LIMIT_MS = 1500.0;
 
     @Override
     public String getName() {
@@ -49,30 +50,29 @@ public class AsmDebugCommand extends ASMCommand {
 
     @Override
     public void execute(ICommandSender sender, String[] args) throws CommandException {
-        String search = args.length > 0 ? String.join(" ", Arrays.asList(args)) : "";
-
-        DebugReportEvent event = new DebugReportEvent(search);
+        String search = args.length > 0 ? String.join(" ", java.util.Arrays.asList(args)) : "";
 
         List<String> out = new ArrayList<>();
         out.add("```");
         out.add("= Debug Report for Aetheria " + Aetheria.VERSION + " =");
-        out.add(search.isEmpty()
-                ? "no search specified, only showing flagged/unusual stuff:"
-                : (event.isSearchAll() ? "search for everything:" : "search '" + search + "':"));
+        out.add("");
+        out.add(!search.isEmpty()
+            ? (search.equalsIgnoreCase("all") ? "search for everything:" : "search '" + search + "':")
+            : "no search specified, only showing interesting stuff:");
+
+        DebugReportEvent event = new DebugReportEvent(out, search);
 
         player(event);
-        location(event);
-        scoreboardStatus(event);
-        repoStatus(event);
+        repoData(event);
+        skyblockStatus(event);
+        networkInfo(event);
 
         // let any other feature contribute (dungeons, mob detection, etc. can @SubscribeEvent this)
         MinecraftForge.EVENT_BUS.post(event);
 
-        out.addAll(event.getLines());
-
-        if (!event.isAnyFlagged() && search.isEmpty()) {
+        if (event.isEmpty()) {
             out.add("");
-            out.add("Nothing unusual to show right now!");
+            out.add("Nothing interesting to show right now!");
             out.add("Looking for something specific? /asmdebug <search>");
             out.add("Wanna see everything? /asmdebug all");
         }
@@ -80,33 +80,46 @@ public class AsmDebugCommand extends ASMCommand {
         out.add("```");
 
         GuiScreen.setClipboardString(String.join("\n", out));
-        ChatUtils.sendMessage(PREFIX + EnumChatFormatting.GREEN + "Copied debug report to the clipboard.");
+        ChatUtils.sendMessage(EnumChatFormatting.YELLOW + "Copied Aetheria debug data to the clipboard.");
     }
 
     private void player(DebugReportEvent event) {
         event.title("Player");
         Minecraft mc = Minecraft.getMinecraft();
         String name = mc.getSession() != null ? mc.getSession().getUsername() : "";
-        event.addNormal("name: '" + name + "'");
+        String uuid = mc.thePlayer != null ? String.valueOf(mc.thePlayer.getUniqueID()) : "";
+        event.addIrrelevant(
+            "name: '" + name + "'",
+            "uuid: '" + uuid + "'"
+        );
     }
 
-    private void location(DebugReportEvent event) {
-        event.title("Location");
+    private void repoData(DebugReportEvent event) {
+        event.title("Repo Information");
+        String repoJson = RepoHandler.getJson(ATHRRepo.KEY_REPO);
+        if (repoJson == null || repoJson.isEmpty()) {
+            event.addData("repo data for '" + ATHRRepo.KEY_REPO + "' is empty/missing! (network issue or repo down)");
+        } else {
+            event.addIrrelevant("repo loaded fine (" + repoJson.length() + " chars)");
+        }
+    }
+
+    private void skyblockStatus(DebugReportEvent event) {
+        event.title("SkyBlock Status");
         if (mcWorldMissing()) {
-            event.addFlagged("not in a world");
+            event.addData("not in a world");
             return;
         }
+        if (!SkyblockData.isOnSkyblock()) {
+            event.addIrrelevant("not detected as being on SkyBlock");
+            return;
+        }
+
         SkyblockData.Location loc = SkyblockData.getCurrentLocation();
         String serverPrefix = TablistParser.getServerPrefix();
-        boolean onSkyblock = SkyblockData.isOnSkyblock();
-
-        if (!onSkyblock) {
-            event.addNormal("not detected as being on SkyBlock");
-            return;
-        }
 
         if (loc == SkyblockData.Location.NONE) {
-            event.addFlagged(
+            event.addData(
                 "on SkyBlock, but current Location is NONE (unknown area)",
                 " server prefix: '" + serverPrefix + "'"
             );
@@ -114,57 +127,34 @@ public class AsmDebugCommand extends ASMCommand {
         }
 
         String activeEvent = TablistParser.getActiveEvent();
-        event.addNormal(
-            "island: " + loc,
-            " server prefix: '" + serverPrefix + "'",
-            " environment: " + SkyblockData.getEnvironment() + (SkyblockData.getEnvironment().isTest() ? " (TEST ENVIRONMENT)" : ""),
-            " active event: " + (activeEvent == null ? "none" : activeEvent + " (" + TablistParser.getActiveEventTimeLeft() + ")")
-        );
+        List<String> lines = new ArrayList<>();
+        lines.add("island: " + loc);
+        lines.add(" server prefix: '" + serverPrefix + "'");
+        lines.add(" environment: " + SkyblockData.getEnvironment() + (SkyblockData.getEnvironment().isTest() ? " (TEST ENVIRONMENT)" : ""));
+        lines.add(" active event: " + (activeEvent == null ? "none" : activeEvent + " (" + TablistParser.getActiveEventTimeLeft() + ")"));
 
         if (SkyblockData.getEnvironment().isTest()) {
-            event.addFlagged("§eNote: you are currently on a sandbox/alpha/test server.");
-        }
-    }
-
-    private void scoreboardStatus(DebugReportEvent event) {
-        event.title("Scoreboard");
-        if (mcWorldMissing()) {
-            event.addFlagged("not in a world");
-            return;
-        }
-        String title = SkyblockData.getScoreboardTitle();
-        List<String> lines = SkyblockData.getCleanScoreboardLines();
-
-        if (title == null) {
-            event.addFlagged("no scoreboard objective in the sidebar slot!");
-            return;
-        }
-        if (lines.isEmpty()) {
-            event.addFlagged("scoreboard title present ('" + title + "') but no sidebar lines!");
-            return;
-        }
-
-        event.addNormal(buildList(
-            "title: '" + title + "'",
-            "lines (" + lines.size() + "):"
-        ));
-        List<String> withLines = new ArrayList<>();
-        for (String line : lines) withLines.add("  '" + line + "'");
-        event.addNormal(withLines);
-    }
-
-    private void repoStatus(DebugReportEvent event) {
-        event.title("Repo");
-        String repoJson = RepoHandler.getJson(ATHRRepo.KEY_REPO);
-        if (repoJson == null || repoJson.isEmpty()) {
-            event.addFlagged("repo data for '" + ATHRRepo.KEY_REPO + "' is empty/missing! (network issue or repo down)");
+            lines.add("§eNote: you are currently on a sandbox/alpha/test server.");
+            event.addData(lines);
         } else {
-            event.addNormal("repo loaded fine (" + repoJson.length() + " chars)");
+            event.addIrrelevant(lines);
         }
     }
 
-    private static List<String> buildList(String... s) {
-        return Arrays.asList(s);
+    private void networkInfo(DebugReportEvent event) {
+        event.title("Network Information");
+        float tps = PerformanceHUD.getCurrentTps();
+        double ping = PerformanceHUD.getPingMs();
+
+        List<String> lines = new ArrayList<>();
+        lines.add("tps: " + String.format(Locale.ROOT, "%.1f", tps));
+        lines.add("ping: " + (ping < 0 ? "..." : String.format(Locale.ROOT, "%.0fms", ping)));
+
+        if (tps < TPS_LIMIT || ping > PING_LIMIT_MS) {
+            event.addData(lines);
+        } else {
+            event.addIrrelevant(lines);
+        }
     }
 
     private boolean mcWorldMissing() {
