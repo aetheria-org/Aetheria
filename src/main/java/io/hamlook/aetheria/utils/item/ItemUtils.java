@@ -94,7 +94,20 @@ public class ItemUtils {
         if (item == null || !item.hasTagCompound()) return "";
         NBTTagCompound extra = item.getTagCompound().getCompoundTag("ExtraAttributes");
         String baseId = extra.hasKey("id") ? extra.getString("id") : "";
-        if (!"ENCHANTED_BOOK".equals(baseId)) return baseId;
+        if (!"ENCHANTED_BOOK".equals(baseId)){
+            if(!"POTION".equals(baseId)) return baseId;
+            NBTTagList potionEffects = extra.getTagList("effects", 10);
+
+            StringBuilder id = new StringBuilder("POTION");
+            for (int i = 0; i < potionEffects.tagCount(); i++) {
+                NBTTagCompound effectCompound = potionEffects.getCompoundTagAt(i);
+                if (effectCompound.hasKey("effect")) {
+                    String effectName = effectCompound.getString("effect");
+                    id.append("_").append(effectName.toUpperCase());
+                }
+            }
+            return id.toString();
+        }
         if (!extra.hasKey("enchantments")) return baseId;
         NBTTagCompound enchants = extra.getCompoundTag("enchantments");
         for (String key : enchants.getKeySet()) {

@@ -53,8 +53,9 @@ public class SkyblockTooltips {
 
         if (doSkyblock) {
             String id = ItemUtils.getInternalName(e.itemStack);
-            if (!id.isEmpty()) {
-                String line = EnumChatFormatting.DARK_GRAY + "skyblock:" + id;
+            String eId = ItemUtils.getEffectiveItemId(e.itemStack);
+            if (!id.isEmpty() && !eId.isEmpty()) {
+                String line = EnumChatFormatting.DARK_GRAY + "skyblock:" + id + (!id.equals(eId) ? "(" + eId + ")" : "");
                 if (!e.toolTip.contains(line)) e.toolTip.add(line);
             }
         }
