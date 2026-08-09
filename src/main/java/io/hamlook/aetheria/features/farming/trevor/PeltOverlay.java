@@ -83,6 +83,13 @@ public class PeltOverlay extends Overlay {
     }
 
     @Override
+    protected boolean extraGuard() {
+        // Only show while on the Mushroom Desert (preview in the position
+        // editor bypasses this).
+        return TrevorSolver.isOnDesertIsland();
+    }
+
+    @Override
     public List<String> getLines(boolean preview) {
         List<String> lines = new ArrayList<>();
         if (preview) {

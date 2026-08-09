@@ -58,9 +58,13 @@ public class TrevorSolver {
     private List<BlockPos> activeSpots = Collections.emptyList();
     private EntityArmorStand trackedAnimal = null;
     private final Set<Integer> alertedIds = new HashSet<>();
-    private boolean onDesertIsland = false;
+    private static boolean onDesertIsland = false;
     private int tickCounter = 0;
     private long lastRewardMs = 0;
+
+    public static boolean isOnDesertIsland() {
+        return onDesertIsland;
+    }
 
     private TrevorConfig config() {
         return ATHRConfig.feature == null ? null : ATHRConfig.feature.farming.trevor;
