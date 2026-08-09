@@ -7,7 +7,6 @@ import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import org.lwjgl.opengl.GL11;
 
@@ -249,8 +248,6 @@ public final class WorldRenderUtils {
         drawFilledBlocks(Collections.singletonList(new AxisAlignedBB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1)), color);
     }
 
-    private static final ResourceLocation BEACON_BEAM_TEXTURE = new ResourceLocation("textures/entity/beacon_beam.png");
-
     /**
      * Draws a vanilla-style beacon beam spanning the block column {@code x..x+1},
      * {@code z..z+1} starting at {@code y}. Depth testing stays enabled, so the
@@ -260,11 +257,10 @@ public final class WorldRenderUtils {
         if (mc.theWorld == null || mc.getRenderManager() == null) return;
         double[] v = viewerPos();
 
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        GL11.glPushMatrix();
-        GL11.glTranslated(-v[0], -v[1], -v[2]);
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(-v[0], -v[1], -v[2]);
 
-        mc.getTextureManager().bindTexture(BEACON_BEAM_TEXTURE);
+        mc.getTextureManager().bindTexture(io.hamlook.aetheria.Resources.BEACON_BEAM);
         GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
 
         GlStateManager.disableLighting();
@@ -342,8 +338,10 @@ public final class WorldRenderUtils {
         tess.draw();
 
         GlStateManager.depthMask(true);
-        GL11.glPopMatrix();
-        GL11.glPopAttrib();
+        GlStateManager.disableBlend();
+        GlStateManager.enableCull();
+        GlStateManager.enableLighting();
+        GlStateManager.popMatrix();
         GlStateManager.color(1f, 1f, 1f, 1f);
     }
 }

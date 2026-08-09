@@ -5,6 +5,7 @@ import io.hamlook.aetheria.core.features.farming.TrevorConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.features.waypoints.WaypointRenderer;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
@@ -20,7 +21,6 @@ import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -48,22 +48,18 @@ public class TrevorSolver {
     private static final Pattern QUEST_REWARD = Pattern.compile("^Killing the animal rewarded you (\\d+) Pelts?\\.?$");
     private static final long WARP_WINDOW_MS = 5000;
 
-    private static final String[] DESERT_AREAS = {"Desert Settlement", "Oasis", "Mushroom Gorge",
-            "Overgrown Mushroom Cave", "Glowing Mushroom Cave", "Desert Mountain", "Jake's House",
-            "Treasure Hunter Camp", "Trapper's Den", "Mushroom Desert"};
-
     private String questAnimal = null;
     private String questRarityLower = null;
     private String questAnimalLower = null;
     private List<BlockPos> activeSpots = Collections.emptyList();
     private EntityArmorStand trackedAnimal = null;
     private final Set<Integer> alertedIds = new HashSet<>();
-    private static boolean onDesertIsland = false;
+    private static boolean onFarmingIsland = false;
     private int tickCounter = 0;
     private long lastRewardMs = 0;
 
-    public static boolean isOnDesertIsland() {
-        return onDesertIsland;
+    public static boolean isOnFarmingIsland() {
+        return onFarmingIsland;
     }
 
     private TrevorConfig config() {
@@ -82,10 +78,18 @@ public class TrevorSolver {
             questAnimal = start.group(1) + " " + start.group(2);
             questRarityLower = start.group(1).toLowerCase(Locale.ROOT);
             questAnimalLower = start.group(2).toLowerCase(Locale.ROOT);
-            activeSpots = TrevorSpots.forLocation(start.group(3));
+            activeSpots = SkyblockData.getTrevorSpotsForArea(start.group(3));
             PeltOverlay.startCooldown();
             return;
         }
+
+        // Trevor's NPC line must be matched above this filter: the
+        // player-message pattern also matches "[NPC] Trevor: ...". The reward
+        // pattern is anchored so relayed chat can't spoof it, but filter
+        // player/party/guild/DM chat anyway before matching.
+        if (ChatUtils.isPlayerMessage(msg) || ChatUtils.isPartyMessage(msg)
+                || ChatUtils.getGuildSender(msg) != null || ChatUtils.isMsgReceived(msg)) return;
+
         Matcher reward = QUEST_REWARD.matcher(msg);
         if (reward.matches()) {
             PeltOverlay.addPelts(Integer.parseInt(reward.group(1)));
@@ -99,8 +103,7 @@ public class TrevorSolver {
         TrevorConfig config = config();
         if (config == null || !config.enabled || !config.warpHelper) return;
         if (mc.thePlayer == null || mc.currentScreen != null) return;
-        int key = config.warpKey;
-        if (key == Keyboard.KEY_NONE || !Keyboard.getEventKeyState() || Keyboard.getEventKey() != key) return;
+        if (!KeybindHelper.isKeyPressed(config.warpKey)) return;
         if (lastRewardMs == 0 || System.currentTimeMillis() - lastRewardMs > WARP_WINDOW_MS) return;
         lastRewardMs = 0;
         mc.thePlayer.sendChatMessage("/warp trapper");
@@ -114,11 +117,20 @@ public class TrevorSolver {
         if (++tickCounter < 5) return;
         tickCounter = 0;
 
-        onDesertIsland = detectDesertIsland();
+        // Cheap island gate first: the farming islands (Barn + Mushroom Desert)
+        // report Location.BARN via the tab list server prefix.
+        SkyblockData.Location loc = SkyblockData.getCurrentLocation();
+        if (loc != SkyblockData.Location.BARN) {
+            trackedAnimal = null;
+            onFarmingIsland = false;
+            return;
+        }
+        onFarmingIsland = true;
+
         // Only scan while a quest is active; matching the quest's exact rarity +
         // animal keeps other players' trapper animals (and the just-killed one
         // after the reward message resets state) from triggering alerts.
-        if (!onDesertIsland || questAnimal == null) {
+        if (questAnimal == null) {
             trackedAnimal = null;
             return;
         }
@@ -148,7 +160,7 @@ public class TrevorSolver {
     @SubscribeEvent
     public void onRenderWorld(RenderWorldLastEvent event) {
         TrevorConfig config = config();
-        if (config == null || !config.enabled || !onDesertIsland || mc.thePlayer == null) return;
+        if (config == null || !config.enabled || !onFarmingIsland || mc.thePlayer == null) return;
 
         if (!activeSpots.isEmpty()) {
             Color spotColor = argbToColor(config.spotColor, 0x7800FFFF);
@@ -185,7 +197,7 @@ public class TrevorSolver {
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
         reset();
-        onDesertIsland = false;
+        onFarmingIsland = false;
     }
 
     private void reset() {
@@ -195,15 +207,6 @@ public class TrevorSolver {
         activeSpots = Collections.emptyList();
         trackedAnimal = null;
         alertedIds.clear();
-    }
-
-    private boolean detectDesertIsland() {
-        for (String line : SkyblockData.getCleanScoreboardLines()) {
-            for (String area : DESERT_AREAS) {
-                if (line.contains(area)) return true;
-            }
-        }
-        return false;
     }
 
     private static Color argbToColor(String special, int fallback) {

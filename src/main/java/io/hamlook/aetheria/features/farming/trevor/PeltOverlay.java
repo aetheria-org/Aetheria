@@ -57,6 +57,11 @@ public class PeltOverlay extends Overlay {
 
     @Override
     public Position getPosition() {
+        if (ATHRConfig.feature == null || ATHRConfig.feature.farming == null
+                || ATHRConfig.feature.farming.trevor == null
+                || ATHRConfig.feature.farming.trevor.peltTrackerPos == null) {
+            return new Position(2, 100, false, false);
+        }
         return ATHRConfig.feature.farming.trevor.peltTrackerPos;
     }
 
@@ -78,15 +83,17 @@ public class PeltOverlay extends Overlay {
     @Override
     protected boolean isEnabled() {
         return ATHRConfig.feature != null
+                && ATHRConfig.feature.farming != null
+                && ATHRConfig.feature.farming.trevor != null
                 && ATHRConfig.feature.farming.trevor.enabled
                 && ATHRConfig.feature.farming.trevor.peltTracker;
     }
 
     @Override
     protected boolean extraGuard() {
-        // Only show while on the Mushroom Desert (preview in the position
+        // Only show while on the farming island (preview in the position
         // editor bypasses this).
-        return TrevorSolver.isOnDesertIsland();
+        return TrevorSolver.isOnFarmingIsland();
     }
 
     @Override
