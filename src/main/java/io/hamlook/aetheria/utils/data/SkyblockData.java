@@ -5,10 +5,15 @@ import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.util.BlockPos;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -125,6 +130,57 @@ public final class SkyblockData {
 
     public static boolean isInMist() {
         return getCleanScoreboardLines().stream().anyMatch(line -> line.contains("The Mist"));
+    }
+
+    /**
+     * Trevor (Trapper) animal spawn spots on the Mushroom Desert, grouped by
+     * the area name Trevor announces in his quest start message. Keys are
+     * lower-cased area names; lists are immutable.
+     */
+    private static final Map<String, List<BlockPos>> TREVOR_SPOTS;
+
+    static {
+        Map<String, List<BlockPos>> spots = new HashMap<>();
+        spots.put("desert settlement", Collections.unmodifiableList(Arrays.asList(
+                new BlockPos(184, 77, -352),
+                new BlockPos(139, 77, -375))));
+        spots.put("oasis", Collections.unmodifiableList(Arrays.asList(
+                new BlockPos(104, 65, -473),
+                new BlockPos(116, 65, -416),
+                new BlockPos(165, 77, -464))));
+        spots.put("mushroom gorge", Collections.unmodifiableList(Arrays.asList(
+                new BlockPos(220, 41, -578),
+                new BlockPos(234, 54, -500),
+                new BlockPos(265, 55, -436),
+                new BlockPos(187, 42, -520),
+                new BlockPos(303, 51, -409),
+                new BlockPos(172, 48, -459),
+                new BlockPos(189, 43, -443))));
+        spots.put("overgrown mushroom cave", Collections.unmodifiableList(Arrays.asList(
+                new BlockPos(247, 57, -421),
+                new BlockPos(248, 58, -369))));
+        TREVOR_SPOTS = Collections.unmodifiableMap(spots);
+    }
+
+    public static List<BlockPos> getTrevorSpotsForArea(String area) {
+        if (area == null) return Collections.emptyList();
+        List<BlockPos> spots = TREVOR_SPOTS.get(area.toLowerCase(Locale.ROOT).trim());
+        return spots == null ? Collections.emptyList() : spots;
+    }
+
+    /**
+     * Returns the Trevor spawn area the player is currently in, or null.
+     * Scoreboard area lines carry a "⏣ " prefix, so this matches by contains
+     * rather than key equality.
+     */
+    public static String getCurrentTrevorAreaFromScoreboard() {
+        for (String line : getCleanScoreboardLines()) {
+            String clean = line.toLowerCase(Locale.ROOT).trim();
+            for (String key : TREVOR_SPOTS.keySet()) {
+                if (clean.contains(key)) return key;
+            }
+        }
+        return null;
     }
 
     public enum Environment {

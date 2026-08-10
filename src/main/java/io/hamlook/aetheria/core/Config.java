@@ -127,6 +127,8 @@ public class Config {
             case "openItemAbilityTimerEditor": ATHRConfig.openItemAbilityTimerEditor(); break;
             case "openBpsEditor": ATHRConfig.openBpsEditor(); break;
             case "openUptimeEditor": ATHRConfig.openUptimeEditor(); break;
+            case "openPeltTrackerEditor": ATHRConfig.openPeltTrackerEditor(); break;
+            case "resetPeltTracker": ATHRConfig.resetPeltTracker(); break;
             case "openPitchYawEditor": ATHRConfig.openPitchYawEditor(); break;
             case "openKillComboEditor": ATHRConfig.openKillComboEditor(); break;
             case "openGhostEditor": ATHRConfig.openGhostEditor(); break;

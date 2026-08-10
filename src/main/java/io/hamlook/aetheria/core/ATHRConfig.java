@@ -340,6 +340,17 @@ public class ATHRConfig {
         screenToOpen = new GuiPositionEditor(feature.misc.uptimeConfig.uptimePos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::saveConfig, ATHRConfig::saveConfig).withOverlayScale(feature.misc.uptimeConfig.uptimeScale).withParent(Minecraft.getMinecraft().currentScreen);
     }
 
+    public static void openPeltTrackerEditor() {
+        if (feature == null) return;
+        io.hamlook.aetheria.features.farming.trevor.PeltOverlay overlay = io.hamlook.aetheria.features.farming.trevor.PeltOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.farming.trevor.peltTrackerPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::saveConfig, ATHRConfig::saveConfig).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void resetPeltTracker() {
+        io.hamlook.aetheria.features.farming.trevor.PeltOverlay.reset();
+    }
+
     public static void openPitchYawEditor() {
         if (feature == null) return;
         PitchYawOverlay overlay = PitchYawOverlay.getInstance();
