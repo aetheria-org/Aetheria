@@ -25,4 +25,8 @@ public class Farming {
     @Expose
     @Category(name = "Sensitivity Reducer", desc = "Reduce mouse sensitivity while holding a crop farming tool")
     public SensitivityReducerConfig sensitivityReducer = new SensitivityReducerConfig();
+
+    @Expose
+    @Category(name = "Trevor Solver", desc = "Trapper quest helper – spawn spot highlights & animal beacon")
+    public TrevorConfig trevor = new TrevorConfig();
 }
