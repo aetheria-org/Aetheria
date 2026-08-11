@@ -74,7 +74,7 @@ This project would not be where it is today without the help of these amazing pe
 
 **Contributors and Maintainers**
 
-[Internet Protocol](https://github.com/protocol-8)
+[Internet Protocol](https://github.com/protocol4)
 [Whispering](https://github.com/ginafro1)
 
 **Discord Maintainer**
