@@ -54,6 +54,8 @@ public class CustomScoreboard extends Overlay {
     private static final int LINE_EMPTY7       = 23;
     private static final int LINE_EXTRA        = 24;
     private static final int LINE_EMPTY2       = 25;
+    private static final int LINE_COPPER       = 26;
+    private static final int LINE_PLOT_NUMBER  = 27;
 
     private static final String LOC_SYMBOL_NORMAL = "⏣";
     private static final String LOC_SYMBOL_RIFT   = "ф";
@@ -71,6 +73,8 @@ public class CustomScoreboard extends Overlay {
     private static final Pattern WEBSITE_PATTERN    = Pattern.compile(".*fakepixel.*");
     private static final Pattern NORTHSTARS_PATTERN = Pattern.compile("North Stars: [\\d,]+");
     private static final Pattern HEAT_PATTERN       = Pattern.compile("Heat: .+");
+    private static final Pattern COPPER_PATTERN   = Pattern.compile("Copper: [\\d,.]+");
+    private static final Pattern PLOT_NUMBER_PATTERN = Pattern.compile("Plot - \\d+");
 
     @Getter
     private static CustomScoreboard instance;
@@ -169,6 +173,8 @@ public class CustomScoreboard extends Overlay {
         String websiteRaw     = null;
         String northStarsRaw  = null;
         String heatRaw        = null;
+        String copperRaw      = null;
+        String plotnumberRaw  = null;
         List<String> eventLines  = new ArrayList<>();
         List<String> slayerLines = new ArrayList<>();
         Set<String>  claimed     = new LinkedHashSet<>();
@@ -195,6 +201,12 @@ public class CustomScoreboard extends Overlay {
             }
             if (bankRaw == null && BANK_PATTERN.matcher(c).find()) {
                 bankRaw = l; claimed.add(l); continue;
+            }
+            if (copperRaw == null && COPPER_PATTERN.matcher(c).matches()) {
+                copperRaw = l; claimed.add(l); continue;
+            }
+            if (plotnumberRaw == null && PLOT_NUMBER_PATTERN.matcher(c).find()){
+                plotnumberRaw = l; claimed.add(l); continue;
             }
             if (bitsRaw == null && BITS_PATTERN.matcher(c).find()) {
                 bitsRaw = l; claimed.add(l); continue;
@@ -341,6 +353,12 @@ public class CustomScoreboard extends Overlay {
                     if (SkyblockData.isOnSkyblock()) {
                         lines.add("§fFetchur: §e" + FetchurData.getTodaysItem()); rawIndex.add(-1);
                     }
+                    break;
+                case LINE_COPPER:
+                    if (copperRaw != null) { lines.add(copperRaw); rawIndex.add(-1); }
+                    break;
+                case LINE_PLOT_NUMBER:
+                    if (plotnumberRaw != null) { lines.add(plotnumberRaw); rawIndex.add(-1); }
                     break;
                 case LINE_SLAYER:
                     if (!inDungeon)
