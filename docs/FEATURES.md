@@ -4,6 +4,8 @@
 ## QoL
 
 - **Block Selection Overlay** — Replaces the vanilla block selection with a custom filled or outline highlight.
+- **Ability Timer Overlay** — Shows a draggable HUD with active duration timers for item abilities (e.g. Fire Veil Wand).
+- **Damage Splashes** — Customize damage nametags by hiding crit/non-crit splashes and shortening large numbers (e.g. 1.2M).
 - **Enchant Parser** — Colors enchants by level, sorts ultimates to the top, supports normal/compressed/expanded layout and chroma(rainbow) animation.
 - **Gyro Wand Helper** — Shows the AoE ring when holding the Gyrokinetic Wand, plus a cooldown timer.
 - **Roman Numerals** — Converts Roman numerals to integers.
@@ -26,6 +28,7 @@
 ## Misc
 
 - **Performance HUD** — Shows FPS, TPS, ping, coords, and rotation in a small overlay.
+- **Kill Combo Tracker** — Tracks kill combo milestones, magic find, coins per kill, and combat wisdom with a configurable HUD overlay.
 - **Search Bar** — Adds a search bar to inventory GUIs with item highlighting.
 - **Item Cooldowns** — Tracks cooldowns for abilities and invincibility timers with a HUD overlay.
 - **Current Pet** — Shows your active pet as a HUD overlay.
@@ -55,6 +58,7 @@
 
 - **Blood Mob Highlight** — Highlights blood room mobs with a box or glow.
 - **Boss Highlights** — Highlights Bonzo, Scarf, Scarf's minions, and the Professor with configurable colors.
+- **Crush Alert** — On-screen alert when Storm is within range of a pillar in F7/M7 Phase 2.
 - **Dungeon Overlay** — Run timers and end-of-run stats in chat.
 - **Dungeon Breaker Overlay** — Shows Dungeon Breaker charges while in a dungeon.
 - **Dungeon Room Overlay** — Shows the name of your current dungeon room.
@@ -69,6 +73,7 @@
 
 - **Fetchur Overlay** — Shows today's Fetchur item.
 - **Powder Tracker** — Tracks gemstone powder, chest drops, and goblin eggs in Crystal Hollows. Excludes PRISTINE drops.
+- **Powder Mining Chat Filter** — Reduces chat clutter in the Crystal Hollows by hiding or compacting repetitive powder mining messages.
 - **Pristine Tracker** — Dedicated tracker for PRISTINE gemstone drops with rates/hour.
 - **HOTM Powder Display** — Adds powder spent vs. max cost to HOTM perk tooltips; hold Shift to see the cost for the next 10 levels.
 - **Commission Highlight** — Highlights completed commissions in green inside the Commissions menu.
@@ -100,6 +105,10 @@
 
 - **Lock Mouse** — Locks your yaw and pitch so you don't accidentally move the camera while farming.
 - **BPS Overlay** — Shows blocks broken per second while farming.
+- **Farming Tracker** — Tracks crop value, session duration, and coins per hour with a configurable HUD overlay.
+- **Organic Matter Tracker** — Tracks Organic Matter gains and rates for Garden farming.
+- **Trevor Solver & Pelt Tracker** — Highlights spawn spots for Trevor hunts, marks animals, and tracks pelts/hour. Includes a Trapper Warp helper.
+- **Sensitivity Reducer** — Reduces mouse sensitivity while holding farming tools for better precision; includes a pitch/yaw overlay.
 
 
 ## Scoreboard
@@ -116,6 +125,7 @@
 
 - **Chat Filters** — `/chatfilters` — Block or rewrite chat messages based on custom patterns.
 - **Chat Compacting** — Collapses repeated identical messages; configurable expiry and consecutive-only modes.
+- **Emoji Support** — Renders `:emoji_name:` tokens as textures in chat and provides a suggestion bar while typing.
 - **Chat Timestamps** — Prepends timestamps to chat; choose 12/24-hour and whether to show seconds.
 - **Chat Heads** — Shows a player's head next to their messages; hides repeats on consecutive messages.
 - **Chat Copy** — Click or CTRL+click to copy a chat line with or without color codes.
@@ -142,6 +152,9 @@
 - **Waypoint Manager** — GUI to manage waypoint groups.
 - **Auto Advance** — Automatically moves to the next waypoint when you're close enough for long enough.
 
+## Network
+
+- **Global Chat** - A global chat for all SkyAtlas linked players `/gchat`.
 
 
 ## Commands
@@ -163,6 +176,8 @@
 - `/athrw guide` — Ordered waypoint commands.
 - `/waypoint` — Open the waypoint group manager.
 - `/asmbuttons` — Open the inventory button editor.
+- `/asmfarming <on|off|reset>` — Manage the farming tracker.
+- `/killcombo <reset|toggle>` (`/kc`) — Manage the kill combo tracker.
 - `/capes` — Open the cape manager.
 - `/asmprotect` — Protect the held item from drops and sales.
 - `/asmdebug` — Copy a general debug report to the clipboard.
