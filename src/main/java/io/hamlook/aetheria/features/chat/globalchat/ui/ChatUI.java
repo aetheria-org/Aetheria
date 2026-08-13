@@ -160,6 +160,55 @@ public class ChatUI extends GuiScreen {
     private int editBoxHeight = 35;
     private boolean editBoxVisible = false;
 
+    // Discord-style optimistic-send fade: while a just-sent message hasn't been confirmed by the
+    // server it renders at reduced opacity, and if the server rejects it everything about that
+    // message (text, avatar, images) tints red instead. Set once at the top of renderMessage() and
+    // read by every draw call in its subtree via mc()/applyMsgGlColor(), then reset at the end so it
+    // never leaks into unrelated UI (sidebar, panels, autocomplete all render at msgAlpha=1/not failed).
+    private float msgAlpha = 1f;
+    private boolean msgFailed = false;
+
+    /** Scales a packed ARGB color's alpha by {@link #msgAlpha}, or tints it toward Discord's failed-send
+     *  red when {@link #msgFailed}, for every text/rect color drawn as part of the current message. */
+    private int fadeColor(int argb) {
+        int alpha = (argb >>> 24) & 0xFF;
+        if (alpha == 0) alpha = 0xFF;
+        if (msgFailed) {
+            int r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
+            int nr = Math.round(r * 0.45f + 0xED * 0.55f);
+            int ng = Math.round(g * 0.45f + 0x42 * 0.55f);
+            int nb = Math.round(b * 0.45f + 0x45 * 0.55f);
+            return (alpha << 24) | (nr << 16) | (ng << 8) | nb;
+        }
+        if (msgAlpha >= 0.999f) return argb;
+        return (Math.round(alpha * msgAlpha) << 24) | (argb & 0x00FFFFFF);
+    }
+
+    /** Same fade/tint as {@link #mc(int)}, but for textured (GL-color-modulated) draws: avatars,
+     *  emoji, stickers, attachments and embed thumbnails. Callers must restore full white afterward. */
+    private void applyMsgGlColor() {
+        if (msgFailed) {
+            GlStateManager.color(1f, 0.55f, 0.57f, 1f);
+        } else {
+            GlStateManager.color(1f, 1f, 1f, msgAlpha);
+        }
+    }
+
+    /** Drop-in replacement for {@code fontRendererObj.drawStringWithShadow}: FontRenderer doesn't
+     *  enable GL blending on its own, so a translucent alpha byte in the color (from {@link #fadeColor})
+     *  was being ignored and text rendered fully opaque even while the avatar/images correctly faded.
+     *  Only wrap with blend state when actually translucent — keeps the common (opaque) path cheap. */
+    private void drawText(String text, float x, float y, int color) {
+        if (msgAlpha < 0.999f && !msgFailed) {
+            GlStateManager.enableBlend();
+            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+            fontRendererObj.drawStringWithShadow(text, x, y, color);
+            GlStateManager.disableBlend();
+        } else {
+            fontRendererObj.drawStringWithShadow(text, x, y, color);
+        }
+    }
+
     public static void open() {
         net.minecraft.client.Minecraft.getMinecraft().displayGuiScreen(new ChatUI());
     }
@@ -170,7 +219,10 @@ public class ChatUI extends GuiScreen {
     public void initGui() {
         Keyboard.enableRepeatEvents(true);
         if (selectedChannel == null && !GlobalChat.channels.isEmpty()) {
-            selectedChannel = GlobalChat.channels.values().iterator().next();
+            selectChannel(GlobalChat.channels.values().iterator().next());
+        } else if (selectedChannel != null) {
+            selectedChannel.active = true;
+            selectedChannel.markRead();
         }
 
         int inputX = SIDEBAR_WIDTH + PADDING;
@@ -187,6 +239,20 @@ public class ChatUI extends GuiScreen {
     public void onGuiClosed() {
         Keyboard.enableRepeatEvents(false);
         if (emojiSearchField != null) emojiSearchField.setFocused(false);
+        if (selectedChannel != null) selectedChannel.active = false;
+    }
+
+    /** Switches the active channel: clears the previous channel's "currently viewing" flag, marks
+     *  the new one read (unread badge disappears the moment you open it, Discord-style), and resets scroll. */
+    private void selectChannel(Channel channel) {
+        if (channel == selectedChannel) return;
+        if (selectedChannel != null) selectedChannel.active = false;
+        selectedChannel = channel;
+        if (selectedChannel != null) {
+            selectedChannel.active = true;
+            selectedChannel.markRead();
+        }
+        scrollPixels = 0;
     }
 
     @Override
@@ -377,6 +443,10 @@ public class ChatUI extends GuiScreen {
             downloadMsgUntil = System.currentTimeMillis() + 3500;
             return;
         }
+        // Show it immediately instead of waiting on the server round-trip; Channel.receiveMessage
+        // merges the eventual server confirmation into this same object (see its dedup-by-messageID
+        // path), and GlobalChat.sendMessage flips sendFailed if the server rejects it.
+        selectedChannel.receiveMessage(message);
         inputField.setText("");
         pendingReply = null;
     }
@@ -434,7 +504,15 @@ public class ChatUI extends GuiScreen {
             if (replacement == null && !GlobalChat.channels.isEmpty()) {
                 replacement = GlobalChat.channels.values().iterator().next();
             }
+            // This is a channel-object swap (refreshChannels rebuilt the same logical channel), not a
+            // user-initiated switch: carry the "currently viewing" flag over without resetting scroll
+            // or re-triggering the unread-cleared/read state.
+            selectedChannel.active = false;
             selectedChannel = replacement;
+            if (selectedChannel != null) {
+                selectedChannel.active = true;
+                selectedChannel.markRead();
+            }
         }
 
         // Refresh the mentionable-user list whenever the selected channel
@@ -472,7 +550,7 @@ public class ChatUI extends GuiScreen {
             int toastBoxY = height - INPUT_HEIGHT - PADDING;
             int toastY = toastBoxY - 30;
             drawRect(SIDEBAR_WIDTH, toastY, width, toastY + 20, 0xE62B2D31);
-            fontRendererObj.drawStringWithShadow(downloadMsg, SIDEBAR_WIDTH + PADDING, toastY + 6, 0xFFDCDDDE);
+            drawText(downloadMsg, SIDEBAR_WIDTH + PADDING, toastY + 6, 0xFFDCDDDE);
         }
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
@@ -491,7 +569,7 @@ public class ChatUI extends GuiScreen {
                 && pendingReply.channelId != null && !pendingReply.channelId.isEmpty();
         String bannerText = canLink
                 ? "[Replying To](https://discord.com/channels/1479556885769093192/"
-                        + pendingReply.channelId + "/" + pendingReply.discordID + ") @" + replyName
+                  + pendingReply.channelId + "/" + pendingReply.discordID + ") @" + replyName
                 : "Replying to " + replyName;
         Map<String, String> mentionNames = null;
         if (selectedChannel != null && !selectedChannel.usersByKey.isEmpty()) {
@@ -508,13 +586,13 @@ public class ChatUI extends GuiScreen {
 
         int cx = width - PADDING - 26;
         boolean hover = mouseX >= cx && mouseX <= cx + 18 && mouseY >= by + 4 && mouseY <= by + 20;
-        fontRendererObj.drawStringWithShadow("X", cx + 6, by + 8, hover ? 0xFFFFFFFF : 0xFF949BA4);
+        drawText("X", cx + 6, by + 8, hover ? 0xFFFFFFFF : 0xFF949BA4);
         clickRects.add(new ClickRect(cx, by + 4, 18, 16, () -> pendingReply = null));
     }
 
     private void drawSidebar(int mouseX, int mouseY) {
         drawRect(0, 0, SIDEBAR_WIDTH, height, 0xFF2B2D31);
-        fontRendererObj.drawStringWithShadow("CHANNELS", 10, 12, 0xFF949BA4);
+        drawText("CHANNELS", 10, 12, 0xFF949BA4);
 
         if (cachedChannelList == null || GlobalChat.channelsVersion != cachedChannelListVersion) {
             cachedChannelList = new ArrayList<>(GlobalChat.channels.values());
@@ -537,10 +615,29 @@ public class ChatUI extends GuiScreen {
                 drawRect(4, y, SIDEBAR_WIDTH - 4, y + 26, 0xFF35373C);
             }
 
-            String label = fontRendererObj.trimStringToWidth("# " + channel.channelName, SIDEBAR_WIDTH - 22);
-            fontRendererObj.drawStringWithShadow(label, 14, y + 9, selected ? 0xFFFFFFFF : 0xFFB5BAC1);
+            int unread = channel.unreadCount.get();
+            boolean unreadPing = unread > 0 && channel.unreadHighlighted;
+            int badgeReserve = 0;
+            if (unread > 0 && !selected) {
+                String badgeText = unread > 99 ? "99+" : String.valueOf(unread);
+                int badgeW = Math.max(16, fontRendererObj.getStringWidth(badgeText) + 8);
+                badgeReserve = badgeW + 8;
+                int bx = SIDEBAR_WIDTH - 8 - badgeW;
+                int by = y + 5;
+                drawRect(bx, by, bx + badgeW, by + 16, unreadPing ? 0xFFED4245 : 0xFF4E5058);
+                drawText(badgeText, bx + (badgeW - fontRendererObj.getStringWidth(badgeText)) / 2f, by + 4, 0xFFFFFFFF);
+            }
 
-            clickRects.add(new ClickRect(4, y, SIDEBAR_WIDTH - 8, 26, () -> { selectedChannel = channel; scrollPixels = 0; }));
+            // Unread channels get a brighter, bolded name so the sidebar reads at a glance which
+            // channels have something new — mirrors the "unread vs read" contrast people expect
+            // from every modern chat app, instead of every channel looking identical until clicked.
+            boolean unbold = unread == 0 || selected;
+            String prefix = unbold ? "" : "\u00a7l";
+            String label = fontRendererObj.trimStringToWidth(prefix + "# " + channel.channelName, SIDEBAR_WIDTH - 22 - badgeReserve);
+            int nameColor = selected ? 0xFFFFFFFF : (unread > 0 ? 0xFFF2F3F5 : 0xFFB5BAC1);
+            drawText(label, 14, y + 9, nameColor);
+
+            clickRects.add(new ClickRect(4, y, SIDEBAR_WIDTH - 8, 26, () -> selectChannel(channel)));
 
             y += 30;
         }
@@ -580,7 +677,7 @@ public class ChatUI extends GuiScreen {
         boolean dbHover = mouseX >= 6 && mouseX <= 6 + dbw && mouseY >= dby && mouseY <= dby + dbh;
         drawRect(6, dby, 6 + dbw, dby + dbh, dbHover ? 0xFF404249 : 0xFF2B2D31);
         String label = "``` " + selectedCodeLang + (langDropdownOpen ? " ▲" : " ▼");
-        fontRendererObj.drawStringWithShadow(label, 11, dby + 5, 0xFFB5BAC1);
+        drawText(label, 11, dby + 5, 0xFFB5BAC1);
         clickRects.add(new ClickRect(6, dby, dbw, dbh, () -> langDropdownOpen = !langDropdownOpen));
 
         if (langDropdownOpen) {
@@ -598,7 +695,7 @@ public class ChatUI extends GuiScreen {
                 int iw = (SIDEBAR_WIDTH - 8) / 2 - 2;
                 boolean hov = mouseX >= ix && mouseX <= ix + iw && mouseY >= iy && mouseY <= iy + itemH;
                 if (hov) drawRect(ix, iy, ix + iw, iy + itemH, 0xFF35373C);
-                fontRendererObj.drawStringWithShadow(lang, ix + 2, iy + 1,
+                drawText(lang, ix + 2, iy + 1,
                         lang.equals(selectedCodeLang) ? 0xFFFFFFFF : (hov ? 0xFFFFFFFF : 0xFFB5BAC1));
                 clickRects.add(new ClickRect(ix, iy, iw, itemH, () -> {
                     selectedCodeLang = lang;
@@ -612,7 +709,7 @@ public class ChatUI extends GuiScreen {
     private void drawMarkdownButton(int x, int y, int w, int h, String label, int mouseX, int mouseY, Runnable action) {
         boolean hover = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
         drawRect(x, y, x + w, y + h, hover ? 0xFF404249 : 0xFF2B2D31);
-        fontRendererObj.drawStringWithShadow(label,
+        drawText(label,
                 x + (w - fontRendererObj.getStringWidth(label)) / 2f,
                 y + (h - fontRendererObj.FONT_HEIGHT) / 2f,
                 hover ? 0xFFFFFFFF : 0xFFB5BAC1);
@@ -811,12 +908,12 @@ public class ChatUI extends GuiScreen {
         emojiSearchField.height = sr[3];
         emojiSearchField.drawTextBox();
         if (emojiSearchField.getText().isEmpty() && !emojiSearchField.isFocused()) {
-            fontRendererObj.drawStringWithShadow("Search emojis...", sr[0] + 2, sr[1] + 4, 0xFF6D6F78);
+            drawText("Search emojis...", sr[0] + 2, sr[1] + 4, 0xFF6D6F78);
         }
 
         int gridTop = py + EMOJI_SEARCH_H + 4;
         if (emojis.isEmpty()) {
-            fontRendererObj.drawStringWithShadow("No emojis found.", px + 8, gridTop + 12, 0xFF6D6F78);
+            drawText("No emojis found.", px + 8, gridTop + 12, 0xFF6D6F78);
             return;
         }
         int rowsTotal = (emojis.size() + EMOJI_PANEL_COLS - 1) / EMOJI_PANEL_COLS;
@@ -884,7 +981,7 @@ public class ChatUI extends GuiScreen {
         drawRect(px, py, px + STICKER_PANEL_W, py + STICKER_PANEL_H, 0xFF17181C);
 
         if (stickers.isEmpty()) {
-            fontRendererObj.drawStringWithShadow("No stickers available.", px + 8, py + 12, 0xFF6D6F78);
+            drawText("No stickers available.", px + 8, py + 12, 0xFF6D6F78);
             return;
         }
 
@@ -912,7 +1009,7 @@ public class ChatUI extends GuiScreen {
         if (selectedChannel == null) return;
         ChatMessage message = new ChatMessage(st.url, selectedChannel.channelID, null);
         message.stickers.put(st.id, st);
-        message.sendMessage();
+        if (message.sendMessage()) selectedChannel.receiveMessage(message);
         closeAllPanels();
     }
 
@@ -948,7 +1045,7 @@ public class ChatUI extends GuiScreen {
             boolean hover = mouseX >= dx && mouseX <= dx + dw && mouseY >= ry && mouseY <= ry + rowH;
             if (hover) drawRect(dx, ry, dx + dw, ry + rowH, 0xFF35373C);
             drawInlineEmoji(ref, dx + 4, ry + 1);
-            fontRendererObj.drawStringWithShadow(":" + ref.name + ":", dx + 24, ry + 5, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
+            drawText(":" + ref.name + ":", dx + 24, ry + 5, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
             final int selStart = start - 1;
             final int selEnd = caret;
             clickRects.add(new ClickRect(dx, ry, dw, rowH, () -> {
@@ -999,9 +1096,9 @@ public class ChatUI extends GuiScreen {
             int ry = dy + 3 + i * rowH;
             boolean hover = mouseX >= dx && mouseX <= dx + dw && mouseY >= ry && mouseY <= ry + rowH;
             if (hover) drawRect(dx, ry, dx + dw, ry + rowH, 0xFF35373C);
-            fontRendererObj.drawStringWithShadow("@" + user.display(), dx + 4, ry + 5, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
+            drawText("@" + user.display(), dx + 4, ry + 5, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
             if (user.dcId != null && !user.dcId.isEmpty()) {
-                fontRendererObj.drawStringWithShadow("Discord", dx + dw - 4 - fontRendererObj.getStringWidth("Discord"), ry + 5, 0xFF5865F2);
+                drawText("Discord", dx + dw - 4 - fontRendererObj.getStringWidth("Discord"), ry + 5, 0xFF5865F2);
             }
             final int selStart = start - 1;
             final int selEnd = caret;
@@ -1058,17 +1155,31 @@ public class ChatUI extends GuiScreen {
         drawRect(SIDEBAR_WIDTH, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, 0xFF1E1F22);
 
         String title = selectedChannel != null ? ("# " + selectedChannel.channelName) : "No channel selected";
-        fontRendererObj.drawStringWithShadow(title, SIDEBAR_WIDTH + PADDING, (HEADER_HEIGHT - fontRendererObj.FONT_HEIGHT) / 2f, 0xFFFFFFFF);
+        drawText(title, SIDEBAR_WIDTH + PADDING, (HEADER_HEIGHT - fontRendererObj.FONT_HEIGHT) / 2f, 0xFFFFFFFF);
+        int afterTitleX = SIDEBAR_WIDTH + PADDING + fontRendererObj.getStringWidth(title) + 10;
         if (selectedChannel != null && !selectedChannel.canSend) {
             String badge = "READ ONLY";
-            int bx = SIDEBAR_WIDTH + PADDING + fontRendererObj.getStringWidth(title) + 10;
-            drawRect(bx, 7, bx + fontRendererObj.getStringWidth(badge) + 10, HEADER_HEIGHT - 7, 0xFF4E5058);
-            fontRendererObj.drawStringWithShadow(badge, bx + 5, (HEADER_HEIGHT - fontRendererObj.FONT_HEIGHT) / 2f, 0xFFB5BAC1);
+            drawRect(afterTitleX, 7, afterTitleX + fontRendererObj.getStringWidth(badge) + 10, HEADER_HEIGHT - 7, 0xFF4E5058);
+            drawText(badge, afterTitleX + 5, (HEADER_HEIGHT - fontRendererObj.FONT_HEIGHT) / 2f, 0xFFB5BAC1);
+            afterTitleX += fontRendererObj.getStringWidth(badge) + 20;
+        }
+
+        // Small live connection dot: quiet reassurance while everything's fine, and an at-a-glance
+        // "something's wrong" signal (matched by the disconnect toast) without needing to send a
+        // message first to find out the socket dropped.
+        boolean connected = Aetheria.webSocketClient != null && WebSocketClient.isConnected;
+        int dotX = afterTitleX + 4;
+        int dotY = HEADER_HEIGHT / 2;
+        drawRect(dotX, dotY - 3, dotX + 6, dotY + 3, connected ? 0xFF3BA55D : 0xFFED4245);
+        boolean dotHover = mouseX >= dotX - 4 && mouseX <= dotX + 10 && mouseY >= dotY - 6 && mouseY <= dotY + 6;
+        if (dotHover) {
+            String tip = connected ? "Connected" : "Disconnected - reconnecting...";
+            drawText(tip, dotX + 12, dotY - 4, connected ? 0xFF3BA55D : 0xFFED4245);
         }
 
         int closeX = width - 24;
         boolean closeHover = mouseX >= closeX && mouseX < closeX + 16 && mouseY >= 7 && mouseY < 23;
-        fontRendererObj.drawStringWithShadow("X", closeX + 4, 10, closeHover ? 0xFFFFFFFF : 0xFF949BA4);
+        drawText("X", closeX + 4, 10, closeHover ? 0xFFFFFFFF : 0xFF949BA4);
         clickRects.add(new ClickRect(closeX, 7, 16, 16, () -> mc.displayGuiScreen(null)));
     }
 
@@ -1087,20 +1198,20 @@ public class ChatUI extends GuiScreen {
 
         drawRect(areaX - 4, boxY, areaX - 4 + boxW + 8, boxY + boxH, 0xFF232428);
         drawRect(areaX - 4, boxY, areaX - 2, boxY + boxH, 0xFF5865F2);
-        fontRendererObj.drawStringWithShadow("SYSTEM", areaX, boxY + 4, 0xFF949BA4);
+        drawText("SYSTEM", areaX, boxY + 4, 0xFF949BA4);
 
         int start = Math.max(0, notices.size() - lines);
         int y = boxY + 4 + lineH;
         for (int i = start; i < notices.size(); i++) {
             String text = notices.get(i);
             String trimmed = fontRendererObj.trimStringToWidth(text, boxW - 8);
-            fontRendererObj.drawStringWithShadow(trimmed, areaX, y, 0xFFDCDDDE);
+            drawText(trimmed, areaX, y, 0xFFDCDDDE);
             y += lineH;
         }
 
         int closeX = areaX - 4 + boxW + 4;
         boolean hover = mouseX >= closeX && mouseX <= closeX + 16 && mouseY >= boxY && mouseY <= boxY + 16;
-        fontRendererObj.drawStringWithShadow("X", closeX + 4, boxY + 4, hover ? 0xFFFFFFFF : 0xFF949BA4);
+        drawText("X", closeX + 4, boxY + 4, hover ? 0xFFFFFFFF : 0xFF949BA4);
         clickRects.add(new ClickRect(closeX - 12, boxY + 2, 28, 16, this::dismissSystemNotices));
     }
 
@@ -1117,7 +1228,7 @@ public class ChatUI extends GuiScreen {
         drawRect(SIDEBAR_WIDTH + PADDING, boxY, width - PADDING, boxY + INPUT_HEIGHT, 0xFF383A40);
 
         if (selectedChannel != null && !selectedChannel.canSend) {
-            fontRendererObj.drawStringWithShadow("Read only channel - you cannot send messages here.", SIDEBAR_WIDTH + PADDING + 10, boxY + (INPUT_HEIGHT - fontRendererObj.FONT_HEIGHT) / 2f + 1, 0xFF949BA4);
+            drawText("Read only channel - you cannot send messages here.", SIDEBAR_WIDTH + PADDING + 10, boxY + (INPUT_HEIGHT - fontRendererObj.FONT_HEIGHT) / 2f + 1, 0xFF949BA4);
             return;
         }
 
@@ -1163,7 +1274,7 @@ public class ChatUI extends GuiScreen {
         if (areaH <= 0) return;
 
         if (selectedChannel == null) {
-            fontRendererObj.drawStringWithShadow("No channels available.", areaX + PADDING, areaY + PADDING, 0xFF949BA4);
+            drawText("No channels available.", areaX + PADDING, areaY + PADDING, 0xFF949BA4);
             return;
         }
 
@@ -1272,15 +1383,12 @@ public class ChatUI extends GuiScreen {
                 Channel channel = GlobalChat.channels.get(channelId);
                 if (channel != null) {
                     if (messageId == null) {
-                        if (channel != selectedChannel) {
-                            selectedChannel = channel;
-                            scrollPixels = 0;
-                        }
+                        selectChannel(channel);
                         return;
                     }
                     for (ChatLine line : channel.messageHistory) {
                         if (line.message != null && messageId.equals(line.message.discordID)) {
-                            if (channel != selectedChannel) selectedChannel = channel;
+                            selectChannel(channel);
                             jumpToMessageId = messageId;
                             return;
                         }
@@ -1360,6 +1468,10 @@ public class ChatUI extends GuiScreen {
         boolean hideContent = singleMediaLink(msg, layout);
         int rowHeight = replyAlw + headerAlw + layout.totalHeight - (hideContent ? layout.textHeight : 0);
 
+        boolean unconfirmed = isOwnMessage(msg) && (msg.discordID == null || msg.discordID.isEmpty());
+        msgFailed = unconfirmed && msg.sendFailed;
+        msgAlpha = (unconfirmed && !msg.sendFailed) ? 0.5f : 1f;
+
         boolean hovered = mouseX >= x - 4 && mouseX < x + AVATAR_SIZE + 8 + contentWidth + PADDING
                 && mouseY >= y - 2 && mouseY < y + rowHeight;
         if (hovered) {
@@ -1369,8 +1481,14 @@ public class ChatUI extends GuiScreen {
 
         // Mentions, @everyone/@here pings and replies to you get a soft blurple tint + accent bar.
         if (msg.highlighted) {
-            drawRect(x - 4, y - 2, x + AVATAR_SIZE + 8 + contentWidth + PADDING, y + rowHeight, 0x145865F2);
-            drawRect(x - 4, y - 2, x - 1, y + rowHeight, 0xCC5865F2);
+            drawRect(x - 4, y - 2, x + AVATAR_SIZE + 8 + contentWidth + PADDING, y + rowHeight, fadeColor(0x145865F2));
+            drawRect(x - 4, y - 2, x - 1, y + rowHeight, fadeColor(0xCC5865F2));
+        }
+
+        if (msgFailed) {
+            // A thin red accent bar, same treatment Discord gives a failed send, so it reads at a
+            // glance even before you register the dimmed/red-tinted content next to it.
+            drawRect(x - 4, y - 2, x - 1, y + rowHeight, 0xCCED4245);
         }
 
         if (highlightMessageId != null && highlightMessageId.equals(msg.discordID)) {
@@ -1391,7 +1509,7 @@ public class ChatUI extends GuiScreen {
             ChatMessage original = findByDiscordId(msg.replyingMessage);
             String replyName = original != null && original.authorDisplay != null ? original.authorDisplay : (original != null && original.author != null ? original.author : "a message");
             String replyLabel = "↰ " + replyName;
-            fontRendererObj.drawStringWithShadow(replyLabel, textX, y + 1, 0xFF949BA4);
+            drawText(replyLabel, textX, y + 1, fadeColor(0xFF949BA4));
             if (msg.replyingMessage != null && !msg.replyingMessage.isEmpty()) {
                 final String replyUrl = "https://discord.com/channels/1479556885769093192/"
                         + msg.channelId + "/" + msg.replyingMessage;
@@ -1405,17 +1523,18 @@ public class ChatUI extends GuiScreen {
         if (groupStart) {
             drawAvatar(msg, x, afterReplyY);
             String author = msg.authorDisplay != null ? msg.authorDisplay : (msg.author == null ? "Unknown" : msg.author);
-            int nameColor = userColor(msg.author == null ? "?" : msg.author);
-            fontRendererObj.drawStringWithShadow(author, textX, afterReplyY + 2, nameColor);
+            int nameColor = fadeColor(userColor(msg.author == null ? "?" : msg.author));
+            drawText(author, textX, afterReplyY + 2, nameColor);
             int nameWidth = fontRendererObj.getStringWidth(author);
             String headerTime = formatTimestamp(msg);
             if (msg.client != null && !msg.client.isEmpty()) headerTime += " (" + msg.client + ")";
             if (msg.edited) headerTime += " (edited)";
-            fontRendererObj.drawStringWithShadow(headerTime, textX + nameWidth + 8, afterReplyY + 3, 0xFF949BA4);
+            int timeX = textX + nameWidth + 8;
+            drawText(headerTime, timeX, afterReplyY + 3, fadeColor(0xFF949BA4));
         } else if (hovered) {
             String time = formatTimeShort(msg);
             if (msg.edited) time += " (edited)";
-            fontRendererObj.drawStringWithShadow(time, x, afterReplyY + 2, 0xFF6D6F78);
+            drawText(time, x, afterReplyY + 2, fadeColor(0xFF6D6F78));
         }
 
         int cursorY = afterReplyY + headerAlw;
@@ -1480,6 +1599,10 @@ public class ChatUI extends GuiScreen {
             editBoxHeight = rowHeight + 4;
             editBoxVisible = true;
         }
+
+        // Reset for the next message / for unrelated UI drawn after drawMessages() this frame.
+        msgAlpha = 1f;
+        msgFailed = false;
     }
 
     /** Reply/Edit/Delete buttons shown on hover at the top-right of a message block. */
@@ -1510,7 +1633,7 @@ public class ChatUI extends GuiScreen {
             int w = widths.get(i);
             boolean hover = mouseX >= bx && mouseX <= bx + w && mouseY >= by && mouseY <= by + bh;
             drawRect(bx, by, bx + w, by + bh, hover ? 0xFF404249 : 0xFF2B2D31);
-            fontRendererObj.drawStringWithShadow(labels.get(i), bx + 6, by + 3,
+            drawText(labels.get(i), bx + 6, by + 3,
                     hover ? 0xFFFFFFFF : 0xFFB5BAC1);
             clickRects.add(new ClickRect(bx, by, w, bh, actions.get(i)));
             bx += w + gap;
@@ -1523,15 +1646,15 @@ public class ChatUI extends GuiScreen {
         maxWidth -= line.listIndent;
 
         if (line.type == LineType.QUOTE) {
-            drawRect(x - 8, y, x - 6, y + lh - 2, 0xFF4E5058);
+            drawRect(x - 8, y, x - 6, y + lh - 2, fadeColor(0xFF4E5058));
         } else if (line.type == LineType.CODE_BLOCK) {
-            drawRect(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, 0xFF232428);
+            drawRect(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, fadeColor(0xFF232428));
         }
 
-        int color = line.type == LineType.CODE_BLOCK ? 0xFFDCDDDE
+        int color = fadeColor(line.type == LineType.CODE_BLOCK ? 0xFFDCDDDE
                 : line.type == LineType.QUOTE ? 0xFFB5BAC1
                   : line.type == LineType.SUBHEADER ? 0xFF949BA4
-                    : 0xFFF2F3F5;
+                    : 0xFFF2F3F5);
 
         float scale = DiscordMarkdown.lineScale(line.type);
         if (scale != 1f) {
@@ -1548,10 +1671,10 @@ public class ChatUI extends GuiScreen {
     /** Draws a syntax-highlighted code line from pre-tokenized {@link CodeParser.HighlightedToken}s. */
     private void drawCodeLine(RenderLine line, int x, int y, int maxWidth) {
         int lh = DiscordMarkdown.lineHeight(line.type, fontRendererObj);
-        drawRect(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, 0xFF232428);
+        drawRect(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, fadeColor(0xFF232428));
         int cx = x;
         for (CodeParser.HighlightedToken token : line.codeTokens) {
-            fontRendererObj.drawStringWithShadow(token.text, cx, y, 0xFF000000 | token.mcColor);
+            drawText(token.text, cx, y, fadeColor(0xFF000000 | token.mcColor));
             cx += fontRendererObj.getStringWidth(token.text);
         }
     }
@@ -1588,7 +1711,7 @@ public class ChatUI extends GuiScreen {
         boolean hover = mouseX >= bx && mouseX <= bx + bw && mouseY >= by && mouseY <= by + bh;
 
         drawRect(bx, by, bx + bw, by + bh, hover ? 0x66FFFFFF : 0x30FFFFFF);
-        fontRendererObj.drawStringWithShadow(label, bx + 6, by + 2, hover ? 0xFFFFFFFF : 0xFF949BA4);
+        drawText(label, bx + 6, by + 2, hover ? 0xFFFFFFFF : 0xFF949BA4);
         if (!copied) {
             clickRects.add(new ClickRect(bx, by, bw, bh, () -> {
                 lastCopyTime = System.currentTimeMillis();
@@ -1614,15 +1737,15 @@ public class ChatUI extends GuiScreen {
                 String name = span.mentionDisplay != null && !span.mentionDisplay.isEmpty() ? span.mentionDisplay : span.text;
                 if ("everyone".equalsIgnoreCase(span.text) || "here".equalsIgnoreCase(span.text)) {
                     String raw = "@" + span.text;
-                    fontRendererObj.drawStringWithShadow(raw, cursorX, y, 0xFFFAA81A);
+                    drawText(raw, cursorX, y, fadeColor(0xFFFAA81A));
                     cursorX += fontRendererObj.getStringWidth(raw);
                     continue;
                 }
                 String pill = DiscordMarkdown.MENTION_FONT + "@" + name;
                 int w = fontRendererObj.getStringWidth(pill);
                 int px = cursorX - 2;
-                drawRect(px, y - 1, px + w + 4, y + fontRendererObj.FONT_HEIGHT + 1, 0x4D5865F2);
-                fontRendererObj.drawStringWithShadow(pill, cursorX, y, 0xFFDEE0FC);
+                drawRect(px, y - 1, px + w + 4, y + fontRendererObj.FONT_HEIGHT + 1, fadeColor(0x4D5865F2));
+                drawText(pill, cursorX, y, fadeColor(0xFFDEE0FC));
                 cursorX += w;
                 continue;
             }
@@ -1632,11 +1755,11 @@ public class ChatUI extends GuiScreen {
                 int w = fontRendererObj.getStringWidth(formatted);
                 int px = cursorX - 1;
                 if (span.discordMessageId != null) {
-                    drawRect(px, y - 1, px + w + 2, y + fontRendererObj.FONT_HEIGHT + 1, 0x335865F2);
-                    fontRendererObj.drawStringWithShadow(formatted, cursorX, y, 0xFF9EA6FF);
+                    drawRect(px, y - 1, px + w + 2, y + fontRendererObj.FONT_HEIGHT + 1, fadeColor(0x335865F2));
+                    drawText(formatted, cursorX, y, fadeColor(0xFF9EA6FF));
                 } else {
-                    drawRect(px, y - 1, px + w + 2, y + fontRendererObj.FONT_HEIGHT + 1, 0x12FFFFFF);
-                    fontRendererObj.drawStringWithShadow(formatted, cursorX, y, 0xFF00A8FC);
+                    drawRect(px, y - 1, px + w + 2, y + fontRendererObj.FONT_HEIGHT + 1, fadeColor(0x12FFFFFF));
+                    drawText(formatted, cursorX, y, fadeColor(0xFF00A8FC));
                 }
                 if (registerClicks) {
                     int ry = y - 1;
@@ -1652,10 +1775,10 @@ public class ChatUI extends GuiScreen {
 
             if (span.linkUrl != null) {
                 if (span.plainLink) {
-                    fontRendererObj.drawStringWithShadow(formatted, cursorX, y, baseColor);
+                    drawText(formatted, cursorX, y, baseColor);
                 } else {
-                    fontRendererObj.drawStringWithShadow(formatted, cursorX, y, 0xFF00A8FC);
-                    drawRect(cursorX, y + fontRendererObj.FONT_HEIGHT - 1, cursorX + w, y + fontRendererObj.FONT_HEIGHT, 0xFF00A8FC);
+                    drawText(formatted, cursorX, y, fadeColor(0xFF00A8FC));
+                    drawRect(cursorX, y + fontRendererObj.FONT_HEIGHT - 1, cursorX + w, y + fontRendererObj.FONT_HEIGHT, fadeColor(0xFF00A8FC));
                 }
                 if (registerClicks) {
                     int rh = fontRendererObj.FONT_HEIGHT;
@@ -1666,16 +1789,16 @@ public class ChatUI extends GuiScreen {
             }
 
             if (span.spoiler && !revealedSpoilers.contains(span)) {
-                drawRect(cursorX, y, cursorX + Math.max(w, 4), y + fontRendererObj.FONT_HEIGHT, 0xFF1E1F22);
+                drawRect(cursorX, y, cursorX + Math.max(w, 4), y + fontRendererObj.FONT_HEIGHT, fadeColor(0xFF1E1F22));
                 if (registerClicks) {
                     int rw = Math.max(w, 4);
                     int rh = fontRendererObj.FONT_HEIGHT;
                     clickRects.add(new ClickRect(cursorX, y, rw, rh, () -> revealedSpoilers.add(span)));
                 }
             } else {
-                int color = span.code ? 0xFF95D8A6 : baseColor;
-                if (span.code) drawRect(cursorX - 1, y - 1, cursorX + w + 1, y + fontRendererObj.FONT_HEIGHT, 0xFF2B2D31);
-                fontRendererObj.drawStringWithShadow(formatted, cursorX, y, color);
+                int color = span.code ? fadeColor(0xFF95D8A6) : baseColor;
+                if (span.code) drawRect(cursorX - 1, y - 1, cursorX + w + 1, y + fontRendererObj.FONT_HEIGHT, fadeColor(0xFF2B2D31));
+                drawText(formatted, cursorX, y, color);
             }
             cursorX += w;
         }
@@ -1758,14 +1881,14 @@ public class ChatUI extends GuiScreen {
             ResourceLocation tex = img.getTextureToRender(false);
             if (tex != null) {
                 mc.getTextureManager().bindTexture(tex);
-                GlStateManager.color(1f, 1f, 1f, 1f);
+                applyMsgGlColor();
                 GlStateManager.enableBlend();
                 drawScaledCustomSizeModalRect(x, y, 0, 0, img.width, img.height, AVATAR_SIZE, AVATAR_SIZE, img.width, img.height);
                 GlStateManager.disableBlend();
                 return;
             }
         }
-        drawRect(x, y, x + AVATAR_SIZE, y + AVATAR_SIZE, (userColor(msg.author == null ? "?" : msg.author) & 0x00FFFFFF) | 0x66000000);
+        drawRect(x, y, x + AVATAR_SIZE, y + AVATAR_SIZE, fadeColor((userColor(msg.author == null ? "?" : msg.author) & 0x00FFFFFF) | 0x66000000));
     }
 
     private void drawInlineEmoji(EmojiRef ref, int x, int y) {
@@ -1783,13 +1906,13 @@ public class ChatUI extends GuiScreen {
     private void drawEmojiImage(String url, int x, int y) {
         GCImage img = getImage(url, false);
         if (img == null || !img.isLoaded || img.width == 0) {
-            drawRect(x, y, x + DiscordMarkdown.EMOJI_SIZE, y + DiscordMarkdown.EMOJI_SIZE, 0x22FFFFFF);
+            drawRect(x, y, x + DiscordMarkdown.EMOJI_SIZE, y + DiscordMarkdown.EMOJI_SIZE, fadeColor(0x22FFFFFF));
             return;
         }
         ResourceLocation tex = img.getTextureToRender(false);
         if (tex == null) return;
         mc.getTextureManager().bindTexture(tex);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        applyMsgGlColor();
         GlStateManager.enableBlend();
         int size = DiscordMarkdown.EMOJI_SIZE;
         drawScaledCustomSizeModalRect(x, y - 2, 0, 0, img.width, img.height, size, size, img.width, img.height);
@@ -1807,15 +1930,15 @@ public class ChatUI extends GuiScreen {
         int cap = Math.min(maxWidth, MAX_IMAGE_DRAW_W);
 
         if (img != null && img.loadFailed) {
-            drawRect(x, y, x + cap, y + boxHeight, 0xFF232428);
+            drawRect(x, y, x + cap, y + boxHeight, fadeColor(0xFF232428));
             String label = (name == null || name.isEmpty()) ? url : name;
-            fontRendererObj.drawStringWithShadow("Could not load Image: " + label, x + 8, y + boxHeight / 2f - 4, 0xFF6D6F78);
+            drawText("Could not load Image: " + label, x + 8, y + boxHeight / 2f - 4, fadeColor(0xFF6D6F78));
             return;
         }
 
         if (img == null || !img.isLoaded || img.width == 0 || img.height == 0) {
-            drawRect(x, y, x + cap, y + boxHeight, 0xFF232428);
-            fontRendererObj.drawStringWithShadow("Loading...", x + 8, y + boxHeight / 2f - 4, 0xFF6D6F78);
+            drawRect(x, y, x + cap, y + boxHeight, fadeColor(0xFF232428));
+            drawText("Loading...", x + 8, y + boxHeight / 2f - 4, fadeColor(0xFF6D6F78));
             return;
         }
 
@@ -1834,7 +1957,7 @@ public class ChatUI extends GuiScreen {
         ResourceLocation tex = img.getTextureToRender(mouseX >= x && mouseX <= x + drawW && mouseY >= y && mouseY <= y + drawH);
         if (tex != null) {
             mc.getTextureManager().bindTexture(tex);
-            GlStateManager.color(1f, 1f, 1f, 1f);
+            applyMsgGlColor();
             GlStateManager.enableBlend();
             drawScaledCustomSizeModalRect(x, y, 0, 0, img.width, img.height, drawW, drawH, img.width, img.height);
             GlStateManager.disableBlend();
@@ -1884,10 +2007,10 @@ public class ChatUI extends GuiScreen {
 
             GCImage img = getImage(ref.url, false);
             if (img == null || img.loadFailed || !img.isLoaded || img.width == 0 || img.height == 0) {
-                drawRect(cx, cy, cx + cell, cy + cell, 0xFF232428);
+                drawRect(cx, cy, cx + cell, cy + cell, fadeColor(0xFF232428));
                 String label = img != null && img.loadFailed ? "!" : "Loading...";
-                fontRendererObj.drawStringWithShadow(label, cx + (cell - fontRendererObj.getStringWidth(label)) / 2f,
-                        cy + cell / 2f - 4, 0xFF6D6F78);
+                drawText(label, cx + (cell - fontRendererObj.getStringWidth(label)) / 2f,
+                        cy + cell / 2f - 4, fadeColor(0xFF6D6F78));
             } else {
                 boolean cellHover = mouseX >= cx && mouseX <= cx + cell && mouseY >= cy && mouseY <= cy + cell;
                 ResourceLocation tex = img.getTextureToRender(cellHover);
@@ -1897,7 +2020,7 @@ public class ChatUI extends GuiScreen {
                     if (ratio > 1f) { srcW = srcH = img.height; srcX = (img.width - srcW) / 2; }
                     else { srcW = srcH = img.width; srcY = (img.height - srcH) / 2; }
                     mc.getTextureManager().bindTexture(tex);
-                    GlStateManager.color(1f, 1f, 1f, 1f);
+                    applyMsgGlColor();
                     GlStateManager.enableBlend();
                     drawScaledCustomSizeModalRect(cx, cy, srcX, srcY, srcW, srcH, cell, cell, img.width, img.height);
                     GlStateManager.disableBlend();
@@ -1934,20 +2057,20 @@ public class ChatUI extends GuiScreen {
 
     /** Shared file-embed banner: background, accent strip, file-type square, name + meta. Buttons are drawn by the caller. */
     private void drawFileBanner(int x, int y, int maxWidth, int accent, String extLabel, String name, String meta) {
-        drawRect(x, y, x + maxWidth, y + EMBED_BOX_H, 0xFF232428);
-        drawRect(x, y, x + 3, y + EMBED_BOX_H, accent);
+        drawRect(x, y, x + maxWidth, y + EMBED_BOX_H, fadeColor(0xFF232428));
+        drawRect(x, y, x + 3, y + EMBED_BOX_H, fadeColor(accent));
 
         String label = extLabel == null || extLabel.isEmpty() ? "FILE" : extLabel;
         if (label.length() > 4) label = label.substring(0, 4);
 
-        drawRect(x + 10, y + 9, x + 36, y + 35, 0xFF2B2D31);
-        fontRendererObj.drawStringWithShadow(label,
+        drawRect(x + 10, y + 9, x + 36, y + 35, fadeColor(0xFF2B2D31));
+        drawText(label,
                 x + 10 + (26 - fontRendererObj.getStringWidth(label)) / 2f,
-                y + 9 + (26 - fontRendererObj.FONT_HEIGHT) / 2f, 0xFFB5BAC1);
+                y + 9 + (26 - fontRendererObj.FONT_HEIGHT) / 2f, fadeColor(0xFFB5BAC1));
 
         int tx = x + 46;
-        fontRendererObj.drawStringWithShadow(fontRendererObj.trimStringToWidth(name, maxWidth - 60), tx, y + 7, 0xFFDCDDDE);
-        fontRendererObj.drawStringWithShadow(meta, tx, y + 18, 0xFF949BA4);
+        drawText(fontRendererObj.trimStringToWidth(name, maxWidth - 60), tx, y + 7, fadeColor(0xFFDCDDDE));
+        drawText(meta, tx, y + 18, fadeColor(0xFF949BA4));
     }
 
     /** Renders a Discord-style embed for non-image attachments: file name, type, size, a Download button and an Open in Discord button. */
@@ -2020,7 +2143,7 @@ public class ChatUI extends GuiScreen {
         int w = fontRendererObj.getStringWidth(label) + 14;
         boolean hover = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + 16;
         drawRect(x, y, x + w, y + 16, hover ? 0xFF404249 : 0xFF2B2D31);
-        fontRendererObj.drawStringWithShadow(label, x + 7, y + 4, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
+        drawText(label, x + 7, y + 4, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
         clickRects.add(new ClickRect(x, y, w, 16, action));
     }
 
@@ -2154,15 +2277,15 @@ public class ChatUI extends GuiScreen {
 
     /** Discord-style website/rich embed: accent bar, site name, title, description, fields, thumbnail. */
     private void drawWebEmbed(Embed e, int x, int y, int maxWidth, int height, int mouseX, int mouseY) {
-        drawRect(x, y, x + maxWidth, y + height, 0xFF232428);
-        drawRect(x, y, x + 3, y + height, 0xFF5865F2);
+        drawRect(x, y, x + maxWidth, y + height, fadeColor(0xFF232428));
+        drawRect(x, y, x + 3, y + height, fadeColor(0xFF5865F2));
 
         if (e == null || "failed".equals(e.type)) {
-            fontRendererObj.drawStringWithShadow("No preview available", x + 10, y + 8, 0xFF949BA4);
+            drawText("No preview available", x + 10, y + 8, fadeColor(0xFF949BA4));
             return;
         }
         if (e.loading) {
-            fontRendererObj.drawStringWithShadow("Loading preview...", x + 10, y + 8, 0xFF949BA4);
+            drawText("Loading preview...", x + 10, y + 8, fadeColor(0xFF949BA4));
             return;
         }
 
@@ -2171,7 +2294,7 @@ public class ChatUI extends GuiScreen {
 
         String site = (e.siteName == null || e.siteName.isEmpty()) ? hostOf(e.url) : e.siteName;
         if (site.isEmpty()) site = "Link";
-        fontRendererObj.drawStringWithShadow(site, x + 10, y + 6, 0xFF949BA4);
+        drawText(site, x + 10, y + 6, fadeColor(0xFF949BA4));
         int ty = y + 16;
         if (e.title != null && !e.title.isEmpty()) {
             ty = drawMarkdown(e.title, x + 10, ty, textW, 2, 0xFFF2F3F5) + 3;
@@ -2272,15 +2395,16 @@ public class ChatUI extends GuiScreen {
      */
     private int drawMarkdown(String text, int x, int y, int maxWidth, int maxLines, int color) {
         if (text == null || text.isEmpty()) return y;
+        color = fadeColor(color);
         List<RenderLine> lines = DiscordMarkdown.parse(text, null, fontRendererObj, maxWidth);
         int drawn = 0;
         for (RenderLine line : lines) {
             if (drawn >= maxLines) break;
             int lh = DiscordMarkdown.lineHeight(line.type, fontRendererObj);
             if (line.type == LineType.CODE_BLOCK) {
-                drawRect(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, 0xFF232428);
+                drawRect(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, fadeColor(0xFF232428));
             } else if (line.type == LineType.QUOTE) {
-                drawRect(x - 8, y, x - 6, y + lh - 2, 0xFF4E5058);
+                drawRect(x - 8, y, x - 6, y + lh - 2, fadeColor(0xFF4E5058));
             }
             float scale = DiscordMarkdown.lineScale(line.type);
             if (scale != 1f) {
@@ -2312,7 +2436,7 @@ public class ChatUI extends GuiScreen {
     private void drawEmbedThumb(String url, int x, int y, int size, int mouseX, int mouseY) {
         GCImage img = getImage(url, false);
         if (img == null || !img.isLoaded || img.width == 0 || img.height == 0) {
-            drawRect(x, y, x + size, y + size, 0xFF2B2D31);
+            drawRect(x, y, x + size, y + size, fadeColor(0xFF2B2D31));
             return;
         }
         float ratio = img.width / (float) img.height;
@@ -2327,7 +2451,7 @@ public class ChatUI extends GuiScreen {
         ResourceLocation tex = img.getTextureToRender(mouseX >= ox && mouseX <= ox + w && mouseY >= oy && mouseY <= oy + h);
         if (tex == null) return;
         mc.getTextureManager().bindTexture(tex);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        applyMsgGlColor();
         GlStateManager.enableBlend();
         drawScaledCustomSizeModalRect(ox, oy, 0, 0, img.width, img.height, w, h, img.width, img.height);
         GlStateManager.disableBlend();

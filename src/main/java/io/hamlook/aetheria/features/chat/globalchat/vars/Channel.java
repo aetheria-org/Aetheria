@@ -42,6 +42,19 @@ public class Channel {
 
     private volatile boolean fetching = false;
 
+    /** Unread-message count for this channel (messages received while it wasn't the selected channel). Drives the sidebar badge. */
+    public final java.util.concurrent.atomic.AtomicInteger unreadCount = new java.util.concurrent.atomic.AtomicInteger(0);
+    /** True when at least one unread message in this channel pings the local user (mention/reply/@everyone) — badge renders red instead of neutral. */
+    public volatile boolean unreadHighlighted = false;
+
+    /** True while this channel is the one currently shown in the chat UI; suppresses unread-count increments for it. Set by the UI layer. */
+    public volatile boolean active = false;
+
+    public void markRead() {
+        unreadCount.set(0);
+        unreadHighlighted = false;
+    }
+
     public Channel(String channelID,String channelName) {
         this(channelID, channelName, true);
     }
@@ -155,15 +168,15 @@ public class Channel {
     }
 
     public void receiveMessage(ChatMessage message){
-        if(message == null) return;
-        if(message.discordID == null || message.messageID == null) return;
+        if(message == null || message.messageID == null) return;
         String converted = EmojiParser.toShortcode(message.content);
         if (!converted.equals(message.content)) {
             message.content = converted;
             message.contentVersion++;
         }
         message.populateEmojiRefs(message.content);
-        if(message.content.isEmpty() && message.stickers.isEmpty() && message.attachments.isEmpty() && message.embeds.isEmpty()) return;
+        if(message.content.isEmpty() && message.stickers.isEmpty() && message.attachments.isEmpty()
+                && (message.embeds == null || message.embeds.isEmpty())) return;
         message.highlighted = message.pingsMe(GlobalChat.getUsername(), this);
         ChatMessage existing = byMessageID.get(message.messageID);
         if (existing != null) {
@@ -184,6 +197,13 @@ public class Channel {
         byMessageID.put(message.messageID, message);
         if (message.discordID != null && !message.discordID.isEmpty()) byDiscordID.put(message.discordID, message);
         if (!fetching) trimToMax();
+        if (!fetching && !active) {
+            boolean isOwnMessage = message.author != null && message.author.equalsIgnoreCase(GlobalChat.getUsername());
+            if (!isOwnMessage) {
+                unreadCount.incrementAndGet();
+                if (message.highlighted) unreadHighlighted = true;
+            }
+        }
     }
 
     /** Drops the oldest lines once history exceeds {@link #MAX_HISTORY_LINES}. */
