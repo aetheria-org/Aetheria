@@ -155,8 +155,10 @@
 ## Network
 
 - **Global Chat** - A global chat for all SkyAtlas linked players `/gchat`.
-
-
+- **Offline Mode** - An Offline mode for the mod.
+- **Disable Telemetry** - We respect your privacy.
+- **Disable GitHub Calls** - Disables fetching repo from github, most mod features break from this. 
+- **Disable API Calls** - Disables features like capes, profile parser, sync, profile viewer.
 ## Commands
 
 > **Note:** All commands are available with `asm`, `athr`, and `jef` prefixes for backward compatibility. For example, `/asm`, `/athr`, and `/jef` all work interchangeably.
