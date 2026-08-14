@@ -20,6 +20,7 @@ public class DungeonPlayerTracker {
     public final List<String> playerNames = new ArrayList<>();
 
     private final Map<String, float[]> currentPositions = new HashMap<>();
+    private final List<Vec4b> decorationBuffer = new ArrayList<>();
 
     public void clear() {
         players.clear();
@@ -86,7 +87,9 @@ public class DungeonPlayerTracker {
 
         currentPositions.clear();
 
-        List<Vec4b> decorations = new ArrayList<>(mapDecorations.values());
+        decorationBuffer.clear();
+        decorationBuffer.addAll(mapDecorations.values());
+        List<Vec4b> decorations = decorationBuffer;
 
         int decoIndex = 0;
         for (String playerName : playerNames) {

@@ -7,77 +7,143 @@ import io.hamlook.aetheria.utils.Position;
 public class DungeonMapConfig {
 
     @Expose
-    @ConfigOption(name = "Enable Map",desc = "Enable rendering of dungeon map")
+    @ConfigOption(name = "Enable Map", desc = "Enable rendering of dungeon map")
     @ConfigEditorBoolean
-    public boolean enabled = false;
+    public boolean enabled = true;
 
     @Expose
-    public Position dungeonMapPos = new Position(5, 400);
+    public Position dungeonMapPos = new Position(87, 261);
 
     @Expose
-    @ConfigOption(name = "Edit Position",desc = "Edit the position of the dungeon map hud")
-    @ConfigEditorButton(runnableId = "editDungeonMapPos",buttonText = "Edit")
+    @ConfigOption(name = "Edit Position", desc = "Edit the position of the dungeon map hud")
+    @ConfigEditorButton(runnableId = "editDungeonMapPos", buttonText = "Edit")
     public boolean editPosDummy = false;
 
     @Expose
-    @ConfigOption(name = "Background Color", desc = "Background color of the overlay (alpha controls opacity; 0 = fully transparent)")
-    @ConfigEditorColour
-    public String bgColor = "0:0:0:0:0";
+    @Category(name = "Appearance", desc = "Visual appearance of the dungeon map")
+    public Appearance appearance = new Appearance();
 
     @Expose
-    @ConfigOption(name = "Corner Radius", desc = "Roundness of overlay corners")
-    @ConfigEditorSliderAnnotation(minValue = 0f, maxValue = 12f, minStep = 1f)
-    public int cornerRadius = 4;
+    @Category(name = "Players", desc = "Player head and name display on the map")
+    public Players players = new Players();
 
     @Expose
-    @ConfigOption(name = "Scale", desc = "Size of the Dungeon Map overlay")
-    @ConfigEditorSliderAnnotation(minValue = 0.5f, maxValue = 3f, minStep = 0.1f)
-    public float scale = 1f;
+    @Category(name = "Rooms", desc = "Room name and checkmark display")
+    public Rooms rooms = new Rooms();
 
-    @Expose
-    @ConfigOption(name = "Name Offset from Head",desc = "Control how below the name is from the player head")
-    @ConfigEditorSliderAnnotation(minValue = 1f,maxValue = 20f,minStep = 1f)
-    public float nameOffset = 6f;
+    public static class Appearance {
 
-    @Expose
-    @ConfigOption(name = "Name Font Size",desc = "Control how big the name display is")
-    @ConfigEditorSliderAnnotation(minValue = 0.25f,maxValue = 2f,minStep = 0.05f)
-    public float nameSize = 1f;
+        @Expose
+        @ConfigOption(name = "Background Color", desc = "Background color of the overlay (alpha controls opacity; 0 = fully transparent)")
+        @ConfigEditorColour
+        public String bgColor = "0:102:24:24:24";
 
-    @Expose
-    @ConfigOption(name = "Head Scale",desc = "Control how big the head display is")
-    @ConfigEditorSliderAnnotation(minValue = 0.25f,maxValue = 2f,minStep = 0.05f)
-    public float headScale = 1f;
+        @Expose
+        @ConfigOption(name = "Background Flow Chroma", desc = "Animate the background with flowing rainbow chroma")
+        @ConfigEditorBoolean
+        public boolean bgFlowChroma = false;
 
-    @Expose
-    @ConfigOption(name = "Show Player Head",desc = "Show Player Heads in the Dungeon Map")
-    @ConfigEditorBoolean
-    public boolean showPlayerHead = false;
+        @Expose
+        @ConfigOption(name = "Corner Radius", desc = "Roundness of overlay corners")
+        @ConfigEditorSliderAnnotation(minValue = 0f, maxValue = 12f, minStep = 1f)
+        public int cornerRadius = 4;
 
-    @Expose
-    @ConfigOption(name = "Show Player Username",desc = "Show Player's Username in Dungeon Map")
-    @ConfigEditorBoolean
-    public boolean showPlayerUsername = false;
+        @Expose
+        @ConfigOption(name = "Scale", desc = "Size of the Dungeon Map overlay")
+        @ConfigEditorSliderAnnotation(minValue = 0.5f, maxValue = 3f, minStep = 0.1f)
+        public float scale = 1f;
 
-    @Expose
-    @ConfigOption(name = "Show Player Rank",desc = "Show Player's rank in username display in Dungeon Map")
-    @ConfigEditorBoolean
-    public boolean showPlayerRank = false;
+        @Expose
+        @ConfigOption(name = "Cell Block Size", desc = "Block size of one dungeon cell including border (default 32)")
+        @ConfigEditorSliderAnnotation(minValue = 20f, maxValue = 50f, minStep = 1f)
+        public int cellSizeBlocks = 32;
 
-    @Expose
-    @ConfigOption(name = "Show Visited Room Names",desc = "Display the name of each room you have visited on the dungeon map")
-    @ConfigEditorBoolean
-    public boolean showVisitedRoomNames = false;
+        @Expose
+        @Category(name = "Border", desc = "Border drawn around the map")
+        public Border border = new Border();
 
-    @Expose
-    @ConfigOption(name = "Room Name Font Size",desc = "Control how big the room name display is")
-    @ConfigEditorSliderAnnotation(minValue = 0.25f,maxValue = 2f,minStep = 0.05f)
-    public float roomnameSize = 1f;
+        public static class Border {
 
-    @Expose
-    @ConfigOption(name = "Cell Block Size",desc = "Block size of one dungeon cell including border (default 32)")
-    @ConfigEditorSliderAnnotation(minValue = 20f, maxValue = 50f, minStep = 1f)
-    public int cellSizeBlocks = 32;
+            @Expose
+            @ConfigOption(name = "Border Enabled", desc = "Draw a border around the map")
+            @ConfigEditorBoolean
+            public boolean borderEnabled = true;
 
+            @Expose
+            @ConfigOption(name = "Border Color", desc = "Border color (alpha controls opacity; 0 = fully transparent)")
+            @ConfigEditorColour
+            public String borderColor = "245:255:255:78:115";
 
+            @Expose
+            @ConfigOption(name = "Border Thickness", desc = "Thickness of the map border in pixels")
+            @ConfigEditorSliderAnnotation(minValue = 1f, maxValue = 4f, minStep = 1f)
+            public int borderThickness = 2;
+
+            @Expose
+            @ConfigOption(name = "Border Flow Chroma", desc = "Animate the border with flowing rainbow chroma")
+            @ConfigEditorBoolean
+            public boolean borderFlowChroma = true;
+
+            @Expose
+            @ConfigOption(name = "Flow Chroma Size", desc = "Width of the flow chroma gradient in pixels")
+            @ConfigEditorSliderAnnotation(minValue = 20f, maxValue = 400f, minStep = 5f)
+            public float flowChromaSize = 120f;
+        }
+    }
+
+    public static class Players {
+
+        @Expose
+        @ConfigOption(name = "Show Player Head", desc = "Show Player Heads in the Dungeon Map")
+        @ConfigEditorBoolean
+        public boolean showPlayerHead = true;
+
+        @Expose
+        @ConfigOption(name = "Show Player Username", desc = "Show Player's Username in Dungeon Map")
+        @ConfigEditorBoolean
+        public boolean showPlayerUsername = true;
+
+        @Expose
+        @ConfigOption(name = "Show Player Rank", desc = "Show Player's rank in username display in Dungeon Map")
+        @ConfigEditorBoolean
+        public boolean showPlayerRank = false;
+
+        @Expose
+        @ConfigOption(name = "Head Scale", desc = "Control how big the head display is")
+        @ConfigEditorSliderAnnotation(minValue = 0.25f, maxValue = 2f, minStep = 0.05f)
+        public float headScale = 1f;
+
+        @Expose
+        @ConfigOption(name = "Name Font Size", desc = "Control how big the name display is")
+        @ConfigEditorSliderAnnotation(minValue = 0.25f, maxValue = 2f, minStep = 0.05f)
+        public float nameSize = 1f;
+
+        @Expose
+        @ConfigOption(name = "Name Offset from Head", desc = "Control how below the name is from the player head")
+        @ConfigEditorSliderAnnotation(minValue = 1f, maxValue = 20f, minStep = 1f)
+        public float nameOffset = 6f;
+    }
+
+    public static class Rooms {
+
+        @Expose
+        @ConfigOption(name = "Show Visited Room Names", desc = "Display the name of each room you have visited on the dungeon map")
+        @ConfigEditorBoolean
+        public boolean showVisitedRoomNames = true;
+
+        @Expose
+        @ConfigOption(name = "Room Name Font Size", desc = "Control how big the room name display is")
+        @ConfigEditorSliderAnnotation(minValue = 0.25f, maxValue = 2f, minStep = 0.05f)
+        public float roomnameSize = 1f;
+
+        @Expose
+        @ConfigOption(name = "Room Checkmarks", desc = "Room checkmark icons based on room state (Default / NEU icon sets)")
+        @ConfigEditorDropdown(values = {"None", "Default", "NEU"}, initialIndex = 1)
+        public int mapCheckmark = 1;
+
+        @Expose
+        @ConfigOption(name = "Color Text", desc = "Color room names based on room state")
+        @ConfigEditorBoolean
+        public boolean mapColorText = true;
+    }
 }

@@ -5,18 +5,23 @@ import net.minecraft.world.storage.MapData;
 
 import lombok.Getter;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 public class DungeonMapGrid {
 
-    public static float worldOriginX = 200f;
-    public static float worldOriginZ = 200f;
-    public static int cellSizeBlocks = 32;
+    public float worldOriginX = 200f;
+    public float worldOriginZ = 200f;
+    public int cellSizeBlocks = 32;
 
     @Getter
     private final Map<RoomOffset, RoomCell> rooms = new HashMap<>();
+    @Getter
+    private final List<Junction> junctions = new ArrayList<>();
+    private final Map<Long, RoomState> stateCache = new HashMap<>();
     public String debugInfo = "";
     private int startPixelX = -1;
     private int startPixelY = -1;
@@ -24,11 +29,11 @@ public class DungeonMapGrid {
     private int roomPixelSize = 0;
     @Getter
     private int connectorPixelSize = 5;
-    public static float entrancePixelCenterX = 0f;
-    public static float entrancePixelCenterZ = 0f;
-    public static float blockToPixel = 0f;
+    public float entrancePixelCenterX = 0f;
+    public float entrancePixelCenterZ = 0f;
+    public float blockToPixel = 0f;
 
-    public static DungeonMapGrid parse(MapData data) {
+    public static DungeonMapGrid parse(MapData data, int cellSizeBlocks) {
         if (data == null || data.colors == null) {
             DungeonMapGrid empty = new DungeonMapGrid();
             empty.debugInfo = "data or data.colors is null";
@@ -53,6 +58,7 @@ public class DungeonMapGrid {
         }
 
         DungeonMapGrid grid = new DungeonMapGrid();
+        grid.cellSizeBlocks = cellSizeBlocks;
         grid.debugInfo = "alphaPixels=" + alphaPixels + "/16384";
 
         for (int x = 0; x < 128; x++) {
@@ -97,20 +103,21 @@ public class DungeonMapGrid {
         for (RoomOffset off : grid.rooms.keySet()) {
             grid.updateRoomConnections(colors, off);
         }
+        grid.findJunctions(colors);
 
-        blockToPixel = (float) (grid.roomPixelSize + grid.connectorPixelSize) / cellSizeBlocks;
-        entrancePixelCenterX = grid.startPixelX + grid.roomPixelSize / 2f;
-        entrancePixelCenterZ = grid.startPixelY + grid.roomPixelSize / 2f;
-        grid.debugInfo = "valid: " + grid.rooms.size() + " rooms, roomSize=" + grid.roomPixelSize + " connSize=" + grid.connectorPixelSize + " blockToPixel=" + blockToPixel;
+        grid.blockToPixel = (float) (grid.roomPixelSize + grid.connectorPixelSize) / grid.cellSizeBlocks;
+        grid.entrancePixelCenterX = grid.startPixelX + grid.roomPixelSize / 2f;
+        grid.entrancePixelCenterZ = grid.startPixelY + grid.roomPixelSize / 2f;
+        grid.debugInfo = "valid: " + grid.rooms.size() + " rooms, roomSize=" + grid.roomPixelSize + " connSize=" + grid.connectorPixelSize + " stride=" + (grid.roomPixelSize + grid.connectorPixelSize) + " junctions=" + grid.junctions.size() + " blockToPixel=" + grid.blockToPixel;
 
         return grid;
     }
 
-    public static float worldToPixelX(double worldX) {
+    public float worldToPixelX(double worldX) {
         return (float) ((worldX + worldOriginX) * blockToPixel);
     }
 
-    public static float worldToPixelZ(double worldZ) {
+    public float worldToPixelZ(double worldZ) {
         return (float) ((worldZ + worldOriginZ) * blockToPixel);
     }
 
@@ -127,19 +134,20 @@ public class DungeonMapGrid {
     }
 
     private void updateRoomColors(Color[][] colors) {
+        stateCache.clear();
         for (Map.Entry<RoomOffset, RoomCell> entry : rooms.entrySet()) {
             int px = startPixelX + entry.getKey().x * (roomPixelSize + connectorPixelSize);
             int py = startPixelY + entry.getKey().y * (roomPixelSize + connectorPixelSize);
             if (px >= 0 && py >= 0 && px < 128 && py < 128) {
-                int bgColor = colors[px][py].getRGB();
                 RoomCell cell = entry.getValue();
-                cell.color = bgColor;
-
                 Color bg = colors[px][py];
+                cell.color = bg.getRGB();
+
                 boolean isDarkGreyRoom = (bg.getRed() < 80 && bg.getGreen() < 80 && bg.getBlue() < 80);
 
                 int greenCount = 0;
                 int whiteCount = 0;
+                int redCount = 0;
                 int darkMarkCount = 0;
 
                 for (int dx = 0; dx < roomPixelSize; dx++) {
@@ -148,7 +156,7 @@ public class DungeonMapGrid {
                         int ry = py + dy;
                         if (rx < 128 && ry < 128) {
                             Color c = colors[rx][ry];
-                            if (c.getAlpha() > 80 && c.getRGB() != bgColor) {
+                            if (c.getAlpha() > 80 && c.getRGB() != cell.color) {
                                 int red = c.getRed();
                                 int green = c.getGreen();
                                 int blue = c.getBlue();
@@ -159,6 +167,9 @@ public class DungeonMapGrid {
                                 else if (red > 180 && green > 180 && blue > 180) {
                                     whiteCount++;
                                 }
+                                else if (red > 180 && green < 100 && blue < 100) {
+                                    redCount++;
+                                }
                                 else if (isDarkGreyRoom && red < 35 && green < 35 && blue < 35) {
                                     darkMarkCount++;
                                 }
@@ -167,22 +178,22 @@ public class DungeonMapGrid {
                     }
                 }
 
-                if (greenCount >= 2) {
-                    cell.tickColor = 0xFF55FF55;
-                    cell.displayText = "✓";
+                if (redCount >= 2) {
+                    cell.state = RoomState.FAILED;
+                }
+                else if (greenCount >= 2) {
+                    cell.state = RoomState.GREEN;
                 }
                 else if (whiteCount >= 2) {
-                    cell.tickColor = 0xFFFFFFFF;
-                    cell.displayText = "✓";
+                    cell.state = RoomState.CLEARED;
                 }
                 else if (isDarkGreyRoom || darkMarkCount >= 2) {
-                    cell.tickColor = 0xFFAAAAAA;
-                    cell.displayText = "?";
+                    cell.state = RoomState.UNOPENED;
                 }
                 else {
-                    cell.tickColor = 0;
-                    cell.displayText = "";
+                    cell.state = RoomState.DISCOVERED;
                 }
+                stateCache.put(pack(entry.getKey().x, entry.getKey().y), cell.state);
             }
         }
     }
@@ -201,44 +212,36 @@ public class DungeonMapGrid {
     }
 
     private RoomConnection sampleConnection(Color[][] colors, int baseX, int baseY, int dir) {
-        int totalFilled = 0;
-        Integer dominantColor = null;
-
-        for (int i = 0; i < roomPixelSize; i++) {
-            for (int j = 1; j <= connectorPixelSize; j++) {
-                int sx, sy;
-                switch (dir) {
-                    case 0:
-                        sx = baseX + i;
-                        sy = baseY - j;
-                        break;
-                    case 1:
-                        sx = baseX + roomPixelSize + j - 1;
-                        sy = baseY + i;
-                        break;
-                    case 2:
-                        sx = baseX + i;
-                        sy = baseY + roomPixelSize + j - 1;
-                        break;
-                    default:
-                        sx = baseX - j;
-                        sy = baseY + i;
-                        break;
-                }
-
-                if (sx >= 0 && sy >= 0 && sx < 128 && sy < 128) {
-                    Color pixel = colors[sx][sy];
-                    if (pixel.getAlpha() > 40) {
-                        totalFilled++;
-                        if (dominantColor == null) {
-                            dominantColor = pixel.getRGB();
-                        }
-                    }
-                }
-            }
+        int x0, y0, w, h;
+        switch (dir) {
+            case 0:
+                x0 = baseX;
+                y0 = baseY - connectorPixelSize;
+                w = roomPixelSize;
+                h = connectorPixelSize;
+                break;
+            case 1:
+                x0 = baseX + roomPixelSize;
+                y0 = baseY;
+                w = connectorPixelSize;
+                h = roomPixelSize;
+                break;
+            case 2:
+                x0 = baseX;
+                y0 = baseY + roomPixelSize;
+                w = roomPixelSize;
+                h = connectorPixelSize;
+                break;
+            default:
+                x0 = baseX - connectorPixelSize;
+                y0 = baseY;
+                w = connectorPixelSize;
+                h = roomPixelSize;
+                break;
         }
 
-        float proportion = (float) totalFilled / (roomPixelSize * connectorPixelSize);
+        SampleResult result = sampleRect(colors, x0, y0, w, h, 40);
+        float proportion = (float) result.filled / (roomPixelSize * connectorPixelSize);
         RoomConnection conn = new RoomConnection();
         if (proportion > 0.8f) {
             conn.type = ConnectionType.ROOM_DIVIDER;
@@ -247,8 +250,48 @@ public class DungeonMapGrid {
         } else {
             conn.type = ConnectionType.WALL;
         }
-        conn.color = dominantColor != null ? dominantColor : 0;
+        conn.color = result.dominant != null ? result.dominant : 0;
         return conn;
+    }
+
+    private void findJunctions(Color[][] colors) {
+        junctions.clear();
+        for (RoomOffset off : rooms.keySet()) {
+            int px = startPixelX + off.x * (roomPixelSize + connectorPixelSize) + roomPixelSize;
+            int py = startPixelY + off.y * (roomPixelSize + connectorPixelSize) + roomPixelSize;
+            if (px < 0 || py < 0 || px >= 128 || py >= 128) continue;
+
+            SampleResult result = sampleRect(colors, px, py, connectorPixelSize, connectorPixelSize, 40);
+            float proportion = (float) result.filled / (connectorPixelSize * connectorPixelSize);
+            if (proportion > 0.3f) {
+                Junction j = new Junction();
+                j.px = px;
+                j.py = py;
+                j.color = result.dominant != null ? result.dominant : 0;
+                junctions.add(j);
+            }
+        }
+    }
+
+    private static SampleResult sampleRect(Color[][] colors, int x0, int y0, int w, int h, int alphaThreshold) {
+        int filled = 0;
+        Integer dominant = null;
+        for (int dx = 0; dx < w; dx++) {
+            for (int dy = 0; dy < h; dy++) {
+                int sx = x0 + dx;
+                int sy = y0 + dy;
+                if (sx >= 0 && sy >= 0 && sx < 128 && sy < 128) {
+                    Color pixel = colors[sx][sy];
+                    if (pixel.getAlpha() > alphaThreshold) {
+                        filled++;
+                        if (dominant == null) {
+                            dominant = pixel.getRGB();
+                        }
+                    }
+                }
+            }
+        }
+        return new SampleResult(filled, dominant);
     }
 
     public float gridToPixelX(float gridX) {
@@ -257,6 +300,22 @@ public class DungeonMapGrid {
 
     public float gridToPixelZ(float gridZ) {
         return startPixelY + gridZ * (roomPixelSize + connectorPixelSize);
+    }
+
+    public RoomState stateAtWorld(double worldX, double worldZ) {
+        return stateAtPixel(worldToPixelX(worldX), worldToPixelZ(worldZ));
+    }
+
+    public RoomState stateAtPixel(float pixelX, float pixelZ) {
+        if (roomPixelSize <= 0) return RoomState.DISCOVERED;
+        int gx = Math.round((pixelX - startPixelX) / (float) (roomPixelSize + connectorPixelSize));
+        int gz = Math.round((pixelZ - startPixelY) / (float) (roomPixelSize + connectorPixelSize));
+        RoomState state = stateCache.get(pack(gx, gz));
+        return state != null ? state : RoomState.DISCOVERED;
+    }
+
+    private static long pack(int x, int y) {
+        return ((long) x << 32) | (y & 0xffffffffL);
     }
 
     public int getGridPixelWidth() {
@@ -276,25 +335,9 @@ public class DungeonMapGrid {
         for (int i = 0; i < roomPixelSize; i++) {
             for (int dir = 0; dir < 4; dir++) {
                 for (int j = 1; j < 8; j++) {
-                    int cx, cy;
-                    switch (dir) {
-                        case 0:
-                            cx = startX + i;
-                            cy = startY - j;
-                            break;
-                        case 1:
-                            cx = startX + roomPixelSize + j - 1;
-                            cy = startY + i;
-                            break;
-                        case 2:
-                            cx = startX + i;
-                            cy = startY + roomPixelSize + j - 1;
-                            break;
-                        default:
-                            cx = startX - j;
-                            cy = startY + i;
-                            break;
-                    }
+                    int[] c = connectorCoords(startX, startY, roomPixelSize, dir, i, j);
+                    int cx = c[0];
+                    int cy = c[1];
                     if (cx >= 0 && cy >= 0 && cx < 128 && cy < 128 && colors[cx][cy].getAlpha() > 80) {
                         if (j == 1) break;
                         foundConn = Math.min(foundConn, j - 1);
@@ -305,8 +348,25 @@ public class DungeonMapGrid {
         return foundConn > 0 && foundConn < 8 ? foundConn : 4;
     }
 
+    private static int[] connectorCoords(int baseX, int baseY, int roomPixelSize, int dir, int i, int j) {
+        switch (dir) {
+            case 0:
+                return new int[]{baseX + i, baseY - j};
+            case 1:
+                return new int[]{baseX + roomPixelSize + j - 1, baseY + i};
+            case 2:
+                return new int[]{baseX + i, baseY + roomPixelSize + j - 1};
+            default:
+                return new int[]{baseX - j, baseY + i};
+        }
+    }
+
     public enum ConnectionType {
         NONE, WALL, CORRIDOR, ROOM_DIVIDER
+    }
+
+    public enum RoomState {
+        GREEN, CLEARED, FAILED, UNOPENED, DISCOVERED
     }
 
     public static class RoomOffset {
@@ -357,10 +417,25 @@ public class DungeonMapGrid {
         public int color = 0;
     }
 
+    public static class Junction {
+        public int px;
+        public int py;
+        public int color;
+    }
+
+    private static class SampleResult {
+        final int filled;
+        final Integer dominant;
+
+        SampleResult(int filled, Integer dominant) {
+            this.filled = filled;
+            this.dominant = dominant;
+        }
+    }
+
     public static class RoomCell {
         public int color = 0;
-        public int tickColor = 0;
-        public String displayText = "";
+        public RoomState state = RoomState.DISCOVERED;
         public RoomConnection up = new RoomConnection();
         public RoomConnection down = new RoomConnection();
         public RoomConnection left = new RoomConnection();

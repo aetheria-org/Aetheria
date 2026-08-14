@@ -261,7 +261,7 @@ public class ATHRConfig {
         if (feature == null) return;
         DungeonMapOverlay overlay = DungeonMapOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonMapConfig.dungeonMapPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::saveConfig, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonMapConfig.scale).withParent(Minecraft.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonMapConfig.dungeonMapPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::saveConfig, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonMapConfig.appearance.scale).withParent(Minecraft.getMinecraft().currentScreen);
 
     }
 
