@@ -3,7 +3,6 @@ package io.hamlook.aetheria.mixins;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.features.qol.BetterContainers;
-import io.hamlook.aetheria.features.qol.helpers.EnchantChromaRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -52,7 +51,7 @@ public class MixinGuiChest_BetterContainers {
 
         int baseColor   = ChromaColour.specialToChromaRGB(
                 ATHRConfig.feature.qol.betterContainers.watermarkColor);
-        int color       = EnchantChromaRenderer.applyChromaShift(baseColor, x, y,
+        int color       = ChromaColour.applyChromaShift(baseColor, x, y,
                 ATHRConfig.feature.qol.betterContainers.watermarkChromaMode,
                 ATHRConfig.feature.qol.betterContainers.watermarkChromaSize);
 

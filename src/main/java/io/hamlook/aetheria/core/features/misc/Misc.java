@@ -4,7 +4,9 @@ import com.google.gson.annotations.Expose;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class Misc {
 
@@ -82,6 +84,9 @@ public class Misc {
 
     @Expose
     public Map<String, SbProfileData> sbProfileData = new HashMap<>();
+
+    @Expose
+    public Set<String> dismissedIncompatMods = new HashSet<>();
 
     @Expose
     @ConfigOption(name = "Sign Calculator", desc = "Auto-calculate expressions on signs when line 2 is ^^^^^^ (e.g., 3m x 3 → 9000000)")

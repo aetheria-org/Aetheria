@@ -78,6 +78,27 @@ public class ChromaColour {
         return (a & 0xFF) << 24 | (Color.HSBtoRGB(hue, base[1], base[2]) & 0x00FFFFFF);
     }
 
+    public static int animatedRainbow(int speed, int alpha) {
+        if (startTime < 0) startTime = System.currentTimeMillis();
+        float seconds = getSecondsForSpeed(speed);
+        float hue = (System.currentTimeMillis() - startTime) / 1000f / seconds;
+        hue %= 1;
+        if (hue < 0) hue += 1;
+        return (alpha & 0xFF) << 24 | (Color.HSBtoRGB(hue, 1F, 1F) & 0x00FFFFFF);
+    }
+
+    public static int applyChromaShift(int argb, float x, float y, int mode, float size) {
+        if (mode == 0) return argb;
+        float shift = ((x + y) / Math.max(1F, size)) % 1F;
+        int a = (argb >>> 24) & 255;
+        int r = (argb >>> 16) & 255;
+        int g = (argb >>> 8) & 255;
+        int b = argb & 255;
+        float[] hsb = Color.RGBtoHSB(r, g, b, null);
+        hsb[0] = (hsb[0] + shift) % 1F;
+        return (a << 24) | (Color.HSBtoRGB(hsb[0], hsb[1], hsb[2]) & 0x00FFFFFF);
+    }
+
     public static int rotateHue(int argb, int degrees) {
         int a = (argb >> 24) & 0xFF, r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
         float[] hsv = Color.RGBtoHSB(r, g, b, null);
