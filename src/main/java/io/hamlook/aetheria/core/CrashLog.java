@@ -22,11 +22,14 @@ import java.util.Date;
 public final class CrashLog {
 
     private static final int MAX_REPORTS = 10;
+    private static final int MAX_BLOCKS = 20;
     private static final String REPORT_PREFIX = "storagecrash-";
     private static final String REPORT_SUFFIX = ".txt";
 
     private static File logDir;
     private static File currentReport;
+    private static int blockCount;
+    private static boolean capNoteWritten;
 
     private CrashLog() {}
 
@@ -45,7 +48,17 @@ public final class CrashLog {
             currentReport = new File(logDir, REPORT_PREFIX + timestamp() + REPORT_SUFFIX);
             write(buildHeader());
             prune();
+            blockCount = 0;
+            capNoteWritten = false;
         }
+        if (blockCount >= MAX_BLOCKS) {
+            if (!capNoteWritten) {
+                write("Additional failures omitted (report capped at " + MAX_BLOCKS + " blocks).\n");
+                capNoteWritten = true;
+            }
+            return;
+        }
+        blockCount++;
         write(buildBlock(file, source, error));
     }
 

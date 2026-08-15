@@ -14,6 +14,7 @@ import io.hamlook.aetheria.features.misc.pet.PetCache;
 import io.hamlook.aetheria.features.misc.protect.ProtectedItemStorage;
 import io.hamlook.aetheria.features.misc.ghosttracker.GhostStats;
 import io.hamlook.aetheria.features.scoreboard.MaxwellPowerSync;
+import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.features.waypoints.WaypointStorage;
 
 import java.io.*;
@@ -27,6 +28,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * SkyHanni-style centralised storage registry.
@@ -92,6 +94,34 @@ public enum StorageManager {
             if (entry.instance instanceof ProfileManagedStorage) {
                 entry.instance.load();
             }
+        }
+    }
+
+    /**
+     * Saves every storage at shutdown so in-memory changes made since the last
+     * 60s auto-save are not lost. The auto-save timer is daemon and does not run
+     * during JVM shutdown, so this is the final flush for all tracked data.
+     */
+    public static void saveAll() {
+        for (StorageManager entry : values()) {
+            if (entry.instance instanceof AutoSaveable) {
+                try {
+                    ((AutoSaveable) entry.instance).autoSave();
+                } catch (Exception e) {
+                    System.err.println("[ATHR/Shutdown] Error saving " + entry.name() + ": " + e.getMessage());
+                }
+            }
+        }
+        try {
+            PetCache.getInstance().save();
+        } catch (Exception ignored) {}
+        try {
+            CurrentPetTracker.getInstance().save();
+        } catch (Exception ignored) {}
+        if (!StorageData.containers.isEmpty()) {
+            try {
+                StorageData.saveContainers();
+            } catch (Exception ignored) {}
         }
     }
 
@@ -166,13 +196,23 @@ public enum StorageManager {
         }
     }
 
+    private static final ConcurrentHashMap<String, Object> FILE_LOCKS = new ConcurrentHashMap<>();
+
     /**
      * Atomically saves an object to disk using a .tmp → rename pattern.
      * Verifies the write before committing. On failure, leaves the original
-     * file untouched and returns {@code false}.
+     * file untouched and returns {@code false}. Serialized per target path so
+     * concurrent saves of the same file cannot tear the shared .tmp.
      */
     public static boolean saveAtomic(File file, Object data, Gson gson) {
         if (file == null) return false;
+        Object lock = FILE_LOCKS.computeIfAbsent(file.getAbsolutePath(), k -> new Object());
+        synchronized (lock) {
+            return saveAtomicLocked(file, data, gson);
+        }
+    }
+
+    private static boolean saveAtomicLocked(File file, Object data, Gson gson) {
         file.getParentFile().mkdirs();
         File tmp = new File(file.getParentFile(), file.getName() + ".tmp");
         try (Writer w = new BufferedWriter(new OutputStreamWriter(
