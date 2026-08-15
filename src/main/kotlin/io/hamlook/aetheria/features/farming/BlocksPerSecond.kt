@@ -33,7 +33,7 @@ class BPSOverlay : Overlay(50, 20) {
 
     private fun isInFarmingLocation(): Boolean {
         val location = SkyblockData.getCurrentLocation()
-        return location == SkyblockData.Location.BARN || location == SkyblockData.Location.PRIVATE_ISLAND
+        return location == SkyblockData.Location.BARN || location == SkyblockData.Location.PRIVATE_ISLAND || location == SkyblockData.Location.GARDEN
     }
 
     @SubscribeEvent

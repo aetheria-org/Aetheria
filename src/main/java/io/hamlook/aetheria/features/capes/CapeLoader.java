@@ -120,8 +120,8 @@ public class CapeLoader {
             URL url = new URL(urlStr);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
-            conn.setConnectTimeout(8000);
-            conn.setReadTimeout(8000);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
             conn.setRequestProperty("User-Agent", "Aetheria/1.0");
             conn.setRequestProperty("Accept", "application/vnd.github+json");
 

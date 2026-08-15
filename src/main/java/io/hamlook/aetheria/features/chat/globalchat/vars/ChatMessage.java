@@ -18,6 +18,18 @@ public class ChatMessage {
     public String content;
     /** "discord" or "minecraft" — which client sent this message. */
     public String client;
+    /** Server-set: the sender was allowed to (and did) ping @everyone. Never true otherwise. */
+    public boolean pingEveryone;
+    /** Server-set: the sender was allowed to (and did) ping @here. Never true otherwise. */
+    public boolean pingHere;
+    /** Server-provided list of mentioned usernames (lower-case); null when the server didn't send them. */
+    public List<String> mentions;
+    /** Server-provided @token -> display name for mention pills; null/absent on old messages. */
+    public HashMap<String, String> mentionDisplays;
+    /** Server-set: display name of the author of the message this one replies to, when resolvable. */
+    public String replyingAuthor;
+    /** Server-set: lower-case MC identity of the message this one replies to, when the target is an MC user. */
+    public String replyingTo;
     /** True once the message has been edited after being sent. */
     public boolean edited;
     public boolean replying;
@@ -35,12 +47,15 @@ public class ChatMessage {
     public transient String tsHeaderText;
     public transient String tsTimeText;
     public transient String tsDateText;
+    /** Computed at receive time: this message pings the local user (mention, @everyone/@here or a reply to them). */
+    public transient boolean highlighted;
 
     public ChatMessage(String content,String channelID,ChatMessage repliedMessage) {
         this.content = content;
         this.channelId = channelID;
         this.replying = repliedMessage != null;
         this.replyingMessage = replying ? repliedMessage.discordID : null;
+        this.replyingTo = replying ? repliedMessage.author : null;
         this.discordID = null;
         this.author = Minecraft.getMinecraft().getSession().getUsername();
         // Display name keeps the original capitalization (the server lowercases "author" for identity).
@@ -105,5 +120,42 @@ public class ChatMessage {
 
     public List<ChatLine> getLines() {
         return Collections.singletonList(new ChatLine(this));
+    }
+
+    /** True when this message replies to the given (lower-case) username, per the server-resolved target. */
+    public boolean isReplyTo(String ownName) {
+        if (ownName == null || ownName.isEmpty()) return false;
+        if (author != null && author.toLowerCase().equals(ownName)) return false;
+        if (replyingTo != null && !replyingTo.isEmpty()) {
+            return replyingTo.equalsIgnoreCase(ownName);
+        }
+        return replyingAuthor != null && !replyingAuthor.isEmpty() && replyingAuthor.equalsIgnoreCase(ownName);
+    }
+
+    /** Reply check with a local fallback for messages lacking a server-side {@code replyingAuthor} (e.g. old history). */
+    public boolean isReplyTo(String ownName, Channel channel) {
+        if (isReplyTo(ownName)) return true;
+        if (ownName == null || ownName.isEmpty() || !replying || replyingMessage == null || replyingMessage.isEmpty()) return false;
+        if (author != null && author.toLowerCase().equals(ownName)) return false;
+        if (channel == null) return false;
+        ChatMessage original = channel.byDiscordID.get(replyingMessage);
+        return original != null && original.author != null && original.author.toLowerCase().equals(ownName);
+    }
+
+    /** True when this message pings the local user: a @mention, a (server-gated) @everyone/@here, or a reply to them. */
+    public boolean pingsMe(String ownName, Channel channel) {
+        if (ownName == null || ownName.isEmpty()) return false;
+        if (author != null && author.toLowerCase().equals(ownName)) return false;
+        if (pingEveryone || pingHere) return true;
+        if (mentions != null) {
+            for (String name : mentions) {
+                if (name != null && name.equalsIgnoreCase(ownName)) return true;
+            }
+        }
+        if (content != null) {
+            Pattern own = Pattern.compile("(?i)(?<![\\w])@" + Pattern.quote(ownName) + "\\b");
+            if (own.matcher(content).find()) return true;
+        }
+        return isReplyTo(ownName, channel);
     }
 }

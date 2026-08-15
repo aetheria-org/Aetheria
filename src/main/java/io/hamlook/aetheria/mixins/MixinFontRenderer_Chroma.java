@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.mixins;
 
-import io.hamlook.aetheria.features.qol.helpers.EnchantChromaRenderer;
+import io.hamlook.aetheria.utils.render.ChromaTextRenderer;
 import net.minecraft.client.gui.FontRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -10,37 +10,31 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(FontRenderer.class)
-public class MixinFontRenderer_EnchantChroma {
+public class MixinFontRenderer_Chroma {
 
-    @Redirect(method = "renderStringAtPos", at = @At(value = "INVOKE", target = "Ljava/lang/String;indexOf(I)I"))
+    @Redirect(method = "renderStringAtPos", at = @At(value = "INVOKE", target = "Ljava/lang/String;indexOf(I)I", ordinal = 0))
     private int ATHR$interceptFormatCodeRender(String formatCodes, int c) {
         int idx = formatCodes.indexOf(c);
         if (idx == -1 && (c == 'z' || c == 'Z')) {
-            EnchantChromaRenderer.onChromaCode();
+            ChromaTextRenderer.onChromaCode();
             return 22;
         }
-        if (idx < 16 || idx == 21) EnchantChromaRenderer.onColorCode();
+        if (idx < 16 || idx == 21) ChromaTextRenderer.onColorCode();
         return idx;
-    }
-
-    @Redirect(method = "getStringWidth", at = @At(value = "INVOKE", target = "Ljava/lang/String;indexOf(I)I"))
-    private int ATHR$interceptFormatCodeWidth(String formatCodes, int c) {
-        if (c == 'z' || c == 'Z') return 22;
-        return formatCodes.indexOf(c);
     }
 
     @Inject(method = "renderStringAtPos", at = @At("HEAD"))
     private void ATHR$beginRenderString(String text, boolean shadow, CallbackInfo ci) {
-        EnchantChromaRenderer.beginRenderString(text, shadow);
+        ChromaTextRenderer.beginRenderString(text, shadow);
     }
 
     @Inject(method = "renderChar", at = @At("HEAD"))
     private void ATHR$changeTextColor(char ch, boolean italic, CallbackInfoReturnable<Float> cir) {
-        EnchantChromaRenderer.changeTextColor();
+        ChromaTextRenderer.changeTextColor((FontRenderer) (Object) this, ch);
     }
 
     @Inject(method = "renderStringAtPos", at = @At("RETURN"))
     private void ATHR$endRenderString(String text, boolean shadow, CallbackInfo ci) {
-        EnchantChromaRenderer.endRenderString();
+        ChromaTextRenderer.endRenderString();
     }
 }

@@ -5,6 +5,7 @@ import io.hamlook.aetheria.core.moulconfig.editors.GuiPositionEditor;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
 import io.hamlook.aetheria.features.chat.chatfilters.ui.ChatFilterGUI;
+import io.hamlook.aetheria.features.chat.globalchat.ui.NotificationOverlay;
 import io.hamlook.aetheria.features.diana.DianaStats;
 import io.hamlook.aetheria.features.diana.GuiDianaOverlayEditor;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
@@ -149,6 +150,13 @@ public class ATHRConfig {
         screenToOpen = new GuiPositionEditor(feature.qol.rareDropTracker.overlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::saveConfig, ATHRConfig::saveConfig).withOverlayScale(feature.qol.rareDropTracker.overlayScale).withParent(Minecraft.getMinecraft().currentScreen);
     }
 
+    public static void openNotificationsOverlayEditor() {
+        if (feature == null) return;
+        NotificationOverlay overlay = NotificationOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.network.globalChatConfig.notificationsPosition, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::saveConfig, ATHRConfig::saveConfig).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
     public static void openStatsEditor() {
         if (feature == null) return;
         DungeonStats stats = DungeonStats.getInstance();
@@ -253,7 +261,7 @@ public class ATHRConfig {
         if (feature == null) return;
         DungeonMapOverlay overlay = DungeonMapOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonMapConfig.dungeonMapPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::saveConfig, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonMapConfig.scale).withParent(Minecraft.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonMapConfig.dungeonMapPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::saveConfig, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonMapConfig.appearance.scale).withParent(Minecraft.getMinecraft().currentScreen);
 
     }
 

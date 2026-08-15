@@ -17,6 +17,7 @@ import java.util.List;
 public class DungeonRoomOverlay extends Overlay {
 
     public static String currentRoomName = null;
+    public static String currentRoomAlias = null;
     public static String currentRoomCategory = null;
     public static String currentRoomNotes = null;
     @Getter
@@ -78,6 +79,11 @@ public class DungeonRoomOverlay extends Overlay {
             // Line 2: room name
             String nameLine = EnumChatFormatting.WHITE + "❖  " + EnumChatFormatting.AQUA + currentRoomName;
             out.add(nameLine);
+
+            // Line 3: short alias — only when enabled and present
+            if (ATHRConfig.feature.dungeons.dungeonRoomOverlayConfig.dungeonRoomOverlayShowAlias && currentRoomAlias != null) {
+                out.add(EnumChatFormatting.GRAY + "Alias  " + EnumChatFormatting.AQUA + currentRoomAlias);
+            }
 
 
             // Line 4: relative player coordinates — only when detected

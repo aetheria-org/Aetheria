@@ -30,7 +30,7 @@ public class ModUpdater {
                 if (conn.getResponseCode() != 200) return;
 
                 InputStreamReader reader = new InputStreamReader(conn.getInputStream());
-                JsonObject response = new JsonParser().parse(reader).getAsJsonObject();
+                JsonObject response = JsonParser.parseReader(reader).getAsJsonObject();
                 reader.close();
 
                 String latestVersion = response.get("tag_name").getAsString();

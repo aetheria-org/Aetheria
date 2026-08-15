@@ -12,6 +12,7 @@ import io.hamlook.aetheria.features.chat.globalchat.util.DiscordMarkdown.RenderL
 import io.hamlook.aetheria.features.chat.globalchat.util.DiscordMarkdown.Span;
 import io.hamlook.aetheria.features.chat.globalchat.vars.Attachment;
 import io.hamlook.aetheria.features.chat.globalchat.vars.Channel;
+import io.hamlook.aetheria.features.chat.globalchat.vars.ChannelUser;
 import io.hamlook.aetheria.features.chat.globalchat.vars.ChatLine;
 import io.hamlook.aetheria.features.chat.globalchat.vars.ChatMessage;
 import io.hamlook.aetheria.features.chat.globalchat.vars.Embed;
@@ -20,7 +21,6 @@ import io.hamlook.aetheria.features.chat.globalchat.vars.IEmoji;
 import io.hamlook.aetheria.features.chat.globalchat.vars.Sticker;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.MediaSaver;
-import io.hamlook.aetheria.utils.MediaUploader;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.EmojiParser;
 import io.hamlook.aetheria.utils.render.RenderUtils;
@@ -35,9 +35,6 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
-import javax.swing.JFileChooser;
-import javax.swing.SwingUtilities;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
@@ -54,6 +51,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -122,6 +120,7 @@ public class ChatUI extends GuiScreen {
 
     private ChatInputField inputField;
     private Channel selectedChannel;
+    private Channel lastUsersRefreshChannel;
     private int scrollPixels = 0;
     private String pendingLinkUrl = null;
     private boolean langDropdownOpen = false;
@@ -141,7 +140,6 @@ public class ChatUI extends GuiScreen {
     private List<Sticker> sortedStickerCache = null;
     private int sortedStickerCacheSize = -1;
     private String jumpToMessageId = null;
-    private int jumpTargetTop = Integer.MIN_VALUE;
     private String highlightMessageId = null;
     private long jumpHighlightStart = 0L;
     private boolean emojiPanelOpen = false;
@@ -151,9 +149,6 @@ public class ChatUI extends GuiScreen {
     private int stickerScroll = 0;
     private int dragPanel = -1;
     private int dragGrabY = 0;
-    private volatile boolean attachUploading = false;
-    /** File embeds waiting to be attached to the next sent message (from "+" uploads). */
-    private final List<Embed> pendingFileEmbeds = new ArrayList<>();
     private String downloadMsg = null;
     private long downloadMsgUntil = 0;
     private ChatMessage pendingReply = null;
@@ -181,7 +176,7 @@ public class ChatUI extends GuiScreen {
         int inputX = SIDEBAR_WIDTH + PADDING;
         int boxY = height - INPUT_HEIGHT - PADDING;
         int inputWidth = width - SIDEBAR_WIDTH - PADDING * 2;
-        inputField = new ChatInputField(inputX + 8 + EMOJI_BUTTON_W + 6, boxY + 2, inputWidth - 16 - EMOJI_BUTTON_W * 4 - 24, INPUT_HEIGHT - 4);
+        inputField = new ChatInputField(inputX + 8, boxY + 2, inputWidth - 16 - EMOJI_BUTTON_W * 2 - 24, INPUT_HEIGHT - 4);
         editField = new ChatInputField(editBoxX, editBoxY, editBoxWidth, INPUT_HEIGHT);
         emojiSearchField = new GuiTextField(0, fontRendererObj, 0, 0, 0, 16);
         emojiSearchField.setEnableBackgroundDrawing(false);
@@ -377,16 +372,6 @@ public class ChatUI extends GuiScreen {
                 ? pendingReply : null;
         ChatMessage message = new ChatMessage(text, selectedChannel.channelID, reply);
         message.populateEmojiRefs(converted);
-        if (!pendingFileEmbeds.isEmpty()) {
-            List<Embed> attach = new ArrayList<>();
-            for (Embed e : pendingFileEmbeds) {
-                if (e != null && e.url != null && text.contains("](" + e.url + ")")) attach.add(e);
-            }
-            if (!attach.isEmpty()) {
-                message.embeds = attach;
-                pendingFileEmbeds.removeAll(attach);
-            }
-        }
         if (!message.sendMessage()) {
             downloadMsg = "Not connected to Global Chat. Reconnecting...";
             downloadMsgUntil = System.currentTimeMillis() + 3500;
@@ -452,6 +437,14 @@ public class ChatUI extends GuiScreen {
             selectedChannel = replacement;
         }
 
+        // Refresh the mentionable-user list whenever the selected channel
+        // changes: channels keep their list from creation time otherwise, so a
+        // list that was empty/stale at launch would stay wrong forever.
+        if (selectedChannel != null && selectedChannel != lastUsersRefreshChannel) {
+            lastUsersRefreshChannel = selectedChannel;
+            selectedChannel.refreshUsers();
+        }
+
         clickRects.clear();
         drawSidebar(mouseX, mouseY);
         drawHeader(mouseX, mouseY);
@@ -474,6 +467,7 @@ public class ChatUI extends GuiScreen {
         drawEmojiPanel(mouseX, mouseY);
         drawStickerPanel(mouseX, mouseY);
         drawEmojiAutocomplete(mouseX, mouseY);
+        drawMentionAutocomplete(mouseX, mouseY);
         if (downloadMsg != null && System.currentTimeMillis() < downloadMsgUntil) {
             int toastBoxY = height - INPUT_HEIGHT - PADDING;
             int toastY = toastBoxY - 30;
@@ -490,8 +484,28 @@ public class ChatUI extends GuiScreen {
         int by = boxY - 26;
         drawRect(bx, by, width - PADDING, boxY, 0xFF2B2D31);
         drawRect(bx, by, bx + 3, boxY, 0xFF5865F2);
-        String label = "Replying to " + (pendingReply.authorDisplay != null ? pendingReply.authorDisplay : (pendingReply.author == null ? "a message" : pendingReply.author));
-        fontRendererObj.drawStringWithShadow(label, bx + 10, by + 9, 0xFFB5BAC1);
+
+        String replyName = pendingReply.authorDisplay != null ? pendingReply.authorDisplay
+                : (pendingReply.author == null ? "a message" : pendingReply.author);
+        boolean canLink = pendingReply.discordID != null && !pendingReply.discordID.isEmpty()
+                && pendingReply.channelId != null && !pendingReply.channelId.isEmpty();
+        String bannerText = canLink
+                ? "[Replying To](https://discord.com/channels/1479556885769093192/"
+                        + pendingReply.channelId + "/" + pendingReply.discordID + ") @" + replyName
+                : "Replying to " + replyName;
+        Map<String, String> mentionNames = null;
+        if (selectedChannel != null && !selectedChannel.usersByKey.isEmpty()) {
+            mentionNames = new HashMap<>();
+            for (Map.Entry<String, ChannelUser> entry : selectedChannel.usersByKey.entrySet()) {
+                mentionNames.put(entry.getKey(), entry.getValue().display());
+            }
+        }
+        List<RenderLine> lines = DiscordMarkdown.parse(bannerText, null, mentionNames, fontRendererObj,
+                width - SIDEBAR_WIDTH - PADDING * 2 - 40);
+        if (!lines.isEmpty()) {
+            drawSpans(lines.get(0).spans, bx + 10, by + 8, 0xFFB5BAC1, true);
+        }
+
         int cx = width - PADDING - 26;
         boolean hover = mouseX >= cx && mouseX <= cx + 18 && mouseY >= by + 4 && mouseY <= by + 20;
         fontRendererObj.drawStringWithShadow("X", cx + 6, by + 8, hover ? 0xFFFFFFFF : 0xFF949BA4);
@@ -599,8 +613,8 @@ public class ChatUI extends GuiScreen {
         boolean hover = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
         drawRect(x, y, x + w, y + h, hover ? 0xFF404249 : 0xFF2B2D31);
         fontRendererObj.drawStringWithShadow(label,
-                x + (w - fontRendererObj.getStringWidth(label)) / 2,
-                y + (h - fontRendererObj.FONT_HEIGHT) / 2,
+                x + (w - fontRendererObj.getStringWidth(label)) / 2f,
+                y + (h - fontRendererObj.FONT_HEIGHT) / 2f,
                 hover ? 0xFFFFFFFF : 0xFFB5BAC1);
         clickRects.add(new ClickRect(x, y, w, h, action));
     }
@@ -646,12 +660,14 @@ public class ChatUI extends GuiScreen {
         boolean open = !emojiPanelOpen;
         closeAllPanels();
         emojiPanelOpen = open;
+        if (open) GlobalChat.loadRemoteResourcesIfNeeded();
     }
 
     private void toggleStickerPanel() {
         boolean open = !stickerPanelOpen;
         closeAllPanels();
         stickerPanelOpen = open;
+        if (open) GlobalChat.loadRemoteResourcesIfNeeded();
         if (open && stickerScroll > 0) stickerScroll = 0;
     }
 
@@ -704,10 +720,6 @@ public class ChatUI extends GuiScreen {
         return STICKER_PANEL_ROWS;
     }
 
-    private int panelCellH(int panel) {
-        if (panel == PANEL_EMOJI) return EMOJI_PANEL_CELL;
-        return STICKER_PANEL_CELL;
-    }
 
     private int panelMaxScroll(int panel) {
         return Math.max(0, panelRowsTotal(panel) - panelRowsVisible(panel));
@@ -745,14 +757,14 @@ public class ChatUI extends GuiScreen {
         return Math.max(18, Math.min(trackH, Math.round(trackH * frac)));
     }
 
-    private boolean panelSliderVisible(int panel) {
-        return panelOpen(panel) && panelMaxScroll(panel) > 0;
+    private boolean panelSliderInvisible(int panel) {
+        return !panelOpen(panel) || panelMaxScroll(panel) <= 0;
     }
 
     /** Click on a panel scrollbar: drag the thumb or jump the list to the clicked position. Returns true if handled. */
     private boolean handlePanelSliderClick(int mouseX, int mouseY) {
         for (int p = PANEL_EMOJI; p <= PANEL_STICKER; p++) {
-            if (!panelSliderVisible(p)) continue;
+            if (panelSliderInvisible(p)) continue;
             int[] tr = panelTrackRect(p);
             if (mouseX < tr[0] || mouseX > tr[0] + tr[2] || mouseY < tr[1] || mouseY > tr[1] + tr[3]) continue;
             int maxScroll = panelMaxScroll(p);
@@ -770,7 +782,7 @@ public class ChatUI extends GuiScreen {
     }
 
     private void drawPanelSlider(int panel, int mouseX, int mouseY) {
-        if (!panelSliderVisible(panel)) return;
+        if (panelSliderInvisible(panel)) return;
         int[] tr = panelTrackRect(panel);
         int maxScroll = panelMaxScroll(panel);
         int thumbH = panelThumbHeight(panel, tr[3]);
@@ -785,7 +797,6 @@ public class ChatUI extends GuiScreen {
     private void drawEmojiPanel(int mouseX, int mouseY) {
         if (!emojiPanelOpen) return;
         List<EmojiRef> emojis = filteredEmojis();
-        if (emojis.isEmpty()) return;
 
         int boxY = height - INPUT_HEIGHT - PADDING;
         int px = Math.max(SIDEBAR_WIDTH, width - PADDING - EMOJI_PANEL_W);
@@ -804,6 +815,10 @@ public class ChatUI extends GuiScreen {
         }
 
         int gridTop = py + EMOJI_SEARCH_H + 4;
+        if (emojis.isEmpty()) {
+            fontRendererObj.drawStringWithShadow("No emojis found.", px + 8, gridTop + 12, 0xFF6D6F78);
+            return;
+        }
         int rowsTotal = (emojis.size() + EMOJI_PANEL_COLS - 1) / EMOJI_PANEL_COLS;
         int maxScroll = Math.max(0, rowsTotal - EMOJI_PANEL_ROWS);
         if (emojiScroll > maxScroll) emojiScroll = maxScroll;
@@ -817,7 +832,7 @@ public class ChatUI extends GuiScreen {
                 int cy = gridTop + r * EMOJI_PANEL_CELL;
                 boolean hover = mouseX >= cx && mouseX <= cx + EMOJI_PANEL_CELL && mouseY >= cy && mouseY <= cy + EMOJI_PANEL_CELL;
                 if (hover) drawRect(cx, cy, cx + EMOJI_PANEL_CELL, cy + EMOJI_PANEL_CELL, 0xFF35373C);
-                drawInlineEmoji(ref.url, ref.name, cx + (EMOJI_PANEL_CELL - 16) / 2, cy + (EMOJI_PANEL_CELL - 16) / 2);
+                drawInlineEmoji(ref, cx + (EMOJI_PANEL_CELL - 16) / 2, cy + (EMOJI_PANEL_CELL - 16) / 2);
                 clickRects.add(new ClickRect(cx, cy, EMOJI_PANEL_CELL, EMOJI_PANEL_CELL,
                         () -> {
                             inputField.replaceSelection(":" + ref.name + ":");
@@ -886,7 +901,7 @@ public class ChatUI extends GuiScreen {
                 int cy = py + 4 + r * STICKER_PANEL_CELL;
                 boolean hover = mouseX >= cx && mouseX <= cx + STICKER_PANEL_CELL && mouseY >= cy && mouseY <= cy + STICKER_PANEL_CELL;
                 if (hover) drawRect(cx, cy, cx + STICKER_PANEL_CELL, cy + STICKER_PANEL_CELL, 0xFF35373C);
-                drawImageBlock(st.name, st.url, cx + 3, cy + 3, STICKER_PANEL_CELL - 6, STICKER_PANEL_CELL - 6, false, mouseX, mouseY);
+                drawImageBlock(st.name, st.url, cx + 3, cy + 3, STICKER_PANEL_CELL - 6, STICKER_PANEL_CELL - 6, mouseX, mouseY);
                 clickRects.add(new ClickRect(cx, cy, STICKER_PANEL_CELL, STICKER_PANEL_CELL, () -> sendSticker(st)));
             }
         }
@@ -901,61 +916,7 @@ public class ChatUI extends GuiScreen {
         closeAllPanels();
     }
 
-    // ---------------------------------------------------------- attachments
-
-    /** Opens a file picker, uploads the chosen image/video/gif through the API, then inserts [file_name](file_url) into the input. */
-    private void openAttachmentPicker() {
-        if (attachUploading) return;
-        attachUploading = true;
-        CompletableFuture.runAsync(() -> {
-            String url = null;
-            String fileName = null;
-            Embed fileEmbed = null;
-            try {
-                File file = pickAttachmentFile();
-                if (file != null) {
-                    MediaUploader.UploadResult result = MediaUploader.upload(file);
-                    fileName = result.name;
-                    url = result.url;
-                    fileEmbed = new Embed("file", result.url);
-                    fileEmbed.name = result.name;
-                    fileEmbed.fileType = result.type;
-                    fileEmbed.fileSize = result.size;
-                }
-            } catch (Exception e) {
-                Aetheria.logger.warning("[G-Chat] Attachment upload failed: " + e.getMessage());
-            }
-            final String fUrl = url;
-            final String fName = fileName;
-            final Embed fEmbed = fileEmbed;
-            mc.addScheduledTask(() -> {
-                attachUploading = false;
-                if (fUrl != null && !fUrl.isEmpty() && fName != null) {
-                    inputField.replaceSelection("[" + fName + "](" + fUrl + ")");
-                    if (fEmbed != null) pendingFileEmbeds.add(fEmbed);
-                }
-            });
-        });
-    }
-
-    private File pickAttachmentFile() {
-        final File[] chosen = new File[1];
-        try {
-            SwingUtilities.invokeAndWait(() -> {
-                JFileChooser chooser = new JFileChooser();
-                chooser.setDialogTitle("Attach an image, video or GIF");
-                chooser.setFileFilter(new FileNameExtensionFilter("Images & videos (PNG, JPG, GIF, WEBP, MP4, WEBM...)",
-                        "png", "jpg", "jpeg", "gif", "webp", "bmp",
-                        "mp4", "webm", "mkv", "mov", "avi", "m4v", "wmv", "flv", "ts"));
-                if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-                    chosen[0] = chooser.getSelectedFile();
-                }
-            });
-        } catch (Exception e) {
-            Aetheria.logger.warning("[G-Chat] File picker failed: " + e.getMessage());
-        }
-        return chosen[0];
-    }
+    // ---------------------------------------------------------- autocomplete
 
     /** Discord-style suggestion dropdown while typing ":prefix" (no closing colon yet). */
     private void drawEmojiAutocomplete(int mouseX, int mouseY) {
@@ -986,7 +947,7 @@ public class ChatUI extends GuiScreen {
             int ry = dy + 3 + i * rowH;
             boolean hover = mouseX >= dx && mouseX <= dx + dw && mouseY >= ry && mouseY <= ry + rowH;
             if (hover) drawRect(dx, ry, dx + dw, ry + rowH, 0xFF35373C);
-            drawInlineEmoji(ref.url, ref.name, dx + 4, ry + 1);
+            drawInlineEmoji(ref, dx + 4, ry + 1);
             fontRendererObj.drawStringWithShadow(":" + ref.name + ":", dx + 24, ry + 5, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
             final int selStart = start - 1;
             final int selEnd = caret;
@@ -995,6 +956,64 @@ public class ChatUI extends GuiScreen {
                 inputField.replaceSelection(":" + ref.name + ":");
             }));
         }
+    }
+
+    /** Discord-style suggestion dropdown while typing "@prefix" — lists this channel's mentionable users. */
+    private void drawMentionAutocomplete(int mouseX, int mouseY) {
+        if (selectedChannel == null) return;
+        String text = inputField.getText();
+        int caret = inputField.getCaret();
+        int start = caret;
+        while (start > 0) {
+            char pc = text.charAt(start - 1);
+            if (isMentionWordChar(pc) || pc == ' ') start--;
+            else break;
+        }
+        if (start == caret || start <= 0 || text.charAt(start - 1) != '@') return;
+        String prefix = text.substring(start, caret).toLowerCase();
+
+        List<ChannelUser> matches = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (ChannelUser user : selectedChannel.userList) {
+            if (user == null || user.username == null || user.username.isEmpty()) continue;
+            String identity = (user.dcId != null && !user.dcId.isEmpty()) ? "d" + user.dcId : "m" + user.username.toLowerCase();
+            if (!seen.add(identity)) continue;
+            if (user.username.toLowerCase().startsWith(prefix)
+                    || (user.displayname != null && user.displayname.toLowerCase().startsWith(prefix))) {
+                matches.add(user);
+            }
+        }
+        if (matches.isEmpty()) return;
+        matches.sort(Comparator.comparing(ChannelUser::display));
+        if (matches.size() > 8) matches = new ArrayList<>(matches.subList(0, 8));
+
+        int dw = 200;
+        int boxY = height - INPUT_HEIGHT - PADDING;
+        int dx = Math.max(SIDEBAR_WIDTH, Math.min(inputField.x, width - PADDING - dw));
+        int rowH = 18;
+        int dh = matches.size() * rowH + 6;
+        int dy = boxY - dh - 6;
+        drawRect(dx, dy, dx + dw, dy + dh, 0xFF17181C);
+        for (int i = 0; i < matches.size(); i++) {
+            ChannelUser user = matches.get(i);
+            int ry = dy + 3 + i * rowH;
+            boolean hover = mouseX >= dx && mouseX <= dx + dw && mouseY >= ry && mouseY <= ry + rowH;
+            if (hover) drawRect(dx, ry, dx + dw, ry + rowH, 0xFF35373C);
+            fontRendererObj.drawStringWithShadow("@" + user.display(), dx + 4, ry + 5, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
+            if (user.dcId != null && !user.dcId.isEmpty()) {
+                fontRendererObj.drawStringWithShadow("Discord", dx + dw - 4 - fontRendererObj.getStringWidth("Discord"), ry + 5, 0xFF5865F2);
+            }
+            final int selStart = start - 1;
+            final int selEnd = caret;
+            clickRects.add(new ClickRect(dx, ry, dw, rowH, () -> {
+                inputField.select(selStart, selEnd);
+                inputField.replaceSelection("@" + user.mentionToken());
+            }));
+        }
+    }
+
+    private static boolean isMentionWordChar(char c) {
+        return Character.isLetterOrDigit(c) || c == '_' || c == '.';
     }
 
     private List<EmojiRef> sortedEmojis() {
@@ -1082,7 +1101,7 @@ public class ChatUI extends GuiScreen {
         int closeX = areaX - 4 + boxW + 4;
         boolean hover = mouseX >= closeX && mouseX <= closeX + 16 && mouseY >= boxY && mouseY <= boxY + 16;
         fontRendererObj.drawStringWithShadow("X", closeX + 4, boxY + 4, hover ? 0xFFFFFFFF : 0xFF949BA4);
-        clickRects.add(new ClickRect(closeX - 12, boxY + 2, 28, 16, () -> dismissSystemNotices()));
+        clickRects.add(new ClickRect(closeX - 12, boxY + 2, 28, 16, this::dismissSystemNotices));
     }
 
     private void dismissSystemNotices() {
@@ -1106,18 +1125,6 @@ public class ChatUI extends GuiScreen {
         int by = boxY + (INPUT_HEIGHT - EMOJI_BUTTON_W) / 2 + 1;
         int sx = ex - EMOJI_BUTTON_W - 2;
 
-        int abx = SIDEBAR_WIDTH + PADDING + 4;
-        boolean attachHover = mouseX >= abx && mouseX <= abx + EMOJI_BUTTON_W && mouseY >= by && mouseY <= by + EMOJI_BUTTON_W;
-        drawRect(abx, by, abx + EMOJI_BUTTON_W, by + EMOJI_BUTTON_W, attachHover ? 0xFF404249 : 0xFF2B2D31);
-        int ax = abx + (EMOJI_BUTTON_W - 14) / 2;
-        int ay = by + (EMOJI_BUTTON_W - 14) / 2;
-        drawRect(ax + 4, ay + 6, ax + 10, ay + 8, 0xFFF2C94C);
-        drawRect(ax + 6, ay + 4, ax + 8, ay + 10, 0xFFF2C94C);
-        clickRects.add(new ClickRect(abx, by, EMOJI_BUTTON_W, EMOJI_BUTTON_W, this::openAttachmentPicker));
-        if (attachUploading) {
-            fontRendererObj.drawStringWithShadow("Uploading...", abx + EMOJI_BUTTON_W + 8, by + (EMOJI_BUTTON_W - fontRendererObj.FONT_HEIGHT) / 2f + 1, 0xFFF2C94C);
-        }
-
         boolean stickerHover = mouseX >= sx && mouseX <= sx + EMOJI_BUTTON_W && mouseY >= by && mouseY <= by + EMOJI_BUTTON_W;
 
         drawRect(sx, by, sx + EMOJI_BUTTON_W, by + EMOJI_BUTTON_W, stickerHover || stickerPanelOpen ? 0xFF404249 : 0xFF2B2D31);
@@ -1137,8 +1144,8 @@ public class ChatUI extends GuiScreen {
         drawRect(fx + 3, fy + 4, fx + 5, fy + 6, 0xFF1E1F22);
         drawRect(fx + 9, fy + 4, fx + 11, fy + 6, 0xFF1E1F22);
         drawRect(fx + 4, fy + 9, fx + 10, fy + 10, 0xFF1E1F22);
-        clickRects.add(new ClickRect(sx, by, EMOJI_BUTTON_W, EMOJI_BUTTON_W, () -> toggleStickerPanel()));
-        clickRects.add(new ClickRect(ex, by, EMOJI_BUTTON_W, EMOJI_BUTTON_W, () -> toggleEmojiPanel()));
+        clickRects.add(new ClickRect(sx, by, EMOJI_BUTTON_W, EMOJI_BUTTON_W, this::toggleStickerPanel));
+        clickRects.add(new ClickRect(ex, by, EMOJI_BUTTON_W, EMOJI_BUTTON_W, this::toggleEmojiPanel));
     }
 
     private void drawMessages(int mouseX, int mouseY) {
@@ -1167,7 +1174,7 @@ public class ChatUI extends GuiScreen {
 
         int cursorBottom = contentBottom + scrollPixels;
         int total = 0;
-        jumpTargetTop = Integer.MIN_VALUE;
+        int jumpTargetTop = Integer.MIN_VALUE;
 
         for (int i = lines.size() - 1; i >= 0; i--) {
             ChatMessage msg = lines.get(i).message;
@@ -1185,7 +1192,7 @@ public class ChatUI extends GuiScreen {
                 renderMessage(msg, layout, areaX + PADDING, top, contentWidth, groupStart, mouseX, mouseY);
             }
 
-            if (jumpToMessageId != null && msg.discordID != null && msg.discordID.equals(jumpToMessageId)) {
+            if (msg.discordID != null && msg.discordID.equals(jumpToMessageId)) {
                 jumpTargetTop = top - scrollPixels;
             }
 
@@ -1230,7 +1237,7 @@ public class ChatUI extends GuiScreen {
         return msg.replying ? fontRendererObj.FONT_HEIGHT + 3 : 0;
     }
 
-    /** Content to render: for replies, drops the leading "https://discord.com/channels/..." hyperlink prefix the server prepends on Discord. */
+    /** Content to render: for replies, drops the leading "<a href="https://discord.com/channels/">...</a>..." hyperlink prefix the server prepends on Discord. */
     private String displayContent(ChatMessage msg) {
         String content = msg.content;
         if (content != null && msg.replying && msg.replyingMessage != null && !msg.replyingMessage.isEmpty()
@@ -1255,11 +1262,22 @@ public class ChatUI extends GuiScreen {
         boolean shift = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
         if (!shift && url.startsWith("https://discord.com/channels/")) {
             String[] parts = url.split("/");
-            if (parts.length >= 2) {
-                String channelId = parts[parts.length - 2];
-                String messageId = parts[parts.length - 1];
+            if (parts.length >= 6) {
+                String channelId = parts[parts.length - 1];
+                String messageId = null;
+                if (parts.length >= 7) {
+                    messageId = channelId;
+                    channelId = parts[parts.length - 2];
+                }
                 Channel channel = GlobalChat.channels.get(channelId);
                 if (channel != null) {
+                    if (messageId == null) {
+                        if (channel != selectedChannel) {
+                            selectedChannel = channel;
+                            scrollPixels = 0;
+                        }
+                        return;
+                    }
                     for (ChatLine line : channel.messageHistory) {
                         if (line.message != null && messageId.equals(line.message.discordID)) {
                             if (channel != selectedChannel) selectedChannel = channel;
@@ -1311,13 +1329,20 @@ public class ChatUI extends GuiScreen {
         int drawH = Math.round(drawW / ratio);
         if (drawH > MAX_IMAGE_DRAW_H) {
             drawH = MAX_IMAGE_DRAW_H;
-            drawW = Math.round(drawH * ratio);
         }
         return drawH;
     }
 
     /** True when the message is a single bare link or hyperlink to an image/video/GIF (hide the link text, show only the media). */
     private boolean singleMediaLink(ChatMessage msg, LayoutCache layout) {
+        if (msg.stickers != null && !msg.stickers.isEmpty()) {
+            // Sticker-only message: content is just the sticker URL, which is
+            // deliberately not rendered as an image embed (see computeEmbeds).
+            // Hide the URL text so only the sticker box shows.
+            if (layout.lines.size() != 1) return false;
+            List<Span> spans = layout.lines.get(0).spans;
+            return spans != null && spans.size() == 1 && spans.get(0).linkUrl != null;
+        }
         if (layout.lines.size() != 1) return false;
         List<Span> spans = layout.lines.get(0).spans;
         if (spans == null || spans.size() != 1) return false;
@@ -1342,6 +1367,12 @@ public class ChatUI extends GuiScreen {
             drawMessageActions(msg, x + AVATAR_SIZE + 8 + contentWidth, y, mouseX, mouseY);
         }
 
+        // Mentions, @everyone/@here pings and replies to you get a soft blurple tint + accent bar.
+        if (msg.highlighted) {
+            drawRect(x - 4, y - 2, x + AVATAR_SIZE + 8 + contentWidth + PADDING, y + rowHeight, 0x145865F2);
+            drawRect(x - 4, y - 2, x - 1, y + rowHeight, 0xCC5865F2);
+        }
+
         if (highlightMessageId != null && highlightMessageId.equals(msg.discordID)) {
             long elapsed = System.currentTimeMillis() - jumpHighlightStart;
             if (elapsed >= JUMP_HIGHLIGHT_MS) {
@@ -1359,7 +1390,7 @@ public class ChatUI extends GuiScreen {
         if (msg.replying) {
             ChatMessage original = findByDiscordId(msg.replyingMessage);
             String replyName = original != null && original.authorDisplay != null ? original.authorDisplay : (original != null && original.author != null ? original.author : "a message");
-            String replyLabel = "\u21B0 " + replyName;
+            String replyLabel = "↰ " + replyName;
             fontRendererObj.drawStringWithShadow(replyLabel, textX, y + 1, 0xFF949BA4);
             if (msg.replyingMessage != null && !msg.replyingMessage.isEmpty()) {
                 final String replyUrl = "https://discord.com/channels/1479556885769093192/"
@@ -1423,7 +1454,7 @@ public class ChatUI extends GuiScreen {
 
         if (!msg.stickers.isEmpty()) {
             for (Sticker st : msg.stickers.values()) {
-                drawImageBlock(st.name, st.url, textX, cursorY, Math.min(contentWidth, 96), STICKER_BOX_H, false, mouseX, mouseY);
+                drawImageBlock(st.name, st.url, textX, cursorY, Math.min(contentWidth, 96), STICKER_BOX_H, mouseX, mouseY);
                 cursorY += STICKER_BOX_H + 6;
             }
         }
@@ -1574,8 +1605,45 @@ public class ChatUI extends GuiScreen {
             if (span.spaceBefore) cursorX += spaceWidth;
 
             if (span.imageUrl != null) {
-                drawInlineEmoji(span.imageUrl, span.emojiName, cursorX, y);
+                drawInlineEmoji(span.imageUrl, span.emojiName, span.emojiSurrogates, cursorX, y);
                 cursorX += DiscordMarkdown.EMOJI_SIZE;
+                continue;
+            }
+
+            if (span.mention) {
+                String name = span.mentionDisplay != null && !span.mentionDisplay.isEmpty() ? span.mentionDisplay : span.text;
+                if ("everyone".equalsIgnoreCase(span.text) || "here".equalsIgnoreCase(span.text)) {
+                    String raw = "@" + span.text;
+                    fontRendererObj.drawStringWithShadow(raw, cursorX, y, 0xFFFAA81A);
+                    cursorX += fontRendererObj.getStringWidth(raw);
+                    continue;
+                }
+                String pill = DiscordMarkdown.MENTION_FONT + "@" + name;
+                int w = fontRendererObj.getStringWidth(pill);
+                int px = cursorX - 2;
+                drawRect(px, y - 1, px + w + 4, y + fontRendererObj.FONT_HEIGHT + 1, 0x4D5865F2);
+                fontRendererObj.drawStringWithShadow(pill, cursorX, y, 0xFFDEE0FC);
+                cursorX += w;
+                continue;
+            }
+
+            if (span.discordChannelId != null) {
+                String formatted = span.text;
+                int w = fontRendererObj.getStringWidth(formatted);
+                int px = cursorX - 1;
+                if (span.discordMessageId != null) {
+                    drawRect(px, y - 1, px + w + 2, y + fontRendererObj.FONT_HEIGHT + 1, 0x335865F2);
+                    fontRendererObj.drawStringWithShadow(formatted, cursorX, y, 0xFF9EA6FF);
+                } else {
+                    drawRect(px, y - 1, px + w + 2, y + fontRendererObj.FONT_HEIGHT + 1, 0x12FFFFFF);
+                    fontRendererObj.drawStringWithShadow(formatted, cursorX, y, 0xFF00A8FC);
+                }
+                if (registerClicks) {
+                    int ry = y - 1;
+                    int rh = fontRendererObj.FONT_HEIGHT + 2;
+                    clickRects.add(new ClickRect(cursorX, ry, w, rh, () -> handleLinkClick(span.discordUrl)));
+                }
+                cursorX += w;
                 continue;
             }
 
@@ -1590,8 +1658,8 @@ public class ChatUI extends GuiScreen {
                     drawRect(cursorX, y + fontRendererObj.FONT_HEIGHT - 1, cursorX + w, y + fontRendererObj.FONT_HEIGHT, 0xFF00A8FC);
                 }
                 if (registerClicks) {
-                    int rx = cursorX, ry = y, rw = w, rh = fontRendererObj.FONT_HEIGHT;
-                    clickRects.add(new ClickRect(rx, ry, rw, rh, () -> handleLinkClick(span.linkUrl)));
+                    int rh = fontRendererObj.FONT_HEIGHT;
+                    clickRects.add(new ClickRect(cursorX, y, w, rh, () -> handleLinkClick(span.linkUrl)));
                 }
                 cursorX += w;
                 continue;
@@ -1600,8 +1668,9 @@ public class ChatUI extends GuiScreen {
             if (span.spoiler && !revealedSpoilers.contains(span)) {
                 drawRect(cursorX, y, cursorX + Math.max(w, 4), y + fontRendererObj.FONT_HEIGHT, 0xFF1E1F22);
                 if (registerClicks) {
-                    int rx = cursorX, ry = y, rw = Math.max(w, 4), rh = fontRendererObj.FONT_HEIGHT;
-                    clickRects.add(new ClickRect(rx, ry, rw, rh, () -> revealedSpoilers.add(span)));
+                    int rw = Math.max(w, 4);
+                    int rh = fontRendererObj.FONT_HEIGHT;
+                    clickRects.add(new ClickRect(cursorX, y, rw, rh, () -> revealedSpoilers.add(span)));
                 }
             } else {
                 int color = span.code ? 0xFF95D8A6 : baseColor;
@@ -1631,7 +1700,19 @@ public class ChatUI extends GuiScreen {
         cache = new LayoutCache();
         cache.width = width;
         cache.contentVersion = msg.contentVersion;
-        cache.lines = DiscordMarkdown.parse(displayContent(msg), msg.emojiRefs, fontRendererObj, width);
+        Map<String, String> mentionNames = null;
+        if (selectedChannel != null && !selectedChannel.usersByKey.isEmpty()) {
+            mentionNames = new HashMap<>();
+            for (Map.Entry<String, ChannelUser> entry : selectedChannel.usersByKey.entrySet()) {
+                mentionNames.put(entry.getKey(), entry.getValue().display());
+            }
+            if (msg.mentionDisplays != null) {
+                mentionNames.putAll(msg.mentionDisplays);
+            }
+        } else if (msg.mentionDisplays != null && !msg.mentionDisplays.isEmpty()) {
+            mentionNames = msg.mentionDisplays;
+        }
+        cache.lines = DiscordMarkdown.parse(displayContent(msg), msg.emojiRefs, mentionNames, fontRendererObj, width);
         cache.embeds = computeEmbeds(msg, cache);
         cache.imgs = computeImages(msg, cache);
 
@@ -1687,8 +1768,19 @@ public class ChatUI extends GuiScreen {
         drawRect(x, y, x + AVATAR_SIZE, y + AVATAR_SIZE, (userColor(msg.author == null ? "?" : msg.author) & 0x00FFFFFF) | 0x66000000);
     }
 
-    private void drawInlineEmoji(String url, String name, int x, int y) {
-        if (name != null && RenderUtils.drawEmoji(name, x, y - 2, DiscordMarkdown.EMOJI_SIZE)) return;
+    private void drawInlineEmoji(EmojiRef ref, int x, int y) {
+        boolean isDefault = ref.surrogates != null && !ref.surrogates.isEmpty();
+        if (isDefault && ref.name != null && RenderUtils.drawEmoji(ref.name, x, y - 2, DiscordMarkdown.EMOJI_SIZE)) return;
+        drawEmojiImage(ref.url, x, y);
+    }
+
+    private void drawInlineEmoji(String url, String name, String surrogates, int x, int y) {
+        boolean isDefault = surrogates != null && !surrogates.isEmpty();
+        if (isDefault && name != null && RenderUtils.drawEmoji(name, x, y - 2, DiscordMarkdown.EMOJI_SIZE)) return;
+        drawEmojiImage(url, x, y);
+    }
+
+    private void drawEmojiImage(String url, int x, int y) {
         GCImage img = getImage(url, false);
         if (img == null || !img.isLoaded || img.width == 0) {
             drawRect(x, y, x + DiscordMarkdown.EMOJI_SIZE, y + DiscordMarkdown.EMOJI_SIZE, 0x22FFFFFF);
@@ -1705,13 +1797,13 @@ public class ChatUI extends GuiScreen {
     }
 
     /** Always reserves exactly boxHeight vertically, regardless of the image's real aspect ratio, so layout stays stable while media loads async. */
-    private void drawImageBlock(String name, String url, int x, int y, int maxWidth, int boxHeight, boolean circular, int mouseX, int mouseY) {
-        drawImageBlock(name, url, x, y, maxWidth, boxHeight, circular, false, mouseX, mouseY);
+    private void drawImageBlock(String name, String url, int x, int y, int maxWidth, int boxHeight, int mouseX, int mouseY) {
+        drawImageBlock(name, url, x, y, maxWidth, boxHeight, false, mouseX, mouseY);
     }
 
     /** With naturalSize the loaded image is drawn at its own aspect ratio (width-capped), not forced into a fixed-height box. */
-    private void drawImageBlock(String name, String url, int x, int y, int maxWidth, int boxHeight, boolean circular, boolean naturalSize, int mouseX, int mouseY) {
-        GCImage img = getImage(url, circular);
+    private void drawImageBlock(String name, String url, int x, int y, int maxWidth, int boxHeight, boolean naturalSize, int mouseX, int mouseY) {
+        GCImage img = getImage(url, false);
         int cap = Math.min(maxWidth, MAX_IMAGE_DRAW_W);
 
         if (img != null && img.loadFailed) {
@@ -1758,9 +1850,20 @@ public class ChatUI extends GuiScreen {
             }
         }
         for (Embed embed : layout.embeds) {
-            if ("image".equals(embed.type) && embed.url != null) imgs.add(new ImageRef(embed.name, embed.url));
+            if ("image".equals(embed.type) && embed.url != null && !isStickerUrl(msg, embed.url)) {
+                imgs.add(new ImageRef(embed.name, embed.url));
+            }
         }
         return imgs;
+    }
+
+    /** True when the URL belongs to one of the message's stickers (already rendered as the sticker box). */
+    private static boolean isStickerUrl(ChatMessage msg, String url) {
+        if (msg == null || msg.stickers == null || msg.stickers.isEmpty() || url == null) return false;
+        for (Sticker st : msg.stickers.values()) {
+            if (st != null && st.url != null && st.url.equals(url)) return true;
+        }
+        return false;
     }
 
     /** Draws all images of a message as a cover-cropped grid (2 columns); a single image is drawn natural-size. */
@@ -1768,7 +1871,7 @@ public class ChatUI extends GuiScreen {
         if (imgs.size() == 1) {
             ImageRef ref = imgs.get(0);
             int h = imageGridHeight(imgs, maxWidth);
-            drawImageBlock(ref.name, ref.url, x, y, maxWidth, h, false, true, mouseX, mouseY);
+            drawImageBlock(ref.name, ref.url, x, y, maxWidth, h, true, mouseX, mouseY);
             clickRects.add(new ClickRect(x, y, Math.min(maxWidth, MAX_IMAGE_DRAW_W), h, () -> openImageViewer(imgs, 0)));
             return;
         }
@@ -1944,7 +2047,8 @@ public class ChatUI extends GuiScreen {
             if (!out.isEmpty()) return out;
         }
         Embed e = embedForFirstLink(layout);
-        return e == null ? Collections.<Embed>emptyList() : Collections.singletonList(e);
+        if (e != null && isStickerUrl(msg, e.url)) return Collections.emptyList();
+        return e == null ? Collections.emptyList() : Collections.singletonList(e);
     }
 
     /**
@@ -2066,7 +2170,7 @@ public class ChatUI extends GuiScreen {
         int textW = maxWidth - thumb - 18;
 
         String site = (e.siteName == null || e.siteName.isEmpty()) ? hostOf(e.url) : e.siteName;
-        if (site == null || site.isEmpty()) site = "Link";
+        if (site.isEmpty()) site = "Link";
         fontRendererObj.drawStringWithShadow(site, x + 10, y + 6, 0xFF949BA4);
         int ty = y + 16;
         if (e.title != null && !e.title.isEmpty()) {

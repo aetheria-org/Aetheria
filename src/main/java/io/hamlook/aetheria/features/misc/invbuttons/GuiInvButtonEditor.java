@@ -64,7 +64,7 @@ public class GuiInvButtonEditor extends GuiScreen {
         presetButtonsList = new ArrayList<>();
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(Minecraft.getMinecraft().getResourceManager().getResource(Resources.INV_PRESETS_JSON).getInputStream(), StandardCharsets.UTF_8));
-            JsonObject root = new JsonParser().parse(br).getAsJsonObject();
+            JsonObject root = JsonParser.parseReader(br).getAsJsonObject();
             for (Map.Entry<String, JsonElement> e : root.entrySet()) {
                 if (!e.getValue().isJsonArray()) continue;
                 List<InventoryButton> btns = new ArrayList<>();
@@ -87,7 +87,7 @@ public class GuiInvButtonEditor extends GuiScreen {
         extraIconsCache = new LinkedHashMap<>();
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(Minecraft.getMinecraft().getResourceManager().getResource(Resources.INV_EXTRA_ICONS_JSON).getInputStream(), StandardCharsets.UTF_8));
-            JsonObject root = new JsonParser().parse(br).getAsJsonObject();
+            JsonObject root = JsonParser.parseReader(br).getAsJsonObject();
             for (Map.Entry<String, JsonElement> e : root.entrySet())
                 if (e.getValue().isJsonPrimitive())
                     extraIconsCache.put(e.getKey(), "extra:" + e.getValue().getAsString());
@@ -434,7 +434,7 @@ public class GuiInvButtonEditor extends GuiScreen {
             String decoded = new String(Base64.getDecoder().decode(raw.trim()), StandardCharsets.UTF_8);
             int b = decoded.indexOf('[');
             if (b == -1) return false;
-            new JsonParser().parse(decoded.substring(b)).getAsJsonArray();
+            JsonParser.parseString(decoded.substring(b)).getAsJsonArray();
             return true;
         } catch (Exception e) {
             return false;
@@ -448,7 +448,7 @@ public class GuiInvButtonEditor extends GuiScreen {
             String decoded = new String(Base64.getDecoder().decode(raw.trim()), StandardCharsets.UTF_8);
             int b = decoded.indexOf('[');
             if (b == -1) return;
-            JsonArray arr = new JsonParser().parse(decoded.substring(b)).getAsJsonArray();
+            JsonArray arr = JsonParser.parseString(decoded.substring(b)).getAsJsonArray();
             List<InventoryButton> loaded = new ArrayList<>();
             for (JsonElement el : arr) {
                 InventoryButton btn = null;
@@ -456,7 +456,7 @@ public class GuiInvButtonEditor extends GuiScreen {
                     btn = GSON.fromJson(el.getAsJsonObject(), InventoryButton.class);
                 } else if (el.isJsonPrimitive()) {
                     try {
-                        JsonElement inner = new JsonParser().parse(el.getAsString());
+                        JsonElement inner = JsonParser.parseString(el.getAsString());
                         if (inner.isJsonObject()) btn = GSON.fromJson(inner.getAsJsonObject(), InventoryButton.class);
                     } catch (Exception ignored) {
                     }

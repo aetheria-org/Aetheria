@@ -37,7 +37,7 @@ public class CitManager {
         try {
             IResource res = rm.getResource(new ResourceLocation(rl.getResourceDomain(), rl.getResourcePath() + ".mcmeta"));
             if (res == null) return 1;
-            JsonObject root = new JsonParser().parse(new InputStreamReader(res.getInputStream())).getAsJsonObject();
+            JsonObject root = JsonParser.parseReader(new InputStreamReader(res.getInputStream())).getAsJsonObject();
             if (root.has("animation")) {
                 JsonObject anim = root.getAsJsonObject("animation");
                 if (anim.has(FRAME_TIME_KEY)) return anim.get(FRAME_TIME_KEY).getAsInt();

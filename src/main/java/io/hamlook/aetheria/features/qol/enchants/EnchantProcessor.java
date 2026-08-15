@@ -4,7 +4,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.core.features.qol.EnchantParserConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
+import io.hamlook.aetheria.utils.render.ChromaTextRenderer;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
@@ -29,7 +32,6 @@ import java.util.regex.Pattern;
 public class EnchantProcessor {
 
     private static final Pattern ENCHANTMENT_PATTERN = Pattern.compile("(?<enchant>[A-Za-z][A-Za-z -]+) (?<levelNumeral>[IVXLCDM]+|\\d+)(?=, |$| [\\d,]+$)");
-    private static final Pattern GREY_ENCHANT_PATTERN = Pattern.compile("^(Respiration|Aqua Affinity|Depth Strider|Efficiency).*");
     private static final String COMMA = ", ";
     private static final String GRAY_COMMA = "§7" + COMMA;
 
@@ -54,19 +56,19 @@ public class EnchantProcessor {
         if (enchantNBT != null && enchantNBT.hasNoTags()) return;
 
         List<String> loreList = event.toolTip;
-        if (LORE_CACHE.isCached(loreList)) {
+        if (LORE_CACHE.isCached(loreList) && configSignature().equals(LORE_CACHE.signature)) {
             loreList.clear();
             loreList.addAll(LORE_CACHE.cachedAfter);
             return;
         }
         LORE_CACHE.updateBefore(loreList);
+        LORE_CACHE.signature = configSignature();
         FontRenderer fontRenderer = Minecraft.getMinecraft().fontRendererObj;
 
         boolean isEnchantedBook = "ENCHANTED_BOOK".equals(ItemUtils.getInternalName(event.itemStack));
         int startEnchant = -1, endEnchant = -1, maxTooltipWidth = 0;
 
-        int indexOfLastGreyEnchant = accountForAndRemoveGreyEnchants(loreList, event.itemStack);
-        for (int i = indexOfLastGreyEnchant == -1 ? 0 : indexOfLastGreyEnchant + 1; i < loreList.size(); i++) {
+        for (int i = 0; i < loreList.size(); i++) {
             String line = loreList.get(i);
             String stripped = ColorUtils.stripColor(line);
             if (startEnchant == -1) {
@@ -108,7 +110,7 @@ public class EnchantProcessor {
                 orderedEnchants.add(lastEnchant);
                 containsEnchant = true;
             }
-            if (!containsEnchant && lastEnchant != null) {
+            if (!containsEnchant && lastEnchant != null && !ATHRConfig.feature.qol.enchantParser.hideEnchantDescriptions) {
                 lastEnchant.lore.add(loreList.get(i));
                 hasLore = true;
             }
@@ -147,7 +149,7 @@ public class EnchantProcessor {
         lastLoadedJson = json;
         BY_LORE.clear();
         try {
-            JsonObject root = new JsonParser().parse(json).getAsJsonObject();
+            JsonObject root = JsonParser.parseString(json).getAsJsonObject();
             loadSection(root, "NORMAL", 2);
             loadSection(root, "ULTIMATE", 0);
             loadSection(root, "STACKING", 1);
@@ -176,22 +178,6 @@ public class EnchantProcessor {
         } catch (Exception ignored) {
             return 1;
         }
-    }
-
-    private int accountForAndRemoveGreyEnchants(List<String> tooltip, ItemStack item) {
-        if (item == null || item.getEnchantmentTagList() == null || item.getEnchantmentTagList().tagCount() == 0)
-            return -1;
-
-        int total = 0;
-        for (int i = 1; total < 1 + item.getEnchantmentTagList().tagCount() && i < tooltip.size(); total++) {
-            String line = tooltip.get(i);
-            if (GREY_ENCHANT_PATTERN.matcher(line).matches()) {
-                tooltip.remove(i);
-            } else {
-                i++;
-            }
-        }
-        return -1;
     }
 
     private int correctTooltipWidth(int maxTooltipWidth) {
@@ -270,18 +256,24 @@ public class EnchantProcessor {
 
 
     private String formatColor(EnchantMeta meta, int level) {
-        String color;
-        if (meta.sortType == 0) color = ATHRConfig.feature.qol.enchantParser.enchantUltimateColor;
-        else if (level >= meta.maxLevel) color = ATHRConfig.feature.qol.enchantParser.enchantPerfectColor;
-        else if (level > meta.goodLevel) color = ATHRConfig.feature.qol.enchantParser.enchantGreatColor;
-        else if (level == meta.goodLevel) color = ATHRConfig.feature.qol.enchantParser.enchantGoodColor;
-        else color = ATHRConfig.feature.qol.enchantParser.enchantPoorColor;
+        String color = getTierColor(meta, level);
 
         int argb = ChromaColour.specialToSimpleRGB(color);
         String prefix = nearestMcColor(argb);
-        if (ATHRConfig.feature.qol.enchantParser.enchantChroma && ChromaColour.getSpeed(color) > 0) prefix += "§z";
+        if (ATHRConfig.feature.qol.enchantParser.enchantChroma && ChromaColour.getSpeed(color) > 0) {
+            prefix += "§z";
+            ChromaTextRenderer.setDefaultStyle(ChromaStyle.of(color, ATHRConfig.feature.qol.enchantParser.enchantChromaMode, ATHRConfig.feature.qol.enchantParser.enchantChromaSize));
+        }
         if (meta.sortType == 0) prefix += "§l";
         return prefix;
+    }
+
+    private String getTierColor(EnchantMeta meta, int level) {
+        if (meta.sortType == 0) return ATHRConfig.feature.qol.enchantParser.enchantUltimateColor;
+        if (level >= meta.maxLevel) return ATHRConfig.feature.qol.enchantParser.enchantPerfectColor;
+        if (level > meta.goodLevel) return ATHRConfig.feature.qol.enchantParser.enchantGreatColor;
+        if (level == meta.goodLevel) return ATHRConfig.feature.qol.enchantParser.enchantGoodColor;
+        return ATHRConfig.feature.qol.enchantParser.enchantPoorColor;
     }
 
     private String nearestMcColor(int argb) {
@@ -321,6 +313,11 @@ public class EnchantProcessor {
         return x * x;
     }
 
+    private String configSignature() {
+        EnchantParserConfig c = ATHRConfig.feature.qol.enchantParser;
+        return c.enchantLayout + "|" + c.hideEnchantDescriptions + "|" + c.enchantChroma + "|" + c.enchantChromaMode + "|" + c.enchantChromaSize + "|" + c.enchantPoorColor + "|" + c.enchantGoodColor + "|" + c.enchantGreatColor + "|" + c.enchantPerfectColor + "|" + c.enchantUltimateColor + "|" + ATHRConfig.feature.qol.romanNumerals;
+    }
+
     private String toRoman(int number) {
         int[] values = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
         String[] numerals = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
@@ -354,6 +351,7 @@ public class EnchantProcessor {
     private static class Cache {
         private List<String> cachedBefore = new ArrayList<>();
         private List<String> cachedAfter = new ArrayList<>();
+        private String signature = null;
 
         private void updateBefore(List<String> loreBefore) {
             cachedBefore = new ArrayList<>(loreBefore);
