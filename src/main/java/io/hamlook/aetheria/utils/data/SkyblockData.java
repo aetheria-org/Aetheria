@@ -112,6 +112,15 @@ public final class SkyblockData {
         return Environment.NORMAL;
     }
 
+    public static Environment detectEnvironmentFromScoreboard() {
+        String title = getScoreboardTitle();
+        if (title == null) return Environment.UNKNOWN;
+        String clean = net.minecraft.util.StringUtils.stripControlCodes(title).trim().toUpperCase(Locale.ROOT);
+        if (clean.contains("SANDBOX")) return Environment.SANDBOX;
+        if (clean.startsWith("SKYBLOCK")) return Environment.NORMAL;
+        return Environment.UNKNOWN;
+    }
+
     public static String getIgn() {
         String name = Minecraft.getMinecraft().getSession().getUsername();
         return name == null ? "" : name;
@@ -120,8 +129,9 @@ public final class SkyblockData {
     public static boolean isOnSkyblock() {
         if (getCurrentLocation() != Location.NONE) return true;
         String prefix = TablistParser.getServerPrefix();
-        return prefix != null && !prefix.isEmpty()
-                && (prefix.startsWith("skyblock") || prefix.startsWith("sb"));
+        if (prefix != null && !prefix.isEmpty()
+                && (prefix.startsWith("skyblock") || prefix.startsWith("sb"))) return true;
+        return TablistParser.getScoreboardEnvironment() != Environment.UNKNOWN;
     }
 
     public static boolean isInDungeon() {

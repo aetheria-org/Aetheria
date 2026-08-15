@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
 public class TablistParser {
 
     private static final int TICK_INTERVAL = 20;
+    private static final int FAST_PARSE_INTERVAL = 5;
+    private static final long FAST_PARSE_WINDOW_MS = 3000;
     private static final Ordering<NetworkPlayerInfo> PLAYER_ORDERING = Ordering.from(new PlayerComparator());
     private static final Pattern SB_LEVEL = Pattern.compile("SB Level: \\[(\\d+)\\] (\\d+)/(\\d+) XP");
     @Getter
@@ -47,9 +49,12 @@ public class TablistParser {
     private static int sbMaxXp = 0;
     @Getter
     private static String serverPrefix = "";
+    @Getter
+    private static SkyblockData.Environment scoreboardEnvironment = SkyblockData.Environment.UNKNOWN;
     @Setter
     private static java.util.function.BiConsumer<Long, Long> gemstonePowderChangeListener = null;
     private int tickCounter = 0;
+    private long worldJoinTime = -1;
 
     public static boolean isEventActive(String eventName) {
         return activeEvent != null && activeEvent.contains(eventName);
@@ -110,6 +115,7 @@ public class TablistParser {
     }
 
     private static void parseTablist(Minecraft mc) {
+        scoreboardEnvironment = SkyblockData.detectEnvironmentFromScoreboard();
         GuiPlayerTabOverlay tab = mc.ingameGUI.getTabList();
         List<NetworkPlayerInfo> infos = PLAYER_ORDERING.sortedCopy(mc.thePlayer.sendQueue.getPlayerInfoMap());
 
@@ -262,6 +268,13 @@ public class TablistParser {
             activeEvent = null;
             activeEventTimeLeft = null;
         }
+
+        if (serverPrefix.isEmpty()) {
+            SkyblockData.Environment env = scoreboardEnvironment;
+            if (env != SkyblockData.Environment.UNKNOWN && env != SkyblockData.getEnvironment()) {
+                ProfileDetector.onEnvironmentChanged(SkyblockData.getEnvironment(), env);
+            }
+        }
     }
 
     private static String parseAmount(String raw, String fallback) {
@@ -293,12 +306,19 @@ public class TablistParser {
     @SubscribeEvent
     public void onTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        if ((tickCounter = (tickCounter + 1) % TICK_INTERVAL) != 0) return;
+        int interval = worldJoinTime > 0 && System.currentTimeMillis() - worldJoinTime < FAST_PARSE_WINDOW_MS
+                ? FAST_PARSE_INTERVAL : TICK_INTERVAL;
+        if ((tickCounter = (tickCounter + 1) % interval) != 0) return;
 
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.thePlayer == null) return;
 
         parseTablist(mc);
+    }
+
+    @SubscribeEvent
+    public void onWorldLoad(WorldEvent.Load event) {
+        worldJoinTime = System.currentTimeMillis();
     }
 
     @SubscribeEvent
@@ -314,6 +334,7 @@ public class TablistParser {
         sbMaxXp = 0;
         ElectionUtils.clearTablistMayor();
         serverPrefix = "";
+        scoreboardEnvironment = SkyblockData.Environment.UNKNOWN;
         BankParser.clear();
     }
 
