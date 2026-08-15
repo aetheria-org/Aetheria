@@ -80,10 +80,19 @@ public class AnvilCombineHelper {
             if (slot.slotNumber < chestSize) continue;
             ItemStack stack = slot.getStack();
             if (stack == null) continue;
-            if (targetId.equals(ItemUtils.getInternalName(stack))) {
+            if (targetId.equals(idFromStack(stack))) {
                 highlightedSlots.add(slot.slotNumber);
             }
         }
+    }
+
+    private static String idFromStack(ItemStack stack) {
+        if (stack == null) return null;
+        String internal = ItemUtils.getInternalName(stack);
+        String id = internal.equals("ENCHANTED_BOOK")
+                ? ItemUtils.getEffectiveItemId(stack)
+                : internal;
+        return id.isEmpty() ? null : id;
     }
 
     private static String idFromContainerSlot(ContainerChest container, int index) {
@@ -91,8 +100,8 @@ public class AnvilCombineHelper {
             if (slot.slotNumber == index) {
                 ItemStack stack = slot.getStack();
                 if (stack == null) return null;
-                String id = ItemUtils.getInternalName(stack);
-                return id.isEmpty() ? null : id;
+                String id = idFromStack(stack);
+                return id == null ? null : id;
             }
         }
         return null;
