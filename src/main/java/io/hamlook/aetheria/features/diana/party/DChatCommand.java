@@ -9,6 +9,8 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 
+import java.util.concurrent.CompletableFuture;
+
 @RegisterCommand
 public class DChatCommand extends ASMCommand {
 
@@ -32,7 +34,12 @@ public class DChatCommand extends ASMCommand {
                 "§cDiana Party chat requires your account to be Synced (use /sync) or to be on SkyBlock.",
                 () -> {
                     String message = String.join(" ", args);
-                    DianaPartyConnector.sendMessage(message).thenAccept(response -> {
+                    CompletableFuture<String> future = DianaPartyConnector.sendMessage(message);
+                    if(future == null){
+                        ChatUtils.sendMessage("§cYou are not connected to the API, dear user, please try again.");
+                        return;
+                    }
+                    future.thenAccept(response -> {
                         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
                         int code = json.getAsJsonObject("data").get("code").getAsInt();
                         if(code != 200){

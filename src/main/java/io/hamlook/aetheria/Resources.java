@@ -63,6 +63,15 @@ public final class Resources {
 
     public static final ResourceLocation DEFAULT_MAP_ICONS = new ResourceLocation("textures/map/map_icons.png");
 
+    public static final ResourceLocation DUNGEON_MAP_CHECK_GREEN = new ResourceLocation("aetheria", "dungeons/map/default/green_check.png");
+    public static final ResourceLocation DUNGEON_MAP_CHECK_WHITE = new ResourceLocation("aetheria", "dungeons/map/default/white_check.png");
+    public static final ResourceLocation DUNGEON_MAP_CHECK_CROSS = new ResourceLocation("aetheria", "dungeons/map/default/cross.png");
+    public static final ResourceLocation DUNGEON_MAP_CHECK_QUESTION = new ResourceLocation("aetheria", "dungeons/map/default/question.png");
+    public static final ResourceLocation DUNGEON_MAP_CHECK_NEU_GREEN = new ResourceLocation("aetheria", "dungeons/map/neu/green_check.png");
+    public static final ResourceLocation DUNGEON_MAP_CHECK_NEU_WHITE = new ResourceLocation("aetheria", "dungeons/map/neu/white_check.png");
+    public static final ResourceLocation DUNGEON_MAP_CHECK_NEU_CROSS = new ResourceLocation("aetheria", "dungeons/map/neu/cross.png");
+    public static final ResourceLocation DUNGEON_MAP_CHECK_NEU_QUESTION = new ResourceLocation("aetheria", "dungeons/map/neu/question.png");
+
     public static final int BETTER_CONTAINERS_STYLE_COUNT = 7;
     public static final ResourceLocation BETTER_CONTAINERS_DYNAMIC = new ResourceLocation("aetheria", "dynamic/better_containers");
     public static final int STORAGE_STYLE_COUNT = 5;

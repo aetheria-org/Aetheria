@@ -1,6 +1,8 @@
 package io.hamlook.aetheria.utils.overlay;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
 import io.hamlook.aetheria.utils.Position;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
@@ -10,6 +12,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.List;
+import java.util.function.IntUnaryOperator;
 
 public abstract class Overlay {
 
@@ -47,6 +50,110 @@ public abstract class Overlay {
         }
     }
 
+    public static void drawRoundedRectBorder(int x, int y, int w, int h, int r, int t, int color) {
+        if (t <= 0) return;
+        r = Math.min(r, Math.min(w - x, h - y) / 2);
+        int width = w - x;
+        int height = h - y;
+
+        if (width - 2 * r > 0) {
+            Gui.drawRect(x + r, y, w - r, y + t, color);
+            Gui.drawRect(x + r, h - t, w - r, h, color);
+        }
+        if (height - 2 * r > 0) {
+            Gui.drawRect(x, y + r, x + t, h - r, color);
+            Gui.drawRect(w - t, y + r, w, h - r, color);
+        }
+        if (r <= 0) return;
+
+        int ri = Math.max(r - t, 0);
+        int innerW = width - 2 * t;
+        for (int i = 0; i < r; i++) {
+            int co = cornerCut(r, i);
+            int cl = x + i;
+            int cr = x + width - 1 - i;
+            if (i >= t && innerW > 0) {
+                int ci = cornerCut(ri, i - t);
+                Gui.drawRect(cl, y + co, cl + 1, y + t + ci, color);
+                Gui.drawRect(cl, h - t - ci, cl + 1, h - co, color);
+                Gui.drawRect(cr, y + co, cr + 1, y + t + ci, color);
+                Gui.drawRect(cr, h - t - ci, cr + 1, h - co, color);
+            } else {
+                Gui.drawRect(cl, y + co, cl + 1, h - co, color);
+                Gui.drawRect(cr, y + co, cr + 1, h - co, color);
+            }
+        }
+    }
+
+    public static void drawRoundedRectBorderFlow(int x, int y, int w, int h, int r, int t, ChromaStyle style) {
+        int base = style.toArgb();
+        int mode = style.getMode();
+        float size = style.getSize();
+        drawRoundedRing(x, y, w, h, r, t, columnX -> ChromaColour.applyChromaShift(base, columnX, 0, mode, size));
+    }
+
+    public static void drawRoundedRectFlow(int x, int y, int w, int h, int r, ChromaStyle style) {
+        int base = style.toArgb();
+        int mode = style.getMode();
+        float size = style.getSize();
+        r = Math.min(r, Math.min(w - x, h - y) / 2);
+        int width = w - x;
+        for (int i = 0; i < width; i++) {
+            int top = y + Math.max(cornerCut(r, i), cornerCut(r, width - 1 - i));
+            int bot = h - Math.max(cornerCut(r, i), cornerCut(r, width - 1 - i));
+            if (top < bot) {
+                Gui.drawRect(x + i, top, x + i + 1, bot, ChromaColour.applyChromaShift(base, x + i, 0, mode, size));
+            }
+        }
+    }
+
+    private static void drawRoundedRing(int x, int y, int w, int h, int r, int t, IntUnaryOperator colorForColumn) {
+        if (t <= 0) return;
+        r = Math.min(r, Math.min(w - x, h - y) / 2);
+        int width = w - x;
+        if (r <= 0) {
+            for (int i = 0; i < width; i++) {
+                int color = colorForColumn.applyAsInt(x + i);
+                if (i < t || i >= width - t) {
+                    Gui.drawRect(x + i, y, x + i + 1, h, color);
+                } else {
+                    Gui.drawRect(x + i, y, x + i + 1, y + t, color);
+                    Gui.drawRect(x + i, h - t, x + i + 1, h, color);
+                }
+            }
+            return;
+        }
+        int ri = Math.max(r - t, 0);
+        int innerW = width - 2 * t;
+        for (int i = 0; i < r; i++) {
+            int co = cornerCut(r, i);
+            int cl = x + i;
+            int cr = x + width - 1 - i;
+            int colorL = colorForColumn.applyAsInt(cl);
+            int colorR = colorForColumn.applyAsInt(cr);
+            if (i >= t && innerW > 0) {
+                int ci = cornerCut(ri, i - t);
+                Gui.drawRect(cl, y + co, cl + 1, y + t + ci, colorL);
+                Gui.drawRect(cl, h - t - ci, cl + 1, h - co, colorL);
+                Gui.drawRect(cr, y + co, cr + 1, y + t + ci, colorR);
+                Gui.drawRect(cr, h - t - ci, cr + 1, h - co, colorR);
+            } else {
+                Gui.drawRect(cl, y + co, cl + 1, h - co, colorL);
+                Gui.drawRect(cr, y + co, cr + 1, h - co, colorR);
+            }
+        }
+        for (int i = r; i < width - r; i++) {
+            int color = colorForColumn.applyAsInt(x + i);
+            Gui.drawRect(x + i, y, x + i + 1, y + t, color);
+            Gui.drawRect(x + i, h - t, x + i + 1, h, color);
+        }
+    }
+
+    private static int cornerCut(int r, int d) {
+        if (r <= 0 || d >= r) return 0;
+        return (int) Math.round(r - Math.sqrt(Math.max(0.0, (double) r * r - (double) (r - d - 1) * (r - d - 1))));
+    }
+
     public int getOverlayWidth() {
         return lastW;
     }
@@ -77,10 +184,7 @@ public abstract class Overlay {
         sr = event.resolution;
         if (ATHRConfig.feature == null || !isEnabled()) return;
         if (applyOverlayHideGate()) {
-            boolean shouldHide = (hideOnChat() && OverlayUtils.isChatOpen())
-                || (hideOnTab() && OverlayUtils.isTabHeld())
-                || (hideOnDebug() && OverlayUtils.isDebugActive())
-                || OverlayUtils.isStorageActive();
+            boolean shouldHide = (hideOnChat() && OverlayUtils.isChatOpen()) || (hideOnTab() && OverlayUtils.isTabHeld()) || (hideOnDebug() && OverlayUtils.isDebugActive()) || OverlayUtils.isStorageActive();
             if (shouldHide) return;
         }
         render(false);
@@ -90,9 +194,17 @@ public abstract class Overlay {
         return true;
     }
 
-    protected boolean hideOnChat()   { return true; }
-    protected boolean hideOnTab()    { return true; }
-    protected boolean hideOnDebug()  { return true; }
+    protected boolean hideOnChat() {
+        return true;
+    }
+
+    protected boolean hideOnTab() {
+        return true;
+    }
+
+    protected boolean hideOnDebug() {
+        return true;
+    }
 
     public void render(boolean preview) {
         if (!preview && !extraGuard()) return;

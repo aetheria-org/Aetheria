@@ -43,6 +43,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
     public void onOpen(ServerHandshake handshakedata) {
         isConnected = true;
         connecting = false;
+        GlobalChat.onSocketConnected();
     }
 
     @Override

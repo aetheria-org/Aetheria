@@ -1,7 +1,9 @@
 package io.hamlook.aetheria.features.dungeons.overlays;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.core.features.dungeons.DungeonMapConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapGrid;
 import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapRenderer;
@@ -9,7 +11,6 @@ import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonPlayerTracker;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomDetector;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
-import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
@@ -17,19 +18,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.storage.MapData;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RegisterEvents
 public class DungeonMapOverlay extends Overlay {
@@ -97,7 +95,8 @@ public class DungeonMapOverlay extends Overlay {
             float headSize = headScale * 8f;
             float half = headSize / 2f;
             float cx = pixelX + half;
-            float cy = (pixelZ - headSize) + ATHRConfig.feature.dungeons.dungeonMapConfig.nameOffset;
+            float mapScale = Math.max(ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.scale, 0.01f);
+            float cy = (pixelZ - headSize) + ATHRConfig.feature.dungeons.dungeonMapConfig.players.nameOffset / mapScale;
 
             float nameWidth = stringWidth * scale;
             float nameX = cx - nameWidth / 2f;
@@ -111,7 +110,32 @@ public class DungeonMapOverlay extends Overlay {
         GlStateManager.popMatrix();
     }
 
-    public static void renderPlayerHead(float x, float y, int color, float scale, NetworkPlayerInfo info, float rotation) {
+    public static void renderRoomName(float pixelX, float pixelZ, float scale, String name, int color) {
+        if (name == null || name.isEmpty()) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        String[] words = name.split(" ");
+        if (words.length == 0) return;
+        int fontHeight = mc.fontRendererObj.FONT_HEIGHT + 1;
+
+        GlStateManager.pushMatrix();
+        GlStateManager.enableBlend();
+        GlStateManager.enableAlpha();
+        GlStateManager.enableTexture2D();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.translate(pixelX, pixelZ, 0f);
+        GlStateManager.scale(scale, scale, 1.0f);
+        float yTextOffset = words.length * fontHeight / -2f;
+        for (int i = 0; i < words.length; i++) {
+            String word = words[i];
+            mc.fontRendererObj.drawString(word, (int) (-mc.fontRendererObj.getStringWidth(word) / 2f), (int) (yTextOffset + i * fontHeight), color, true);
+        }
+        GlStateManager.popMatrix();
+    }
+
+    public static void renderPlayerHead(float x, float y, int color, float scale, ResourceLocation skin, float rotation) {
+        if (skin == null) {
+            skin = DefaultPlayerSkin.getDefaultSkinLegacy();
+        }
         int alpha = (color >> 24) & 0xFF;
         float headAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
         Minecraft mc = Minecraft.getMinecraft();
@@ -125,7 +149,7 @@ public class DungeonMapOverlay extends Overlay {
         GlStateManager.translate(cx, cy, 0f);
         GlStateManager.rotate(rotation, 0f, 0f, 1f);
         GlStateManager.translate(-cx, -cy, 0f);
-        mc.getTextureManager().bindTexture(info.getLocationSkin());
+        mc.getTextureManager().bindTexture(skin);
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
         GlStateManager.color(1.0f, 1.0f, 1.0f, headAlpha);
         Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 8f, 8f, 8, 8, (int) (scale * 8), (int) (scale * 8), 64f, 64f);
@@ -153,83 +177,87 @@ public class DungeonMapOverlay extends Overlay {
         EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
         if (player == null) return;
 
-        DungeonMapGrid.cellSizeBlocks = ATHRConfig.feature.dungeons.dungeonMapConfig.cellSizeBlocks;
+        DungeonMapConfig cfg = ATHRConfig.feature.dungeons.dungeonMapConfig;
 
         if ((playerTracker.getPlayerNames().isEmpty() || player.ticksExisted - lastPopulateTick >= 40) && player.ticksExisted % 20 == 0) {
             playerTracker.populate();
             lastPopulateTick = player.ticksExisted;
-            if (ATHRConfig.feature.debug.dungeonMapDebug) {
-                ChatUtils.sendMessage("§7[§6MapDebug§7] Populated " + playerTracker.getPlayerNames().size() + " players: " +
-                    String.join(", ", playerTracker.getPlayerNames()));
-            }
         }
 
         MapData info = getDungeonMap(player);
         if (info != null) {
             if (!Arrays.equals(info.colors, lastMapColors)) {
                 lastMapColors = Arrays.copyOf(info.colors, info.colors.length);
-                cachedGrid = DungeonMapGrid.parse(info);
+                cachedGrid = DungeonMapGrid.parse(info, cfg.appearance.cellSizeBlocks);
                 if (cachedGrid.isValid()) {
                     if (!spawnRecorded && DungeonRoomDetector.roomBoundsValid && DungeonRoomDetector.originBlock != null) {
                         entranceCenterX = (DungeonRoomDetector.roomMinX + DungeonRoomDetector.roomMaxX) / 2.0 + 0.5;
                         entranceCenterZ = (DungeonRoomDetector.roomMinZ + DungeonRoomDetector.roomMaxZ) / 2.0 + 0.5;
-                        DungeonMapGrid.worldOriginX = DungeonMapGrid.entrancePixelCenterX / DungeonMapGrid.blockToPixel - (float) entranceCenterX;
-                        DungeonMapGrid.worldOriginZ = DungeonMapGrid.entrancePixelCenterZ / DungeonMapGrid.blockToPixel - (float) entranceCenterZ;
+                        cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) entranceCenterX;
+                        cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) entranceCenterZ;
                         spawnRecorded = true;
                     }
                     if (spawnRecorded) {
-                        DungeonMapGrid.worldOriginX = DungeonMapGrid.entrancePixelCenterX / DungeonMapGrid.blockToPixel - (float) entranceCenterX;
-                        DungeonMapGrid.worldOriginZ = DungeonMapGrid.entrancePixelCenterZ / DungeonMapGrid.blockToPixel - (float) entranceCenterZ;
+                        cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) entranceCenterX;
+                        cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) entranceCenterZ;
                     } else {
-                        DungeonMapGrid.worldOriginX = DungeonMapGrid.entrancePixelCenterX / DungeonMapGrid.blockToPixel - (float) player.posX;
-                        DungeonMapGrid.worldOriginZ = DungeonMapGrid.entrancePixelCenterZ / DungeonMapGrid.blockToPixel - (float) player.posZ;
+                        cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) player.posX;
+                        cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) player.posZ;
                     }
                     int maxPixelX = 128;
                     int maxPixelY = 128;
                     for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : cachedGrid.getRooms().entrySet()) {
-                        int rx = (int) cachedGrid.gridToPixelX(entry.getKey().x) + cachedGrid.getRoomPixelSize();
-                        int ry = (int) cachedGrid.gridToPixelZ(entry.getKey().y) + cachedGrid.getRoomPixelSize();
+                        int rx = (int) cachedGrid.gridToPixelX(entry.getKey().x) + cachedGrid.getRoomPixelSize() + cachedGrid.getConnectorPixelSize();
+                        int ry = (int) cachedGrid.gridToPixelZ(entry.getKey().y) + cachedGrid.getRoomPixelSize() + cachedGrid.getConnectorPixelSize();
                         if (rx > maxPixelX) maxPixelX = rx;
                         if (ry > maxPixelY) maxPixelY = ry;
                     }
                     lastW = maxPixelX;
                     lastH = maxPixelY;
-                } else if (ATHRConfig.feature.debug.dungeonMapDebug) {
-                    ChatUtils.sendMessage("§7[§6MapDebug§7] " + cachedGrid.debugInfo);
                 }
             }
-        } else if (ATHRConfig.feature.debug.dungeonMapDebug) {
-            ChatUtils.sendMessage("§7[§6MapDebug§7] getDungeonMap() returned null");
         }
 
-        if (ATHRConfig.feature.debug.dungeonMapDebug && player.ticksExisted % 20 == 0) {
-            for (String name : playerTracker.getPlayerNames()) {
-                float[] pos = playerTracker.getPosition(name);
-                String pstr = (pos != null) ? String.format("%.1f,%.1f", pos[0], pos[1]) : "no pos";
-                EntityPlayer ep = playerTracker.getEntity(name);
-                String estate = (ep != null && !ep.isDead) ? "alive" : "decor";
-                ChatUtils.sendMessage("§7[§6MapDebug§7] " + name +
-                    " | pixel: " + pstr +
-                    " | src: " + estate +
-                    " | origin: " + String.format("%.1f", DungeonMapGrid.worldOriginX) + "," + String.format("%.1f", DungeonMapGrid.worldOriginZ));
-            }
-        }
+        if (info == null && !preview) return;
 
         float scale = getScale();
-        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+        ScaledResolution sr = Overlay.sr != null ? Overlay.sr : new ScaledResolution(Minecraft.getMinecraft());
         Position pos = getPosition();
 
         int gridW = lastW;
         int gridH = lastH;
+        float scaledW = gridW * scale;
+        float scaledH = gridH * scale;
 
-        int cx = pos.getAbsX(sr, gridW);
-        int cy = pos.getAbsY(sr, gridH);
-        if (pos.isCenterX()) cx += gridW / 2;
-        if (pos.isCenterY()) cy += gridH / 2;
+        int cx = pos.getAbsX(sr, (int) scaledW);
+        int cy = pos.getAbsY(sr, (int) scaledH);
+        if (pos.isCenterX()) cx += (int) scaledW / 2;
+        if (pos.isCenterY()) cy += (int) scaledH / 2;
+
+        int bx = (int) (cx - scaledW / 2f) - 4;
+        int by = (int) (cy - scaledH / 2f) - 4;
+        int bw = (int) (cx + scaledW / 2f) + 4;
+        int bh = (int) (cy + scaledH / 2f) + 4;
+        int radius = getCornerRadius();
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0) {
-            Overlay.drawRoundedRect(cx - gridW / 2 - 4, cy - gridH / 2 - 4, cx + gridW / 2 + 4, cy + gridH / 2 + 4, getCornerRadius(), bgColor);
+            if (cfg.appearance.bgFlowChroma) {
+                Overlay.drawRoundedRectFlow(bx, by, bw, bh, radius, ChromaStyle.of(cfg.appearance.bgColor, 1, cfg.appearance.border.flowChromaSize));
+            } else {
+                Overlay.drawRoundedRect(bx, by, bw, bh, radius, bgColor);
+            }
+        }
+
+        if (cfg.appearance.border.borderEnabled) {
+            int borderColor = ChromaColour.specialToChromaRGB(cfg.appearance.border.borderColor);
+            if ((borderColor >>> 24) != 0) {
+                if (cfg.appearance.border.borderFlowChroma) {
+                    Overlay.drawRoundedRectBorderFlow(bx, by, bw, bh, radius, cfg.appearance.border.borderThickness, ChromaStyle.of(cfg.appearance.border.borderColor, 1, cfg.appearance.border.flowChromaSize));
+                } else {
+                    Overlay.drawRoundedRectBorder(bx, by, bw, bh, radius, cfg.appearance.border.borderThickness, borderColor);
+                }
+            }
         }
 
         if (preview) {
@@ -237,8 +265,8 @@ public class DungeonMapOverlay extends Overlay {
             int tw = Minecraft.getMinecraft().fontRendererObj.getStringWidth(txt);
             Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(txt, cx - tw / 2f, cy - 4f, 0xFFFFFFFF);
         } else if (cachedGrid != null && cachedGrid.isValid()) {
-            playerTracker.matchDecorations(info != null ? info.mapDecorations : null);
-            DungeonMapRenderer.render(cachedGrid, cx, cy, scale, player, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms());
+            playerTracker.matchDecorations(info.mapDecorations);
+            DungeonMapRenderer.render(cachedGrid, cx, cy, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms());
         }
     }
 
@@ -254,17 +282,17 @@ public class DungeonMapOverlay extends Overlay {
 
     @Override
     public float getScale() {
-        return ATHRConfig.feature.dungeons.dungeonMapConfig.scale;
+        return ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.scale;
     }
 
     @Override
     public int getBgColor() {
-        return ChromaColour.specialToChromaRGB(ATHRConfig.feature.dungeons.dungeonMapConfig.bgColor);
+        return ChromaColour.specialToChromaRGB(ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.bgColor);
     }
 
     @Override
     public int getCornerRadius() {
-        return ATHRConfig.feature.dungeons.dungeonMapConfig.cornerRadius;
+        return ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.cornerRadius;
     }
 
     @Override

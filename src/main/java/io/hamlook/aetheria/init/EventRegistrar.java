@@ -10,6 +10,8 @@ import net.minecraftforge.fml.client.registry.ClientRegistry;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,6 +31,24 @@ import java.util.List;
 public class EventRegistrar {
 
     private static final String BASE_PACKAGE = "io.hamlook.aetheria";
+
+    private static final List<Object> REGISTERED_EVENT_INSTANCES = new ArrayList<>();
+
+    public static List<Object> getRegisteredEventInstances() {
+        return Collections.unmodifiableList(REGISTERED_EVENT_INSTANCES);
+    }
+
+    public static void stopAllListeners() {
+        for (Object instance : REGISTERED_EVENT_INSTANCES) {
+            MinecraftForge.EVENT_BUS.unregister(instance);
+        }
+    }
+    public static void reloadAllListeners() {
+        for (Object instance : REGISTERED_EVENT_INSTANCES) {
+            MinecraftForge.EVENT_BUS.unregister(instance);
+            MinecraftForge.EVENT_BUS.register(instance);
+        }
+    }
 
     /**
      * Scans the classpath, loads every discovered class, and attempts each of the
@@ -52,7 +72,9 @@ public class EventRegistrar {
     private static void tryRegisterEvents(Class<?> clazz) {
         if (!clazz.isAnnotationPresent(RegisterEvents.class)) return;
         try {
-            MinecraftForge.EVENT_BUS.register(newInstance(clazz));
+            Object instance = newInstance(clazz);
+            MinecraftForge.EVENT_BUS.register(instance);
+            REGISTERED_EVENT_INSTANCES.add(instance);
         } catch (Throwable t) {
             Aetheria.logger.severe("[ATHR] Failed to register events for " + clazz.getName() + ": " + t.getMessage());
         }
@@ -99,6 +121,7 @@ public class EventRegistrar {
                     ClientCommandHandler.instance.registerCommand((ICommand) instance);
                 } else {
                     MinecraftForge.EVENT_BUS.register(instance);
+                    REGISTERED_EVENT_INSTANCES.add(instance);
                 }
             } catch (Throwable t) {
                 Aetheria.logger.severe("[ATHR] Failed to register instance field: " + field.getName() + ": " + t.getMessage());

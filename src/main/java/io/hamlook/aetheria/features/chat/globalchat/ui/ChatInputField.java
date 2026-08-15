@@ -557,7 +557,9 @@ public class ChatInputField extends Gui {
 
     private void drawInlineEmoji(String url, String name, int x, int y) {
         if (url == null || url.isEmpty()) return;
-        if (name != null && RenderUtils.drawEmoji(name, x, y, DiscordMarkdown.EMOJI_SIZE)) return;
+        IEmoji known = name == null ? null : GlobalChat.usableEmojis.get(name);
+        boolean isDefault = known != null && known.surrogates != null && !known.surrogates.isEmpty();
+        if (isDefault && RenderUtils.drawEmoji(name, x, y, DiscordMarkdown.EMOJI_SIZE)) return;
         String id = emojiImageCache.get(url);
         if (id == null) {
             id = GCImage.createGCImage(url, false);

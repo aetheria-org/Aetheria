@@ -49,6 +49,14 @@ public class PerformanceHUD extends Overlay {
         instance = this;
     }
 
+    public static float getCurrentTps() {
+        return currentTps;
+    }
+
+    public static double getPingMs() {
+        return pingMs;
+    }
+
     private static String formatPing() {
         return pingMs < 0 ? "..." : String.format("%.0fms", pingMs);
     }
