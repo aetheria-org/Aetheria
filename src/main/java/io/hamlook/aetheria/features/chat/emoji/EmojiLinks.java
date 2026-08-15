@@ -46,7 +46,7 @@ public class EmojiLinks {
     }
 
     public static ResourceLocation getSpriteResource(String sprite){
-        return new ResourceLocation(BASE_RESOURCE, sprite);
+        return new ResourceLocation(BASE_RESOURCE, "emojis/" + sprite);
     }
 
     public static String getEmojiJSON() {

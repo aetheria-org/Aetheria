@@ -457,7 +457,11 @@ public class ConfigEditor extends GuiElement {
             } else {
                 catName = EnumChatFormatting.GRAY + cat.name;
             }
-            fr.drawString(catName, innerLeft + 9 + BASE_INDENT, y + 70 + catY, -1);
+            boolean hasChildren = !cat.subcategories.isEmpty();
+            boolean catOpen = categoriesWithTreeOpen.contains(catKey);
+            String indicator = hasChildren ? (catOpen ? "▼ " : "▶ ") : "  ";
+            String indicatorColor = hasChildren ? (catOpen ? EnumChatFormatting.WHITE.toString() : EnumChatFormatting.GRAY.toString()) : EnumChatFormatting.RESET.toString();
+            fr.drawString(indicatorColor + indicator + catName, innerLeft + 9 + BASE_INDENT, y + 70 + catY, -1);
             catY += 15;
 
             Set<List<String>> paths = getExpandedPaths(catKey);
