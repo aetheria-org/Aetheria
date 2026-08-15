@@ -170,9 +170,9 @@ public class ATHRConfig {
         return null;
     }
 
-    public static void saveConfig() {
-        if (feature == null || configFile == null) return;
-        StorageManager.saveAtomic(configFile, feature, GsonBuilder.GSON_STRICT);
+    public static boolean saveConfig() {
+        if (feature == null || configFile == null) return false;
+        return StorageManager.saveAtomic(configFile, feature, GsonBuilder.GSON_STRICT);
     }
 
     public static void markConfigDirty() {
@@ -183,8 +183,11 @@ public class ATHRConfig {
     private static void flushConfigIfDirty() {
         if (configDirty && feature != null && configFile != null
                 && System.currentTimeMillis() - lastSaveRequestMs >= CONFIG_SAVE_DEBOUNCE_MS) {
-            configDirty = false;
-            saveConfig();
+            if (saveConfig()) {
+                configDirty = false;
+            } else {
+                lastSaveRequestMs = System.currentTimeMillis();
+            }
         }
     }
 
@@ -200,7 +203,6 @@ public class ATHRConfig {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 if (configDirty) {
-                    configDirty = false;
                     saveConfig();
                 }
             } catch (Exception ignored) {}

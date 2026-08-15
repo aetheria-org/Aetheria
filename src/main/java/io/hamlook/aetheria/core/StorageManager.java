@@ -169,10 +169,10 @@ public enum StorageManager {
     /**
      * Atomically saves an object to disk using a .tmp → rename pattern.
      * Verifies the write before committing. On failure, leaves the original
-     * file untouched.
+     * file untouched and returns {@code false}.
      */
-    public static void saveAtomic(File file, Object data, Gson gson) {
-        if (file == null) return;
+    public static boolean saveAtomic(File file, Object data, Gson gson) {
+        if (file == null) return false;
         file.getParentFile().mkdirs();
         File tmp = new File(file.getParentFile(), file.getName() + ".tmp");
         try (Writer w = new BufferedWriter(new OutputStreamWriter(
@@ -184,7 +184,7 @@ public enum StorageManager {
             System.err.println("[ATHR] Failed to write " + tmp.getName() + ": " + e.getMessage());
             CrashLog.report(file, "saving", "write failed: " + e.getMessage());
             tmp.delete();
-            return;
+            return false;
         }
 
         // verify the written tmp actually parses before committing
@@ -194,7 +194,7 @@ public enum StorageManager {
             System.err.println("[ATHR] Refusing to commit " + tmp.getName() + " — write verification failed: " + e.getMessage());
             CrashLog.report(file, "saving", "write verification failed: " + e.getMessage());
             tmp.delete();
-            return;
+            return false;
         }
 
         // fsync so a hard crash cannot leave a zero-filled file behind the atomic rename
@@ -215,7 +215,9 @@ public enum StorageManager {
             System.err.println("[ATHR] Failed to commit " + file.getName() + ": " + e.getMessage());
             CrashLog.report(file, "saving", "commit failed: " + e.getMessage());
             tmp.delete();
+            return false;
         }
+        return true;
     }
 
     private static void backupCorrupted(File file) {
