@@ -49,6 +49,7 @@ Aetheria's Skyblock Mod 1.2.0: major performance improvements, farming features,
 - Reworked SkyBlock XP in Chat to accurately show SB XP updates
 - Reworked Pristine and Powder Trackers for better performance
 - Added Show Rates as Rough for Pristine Tracker
+- Fixed AQnvil Combine Helper highlighting every enchant
 
 ### Performance
 
