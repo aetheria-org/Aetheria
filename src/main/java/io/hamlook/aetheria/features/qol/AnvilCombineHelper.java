@@ -100,8 +100,7 @@ public class AnvilCombineHelper {
             if (slot.slotNumber == index) {
                 ItemStack stack = slot.getStack();
                 if (stack == null) return null;
-                String id = idFromStack(stack);
-                return id == null ? null : id;
+                return idFromStack(stack);
             }
         }
         return null;
