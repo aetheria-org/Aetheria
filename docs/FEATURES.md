@@ -40,15 +40,17 @@
 - **SkyBlock XP in Chat** — Sends SkyBlock XP gains from the action bar into chat. *(Needs server support)*
 - **DVD Screensaver** — Adds a bouncing DVD logo screensaver.
 - **Hoppity Rabbit Highlight** — Highlights NEW rabbits in Hoppity.
-- **ATHRProtect** — Item protection system. Use `/asmprotect` while holding an item to protect it.
+- **ASMProtect** — Item protection system. Use `/asmprotect` while holding an item to protect it.
 - **Sign Calculator** — Advanced calculator with expression support in signs.
 - **Timer** — `/asmtimer 1h30m` Countdown timer HUD with pause, resume, and cancel.
 - **Item List & Recipe Viewer** — Browse SkyBlock items and view their crafting recipes in-game.
 - **Player Join/Leave Notifier** — Alerts when watched players join or leave; custom messages per player.
 - **Bazaar Order Highlights** — Highlights filled sell orders in gold and buy orders in green.
-- **Ghost Tracker** — Tracks ghost kills, drops (Sorrow, Volta, Plasma, etc.), magic find, and scavenger coins in the Dwarven Mines / The Mist with a configurable HUD overlay.
+- **Ghost Tracker** — `/ghosttracker` — Tracks ghost kills, drops (Sorrow, Volta, Plasma, etc.), magic find, and scavenger coins in the Dwarven Mines / The Mist with a configurable HUD overlay.
 - **Item Log Alerts** — On-screen alerts when configured items are picked up; choose Always or First-Time-Only mode.
 - **Item Prices** — Community-driven price database. Dynamically fetches and displays item prices from the community API (auction & bazaar). Configurable detail level (Latest / 24h / 1 Week / 1 Month), optionally show prices only while holding a key, and optionally submit parsed data to the shared price database. Powers profit estimates across the mod.
+- **Kill Combo Tracker** — `/killcombo` — Tracks your current and highest kill combo with magic find, coins per kill, and combat wisdom lines.
+- **Incompatible Mods Warning** — Notifies when incompatible mods are installed and what they break (SkyblockAddons breaks the enchant parser and enchant chroma; Patcher may break enchant chroma). `/athrignoreincompat ignore|reset|list [modId]` hides or manages warnings.
 
 
 ## Dungeons
@@ -63,6 +65,7 @@
 - **Secret Finder** — Highlights dungeon secrets (chests, levers, superboom, essences, fairy souls, wither essence) with labels, waypoints, tracers, and bounding boxes. Configurable colors and range detection.
 - **Dungeon Map** — Custom overlay showing dungeon rooms, player heads with names/ranks, and visited room labels.
 - **Dungeon Chest Price Estimator** — Estimates profit or loss on dungeon reward chests using the community price API, with an analyzer overlay that highlights the best-value chest.
+- **Secret Reports** — `/report-secret` — Report a wrong secret location from the current dungeon room.
 
 
 ## Mining
@@ -73,6 +76,12 @@
 - **HOTM Powder Display** — Adds powder spent vs. max cost to HOTM perk tooltips; hold Shift to see the cost for the next 10 levels.
 - **Commission Highlight** — Highlights completed commissions in green inside the Commissions menu.
 - **Pickobulus Preview** — Shows a wireframe cube previewing the blast radius before activating Pickobulus.
+- **Powder Mining Chat Filter** — Hides powder mining reward popups and chat lines in the Crystal Hollows.
+  - Chest unlocked / already looted and breaking-power warnings
+  - Compact messages and reward wrapper lines (separators, headers)
+  - Powder and essence lines, each with an amount threshold
+  - Gemstone drops with a tier filter (Rough / Flawed / etc.)
+  - Special drops: Oil Barrel, Ascension Rope, Wishing Compass, Jungle Heart, Prehistoric Egg, Pickonimbus 2000, Sludge Juice, Yoggie, Robot Parts, Treasurite
 
 
 ## Fishing
@@ -94,12 +103,28 @@
 - **Inquisitor HP Overlay** — Live HP bar for the nearest Minos Inquisitor.
 - **Diana Mob HP Overlay** — Live HP bar for the nearest non-inquisitor Diana mob.
 - **Profit Estimate** — Live profit calculation for all Diana drops (Chimeras, Daedalus Sticks, Feathers, etc.) using community price data, displayed in the Loot Overlay.
+- **Diana Party Finder** — `/dparty <join|create|leave|disband|transfer|kick|setpass|list>` — Cross-server Diana party system with a GUI. Party chat via `/dpc <message>`.
 
 
 ## Farming
 
-- **Lock Mouse** — Locks your yaw and pitch so you don't accidentally move the camera while farming.
+- **Lock Mouse** — Locks your yaw and pitch so you don't accidentally move the camera while farming. Shows a lock icon and unlock hint when active.
 - **BPS Overlay** — Shows blocks broken per second while farming.
+- **Trevor Solver** — Highlights possible spawn spots when Trevor gives you a hunt and marks the animal once it spawns.
+  - Spot color and distance labels
+  - Animal beacon beam with custom color
+  - First-detect title/chat alert
+  - Trapper warp helper: press the warp key within 5 seconds after a kill to run /warp trapper
+- **Pelt Tracker** — Overlay tracking pelts earned this session and your pelts/hour rate; reposition and reset from the config.
+- **Farming Tracker** — `/asmfarming` — Tracks crop counts and coin value with a per-hour rate.
+  - Require farming location (Barn, Private Island, Garden)
+  - Keep tracker across sessions
+  - Configurable display lines and overlay scale/colors
+- **Organic Matter Tracker** — `/asmorganicmatter` — Tracks Organic Matter and items/hour.
+  - Choose which crops count (incl. Seeds, Squash, Cropie, Fermento)
+  - Configurable display lines and overlay scale/colors
+- **Sensitivity Reducer** — Reduces your mouse sensitivity while holding a crop farming tool (Melon Dicer, Pumpkin Dicer, etc.); configurable percentage and optional farming-island requirement.
+- **Precise Yaw/Pitch Overlay** — Live pitch/yaw HUD; configurable label color, position, and scale.
 
 
 ## Scoreboard
@@ -122,6 +147,7 @@
 - **Transparent Chat** — Makes the chat background fully transparent.
 - **Animated Chat** — New messages slide into view.
 - **Chat Ping** - Play a sound and highlight the message when your name is mentioned in chat.
+- **Emojis** — Renders `:emoji_name:` tokens as emoji textures in chat, with a suggestion popup while typing and selectable Discord/Google/iOS themes.
 
 
 ## Cosmetics
@@ -144,6 +170,23 @@
 
 
 
+## Network & Privacy
+
+- **Global Chat** — `/globalchat` — Cross-server chat with image/GIF support.
+  - Reduced animations (only animate on hover)
+  - Max image/GIF quality (240p–4K)
+  - Mention notifications: toast on `@username` / `@everyone`
+- **Network Controls** — Manage how much internet access the mod gets.
+  - Offline Mode: disable all internet access (most features stop working)
+  - Disable API Calls: turn off features that use the mod API (capes, profile viewer, profile parser, /sync)
+  - Disable GitHub Calls: stop updating from GitHub (overlays, timers, version checks)
+- **Telemetry** — Controls what the mod shares on server join (used for player counts and bug reports).
+  - Disable Telemetry: don't share your username, mod list, or version
+  - Hide Mod List in Telemetry: only keep your username and version
+- **Privacy Notice** — Review how your data is handled before enabling features. [Read the privacy policy](/docs/ABOUT.md).
+
+
+
 ## Commands
 
 > **Note:** All commands are available with `asm`, `athr`, and `jef` prefixes for backward compatibility. For example, `/asm`, `/athr`, and `/jef` all work interchangeably.
@@ -159,6 +202,15 @@
 - `/diana <reset|toggle>` — Reset or pause Diana tracking.
 - `/pdt <reset|toggle>` (`/powdertracker`) — Powder tracking controls.
 - `/prt <reset|toggle>` (`/pristinetracker`) — Pristine tracking controls.
+- `/dparty <join|create|leave|disband|transfer|kick|setpass|list>` — Diana Party Finder controls.
+- `/dpc <message>` — Send a message in your Diana party chat.
+- `/asmfarming <on|off|reset>` — Farming Tracker controls.
+- `/asmorganicmatter <on|off|reset>` — Organic Matter Tracker controls.
+- `/killcombo <reset|toggle>` — Kill Combo Tracker controls.
+- `/ghosttracker <reset|toggle>` — Ghost Tracker controls.
+- `/report-secret` — Open the Secret Report GUI for the current dungeon room.
+- `/globalchat` — Open the Global Chat window.
+- `/athrignoreincompat <ignore|reset|list> [modId]` — Manage hidden incompatible-mod warnings.
 - `/lockmouse` — Toggle mouse lock for farming.
 - `/athrw guide` — Ordered waypoint commands.
 - `/waypoint` — Open the waypoint group manager.

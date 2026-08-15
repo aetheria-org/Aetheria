@@ -55,6 +55,8 @@ Aetheria is a feature-rich Quality-of-Life mod for Fakepixel Skyblock, which inc
 
 A full list of features can be found [here](https://github.com/aetheria-org/Aetheria/blob/main/docs/FEATURES.md).
 
+Privacy and data-collection details can be found [here](https://github.com/aetheria-org/Aetheria/blob/main/docs/ABOUT.md).
+
 
 # Contributing to the project
 A full comprehensive guide for contribution and compiling the mod yourself can be found [here](https://github.com/aetheria-org/Aetheria/blob/main/docs/CONTRIBUTING.md).
