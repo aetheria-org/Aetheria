@@ -147,14 +147,15 @@ public class DungeonRoomDetector {
         if (roomJson == null) return;
         // Use the already‑computed bounds (roomMinX/Y etc.) to derive centre and size
         String name = roomJson.get("name").getAsString();
+        String alias = getRoomAlias(roomJson, name);
         String hash = lastRoomHash;
         // Origin is the minimum corner at floor level
         BlockPos origin = new BlockPos(roomMinX, roomFloorY, roomMinZ);
         BlockPos center = new BlockPos((roomMinX + roomMaxX) / 2, roomFloorY, (roomMinZ + roomMaxZ) / 2);
         int width = Math.abs(roomMaxX - roomMinX) + 1;
         int height = Math.abs(roomMaxZ - roomMinZ) + 1;
-        DungeonRoom dr = new DungeonRoom(name, hash, origin, center, width, height);
-        visitedRooms.putIfAbsent(hash, dr);
+        DungeonRoom dr = new DungeonRoom(name, alias, hash, origin, center, width, height);
+        visitedRooms.putIfAbsent(roomKey(hash, origin), dr);
     }
 
     /**
@@ -164,11 +165,21 @@ public class DungeonRoomDetector {
     public static DungeonRoom getCurrentRoom() {
         if (lastRoomHash == null || lastRoomJson == null || !roomBoundsValid) return null;
         String name = lastRoomJson.get("name").getAsString();
+        String alias = getRoomAlias(lastRoomJson, name);
         BlockPos origin = new BlockPos(roomMinX, roomFloorY, roomMinZ);
         BlockPos center = new BlockPos((roomMinX + roomMaxX) / 2, roomFloorY, (roomMinZ + roomMaxZ) / 2);
         int width = Math.abs(roomMaxX - roomMinX) + 1;
         int height = Math.abs(roomMaxZ - roomMinZ) + 1;
-        return new DungeonRoom(name, lastRoomHash, origin, center, width, height);
+        return new DungeonRoom(name, alias, lastRoomHash, origin, center, width, height);
+    }
+
+    private static String roomKey(String hash, BlockPos origin) {
+        return hash + "|" + origin.getX() + "," + origin.getZ();
+    }
+
+    private static String getRoomAlias(JsonObject roomJson, String name) {
+        JsonElement aliasEl = roomJson.get("alias");
+        return (aliasEl != null && aliasEl.isJsonPrimitive()) ? aliasEl.getAsString() : name;
     }
 
     // Helper to determine if a player is inside a given DungeonRoom
@@ -200,7 +211,7 @@ public class DungeonRoomDetector {
             if (!known) {
                 DungeonRoom dr = getCurrentRoom();
                 if (dr != null) {
-                    visitedRooms.putIfAbsent(dr.hash, dr);
+                    visitedRooms.putIfAbsent(roomKey(dr.hash, dr.origin), dr);
                     if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled && secretLocationsJson != null) {
                         SecretRenderUtils.loadSecrets(dr.name, secretLocationsJson);
                     }
@@ -289,6 +300,7 @@ public class DungeonRoomDetector {
             DungeonRoomOverlay.currentRoomName = null;
             DungeonRoomOverlay.currentRoomCategory = null;
             DungeonRoomOverlay.currentRoomNotes = null;
+            DungeonRoomOverlay.currentRoomAlias = null;
             lastRoomHash = null;
             lastRoomJson = null;
             visitedRooms.clear();
@@ -399,6 +411,7 @@ public class DungeonRoomDetector {
                         DungeonRoomOverlay.currentRoomName = null;
                         DungeonRoomOverlay.currentRoomCategory = null;
                         DungeonRoomOverlay.currentRoomNotes = null;
+                        DungeonRoomOverlay.currentRoomAlias = null;
                     }
                     lastRoomJson = null;
                     resetOrigin();
@@ -466,6 +479,7 @@ public class DungeonRoomDetector {
 
         DungeonRoomOverlay.currentRoomCategory = room.get("category").getAsString();
         DungeonRoomOverlay.currentRoomName = name;
+        DungeonRoomOverlay.currentRoomAlias = getRoomAlias(room, name);
         JsonElement notes = room.get("notes");
         DungeonRoomOverlay.currentRoomNotes = (notes != null) ? notes.getAsString() : null;
     }
@@ -841,15 +855,18 @@ public class DungeonRoomDetector {
         if (roomCeilingY <= 0 || roomFloorY < 0) return;
 
         float tracerWidth = ATHRConfig.feature != null && ATHRConfig.feature.dungeons.dungeonSecretFinder != null ? ATHRConfig.feature.dungeons.dungeonSecretFinder.other.tracerWidth : 2.0f;
-        WorldRenderUtils.drawSelectionBox(new AxisAlignedBB(roomMinX, roomFloorY, roomMinZ, roomMaxX + 1, roomCeilingY + 1, roomMaxZ + 1), new Color(0, 200, 255, 120), tracerWidth);
 
-        if (originBlock == null) return;
+        if (ATHRConfig.feature != null && ATHRConfig.feature.debug.dungeonRoomHighlight) {
+            WorldRenderUtils.drawSelectionBox(new AxisAlignedBB(roomMinX, roomFloorY, roomMinZ, roomMaxX + 1, roomCeilingY + 1, roomMaxZ + 1), new Color(0, 200, 255, 120), tracerWidth);
 
-        double vx = Minecraft.getMinecraft().getRenderManager().viewerPosX;
-        double vy = Minecraft.getMinecraft().getRenderManager().viewerPosY;
-        double vz = Minecraft.getMinecraft().getRenderManager().viewerPosZ;
+            if (originBlock != null) {
+                double vx = Minecraft.getMinecraft().getRenderManager().viewerPosX;
+                double vy = Minecraft.getMinecraft().getRenderManager().viewerPosY;
+                double vz = Minecraft.getMinecraft().getRenderManager().viewerPosZ;
 
-        drawEspBoxTranslated(originBlock.getX(), originBlock.getY(), originBlock.getZ(), new Color(180, 0, 255, 200), vx, vy, vz, tracerWidth);
+                drawEspBoxTranslated(originBlock.getX(), originBlock.getY(), originBlock.getZ(), new Color(180, 0, 255, 200), vx, vy, vz, tracerWidth);
+            }
+        }
 
         if (ATHRConfig.feature != null && ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled) {
             displayedSecretCount = SecretRenderUtils.getActiveSecretCount();

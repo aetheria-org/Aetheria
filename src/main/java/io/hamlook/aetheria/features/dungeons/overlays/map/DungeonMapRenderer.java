@@ -6,7 +6,6 @@ import io.hamlook.aetheria.core.features.dungeons.DungeonMapConfig;
 import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoom;
 import io.hamlook.aetheria.utils.Utils;
-import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -16,8 +15,10 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class DungeonMapRenderer {
 
@@ -80,32 +81,62 @@ public class DungeonMapRenderer {
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
 
         if (checkmarkStyle != 0) {
+            boolean split = cfg.rooms.splitRoomMarkers;
             for (DungeonMapGrid.RoomState state : ICON_STATES) {
                 ResourceLocation icon = getCheckmark(state, checkmarkStyle);
                 if (icon == null) continue;
                 mc.getTextureManager().bindTexture(icon);
                 GlStateManager.color(1f, 1f, 1f, 1f);
-                for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
-                    DungeonMapGrid.RoomCell cell = entry.getValue();
-                    if (cell.state != state) continue;
-                    int rx = (int) grid.gridToPixelX(entry.getKey().x);
-                    int ry = (int) grid.gridToPixelZ(entry.getKey().y);
-                    Utils.drawTexturedRect(rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize, checkmarkSize);
+                if (split) {
+                    for (DungeonMapGrid.RoomRegion region : grid.getRegions()) {
+                        if (region.state != state) continue;
+                        int rx = (int) grid.gridToPixelX(region.tickCell.x);
+                        int ry = (int) grid.gridToPixelZ(region.tickCell.y);
+                        Utils.drawTexturedRect(rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize, checkmarkSize);
+                    }
+                } else {
+                    for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
+                        DungeonMapGrid.RoomCell cell = entry.getValue();
+                        if (cell.state != state) continue;
+                        int rx = (int) grid.gridToPixelX(entry.getKey().x);
+                        int ry = (int) grid.gridToPixelZ(entry.getKey().y);
+                        Utils.drawTexturedRect(rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize, checkmarkSize);
+                    }
                 }
             }
         }
 
-        // 3. Visited Room Names (state-colored, below the tick, squeezed to fit the room)
+        // 3. Visited Room Names (centered, fixed screen scale)
         if (cfg.rooms.showVisitedRoomNames && visitedRooms != null) {
+            float invScale = 1f / Math.max(scale, 0.01f);
             boolean colorText = cfg.rooms.mapColorText;
+            boolean split = cfg.rooms.splitRoomMarkers;
+            float roomHalf = roomSize / 2f;
+            Set<DungeonMapGrid.RoomRegion> renderedRegions = new HashSet<>();
             for (DungeonRoom room : visitedRooms) {
                 float px = grid.worldToPixelX(room.center.getX());
                 float py = grid.worldToPixelZ(room.center.getZ());
-                DungeonMapGrid.RoomState state = grid.stateAtWorld(room.center.getX(), room.center.getZ());
+                DungeonMapGrid.RoomState state;
+                if (split) {
+                    DungeonMapGrid.RoomRegion region = findRoomRegion(grid, room);
+                    if (region != null) {
+                        if (!renderedRegions.add(region)) continue;
+                        state = region.state;
+                        if (region.hasRowAnchor) {
+                            px = grid.gridToPixelX((region.nameRowMinX + region.nameRowMaxX) / 2f) + roomHalf;
+                            py = grid.gridToPixelZ(region.nameRowY) + roomHalf;
+                        } else {
+                            px = grid.gridToPixelX((region.minX + region.maxX) / 2f) + roomHalf;
+                            py = grid.gridToPixelZ((region.minY + region.maxY) / 2f) + roomHalf;
+                        }
+                    } else {
+                        state = grid.stateAtWorld(room.center.getX(), room.center.getZ());
+                    }
+                } else {
+                    state = grid.stateAtWorld(room.center.getX(), room.center.getZ());
+                }
                 int color = colorText ? labelColor(state) : 0xFFFFFFFF;
-                boolean hasTick = checkmarkStyle != 0 && isIconState(state);
-                float yOffsetPx = hasTick ? checkmarkSize / 2f + 1f : 0f;
-                DungeonMapOverlay.renderRoomName(px, py, cfg.rooms.roomnameSize * NAME_TEXT_SCALE, room.name, color, yOffsetPx, roomSize);
+                DungeonMapOverlay.renderRoomName(px, py, cfg.rooms.roomnameSize * NAME_TEXT_SCALE * invScale, room.alias, color);
             }
         }
 
@@ -114,8 +145,9 @@ public class DungeonMapRenderer {
             return;
         }
 
-        // 4. Player Heads & Names
-        float headScale = cfg.players.headScale * 1.25f;
+        // 4. Player Heads & Names (constant screen sizes — decoupled from map scale)
+        float invScale = 1f / Math.max(scale, 0.01f);
+        float headScale = cfg.players.headScale * 1.25f * invScale;
         float headPixelSize = 8f * headScale;
 
         for (String name : playerNames) {
@@ -123,9 +155,6 @@ public class DungeonMapRenderer {
             EntityPlayer entity = tracker.getEntity(name);
             float[] pos = tracker.getPosition(name);
             if (pos == null) {
-                if (ATHRConfig.feature.debug.dungeonMapDebug) {
-                    ChatUtils.sendMessage("§7[§6MapDebug§7] " + name + " | no position — skipping");
-                }
                 continue;
             }
             float px = pos[0];
@@ -156,7 +185,7 @@ public class DungeonMapRenderer {
                     if (idx >= 0) displayName = displayName.substring(idx + 1).trim();
                 }
 
-                DungeonMapOverlay.renderName(px - headPixelSize / 2f, pz - headPixelSize / 2f, -1, headScale, cfg.players.nameSize * NAME_TEXT_SCALE, displayName, false);
+                DungeonMapOverlay.renderName(px - headPixelSize / 2f, pz - headPixelSize / 2f, -1, headScale, cfg.players.nameSize * NAME_TEXT_SCALE * invScale, displayName, false);
             }
         }
 
@@ -173,6 +202,10 @@ public class DungeonMapRenderer {
         return name;
     }
 
+    private static DungeonMapGrid.RoomRegion findRoomRegion(DungeonMapGrid grid, DungeonRoom room) {
+        return grid.regionAtPixel(grid.worldToPixelX(room.center.getX()), grid.worldToPixelZ(room.center.getZ()));
+    }
+
     private static ResourceLocation getCheckmark(DungeonMapGrid.RoomState state, int style) {
         switch (state) {
             case GREEN:
@@ -185,18 +218,6 @@ public class DungeonMapRenderer {
                 return style == 2 ? Resources.DUNGEON_MAP_CHECK_NEU_QUESTION : Resources.DUNGEON_MAP_CHECK_QUESTION;
             default:
                 return null;
-        }
-    }
-
-    private static boolean isIconState(DungeonMapGrid.RoomState state) {
-        switch (state) {
-            case GREEN:
-            case CLEARED:
-            case FAILED:
-            case UNOPENED:
-                return true;
-            default:
-                return false;
         }
     }
 

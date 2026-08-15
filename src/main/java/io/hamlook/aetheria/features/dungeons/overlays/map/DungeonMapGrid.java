@@ -5,14 +5,19 @@ import net.minecraft.world.storage.MapData;
 
 import lombok.Getter;
 import java.awt.*;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class DungeonMapGrid {
 
+    private static final int SAMPLE_ALPHA_THRESHOLD = 40;
     public float worldOriginX = 200f;
     public float worldOriginZ = 200f;
     public int cellSizeBlocks = 32;
@@ -21,8 +26,11 @@ public class DungeonMapGrid {
     private final Map<RoomOffset, RoomCell> rooms = new HashMap<>();
     @Getter
     private final List<Junction> junctions = new ArrayList<>();
+    @Getter
+    private final List<RoomRegion> regions = new ArrayList<>();
+    @Getter
+    private final Map<Long, RoomRegion> regionCellMap = new HashMap<>();
     private final Map<Long, RoomState> stateCache = new HashMap<>();
-    public String debugInfo = "";
     private int startPixelX = -1;
     private int startPixelY = -1;
     @Getter
@@ -35,13 +43,10 @@ public class DungeonMapGrid {
 
     public static DungeonMapGrid parse(MapData data, int cellSizeBlocks) {
         if (data == null || data.colors == null) {
-            DungeonMapGrid empty = new DungeonMapGrid();
-            empty.debugInfo = "data or data.colors is null";
-            return empty;
+            return new DungeonMapGrid();
         }
 
         Color[][] colors = new Color[128][128];
-        int alphaPixels = 0;
 
         for (int i = 0; i < 16384; i++) {
             int x = i % 128;
@@ -54,12 +59,10 @@ public class DungeonMapGrid {
                 int rgb = MapColor.mapColorArray[b / 4].getMapColor(b & 3);
                 colors[x][y] = new Color(rgb, true);
             }
-            if (colors[x][y].getAlpha() < 50) alphaPixels++;
         }
 
         DungeonMapGrid grid = new DungeonMapGrid();
         grid.cellSizeBlocks = cellSizeBlocks;
-        grid.debugInfo = "alphaPixels=" + alphaPixels + "/16384";
 
         for (int x = 0; x < 128; x++) {
             for (int y = 0; y < 128; y++) {
@@ -85,7 +88,6 @@ public class DungeonMapGrid {
         }
 
         if (grid.startPixelX < 0 || grid.roomPixelSize <= 0) {
-            grid.debugInfo = "no starting room (foliageColor type 7) found.";
             return grid;
         }
 
@@ -94,8 +96,6 @@ public class DungeonMapGrid {
         grid.loadNeighbors(colors, new RoomOffset(0, 0));
 
         if (grid.rooms.isEmpty()) {
-            Color startColor = colors[grid.startPixelX][grid.startPixelY];
-            grid.debugInfo = "startPixel=(" + grid.startPixelX + "," + grid.startPixelY + ") roomSize=" + grid.roomPixelSize + " connSize=" + grid.connectorPixelSize + " but flood fill found 0 rooms. Start color: R" + startColor.getRed() + "G" + startColor.getGreen() + "B" + startColor.getBlue() + "A" + startColor.getAlpha();
             return grid;
         }
 
@@ -103,12 +103,12 @@ public class DungeonMapGrid {
         for (RoomOffset off : grid.rooms.keySet()) {
             grid.updateRoomConnections(colors, off);
         }
+        grid.computeRegions();
         grid.findJunctions(colors);
 
         grid.blockToPixel = (float) (grid.roomPixelSize + grid.connectorPixelSize) / grid.cellSizeBlocks;
         grid.entrancePixelCenterX = grid.startPixelX + grid.roomPixelSize / 2f;
         grid.entrancePixelCenterZ = grid.startPixelY + grid.roomPixelSize / 2f;
-        grid.debugInfo = "valid: " + grid.rooms.size() + " rooms, roomSize=" + grid.roomPixelSize + " connSize=" + grid.connectorPixelSize + " stride=" + (grid.roomPixelSize + grid.connectorPixelSize) + " junctions=" + grid.junctions.size() + " blockToPixel=" + grid.blockToPixel;
 
         return grid;
     }
@@ -240,7 +240,7 @@ public class DungeonMapGrid {
                 break;
         }
 
-        SampleResult result = sampleRect(colors, x0, y0, w, h, 40);
+        SampleResult result = sampleRect(colors, x0, y0, w, h);
         float proportion = (float) result.filled / (roomPixelSize * connectorPixelSize);
         RoomConnection conn = new RoomConnection();
         if (proportion > 0.8f) {
@@ -261,7 +261,7 @@ public class DungeonMapGrid {
             int py = startPixelY + off.y * (roomPixelSize + connectorPixelSize) + roomPixelSize;
             if (px < 0 || py < 0 || px >= 128 || py >= 128) continue;
 
-            SampleResult result = sampleRect(colors, px, py, connectorPixelSize, connectorPixelSize, 40);
+            SampleResult result = sampleRect(colors, px, py, connectorPixelSize, connectorPixelSize);
             float proportion = (float) result.filled / (connectorPixelSize * connectorPixelSize);
             if (proportion > 0.3f) {
                 Junction j = new Junction();
@@ -273,7 +273,153 @@ public class DungeonMapGrid {
         }
     }
 
-    private static SampleResult sampleRect(Color[][] colors, int x0, int y0, int w, int h, int alphaThreshold) {
+    private void computeRegions() {
+        regions.clear();
+        Set<RoomOffset> visited = new HashSet<>();
+        for (RoomOffset start : rooms.keySet()) {
+            if (visited.contains(start)) continue;
+            RoomRegion region = new RoomRegion();
+            Deque<RoomOffset> stack = new ArrayDeque<>();
+            stack.push(start);
+            visited.add(start);
+            while (!stack.isEmpty()) {
+                RoomOffset off = stack.pop();
+                region.cells.add(off);
+                if (off.x < region.minX) region.minX = off.x;
+                if (off.y < region.minY) region.minY = off.y;
+                if (off.x > region.maxX) region.maxX = off.x;
+                if (off.y > region.maxY) region.maxY = off.y;
+                RoomCell cell = rooms.get(off);
+                if (cell == null) continue;
+                expandRegion(visited, stack, off.left(), cell.left);
+                expandRegion(visited, stack, off.right(), cell.right);
+                expandRegion(visited, stack, off.up(), cell.up);
+                expandRegion(visited, stack, off.down(), cell.down);
+            }
+            region.cellCount = region.cells.size();
+            layoutRegion(region);
+            region.state = aggregateState(region);
+            for (RoomOffset off : region.cells) {
+                regionCellMap.put(pack(off.x, off.y), region);
+            }
+            regions.add(region);
+        }
+    }
+
+    private void expandRegion(Set<RoomOffset> visited, Deque<RoomOffset> stack, RoomOffset neighbor, RoomConnection conn) {
+        if (conn.type == ConnectionType.ROOM_DIVIDER && rooms.containsKey(neighbor) && !visited.contains(neighbor)) {
+            visited.add(neighbor);
+            stack.push(neighbor);
+        }
+    }
+
+    private static void layoutRegion(RoomRegion region) {
+        if (region.cellCount == 1) {
+            RoomOffset cell = region.cells.get(0);
+            region.tickCell = cell;
+            region.hasRowAnchor = true;
+            region.nameRowY = cell.y;
+            region.nameRowMinX = region.nameRowMaxX = cell.x;
+            return;
+        }
+        region.cells.sort((a, b) -> a.x != b.x ? Integer.compare(a.x, b.x) : Integer.compare(a.y, b.y));
+        int tallestColumn = region.cells.get(0).x;
+        int maxCount = 0;
+        int count = 0;
+        int currentX = region.cells.get(0).x;
+        for (RoomOffset cell : region.cells) {
+            if (cell.x == currentX) {
+                count++;
+            } else {
+                if (count > maxCount) {
+                    maxCount = count;
+                    tallestColumn = currentX;
+                }
+                currentX = cell.x;
+                count = 1;
+            }
+        }
+        if (count > maxCount) {
+            tallestColumn = currentX;
+        }
+        region.tickCell = null;
+        for (RoomOffset cell : region.cells) {
+            if (cell.x == tallestColumn) {
+                region.tickCell = cell;
+                break;
+            }
+        }
+        Map<Integer, Integer> rowCounts = new HashMap<>();
+        for (RoomOffset cell : region.cells) {
+            rowCounts.merge(cell.y, 1, Integer::sum);
+        }
+        int widestRow = 0;
+        int maxRowCount = 0;
+        int tiedRows = 0;
+        for (Map.Entry<Integer, Integer> e : rowCounts.entrySet()) {
+            int c = e.getValue();
+            if (c > maxRowCount) {
+                maxRowCount = c;
+                widestRow = e.getKey();
+                tiedRows = 1;
+            } else if (c == maxRowCount) {
+                tiedRows++;
+            }
+        }
+        region.hasRowAnchor = false;
+        if (tiedRows == 1) {
+            region.hasRowAnchor = true;
+            region.nameRowY = widestRow;
+            region.nameRowMinX = Integer.MAX_VALUE;
+            region.nameRowMaxX = Integer.MIN_VALUE;
+            for (RoomOffset cell : region.cells) {
+                if (cell.y == widestRow) {
+                    region.nameRowMinX = Math.min(region.nameRowMinX, cell.x);
+                    region.nameRowMaxX = Math.max(region.nameRowMaxX, cell.x);
+                }
+            }
+        }
+    }
+
+    private RoomState aggregateState(RoomRegion region) {
+        RoomState best = RoomState.DISCOVERED;
+        for (RoomOffset off : region.cells) {
+            RoomCell cell = rooms.get(off);
+            if (cell != null && statePriority(cell.state) > statePriority(best)) {
+                best = cell.state;
+            }
+        }
+        return best;
+    }
+
+    private static int statePriority(RoomState state) {
+        switch (state) {
+            case FAILED:
+                return 5;
+            case GREEN:
+                return 4;
+            case CLEARED:
+                return 3;
+            case UNOPENED:
+                return 2;
+            default:
+                return 1;
+        }
+    }
+
+    public RoomRegion regionAtPixel(float pixelX, float pixelZ) {
+        if (roomPixelSize <= 0 || regions.isEmpty()) return null;
+        int gx = Math.round((pixelX - startPixelX) / (float) (roomPixelSize + connectorPixelSize));
+        int gz = Math.round((pixelZ - startPixelY) / (float) (roomPixelSize + connectorPixelSize));
+        RoomRegion region = regionCellMap.get(pack(gx, gz));
+        if (region != null) return region;
+        for (RoomRegion r : regions) {
+            if (gx >= r.minX && gx <= r.maxX && gz >= r.minY && gz <= r.maxY) return r;
+        }
+        return null;
+    }
+
+    private static SampleResult sampleRect(Color[][] colors, int x0, int y0, int w, int h) {
         int filled = 0;
         Integer dominant = null;
         for (int dx = 0; dx < w; dx++) {
@@ -282,7 +428,7 @@ public class DungeonMapGrid {
                 int sy = y0 + dy;
                 if (sx >= 0 && sy >= 0 && sx < 128 && sy < 128) {
                     Color pixel = colors[sx][sy];
-                    if (pixel.getAlpha() > alphaThreshold) {
+                    if (pixel.getAlpha() > SAMPLE_ALPHA_THRESHOLD) {
                         filled++;
                         if (dominant == null) {
                             dominant = pixel.getRGB();
@@ -421,6 +567,21 @@ public class DungeonMapGrid {
         public int px;
         public int py;
         public int color;
+    }
+
+    public static class RoomRegion {
+        public final List<RoomOffset> cells = new ArrayList<>();
+        public RoomOffset tickCell;
+        public boolean hasRowAnchor; // widest-row span anchor; false -> bbox-center anchor
+        public int nameRowY;
+        public int nameRowMinX;
+        public int nameRowMaxX;
+        public int cellCount = 0;
+        public RoomState state = RoomState.DISCOVERED;
+        public int minX = Integer.MAX_VALUE;
+        public int minY = Integer.MAX_VALUE;
+        public int maxX = Integer.MIN_VALUE;
+        public int maxY = Integer.MIN_VALUE;
     }
 
     private static class SampleResult {

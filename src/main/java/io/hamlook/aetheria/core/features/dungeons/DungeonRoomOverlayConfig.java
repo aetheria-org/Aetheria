@@ -27,6 +27,11 @@ public class DungeonRoomOverlayConfig {
     public float dungeonRoomOverlayScale = 1f;
 
     @Expose
+    @ConfigOption(name = "Show Alias", desc = "Also show the room's short alias in the overlay")
+    @ConfigEditorBoolean
+    public boolean dungeonRoomOverlayShowAlias = false;
+
+    @Expose
     @ConfigOption(name = "Edit Position", desc = "Drag the overlay to reposition it")
     @ConfigEditorButton(runnableId = "openDungeonRoomOverlayEditor", buttonText = "Edit")
     public boolean editDungeonRoomOverlayPosDummy = false;

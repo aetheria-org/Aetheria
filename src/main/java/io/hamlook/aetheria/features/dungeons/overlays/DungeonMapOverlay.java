@@ -11,7 +11,6 @@ import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonPlayerTracker;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomDetector;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
-import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
@@ -21,7 +20,6 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.DefaultPlayerSkin;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
@@ -97,7 +95,8 @@ public class DungeonMapOverlay extends Overlay {
             float headSize = headScale * 8f;
             float half = headSize / 2f;
             float cx = pixelX + half;
-            float cy = (pixelZ - headSize) + ATHRConfig.feature.dungeons.dungeonMapConfig.players.nameOffset;
+            float mapScale = Math.max(ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.scale, 0.01f);
+            float cy = (pixelZ - headSize) + ATHRConfig.feature.dungeons.dungeonMapConfig.players.nameOffset / mapScale;
 
             float nameWidth = stringWidth * scale;
             float nameX = cx - nameWidth / 2f;
@@ -111,29 +110,12 @@ public class DungeonMapOverlay extends Overlay {
         GlStateManager.popMatrix();
     }
 
-    public static void renderRoomName(float pixelX, float pixelZ, float scale, String name, int color, float yOffsetPx, float maxFitPx) {
+    public static void renderRoomName(float pixelX, float pixelZ, float scale, String name, int color) {
         if (name == null || name.isEmpty()) return;
         Minecraft mc = Minecraft.getMinecraft();
         String[] words = name.split(" ");
         if (words.length == 0) return;
         int fontHeight = mc.fontRendererObj.FONT_HEIGHT + 1;
-
-        float maxLineWidth = 0f;
-        for (String word : words) {
-            maxLineWidth = Math.max(maxLineWidth, mc.fontRendererObj.getStringWidth(word));
-        }
-
-        float fitScale = scale;
-        if (maxFitPx > 0) {
-            if (maxLineWidth * fitScale > maxFitPx) {
-                fitScale = maxFitPx / maxLineWidth;
-            }
-            float availH = yOffsetPx > 0 ? maxFitPx - yOffsetPx : maxFitPx;
-            float blockH = words.length * fontHeight;
-            if (availH > 0 && blockH * fitScale > availH) {
-                fitScale = Math.min(fitScale, availH / blockH);
-            }
-        }
 
         GlStateManager.pushMatrix();
         GlStateManager.enableBlend();
@@ -141,13 +123,8 @@ public class DungeonMapOverlay extends Overlay {
         GlStateManager.enableTexture2D();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
         GlStateManager.translate(pixelX, pixelZ, 0f);
-        GlStateManager.scale(fitScale, fitScale, 1.0f);
-        float yTextOffset;
-        if (yOffsetPx > 0) {
-            yTextOffset = yOffsetPx / fitScale;
-        } else {
-            yTextOffset = words.length * fontHeight / -2f;
-        }
+        GlStateManager.scale(scale, scale, 1.0f);
+        float yTextOffset = words.length * fontHeight / -2f;
         for (int i = 0; i < words.length; i++) {
             String word = words[i];
             mc.fontRendererObj.drawString(word, (int) (-mc.fontRendererObj.getStringWidth(word) / 2f), (int) (yTextOffset + i * fontHeight), color, true);
@@ -205,10 +182,6 @@ public class DungeonMapOverlay extends Overlay {
         if ((playerTracker.getPlayerNames().isEmpty() || player.ticksExisted - lastPopulateTick >= 40) && player.ticksExisted % 20 == 0) {
             playerTracker.populate();
             lastPopulateTick = player.ticksExisted;
-            if (ATHRConfig.feature.debug.dungeonMapDebug) {
-                ChatUtils.sendMessage("§7[§6MapDebug§7] Populated " + playerTracker.getPlayerNames().size() + " players: " +
-                        String.join(", ", playerTracker.getPlayerNames()));
-            }
         }
 
         MapData info = getDungeonMap(player);
@@ -241,30 +214,11 @@ public class DungeonMapOverlay extends Overlay {
                     }
                     lastW = maxPixelX;
                     lastH = maxPixelY;
-                } else if (ATHRConfig.feature.debug.dungeonMapDebug) {
-                    ChatUtils.sendMessage("§7[§6MapDebug§7] " + cachedGrid.debugInfo);
                 }
             }
-        } else if (ATHRConfig.feature.debug.dungeonMapDebug) {
-            ChatUtils.sendMessage("§7[§6MapDebug§7] getDungeonMap() returned null");
         }
 
         if (info == null && !preview) return;
-
-        if (ATHRConfig.feature.debug.dungeonMapDebug && player.ticksExisted % 20 == 0) {
-            for (String name : playerTracker.getPlayerNames()) {
-                float[] pos = playerTracker.getPosition(name);
-                String pstr = (pos != null) ? String.format("%.1f,%.1f", pos[0], pos[1]) : "no pos";
-                EntityPlayer ep = playerTracker.getEntity(name);
-                String estate = (ep != null && !ep.isDead) ? "alive" : "decor";
-                float originX = cachedGrid != null ? cachedGrid.worldOriginX : 0f;
-                float originZ = cachedGrid != null ? cachedGrid.worldOriginZ : 0f;
-                ChatUtils.sendMessage("§7[§6MapDebug§7] " + name +
-                        " | pixel: " + pstr +
-                        " | src: " + estate +
-                        " | origin: " + String.format("%.1f", originX) + "," + String.format("%.1f", originZ));
-            }
-        }
 
         float scale = getScale();
         ScaledResolution sr = Overlay.sr != null ? Overlay.sr : new ScaledResolution(Minecraft.getMinecraft());
@@ -272,16 +226,18 @@ public class DungeonMapOverlay extends Overlay {
 
         int gridW = lastW;
         int gridH = lastH;
+        float scaledW = gridW * scale;
+        float scaledH = gridH * scale;
 
-        int cx = pos.getAbsX(sr, gridW);
-        int cy = pos.getAbsY(sr, gridH);
-        if (pos.isCenterX()) cx += gridW / 2;
-        if (pos.isCenterY()) cy += gridH / 2;
+        int cx = pos.getAbsX(sr, (int) scaledW);
+        int cy = pos.getAbsY(sr, (int) scaledH);
+        if (pos.isCenterX()) cx += (int) scaledW / 2;
+        if (pos.isCenterY()) cy += (int) scaledH / 2;
 
-        int bx = cx - gridW / 2 - 4;
-        int by = cy - gridH / 2 - 4;
-        int bw = cx + gridW / 2 + 4;
-        int bh = cy + gridH / 2 + 4;
+        int bx = (int) (cx - scaledW / 2f) - 4;
+        int by = (int) (cy - scaledH / 2f) - 4;
+        int bw = (int) (cx + scaledW / 2f) + 4;
+        int bh = (int) (cy + scaledH / 2f) + 4;
         int radius = getCornerRadius();
 
         int bgColor = getBgColor();
@@ -309,7 +265,7 @@ public class DungeonMapOverlay extends Overlay {
             int tw = Minecraft.getMinecraft().fontRendererObj.getStringWidth(txt);
             Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(txt, cx - tw / 2f, cy - 4f, 0xFFFFFFFF);
         } else if (cachedGrid != null && cachedGrid.isValid()) {
-            playerTracker.matchDecorations(info != null ? info.mapDecorations : null);
+            playerTracker.matchDecorations(info.mapDecorations);
             DungeonMapRenderer.render(cachedGrid, cx, cy, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms());
         }
     }

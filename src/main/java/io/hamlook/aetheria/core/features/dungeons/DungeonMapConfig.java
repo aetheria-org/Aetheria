@@ -142,6 +142,11 @@ public class DungeonMapConfig {
         public int mapCheckmark = 1;
 
         @Expose
+        @ConfigOption(name = "Split Room Markers", desc = "For multi-cell rooms, draw the checkmark and the room name in separate cells so they don't overlap. Off = both centered (legacy). Single-cell rooms always draw the name over the checkmark.")
+        @ConfigEditorBoolean
+        public boolean splitRoomMarkers = true;
+
+        @Expose
         @ConfigOption(name = "Color Text", desc = "Color room names based on room state")
         @ConfigEditorBoolean
         public boolean mapColorText = true;

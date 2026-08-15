@@ -60,24 +60,25 @@ public class DungeonPlayerTracker {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.getNetHandler() == null) return members;
 
-        Collection<NetworkPlayerInfo> tabList = mc.getNetHandler().getPlayerInfoMap();
-        List<String> scoreboardLines = SkyblockData.getCleanScoreboardLines();
-
-        for (String line : scoreboardLines) {
-            if (line.isEmpty()) continue;
-
-            for (NetworkPlayerInfo info : tabList) {
-                if (info == null || info.getGameProfile() == null) continue;
-                String tabName = info.getGameProfile().getName();
-
-                if (line.contains(tabName) || (tabName.length() > 12 && line.contains(tabName.substring(0, 12)))) {
-                    if (!members.contains(tabName)) {
-                        members.add(tabName);
-                    }
-                }
+        for (NetworkPlayerInfo info : mc.getNetHandler().getPlayerInfoMap()) {
+            if (info == null || info.getGameProfile() == null) continue;
+            String tabName = info.getGameProfile().getName();
+            if (isPlausibleUsername(tabName) && !members.contains(tabName)) {
+                members.add(tabName);
             }
         }
         return members;
+    }
+
+    private static boolean isPlausibleUsername(String name) {
+        if (name == null || name.length() < 3 || name.length() > 16) return false;
+        boolean hasLetter = false;
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_')) return false;
+            if (Character.isLetter(c)) hasLetter = true;
+        }
+        return hasLetter;
     }
 
     public void matchDecorations(Map<String, Vec4b> mapDecorations) {
