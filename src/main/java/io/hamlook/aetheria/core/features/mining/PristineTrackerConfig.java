@@ -37,6 +37,11 @@ public class PristineTrackerConfig {
     public boolean showCompacted = false;
 
     @Expose
+    @ConfigOption(name = "Rough Gemstone Rates", desc = "Show gemstone totals and rates as rough gemstone counts (1 flawed = 80 rough)")
+    @ConfigEditorBoolean
+    public boolean showRoughRates = false;
+
+    @Expose
     @ConfigOption(name = "Pause on Chat", desc = "Pause tracking while chat GUI is open; resumes on next tracked action")
     @ConfigEditorBoolean
     public boolean pauseOnChat = false;

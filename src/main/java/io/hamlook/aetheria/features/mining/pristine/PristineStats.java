@@ -4,11 +4,13 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.GsonBuilder;
 import io.hamlook.aetheria.core.ProfileManagedStorage;
 import io.hamlook.aetheria.core.StorageManager;
+import io.hamlook.aetheria.features.mining.powder.PowderStats;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 
 import java.io.File;
+import java.util.Map;
 
 public class PristineStats extends ProfileManagedStorage implements StorageManager.AutoSaveable {
 
@@ -20,6 +22,10 @@ public class PristineStats extends ProfileManagedStorage implements StorageManag
 
     @Getter
     private volatile boolean trackingEnabled = true;
+
+    public final PowderStats.RateInfo rateInfo = new PowderStats.RateInfo();
+    public final PowderStats.RateInfo procRateInfo = new PowderStats.RateInfo();
+    public final PowderStats.RateInfo roughRateInfo = new PowderStats.RateInfo();
 
     private long sessionActiveTimeMs = 0L;
     private boolean timerRunning = false;
@@ -121,15 +127,40 @@ public class PristineStats extends ProfileManagedStorage implements StorageManag
         return sessionActiveTimeMs;
     }
 
+    public static long getRoughEquivTotal(PristineData data) {
+        long total = 0L;
+        for (Map.Entry<String, Long> entry : data.gemstones.entrySet()) {
+            long v = entry.getValue();
+            if (v == 0L) continue;
+            if (entry.getKey().startsWith("Flawed_")) total += v * 80L;
+            else if (entry.getKey().startsWith("Fine_")) total += v * 6400L;
+            else if (entry.getKey().startsWith("Flawless_")) total += v * 512000L;
+        }
+        return total;
+    }
+
     public double getGemstonesPerHour() {
-        long total = data.gemstones.values().stream().mapToLong(Long::longValue).sum();
-        if (data.activeTimeMs < 1_000L || total == 0) return 0.0;
-        return total / (data.activeTimeMs / 3_600_000.0);
+        return rateInfo.perHour;
     }
 
     public double getProcsPerHour() {
-        if (data.activeTimeMs < 1_000L || data.totalProcs == 0) return 0.0;
-        return data.totalProcs / (data.activeTimeMs / 3_600_000.0);
+        return procRateInfo.perHour;
+    }
+
+    public double getRoughGemstonesPerHour() {
+        return roughRateInfo.perHour;
+    }
+
+    public void tickRates() {
+        PowderStats.tick(rateInfo, data.gemstones.values().stream().mapToLong(Long::longValue).sum());
+        PowderStats.tick(procRateInfo, data.totalProcs);
+        PowderStats.tick(roughRateInfo, getRoughEquivTotal(data));
+    }
+
+    public void onWorldChange() {
+        rateInfo.clear();
+        procRateInfo.clear();
+        roughRateInfo.clear();
     }
 
     @Override
@@ -154,6 +185,9 @@ public class PristineStats extends ProfileManagedStorage implements StorageManag
     public void reset() {
         data.reset();
         sessionActiveTimeMs = 0L;
+        rateInfo.clear();
+        procRateInfo.clear();
+        roughRateInfo.clear();
         pauseTimer();
     }
 }

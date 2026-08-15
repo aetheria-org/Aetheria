@@ -35,6 +35,7 @@ public class PowderTracker {
 
     private static final long SYNC_WINDOW_MS = 2000;
 
+    private static int tickCounter = 0;
     private static boolean listenerRegistered = false;
 
     private static long pendingGemstoneDelta = 0;
@@ -117,6 +118,9 @@ public class PowderTracker {
         ensureListenerRegistered();
 
         PowderStats.getInstance().timerTick();
+
+        tickCounter++;
+        if (tickCounter % 20 == 0) PowderStats.getInstance().tickRates();
     }
 
     @SubscribeEvent
@@ -267,5 +271,6 @@ public class PowderTracker {
         lastGemstoneChatTime = 0;
 
         PowderStats.getInstance().pauseTimer();
+        PowderStats.getInstance().onWorldChange();
     }
 }

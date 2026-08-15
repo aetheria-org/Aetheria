@@ -9,6 +9,8 @@ import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PowderStats extends ProfileManagedStorage implements StorageManager.AutoSaveable {
 
@@ -17,6 +19,10 @@ public class PowderStats extends ProfileManagedStorage implements StorageManager
 
     @Getter
     private PowderData data = new PowderData();
+
+    public final RateInfo gemstoneInfo = new RateInfo();
+    public final RateInfo chestInfo = new RateInfo();
+    public final RateInfo hardStoneInfo = new RateInfo();
 
     private boolean tracking = true;
 
@@ -34,6 +40,29 @@ public class PowderStats extends ProfileManagedStorage implements StorageManager
     public static PowderStats getInstance() {
         if (INSTANCE == null) INSTANCE = new PowderStats();
         return INSTANCE;
+    }
+
+    public static void tick(RateInfo info, long current) {
+        info.estimated = current;
+        long difference = info.estimated - info.lastEstimated;
+        info.lastEstimated = info.estimated;
+
+        if (difference == info.estimated) return;
+
+        if (!info.perMin.isEmpty())
+            info.perHour = info.perMin.stream().mapToLong(Long::longValue).average().orElse(0) * 3600;
+        info.perMin.add(difference);
+
+        if (difference == 0L) {
+            info.stoppedChecks++;
+            if (info.stoppedChecks >= 60) {
+                info.stoppedChecks = 0;
+                info.perMin.clear();
+                info.perHour = 0.0;
+            }
+        } else {
+            info.stoppedChecks = 0;
+        }
     }
 
     public static String gemKey(String quality, String gem) {
@@ -126,19 +155,27 @@ public class PowderStats extends ProfileManagedStorage implements StorageManager
     }
 
     public double getGemstonePerHour() {
-        if (data.activeTimeMs < 1_000L || data.gemstonePowder == 0) return 0.0;
-        return data.gemstonePowder / (data.activeTimeMs / 3_600_000.0);
+        return gemstoneInfo.perHour;
     }
 
     public double getChestsPerHour() {
-        if (data.activeTimeMs < 1_000L || data.totalChestsPicked == 0) return 0.0;
-        return data.totalChestsPicked / (data.activeTimeMs / 3_600_000.0);
+        return chestInfo.perHour;
     }
 
     public double getHardStonePerHour() {
-        long total = data.hardStone + data.hardStoneCompacted * 9L;
-        if (data.activeTimeMs < 1_000L || total == 0) return 0.0;
-        return total / (data.activeTimeMs / 3_600_000.0);
+        return hardStoneInfo.perHour;
+    }
+
+    public void tickRates() {
+        tick(gemstoneInfo, data.gemstonePowder);
+        tick(chestInfo, data.totalChestsPicked);
+        tick(hardStoneInfo, data.hardStone + data.hardStoneCompacted * 9L);
+    }
+
+    public void onWorldChange() {
+        gemstoneInfo.clear();
+        chestInfo.clear();
+        hardStoneInfo.clear();
     }
 
     @Override
@@ -163,6 +200,25 @@ public class PowderStats extends ProfileManagedStorage implements StorageManager
     public void reset() {
         data.reset();
         sessionActiveTimeMs = 0L;
+        gemstoneInfo.clear();
+        chestInfo.clear();
+        hardStoneInfo.clear();
         pauseTimer();
+    }
+
+    public static class RateInfo {
+        public final List<Long> perMin = new ArrayList<>();
+        public long estimated = 0L;
+        public long lastEstimated = 0L;
+        public int stoppedChecks = 0;
+        public double perHour = 0.0;
+
+        public void clear() {
+            estimated = 0L;
+            lastEstimated = 0L;
+            stoppedChecks = 0;
+            perHour = 0.0;
+            perMin.clear();
+        }
     }
 }

@@ -85,8 +85,16 @@ public class PristineOverlay extends Overlay {
             return "§d§lPristine Tracker" + (!preview && !stats.isTrackingEnabled() ? " §7[Paused]" : "");
         }
         if (ordinal == 1) {
-            long total = preview ? 1500L : d.gemstones.values().stream().mapToLong(Long::longValue).sum();
-            String rate = preview ? "150" : Utils.shortNumberFormat(stats.getGemstonesPerHour(), 0);
+            boolean rough = ATHRConfig.feature.mining.pristineTrackerConfig.showRoughRates;
+            long total;
+            String rate;
+            if (preview) {
+                total = rough ? 120_000L : 1500L;
+                rate = rough ? "12,000" : "150";
+            } else {
+                total = rough ? PristineStats.getRoughEquivTotal(d) : d.gemstones.values().stream().mapToLong(Long::longValue).sum();
+                rate = Utils.shortNumberFormat(rough ? stats.getRoughGemstonesPerHour() : stats.getGemstonesPerHour(), 0);
+            }
             return String.format("§7Total Gems: §a%s §7(%s/h)", Utils.shortNumberFormat(total, 0), rate);
         }
         if (ordinal == 2) {

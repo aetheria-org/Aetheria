@@ -17,6 +17,7 @@ public class PristineTracker {
 
     private static final Pattern PRISTINE_GEMSTONE = Pattern.compile("PRISTINE!.*?(Flawed|Fine|Flawless) (Ruby|Sapphire|Amber|Amethyst|Jade|Topaz|Jasper|Opal|Citrine|Aquamarine|Peridot|Onyx) Gemstone.*?x(\\d+)");
 
+    private static int tickCounter = 0;
 
     private static boolean isActive() {
         PristineStats stats = PristineStats.getInstance();
@@ -38,6 +39,8 @@ public class PristineTracker {
         PristineStats stats = PristineStats.getInstance();
         stats.timerTick();
         if (stats.shouldAutoStop()) stats.toggleTracking();
+
+        if (++tickCounter % 20 == 0) stats.tickRates();
     }
 
     @SubscribeEvent
@@ -68,5 +71,6 @@ public class PristineTracker {
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
         PristineStats.getInstance().pauseTimer();
+        PristineStats.getInstance().onWorldChange();
     }
 }

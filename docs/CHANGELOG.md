@@ -35,6 +35,8 @@ Aetheria's Skyblock Mod 1.2.0: major performance improvements, farming features,
 
 - Added Ghost Tracker reset and toggle (/ghosttracker)
 - Added mouse-locked indication and unlock hint
+- Added Pause On Chat to all trackers.
+- Added options to hide overlays on scoreboard, tab, chat for each individually
 - Fixed convert-to-item items being recognized as pets
 - Fixed Diana Tracker not filtering messages (/diana)
 - Fixed Dungeon Profit Estimate chest title check
@@ -45,6 +47,8 @@ Aetheria's Skyblock Mod 1.2.0: major performance improvements, farming features,
 - Made the search bar render below tooltips
 - Now uses US decimal format and accepts commas
 - Reworked SkyBlock XP in Chat to accurately show SB XP updates
+- Reworked Pristine and Powder Trackers for better performance
+- Added Show Rates as Rough for Pristine Tracker
 
 ### Performance
 
