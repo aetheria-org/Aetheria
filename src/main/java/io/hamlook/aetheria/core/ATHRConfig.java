@@ -59,7 +59,15 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
 
 public class ATHRConfig {
 
@@ -76,6 +84,13 @@ public class ATHRConfig {
     private static boolean ghostToggleKeyWasDown = false;
     private static boolean ghostResetKeyWasDown = false;
     private static boolean registered = false;
+    private static boolean configLoaded = false;
+    private static boolean configDirty = false;
+    private static long lastSaveRequestMs = 0L;
+    static boolean previousSessionClean = true;
+    private static boolean shutdownHookRegistered = false;
+    private static File cleanShutdownMarker;
+    private static final long CONFIG_SAVE_DEBOUNCE_MS = 2000L;
 
     private static boolean isKeyOrMouseDown(int keyCode) {
         if (keyCode == Keyboard.KEY_NONE) return false;
@@ -93,6 +108,7 @@ public class ATHRConfig {
     }
 
     public static void init() {
+        if (configLoaded) return;
         if (!configDirectory.exists()){
             File oldConfigFolder = new File("config/JustEnoughFakepixel");
             if(oldConfigFolder.exists()){
@@ -102,23 +118,96 @@ public class ATHRConfig {
             }
         }
         configFile = new File(configDirectory, "config.json");
+        cleanShutdownMarker = new File(configDirectory, ".clean_shutdown");
+        previousSessionClean = !cleanShutdownMarker.exists();
+        writeCleanShutdownMarker();
         loadConfig();
+        configLoaded = true;
+        registerShutdownHook();
     }
 
     private static void loadConfig() {
         if (configFile.exists()) {
-            // Uses shared loadSafe for consistent corruption handling
             feature = StorageManager.loadSafe(configFile, Config.class, GsonBuilder.GSON_STRICT);
         }
         if (feature == null) {
-            feature = new Config();
+            feature = tryRestoreFromCorruptedBackups();
+            if (feature == null) {
+                feature = new Config();
+                if (configFile.exists()) {
+                    System.err.println("[ATHR] config.json failed to load and no usable .corrupted backup was found; using defaults.");
+                    if (previousSessionClean) {
+                        System.err.println("[ATHR] Previous session shut down cleanly — the corruption is NOT crash-related (possible write bug or external process).");
+                    } else {
+                        System.err.println("[ATHR] Previous session did NOT shut down cleanly (crash/BSOD/force-kill) — config.json last modified "
+                                + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(configFile.lastModified()))
+                                + " was likely corrupted by an interrupted write.");
+                    }
+                }
+            } else {
+                System.err.println("[ATHR] Recovered config settings from a corrupted backup.");
+            }
+        }
+    }
+
+    private static Config tryRestoreFromCorruptedBackups() {
+        if (configFile == null) return null;
+        File parent = configFile.getParentFile();
+        if (parent == null) return null;
+        File[] backups = parent.listFiles((dir, name) ->
+                name.startsWith(configFile.getName() + ".") && name.endsWith(".corrupted"));
+        if (backups == null || backups.length == 0) return null;
+        Arrays.sort(backups, (a, b) -> b.getName().compareTo(a.getName()));
+        for (File backup : backups) {
+            try (Reader r = new BufferedReader(new InputStreamReader(Files.newInputStream(backup.toPath()), StandardCharsets.UTF_8))) {
+                Config restored = GsonBuilder.GSON_STRICT.fromJson(r, Config.class);
+                if (restored != null) {
+                    System.err.println("[ATHR] Restoring config from " + backup.getName());
+                    return restored;
+                }
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    public static void saveConfig() {
+        if (feature == null || configFile == null) return;
+        StorageManager.saveAtomic(configFile, feature, GsonBuilder.GSON_STRICT);
+    }
+
+    public static void markConfigDirty() {
+        configDirty = true;
+        lastSaveRequestMs = System.currentTimeMillis();
+    }
+
+    private static void flushConfigIfDirty() {
+        if (configDirty && feature != null && configFile != null
+                && System.currentTimeMillis() - lastSaveRequestMs >= CONFIG_SAVE_DEBOUNCE_MS) {
+            configDirty = false;
             saveConfig();
         }
     }
 
-    public static void saveConfig() {
-        // Uses shared saveAtomic — .tmp → verify → atomic rename, same as every other storage
-        StorageManager.saveAtomic(configFile, feature, GsonBuilder.GSON_STRICT);
+    private static void writeCleanShutdownMarker() {
+        try {
+            Files.write(cleanShutdownMarker.toPath(), new byte[]{'1'});
+        } catch (Exception ignored) {}
+    }
+
+    private static void registerShutdownHook() {
+        if (shutdownHookRegistered) return;
+        shutdownHookRegistered = true;
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if (configDirty) {
+                    configDirty = false;
+                    saveConfig();
+                }
+            } catch (Exception ignored) {}
+            try {
+                Files.deleteIfExists(cleanShutdownMarker.toPath());
+            } catch (Exception ignored) {}
+        }, "ATHR-Config-Shutdown"));
     }
 
     public static void reloadRepo() {
@@ -402,6 +491,7 @@ public class ATHRConfig {
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        flushConfigIfDirty();
         if (Minecraft.getMinecraft().thePlayer == null) return;
 
         if (screenToOpen != null) {

@@ -73,7 +73,7 @@ public class StorageManager {
     private static void setMouseLockedSilent(boolean locked) {
         if (ATHRConfig.feature == null) return;
         ATHRConfig.feature.farming.lockMouseConfig.lockMouse = locked;
-        ATHRConfig.saveConfig();
+        ATHRConfig.markConfigDirty();
     }
 
     public static boolean isOverlayActive() {

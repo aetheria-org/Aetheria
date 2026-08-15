@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.core;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonParser;
 import io.hamlook.aetheria.features.diana.DianaStats;
 import io.hamlook.aetheria.features.fishing.trophy.TrophyFishStorage;
 import io.hamlook.aetheria.features.farming.FarmingTrackerData;
@@ -16,6 +17,7 @@ import io.hamlook.aetheria.features.scoreboard.MaxwellPowerSync;
 import io.hamlook.aetheria.features.waypoints.WaypointStorage;
 
 import java.io.*;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -124,9 +126,18 @@ public enum StorageManager {
     public static <T> T loadSafe(File file, Class<T> clazz, Gson gson) {
         if (file == null || !file.exists()) return null;
         try (Reader r = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
-            return gson.fromJson(r, clazz);
+            T loaded = gson.fromJson(r, clazz);
+            if (loaded == null && file.length() > 0) {
+                String msg = "parsed to null (blank or null content), treating as corrupted";
+                System.err.println("[ATHR] " + file.getName() + " " + msg);
+                CrashLog.report(file, "loading", msg);
+                backupCorrupted(file);
+                return null;
+            }
+            return loaded;
         } catch (Exception e) {
             System.err.println("[ATHR] Failed to load " + file.getName() + ": " + e.getMessage());
+            CrashLog.report(file, "loading", e.getMessage());
             backupCorrupted(file);
             return null;
         }
@@ -138,9 +149,18 @@ public enum StorageManager {
     public static <T> T loadSafe(File file, java.lang.reflect.Type type, Gson gson) {
         if (file == null || !file.exists()) return null;
         try (Reader r = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
-            return gson.fromJson(r, type);
+            T loaded = gson.fromJson(r, type);
+            if (loaded == null && file.length() > 0) {
+                String msg = "parsed to null (blank or null content), treating as corrupted";
+                System.err.println("[ATHR] " + file.getName() + " " + msg);
+                CrashLog.report(file, "loading", msg);
+                backupCorrupted(file);
+                return null;
+            }
+            return loaded;
         } catch (Exception e) {
             System.err.println("[ATHR] Failed to load " + file.getName() + ": " + e.getMessage());
+            CrashLog.report(file, "loading", e.getMessage());
             backupCorrupted(file);
             return null;
         }
@@ -162,8 +182,26 @@ public enum StorageManager {
             w.flush();
         } catch (Exception e) {
             System.err.println("[ATHR] Failed to write " + tmp.getName() + ": " + e.getMessage());
+            CrashLog.report(file, "saving", "write failed: " + e.getMessage());
             tmp.delete();
             return;
+        }
+
+        // verify the written tmp actually parses before committing
+        try (Reader r = new BufferedReader(new InputStreamReader(Files.newInputStream(tmp.toPath()), StandardCharsets.UTF_8))) {
+            new JsonParser().parse(r);
+        } catch (Exception e) {
+            System.err.println("[ATHR] Refusing to commit " + tmp.getName() + " — write verification failed: " + e.getMessage());
+            CrashLog.report(file, "saving", "write verification failed: " + e.getMessage());
+            tmp.delete();
+            return;
+        }
+
+        // fsync so a hard crash cannot leave a zero-filled file behind the atomic rename
+        try (FileChannel ch = FileChannel.open(tmp.toPath(), StandardOpenOption.WRITE)) {
+            ch.force(true);
+        } catch (Exception e) {
+            System.err.println("[ATHR] fsync failed for " + tmp.getName() + ", committing anyway: " + e.getMessage());
         }
 
         // atomic rename
@@ -175,6 +213,7 @@ public enum StorageManager {
             }
         } catch (Exception e) {
             System.err.println("[ATHR] Failed to commit " + file.getName() + ": " + e.getMessage());
+            CrashLog.report(file, "saving", "commit failed: " + e.getMessage());
             tmp.delete();
         }
     }

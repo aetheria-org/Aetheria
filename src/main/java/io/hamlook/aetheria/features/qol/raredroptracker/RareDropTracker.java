@@ -55,7 +55,7 @@ public class RareDropTracker {
         if (tracked == null) return;
 
         tracked.count += delta;
-        ATHRConfig.saveConfig();
+        ATHRConfig.markConfigDirty();
 
         if (config.alertMode == 1) {
             if (firstTimeAlerted.contains(id)) return;
