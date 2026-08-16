@@ -24,6 +24,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,6 +49,15 @@ public class GlobalChat {
     private static volatile boolean missedMentionsFetched = false;
     /** True while a fetch is in flight; blocks a second concurrent request (e.g. onOpen + channel refresh racing). */
     private static volatile boolean missedMentionsInFlight = false;
+    /** Background retry timer for the initial channel load, so a failed API call at client startup isn't fatal. */
+    private static final ScheduledExecutorService CHANNEL_RETRY_EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "GlobalChat-ChannelRetry");
+        t.setDaemon(true);
+        return t;
+    });
+    private static final int MAX_CHANNEL_LOAD_ATTEMPTS = 5;
+    /** True while channels have never successfully loaded this session; drives the "retrying..." UI state. */
+    public static volatile boolean channelsLoadFailed = false;
     /** Lower-cased Minecraft session username (the identity the server enforces against). */
     public static String getUsername() {
         return Minecraft.getMinecraft().getSession().getUsername().toLowerCase();
@@ -169,19 +181,48 @@ public class GlobalChat {
     }
 
     private static void loadChannels(URL url) {
+        loadChannelsWithRetry(url, 1);
+    }
+
+    /**
+     * Loads the initial channel list, retrying with backoff on failure instead of leaving
+     * {@code channels} permanently empty (which previously required the server to proactively
+     * push a sync/refresh command to recover). Attempt 1 runs inline (matches prior behavior at
+     * client startup); further attempts are scheduled on a background timer so they never block
+     * the game thread.
+     */
+    private static void loadChannelsWithRetry(URL url, int attempt) {
         try{
             List<JsonObject> fetched = fetchChannels(url);
-            if(fetched == null) return;
+            if(fetched == null){
+                scheduleChannelRetry(url, attempt);
+                return;
+            }
             for(JsonObject channel : fetched){
                 boolean canSend = !channel.has("canSend") || channel.get("canSend").getAsBoolean();
                 channels.put(channel.get("id").getAsString(),new Channel(channel.get("id").getAsString(),channel.get("name").getAsString(),canSend));
             }
             channelsVersion++;
+            channelsLoadFailed = false;
             Aetheria.logger.info("[GlobalChat]: Successfully loaded " + channels.size() + " channels.");
+            // Loaded later than startup (i.e. a retry): missed-mention catch-up was previously
+            // skipped because channels.isEmpty() short-circuited it. Fire it now that we have channels.
+            if(attempt > 1) fetchMissedMentions();
         }catch(Exception e){
-            Aetheria.logger.warning("[GlobalChat]: Failed to load channels: " + Arrays.toString(e.getStackTrace()));
-            e.printStackTrace();
+            Aetheria.logger.warning("[GlobalChat]: Failed to load channels (attempt " + attempt + "): " + Arrays.toString(e.getStackTrace()));
+            scheduleChannelRetry(url, attempt);
         }
+    }
+
+    private static void scheduleChannelRetry(URL url, int attempt) {
+        channelsLoadFailed = true;
+        if(attempt >= MAX_CHANNEL_LOAD_ATTEMPTS){
+            Aetheria.logger.warning("[GlobalChat]: Giving up loading channels after " + attempt + " attempts.");
+            pushSystemNotice("Couldn't reach Global Chat. Try /globalchat again in a moment.");
+            return;
+        }
+        long delaySeconds = Math.min(30L, attempt * 4L);
+        CHANNEL_RETRY_EXECUTOR.schedule(() -> loadChannelsWithRetry(url, attempt + 1), delaySeconds, TimeUnit.SECONDS);
     }
 
     private static List<JsonObject> fetchChannels(URL url) throws Exception {
@@ -223,21 +264,21 @@ public class GlobalChat {
                 if(fetched == null) return;
                 if(replaceAll) channels.clear();
                 Set<String> keep = new HashSet<>();
-            for(JsonObject channel : fetched){
-                String id = channel.get("id").getAsString();
-                boolean canSend = !channel.has("canSend") || channel.get("canSend").getAsBoolean();
-                keep.add(id);
-                Channel existing = channels.get(id);
-                if(existing != null){
-                    existing.canSend = canSend;
-                }else{
-                    channels.put(id, new Channel(id, channel.get("name").getAsString(), canSend));
+                for(JsonObject channel : fetched){
+                    String id = channel.get("id").getAsString();
+                    boolean canSend = !channel.has("canSend") || channel.get("canSend").getAsBoolean();
+                    keep.add(id);
+                    Channel existing = channels.get(id);
+                    if(existing != null){
+                        existing.canSend = canSend;
+                    }else{
+                        channels.put(id, new Channel(id, channel.get("name").getAsString(), canSend));
+                    }
                 }
-            }
-            channels.keySet().removeIf(id -> !keep.contains(id));
-            channelsVersion++;
-            Aetheria.logger.info("[GlobalChat]: Refreshed " + channels.size() + " channels.");
-            fetchMissedMentions();
+                channels.keySet().removeIf(id -> !keep.contains(id));
+                channelsVersion++;
+                Aetheria.logger.info("[GlobalChat]: Refreshed " + channels.size() + " channels.");
+                fetchMissedMentions();
             }catch(Exception e){
                 Aetheria.logger.warning("[GlobalChat]: Failed to refresh channels: " + e.getMessage());
             }
@@ -280,19 +321,22 @@ public class GlobalChat {
             return false;
         }
         future.thenAccept(response -> {
-           JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
-           if(!responseJson.has("data")) return;
-           JsonObject data = responseJson.getAsJsonObject("data");
-           if(data.has("code")){
-               int code = data.get("code").getAsInt();
-               if(code != 200){
-                   String error = data.has("message") ? data.get("message").getAsString() : "Unknown error";
-                   Aetheria.logger.warning("[G-Chat] Error Sending Message: " + error);
-                   pushSystemNotice(error);
-               }else{
-                   pendingMessages.put(chatMessage.messageID,chatMessage);
-               }
-           }
+            JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
+            if(!responseJson.has("data")) return;
+            JsonObject data = responseJson.getAsJsonObject("data");
+            if(data.has("code")){
+                int code = data.get("code").getAsInt();
+                if(code != 200){
+                    String error = errorMessageOf(data);
+                    Aetheria.logger.warning("[G-Chat] Error Sending Message: " + error);
+                    pushSystemNotice(error);
+                    // Locally-echoed messages (see ChatUI's optimistic send) are otherwise left
+                    // stuck showing "Sending..." forever with no indication the server rejected it.
+                    chatMessage.sendFailed = true;
+                }else{
+                    pendingMessages.put(chatMessage.messageID,chatMessage);
+                }
+            }
         });
         return true;
     }
@@ -303,6 +347,11 @@ public class GlobalChat {
         systemNotices.add(text.trim());
         while (systemNotices.size() > 20) systemNotices.remove(0);
         systemNoticesVersion++;
+    }
+
+    /** Safely reads a "message" field off a data object, falling back when the server omits it. */
+    private static String errorMessageOf(JsonObject data) {
+        return data.has("message") && !data.get("message").isJsonNull() ? data.get("message").getAsString() : "Unknown error";
     }
 
     /** Attempts a reconnect and reports whether the socket is usable for sends. */
@@ -330,7 +379,7 @@ public class GlobalChat {
             if(!data.has("code")) return;
             int code = data.get("code").getAsInt();
             if(code != 200){
-                Aetheria.logger.warning("[G-Chat] Error Deleting Message: " + data.get("message").getAsString());
+                Aetheria.logger.warning("[G-Chat] Error Deleting Message: " + errorMessageOf(data));
             }
         });
     }
@@ -353,7 +402,7 @@ public class GlobalChat {
             if(!data.has("code")) return;
             int code = data.get("code").getAsInt();
             if(code != 200){
-                Aetheria.logger.warning("[G-Chat] Error Editing Message: " + data.get("message").getAsString());
+                Aetheria.logger.warning("[G-Chat] Error Editing Message: " + errorMessageOf(data));
             }
         });
     }
@@ -418,6 +467,14 @@ public class GlobalChat {
     }
 
     public static void receive(String response){
+        try{
+            receiveUnsafe(response);
+        }catch(Exception e){
+            Aetheria.logger.warning("[GlobalChat]: Failed to process websocket message: " + e.getMessage());
+        }
+    }
+
+    private static void receiveUnsafe(String response){
         JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
         if(responseJson == null) return;
         if(responseJson.has("command")){
@@ -445,24 +502,28 @@ public class GlobalChat {
         if(responseJson.has("messageID") && responseJson.has("discordID")){
             if(responseJson.has("content")){
                 ChatMessage message = GSON.fromJson(responseJson, ChatMessage.class);
-                if(message == null) return;
+                if(message == null || message.channelId == null) return;
                 Channel channel = channels.get(message.channelId);
                 if(channel == null) return;
                 channel.receiveMessage(message);
+                // The server sometimes echoes a sent message back with content populated (rather
+                // than as a bare MessageLink); clear the pending entry here too, or it's only ever
+                // removed on the MessageLink path below and pendingMessages leaks forever.
+                if(message.messageID != null) pendingMessages.remove(message.messageID);
                 Notification notification = Notification.createFromMessage(message, channel);
                 if(notification != null){
                     synchronized (notifications) { notifications.add(notification); }
                 }
             }else {
                 MessageLink link = GSON.fromJson(responseJson, MessageLink.class);
-                if (link == null) return;
-                if (pendingMessages.containsKey(link.messageID)) {
-                    ChatMessage msg = pendingMessages.get(link.messageID);
-                    msg.discordID = link.discordID;
-                    Channel channel = channels.get(msg.channelId);
-                    if(channel == null) return;
-                    channel.receiveMessage(msg);
-                    pendingMessages.remove(link.messageID);
+                if (link == null || link.messageID == null) return;
+                ChatMessage pending = pendingMessages.remove(link.messageID);
+                if (pending != null) {
+                    pending.discordID = link.discordID;
+                    if(pending.channelId != null){
+                        Channel channel = channels.get(pending.channelId);
+                        if(channel != null) channel.receiveMessage(pending);
+                    }
                 } else {
                     for(Channel channel : channels.values()){
                         channel.bindDiscordID(link.messageID, link.discordID);
@@ -477,10 +538,11 @@ public class GlobalChat {
     private static void handleMessageDeleted(JsonObject json) {
         int removed = 0;
         int deleted = 0;
-        if(json.has("messages")){
+        if(json.has("messages") && json.get("messages").isJsonArray()){
             for(JsonElement element : json.getAsJsonArray("messages")){
                 if(!element.isJsonObject()) continue;
                 JsonObject msg = element.getAsJsonObject();
+                if(!msg.has("channelId")) continue;
                 String idField = msg.has("messageID") ? "messageID"
                         : msg.has("discordID") ? "discordID" : null;
                 if(idField == null) continue;
@@ -497,12 +559,13 @@ public class GlobalChat {
         Aetheria.logger.info("[GlobalChat]: Removed " + removed + " line(s) for " + deleted + " deleted message(s).");
     }
 
+    /** Assumes the caller already verified {@code msg.has("channelId")}. */
     private static int removeFromChannel(JsonObject msg, String idField) {
+        if(!msg.has("channelId") || msg.get("channelId").isJsonNull()) return 0;
         Channel channel = channels.get(msg.get("channelId").getAsString());
         if(channel == null) return 0;
-        String messageID = "messageID".equals(idField) ? msg.get(idField).getAsString() : null;
-        String discordID = msg.has("discordID") ? msg.get("discordID").getAsString()
-                : ("discordID".equals(idField) ? msg.get(idField).getAsString() : null);
+        String messageID = msg.has("messageID") && !msg.get("messageID").isJsonNull() ? msg.get("messageID").getAsString() : null;
+        String discordID = msg.has("discordID") && !msg.get("discordID").isJsonNull() ? msg.get("discordID").getAsString() : null;
         return channel.removeMessage(messageID, discordID);
     }
 }

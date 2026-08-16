@@ -61,6 +61,13 @@ public class GChatCommand extends ASMCommand {
             Minecraft.getMinecraft().addScheduledTask(() -> {
                 if (result.status == 403) {
                     GlobalChat.pushSystemNotice(result.message != null ? result.message : "You are banned from Global Chat.");
+                } else if (result.status == -1) {
+                    // Pre-check itself failed (timeout/DNS/etc), as opposed to succeeding with a
+                    // non-403 status. The server is still the source of truth for send permission,
+                    // so we still open the UI - just let the user know the check didn't complete
+                    // rather than silently treating it the same as a passed check.
+                    GlobalChat.pushSystemNotice("Couldn't verify Global Chat access - opening anyway, some actions may fail.");
+                    GlobalChat.refreshChannels(false);
                 } else {
                     GlobalChat.refreshChannels(false);
                 }

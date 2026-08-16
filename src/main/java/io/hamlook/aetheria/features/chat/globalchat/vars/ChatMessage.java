@@ -47,8 +47,9 @@ public class ChatMessage {
     public transient String tsHeaderText;
     public transient String tsTimeText;
     public transient String tsDateText;
-    /** Computed at receive time: this message pings the local user (mention, @everyone/@here or a reply to them). */
+    /** Computed at receive time: this message pings the local user (mention, @everyone/@here, or a reply to them). */
     public transient boolean highlighted;
+    public transient volatile boolean sendFailed;
 
     public ChatMessage(String content,String channelID,ChatMessage repliedMessage) {
         this.content = content;
@@ -67,6 +68,7 @@ public class ChatMessage {
         emojiRefs = new HashMap<>();
         stickers = new HashMap<>();
         attachments = new ArrayList<>();
+        embeds = new ArrayList<>();
     }
 
     public ChatMessage addEmojiRefs(HashMap<String,EmojiRef> emojiRefs) {
