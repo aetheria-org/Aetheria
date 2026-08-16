@@ -77,31 +77,30 @@ public final class CrashLog {
     }
 
     private static String buildHeader() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("---- Aetheria Storage Crash Report ----\n");
-        sb.append("Written only when Aetheria fails to load or save a config or data file.\n");
-        sb.append("Each \"Affected file\" block below describes one failed file.\n\n");
-        sb.append("Field meanings:\n");
-        sb.append("  Aetheria version     the mod version that was running\n");
-        sb.append("  Minecraft version    the game version\n");
-        sb.append("  Previous session clean\n");
-        sb.append("                       true  = the last launch shut down normally\n");
-        sb.append("                       false = the last launch did not shut down normally\n");
-        sb.append("                               (crash, power loss, or forced kill)\n");
-        sb.append("  Source               whether the file failed while loading or saving\n");
-        sb.append("  Size                 the file size on disk; a full-size file filled with\n");
-        sb.append("                       zero bytes means the write was interrupted\n");
-        sb.append("  Last modified        when the file was last changed on disk\n");
-        sb.append("  Diagnosis            the likely cause. \"interrupted write\" = damaged by a\n");
-        sb.append("                       crash during a save; \"not crash-related\" = write bug\n");
-        sb.append("                       or an external process\n");
-        sb.append("  Error                the exact error message from the reader or writer\n\n");
-        sb.append("Aetheria version: ").append(Aetheria.VERSION).append("\n");
-        sb.append("Minecraft version: ").append(getMinecraftVersion()).append("\n");
-        sb.append("Previous session clean: ").append(ATHRConfig.previousSessionClean).append("\n\n");
-        sb.append("Corrupted files are backed up as <file>.<timestamp>.corrupted next to the\n");
-        sb.append("original before defaults are used.\n\n");
-        return sb.toString();
+        String sb = "---- Aetheria Storage Crash Report ----\n" +
+                "Written only when Aetheria fails to load or save a config or data file.\n" +
+                "Each \"Affected file\" block below describes one failed file.\n\n" +
+                "Field meanings:\n" +
+                "  Aetheria version     the mod version that was running\n" +
+                "  Minecraft version    the game version\n" +
+                "  Previous session clean\n" +
+                "                       true  = the last launch shut down normally\n" +
+                "                       false = the last launch did not shut down normally\n" +
+                "                               (crash, power loss, or forced kill)\n" +
+                "  Source               whether the file failed while loading or saving\n" +
+                "  Size                 the file size on disk; a full-size file filled with\n" +
+                "                       zero bytes means the write was interrupted\n" +
+                "  Last modified        when the file was last changed on disk\n" +
+                "  Diagnosis            the likely cause. \"interrupted write\" = damaged by a\n" +
+                "                       crash during a save; \"not crash-related\" = write bug\n" +
+                "                       or an external process\n" +
+                "  Error                the exact error message from the reader or writer\n\n" +
+                "Aetheria version: " + Aetheria.VERSION + "\n" +
+                "Minecraft version: " + getMinecraftVersion() + "\n" +
+                "Previous session clean: " + ATHRConfig.previousSessionClean + "\n\n" +
+                "Corrupted files are backed up as <file>.<timestamp>.corrupted next to the\n" +
+                "original before defaults are used.\n\n";
+        return sb;
     }
 
     private static String buildBlock(File file, String source, String error) {

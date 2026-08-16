@@ -133,6 +133,7 @@ public class StorageListener {
         if (!shouldRenderOverlay || !overlayInitialized) return;
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!ContainerUtils.isChestOpen(event.gui)) return;
+        if (!StorageManager.isStorageChest()) return;
         if (StorageManager.isTransitioning()) return;
 
         GuiChest guiChest = (GuiChest) event.gui;
@@ -207,6 +208,7 @@ public class StorageListener {
         if (!shouldRenderOverlay || !overlayInitialized) return;
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!ContainerUtils.isChestOpen(event.gui)) return;
+        if (!StorageManager.isStorageChest()) return;
 
         int keyCode = org.lwjgl.input.Keyboard.getEventKey();
         if (keyCode == org.lwjgl.input.Keyboard.KEY_ESCAPE) return;
@@ -225,6 +227,7 @@ public class StorageListener {
         if (!shouldRenderOverlay || !overlayInitialized) return;
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!ContainerUtils.isChestOpen(event.gui)) return;
+        if (!StorageManager.isStorageChest()) return;
 
         StorageManager.renderOverlay(event.mouseX, event.mouseY);
         ItemRenderUtils.renderHeldCursorItem();

@@ -12,14 +12,14 @@ public class MixinGuiChest_StorageOverlay {
 
     @Inject(method = "drawGuiContainerBackgroundLayer", at = @At("HEAD"), cancellable = true)
     public void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY, CallbackInfo ci) {
-        if (StorageManager.isOverlayActive()) {
+        if (StorageManager.isOverlayActive() && StorageManager.isStorageChest()) {
             ci.cancel();
         }
     }
 
     @Inject(method = "drawGuiContainerForegroundLayer", at = @At("HEAD"), cancellable = true)
     public void drawGuiContainerForegroundLayer(int mouseX, int mouseY, CallbackInfo ci) {
-        if (StorageManager.isOverlayActive()) {
+        if (StorageManager.isOverlayActive() && StorageManager.isStorageChest()) {
             ci.cancel();
         }
     }

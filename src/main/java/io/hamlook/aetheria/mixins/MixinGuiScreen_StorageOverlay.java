@@ -13,7 +13,7 @@ public class MixinGuiScreen_StorageOverlay {
 
     @Inject(method = "renderToolTip", at = @At("HEAD"), cancellable = true)
     public void renderToolTip(ItemStack stack, int x, int y, CallbackInfo ci) {
-        if (StorageManager.isOverlayActive()) {
+        if (StorageManager.isOverlayActive() && StorageManager.isStorageChest()) {
             ci.cancel();
         }
     }

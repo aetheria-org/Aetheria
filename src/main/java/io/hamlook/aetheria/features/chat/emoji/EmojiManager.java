@@ -1,7 +1,6 @@
 package io.hamlook.aetheria.features.chat.emoji;
 
 import com.google.gson.*;
-import com.google.gson.stream.JsonReader;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
@@ -15,10 +14,16 @@ import net.minecraft.util.ResourceLocation;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -88,7 +93,7 @@ public class EmojiManager {
                     vf.version = obj.get("version").getAsInt();
                     File file = new File(EMOJI_DIR, "version.json");
                     file.getParentFile().mkdirs();
-                    try (java.io.FileWriter w = new java.io.FileWriter(file)) {
+                    try (Writer w = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
                         GSON.toJson(vf, w);
                     }
                 }
@@ -364,7 +369,9 @@ public class EmojiManager {
         File file = new File(EMOJI_DIR,"version.json");
         if(!file.exists()) return null;
         try{
-            return GSON.fromJson(new JsonReader(new FileReader(file)),VersionFile.class);
+            try (Reader r = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+                return GSON.fromJson(r, VersionFile.class);
+            }
         }catch(Exception e){
             Aetheria.logger.info("Error Loading Version from Files: " + e.getMessage());
             e.printStackTrace();

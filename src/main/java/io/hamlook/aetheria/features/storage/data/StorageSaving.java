@@ -3,7 +3,7 @@ package io.hamlook.aetheria.features.storage.data;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.core.StorageManager;
+import io.hamlook.aetheria.core.DataFile;
 import io.hamlook.aetheria.utils.data.DataPaths;
 import io.hamlook.aetheria.features.storage.utils.SContainer;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -56,7 +56,7 @@ public class StorageSaving {
         for (File file : files) {
             if (!file.isFile()) continue;
 
-            SContainer container = StorageManager.loadSafe(file, SContainer.class, GSON);
+            SContainer container = new DataFile(file, GSON).load(SContainer.class);
 
             if (container != null && !container.empty) {
                 sorted.put(container.id, container);
@@ -78,6 +78,6 @@ public class StorageSaving {
             folder.mkdirs();
         }
         File file = new File(folder, container.id + ".json");
-        StorageManager.saveAtomic(file, container, GSON);
+        new DataFile(file, GSON).save(container);
     }
 }

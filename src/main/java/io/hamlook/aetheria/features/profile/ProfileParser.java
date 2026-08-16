@@ -6,7 +6,9 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 
 import java.io.FileOutputStream;
-import java.io.FileWriter;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import io.hamlook.aetheria.features.profile.data.HOTMData;
@@ -1196,7 +1198,7 @@ public class ProfileParser {
             try { file1.createNewFile(); }
             catch (IOException e) { Aetheria.logger.info("Error creating profile.json"); return; }
         }
-        try(FileWriter writer = new FileWriter(file1)){
+        try (Writer writer = new OutputStreamWriter(new FileOutputStream(file1), StandardCharsets.UTF_8)) {
             writer.write(GSON.toJson(data));
         }catch (IOException e) { Aetheria.logger.info("Error writing to profile.json");
         }

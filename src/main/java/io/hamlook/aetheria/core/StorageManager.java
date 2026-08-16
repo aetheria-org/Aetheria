@@ -2,23 +2,29 @@ package io.hamlook.aetheria.core;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.features.diana.DianaStats;
-import io.hamlook.aetheria.features.fishing.trophy.TrophyFishStorage;
 import io.hamlook.aetheria.features.farming.FarmingTrackerData;
 import io.hamlook.aetheria.features.farming.organicmatter.OrganicMatterTrackerData;
+import io.hamlook.aetheria.features.fishing.trophy.TrophyFishStorage;
 import io.hamlook.aetheria.features.mining.powder.PowderStats;
 import io.hamlook.aetheria.features.mining.pristine.PristineStats;
+import io.hamlook.aetheria.features.misc.ghosttracker.GhostStats;
 import io.hamlook.aetheria.features.misc.invbuttons.InventoryButtonStorage;
 import io.hamlook.aetheria.features.misc.pet.CurrentPetTracker;
 import io.hamlook.aetheria.features.misc.pet.PetCache;
 import io.hamlook.aetheria.features.misc.protect.ProtectedItemStorage;
-import io.hamlook.aetheria.features.misc.ghosttracker.GhostStats;
 import io.hamlook.aetheria.features.scoreboard.MaxwellPowerSync;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.features.waypoints.WaypointStorage;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -45,19 +51,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public enum StorageManager {
 
-    WAYPOINTS      (WaypointStorage.getInstance()),
-    INV_BUTTONS    (InventoryButtonStorage.getInstance()),
-    DIANA_STATS    (DianaStats.getInstance()),
-    POWDER_STATS   (PowderStats.getInstance()),
-    PRISTINE_STATS (PristineStats.getInstance()),
-    MAXWELL_POWER  (MaxwellPowerSync.getInstance()),
-    PET_CACHE      (PetCache.getInstance()),
-    CURRENT_PET    (CurrentPetTracker.getInstance()),
-    TROPHY_FISH    (TrophyFishStorage.getInstance()),
-    FARMING_TRACKER(FarmingTrackerData.getInstance()),
-    ORGANIC_MATTER_TRACKER(OrganicMatterTrackerData.getInstance()),
-    GHOST_STATS    (GhostStats.getInstance());
+    WAYPOINTS(WaypointStorage.getInstance()), INV_BUTTONS(InventoryButtonStorage.getInstance()), DIANA_STATS(DianaStats.getInstance()), POWDER_STATS(PowderStats.getInstance()), PRISTINE_STATS(PristineStats.getInstance()), MAXWELL_POWER(MaxwellPowerSync.getInstance()), PET_CACHE(PetCache.getInstance()), CURRENT_PET(CurrentPetTracker.getInstance()), TROPHY_FISH(TrophyFishStorage.getInstance()), FARMING_TRACKER(FarmingTrackerData.getInstance()), ORGANIC_MATTER_TRACKER(OrganicMatterTrackerData.getInstance()), GHOST_STATS(GhostStats.getInstance());
 
+    private static final ConcurrentHashMap<String, Object> FILE_LOCKS = new ConcurrentHashMap<>();
+    private static final Charset WINDOWS_1252 = Charset.forName("windows-1252");
     private final Managed instance;
 
     StorageManager(Managed instance) {
@@ -108,20 +105,21 @@ public enum StorageManager {
                 try {
                     ((AutoSaveable) entry.instance).autoSave();
                 } catch (Exception e) {
-                    System.err.println("[ATHR/Shutdown] Error saving " + entry.name() + ": " + e.getMessage());
+                    Aetheria.logger.severe("[ATHR/Shutdown] Error saving " + entry.name() + ": " + e.getMessage());
                 }
             }
         }
         try {
             PetCache.getInstance().save();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         try {
             CurrentPetTracker.getInstance().save();
-        } catch (Exception ignored) {}
-        if (!StorageData.containers.isEmpty()) {
-            try {
-                StorageData.saveContainers();
-            } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
+        try {
+            StorageData.saveContainers();
+        } catch (Exception ignored) {
         }
     }
 
@@ -140,7 +138,7 @@ public enum StorageManager {
                         try {
                             ((AutoSaveable) entry.instance).autoSave();
                         } catch (Exception e) {
-                            System.err.println("[ATHR/AutoSave] Error saving " + entry.name() + ": " + e.getMessage());
+                            Aetheria.logger.severe("[ATHR/AutoSave] Error saving " + entry.name() + ": " + e.getMessage());
                         }
                     }
                 }
@@ -155,18 +153,39 @@ public enum StorageManager {
      */
     public static <T> T loadSafe(File file, Class<T> clazz, Gson gson) {
         if (file == null || !file.exists()) return null;
-        try (Reader r = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
-            T loaded = gson.fromJson(r, clazz);
-            if (loaded == null && file.length() > 0) {
+        byte[] bytes;
+        try {
+            bytes = Files.readAllBytes(file.toPath());
+        } catch (Exception e) {
+            Aetheria.logger.severe("[ATHR] Failed to read " + file.getName() + ": " + e.getMessage());
+            CrashLog.report(file, "loading", e.getMessage());
+            backupCorrupted(file);
+            return null;
+        }
+        boolean legacy;
+        String json;
+        try {
+            json = decodeStrictUtf8(bytes);
+            legacy = false;
+        } catch (CharacterCodingException e) {
+            json = new String(bytes, WINDOWS_1252);
+            legacy = true;
+        }
+        try {
+            T loaded = gson.fromJson(json, clazz);
+            if (loaded == null && bytes.length > 0) {
                 String msg = "parsed to null (blank or null content), treating as corrupted";
-                System.err.println("[ATHR] " + file.getName() + " " + msg);
+                Aetheria.logger.warning("[ATHR] " + file.getName() + " " + msg);
                 CrashLog.report(file, "loading", msg);
                 backupCorrupted(file);
                 return null;
             }
+            if (legacy && loaded != null) {
+                saveAtomic(file, loaded, gson);
+            }
             return loaded;
         } catch (Exception e) {
-            System.err.println("[ATHR] Failed to load " + file.getName() + ": " + e.getMessage());
+            Aetheria.logger.severe("[ATHR] Failed to load " + file.getName() + ": " + e.getMessage());
             CrashLog.report(file, "loading", e.getMessage());
             backupCorrupted(file);
             return null;
@@ -178,25 +197,44 @@ public enum StorageManager {
      */
     public static <T> T loadSafe(File file, java.lang.reflect.Type type, Gson gson) {
         if (file == null || !file.exists()) return null;
-        try (Reader r = new BufferedReader(new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8))) {
-            T loaded = gson.fromJson(r, type);
-            if (loaded == null && file.length() > 0) {
+        byte[] bytes;
+        try {
+            bytes = Files.readAllBytes(file.toPath());
+        } catch (Exception e) {
+            Aetheria.logger.severe("[ATHR] Failed to read " + file.getName() + ": " + e.getMessage());
+            CrashLog.report(file, "loading", e.getMessage());
+            backupCorrupted(file);
+            return null;
+        }
+        boolean legacy;
+        String json;
+        try {
+            json = decodeStrictUtf8(bytes);
+            legacy = false;
+        } catch (CharacterCodingException e) {
+            json = new String(bytes, WINDOWS_1252);
+            legacy = true;
+        }
+        try {
+            T loaded = gson.fromJson(json, type);
+            if (loaded == null && bytes.length > 0) {
                 String msg = "parsed to null (blank or null content), treating as corrupted";
-                System.err.println("[ATHR] " + file.getName() + " " + msg);
+                Aetheria.logger.warning("[ATHR] " + file.getName() + " " + msg);
                 CrashLog.report(file, "loading", msg);
                 backupCorrupted(file);
                 return null;
             }
+            if (legacy && loaded != null) {
+                saveAtomic(file, loaded, gson);
+            }
             return loaded;
         } catch (Exception e) {
-            System.err.println("[ATHR] Failed to load " + file.getName() + ": " + e.getMessage());
+            Aetheria.logger.severe("[ATHR] Failed to load " + file.getName() + ": " + e.getMessage());
             CrashLog.report(file, "loading", e.getMessage());
             backupCorrupted(file);
             return null;
         }
     }
-
-    private static final ConcurrentHashMap<String, Object> FILE_LOCKS = new ConcurrentHashMap<>();
 
     /**
      * Atomically saves an object to disk using a .tmp → rename pattern.
@@ -215,23 +253,22 @@ public enum StorageManager {
     private static boolean saveAtomicLocked(File file, Object data, Gson gson) {
         file.getParentFile().mkdirs();
         File tmp = new File(file.getParentFile(), file.getName() + ".tmp");
-        try (Writer w = new BufferedWriter(new OutputStreamWriter(
-                Files.newOutputStream(tmp.toPath(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING),
-                StandardCharsets.UTF_8))) {
+        try (Writer w = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(tmp.toPath(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING), StandardCharsets.UTF_8))) {
             gson.toJson(data, w);
             w.flush();
         } catch (Exception e) {
-            System.err.println("[ATHR] Failed to write " + tmp.getName() + ": " + e.getMessage());
+            Aetheria.logger.severe("[ATHR] Failed to write " + tmp.getName() + ": " + e.getMessage());
             CrashLog.report(file, "saving", "write failed: " + e.getMessage());
             tmp.delete();
             return false;
         }
 
         // verify the written tmp actually parses before committing
-        try (Reader r = new BufferedReader(new InputStreamReader(Files.newInputStream(tmp.toPath()), StandardCharsets.UTF_8))) {
-            new JsonParser().parse(r);
+        try {
+            String content = new String(Files.readAllBytes(tmp.toPath()), StandardCharsets.UTF_8);
+            JsonParser.parseString(content);
         } catch (Exception e) {
-            System.err.println("[ATHR] Refusing to commit " + tmp.getName() + " — write verification failed: " + e.getMessage());
+            Aetheria.logger.severe("[ATHR] Refusing to commit " + tmp.getName() + " — write verification failed: " + e.getMessage());
             CrashLog.report(file, "saving", "write verification failed: " + e.getMessage());
             tmp.delete();
             return false;
@@ -241,7 +278,7 @@ public enum StorageManager {
         try (FileChannel ch = FileChannel.open(tmp.toPath(), StandardOpenOption.WRITE)) {
             ch.force(true);
         } catch (Exception e) {
-            System.err.println("[ATHR] fsync failed for " + tmp.getName() + ", committing anyway: " + e.getMessage());
+            Aetheria.logger.warning("[ATHR] fsync failed for " + tmp.getName() + ", committing anyway: " + e.getMessage());
         }
 
         // atomic rename
@@ -252,7 +289,7 @@ public enum StorageManager {
                 Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (Exception e) {
-            System.err.println("[ATHR] Failed to commit " + file.getName() + ": " + e.getMessage());
+            Aetheria.logger.severe("[ATHR] Failed to commit " + file.getName() + ": " + e.getMessage());
             CrashLog.report(file, "saving", "commit failed: " + e.getMessage());
             tmp.delete();
             return false;
@@ -260,13 +297,22 @@ public enum StorageManager {
         return true;
     }
 
+    private static String decodeStrictUtf8(byte[] bytes) throws CharacterCodingException {
+        CharsetDecoder strict = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT);
+        String json = strict.decode(ByteBuffer.wrap(bytes)).toString();
+        return !json.isEmpty() && json.charAt(0) == '\uFEFF' ? json.substring(1) : json;
+    }
+
     private static void backupCorrupted(File file) {
         String stamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         File backup = new File(file.getParentFile(), file.getName() + "." + stamp + ".corrupted");
         try {
             Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            System.err.println("[ATHR] Backed up corrupted file to " + backup.getName());
-        } catch (Exception ignored) {}
+            Aetheria.logger.warning("[ATHR] Backed up corrupted file to " + backup.getName());
+        } catch (Exception ignored) {
+        }
     }
 
     /**
@@ -275,6 +321,7 @@ public enum StorageManager {
      */
     public interface Managed {
         void initFile(File configDir);
+
         void load();
     }
 
