@@ -42,7 +42,7 @@ public class JsonCache {
                 return result;
             }
         } catch (Exception e) {
-            System.err.println("[ATHR] JSON error (" + key + "): " + e.getMessage());
+            io.hamlook.aetheria.Aetheria.logger.warning("[ATHR] JSON error (" + key + "): " + e.getMessage());
         }
         return fallback != null ? fallback.get() : null;
     }

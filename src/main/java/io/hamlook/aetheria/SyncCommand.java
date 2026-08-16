@@ -44,8 +44,7 @@ public class SyncCommand extends ASMCommand {
     public void execute(ICommandSender sender, String[] args) throws CommandException {
         if (!(sender instanceof EntityPlayer)) return;
 
-        if (ATHRConfig.feature != null && !NetworkGuard.apiAllowed()) {
-            ChatUtils.sendMessage("§cAPI calls are disabled. Enable them in Settings → Network to use /sync.");
+        if (ATHRConfig.feature != null && !NetworkGuard.requiresApi("/sync")) {
             return;
         }
 

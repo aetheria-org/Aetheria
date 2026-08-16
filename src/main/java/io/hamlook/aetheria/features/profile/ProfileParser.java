@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.profile;
 import com.google.gson.Gson;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 
 import java.io.FileOutputStream;
@@ -111,6 +112,7 @@ public class ProfileParser {
 
     public static void parse(String player, Container container) {
         if (SkyblockData.getEnvironment().isTest()) return;
+        if (!NetworkGuard.requiresApi("Profile Parser")) return;
         base = parseBasicInfo(container);
         if (base == null) return;
         base.playerProfile = lastCachedProfile;

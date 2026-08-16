@@ -81,6 +81,7 @@ public class ProfileViewerAPI {
     }
 
     public static PlayerProfile getData(String user){
+        if (!NetworkGuard.requiresApi("Profile Viewer")) return null;
         fetchFromAPI(user);
         return profileHashMap.getOrDefault(user,null);
     }

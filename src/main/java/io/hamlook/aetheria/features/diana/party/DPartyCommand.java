@@ -95,7 +95,9 @@ public class DPartyCommand extends ASMCommand {
 
     /** Opens the Diana party browser GUI. */
     public void openListGui() {
-        if (!WebSocketClient.isConnected && NetworkGuard.apiAllowed()) {
+        if (!NetworkGuard.requiresApi("Diana Parties")) return;
+        WebSocketClient.markActivity();
+        if (!WebSocketClient.isConnected) {
             DianaPartyConnector.connectToAPI();
         }
         DPartyGUI.open();

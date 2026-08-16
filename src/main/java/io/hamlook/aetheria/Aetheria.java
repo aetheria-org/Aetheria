@@ -39,15 +39,17 @@ public class Aetheria {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
+        logger = Logger.getLogger("[ATHR] ");
         ATHRConfig.init();
         ATHRRepo.init();
         EmojiManager.init();
-        logger = Logger.getLogger("[ATHR] ");
         StorageManager.initAll(ATHRConfig.configDirectory);
         CapeManager.initialise(false);
         TesterWhitelist.init(VERSION);
         webSocketClient = new WebSocketClient();
-        webSocketClient.connect();
+        if (ATHRConfig.feature == null || !ATHRConfig.feature.network.smartSocketLifecycle) {
+            webSocketClient.connect();
+        }
     }
 
     @Mod.EventHandler

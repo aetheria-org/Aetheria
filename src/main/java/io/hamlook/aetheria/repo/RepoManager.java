@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.repo;
 
 import com.google.gson.GsonBuilder;
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.JsonCache;
@@ -29,7 +30,10 @@ public class RepoManager {
 
     public void refreshAll() {
         for (String key : sources.keySet()) {
-            System.out.println("[ATHR] Fetching: " + sources.get(key).url);
+            if (!NetworkGuard.githubAllowed()) {
+                Aetheria.logger.info("[ATHR] Skipping repo fetch (" + key + "): GitHub calls disabled");
+                continue;
+            }
             doFetch(key);
         }
     }
@@ -63,7 +67,7 @@ public class RepoManager {
                     notifyListeners(key);
                 }
             } catch (Exception e) {
-                System.err.println("[ATHR] Fetch failed (" + key + "): " + e.getMessage());
+                Aetheria.logger.warning("[ATHR] Fetch failed (" + key + "): " + e.getMessage());
             } finally {
                 src.release();
             }
@@ -77,7 +81,7 @@ public class RepoManager {
             try {
                 cb.run();
             } catch (Exception e) {
-                System.err.println("[ATHR] Listener error (" + key + "): " + e.getMessage());
+                Aetheria.logger.warning("[ATHR] Listener error (" + key + "): " + e.getMessage());
             }
         }
     }

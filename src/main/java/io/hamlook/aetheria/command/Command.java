@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.command;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -24,6 +25,7 @@ public class Command extends ASMCommand {
         if (args.length > 0) {
             switch (args[0].toLowerCase()) {
                 case "reload":
+                    if (!NetworkGuard.requiresGithub("Repo Data")) break;
                     ATHRConfig.reloadRepo();
                     ChatUtils.sendMessage("§a[ATHR] §fRepo refresh triggered.");
                     break;

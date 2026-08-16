@@ -504,9 +504,14 @@ public class ATHRConfig {
     public void onGuiOpen(GuiOpenEvent event) {
         if (!(event.gui instanceof GuiMainMenu)) return;
 
-        if (ATHRConfig.feature.network.hasSeenPrivacyNotice) return;
+        if (!ATHRConfig.feature.network.hasSeenPrivacyNotice) {
+            event.gui = new PrivacyNoticeScreen(event.gui);
+            return;
+        }
 
-        event.gui = new PrivacyNoticeScreen(event.gui);
+        if (!ATHRConfig.feature.network.hasSeenSocketLifecycleNotice) {
+            event.gui = new PrivacyNoticeScreen(event.gui, true);
+        }
     }
 
     @SubscribeEvent
