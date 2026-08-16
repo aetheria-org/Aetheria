@@ -192,7 +192,8 @@
 > **Note:** All commands are available with `asm`, `athr`, and `jef` prefixes for backward compatibility. For example, `/asm`, `/athr`, and `/jef` all work interchangeably.
 
 - `/asm` — Opens the main Aetheria menu.
-- `/asm config [category]` — Opens config, optionally to a specific category.
+- `/asm config` — Opens the config editor.
+- `/asm <search>` — Opens the config editor with the search box pre-filled with `<search>`.
 - `/asm reload` — Reloads repo data.
 - `/pv [username]` — Opens the in-game Profile Viewer.
 - `/sync` — Generate a sync code to link your Discord with SkyAtlas.

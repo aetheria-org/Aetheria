@@ -241,6 +241,10 @@ public class ATHRConfig {
         screenToOpen = new GuiScreenElementWrapper(new ConfigEditor(feature, categoryName));
     }
 
+    public static void openSearch(String search) {
+        screenToOpen = new GuiScreenElementWrapper(new ConfigEditor(feature, null, search));
+    }
+
     public static void openWaypointGroupGui() {
         screenToOpen = new GuiScreenElementWrapper(new WaypointGroupGui());
     }

@@ -4,7 +4,6 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -15,7 +14,7 @@ public class Command extends ASMCommand {
     public String getName() { return "athr"; }
 
     @Override
-    public String getUsage() { return "/athr | /athr config | /athr <category> | /athr reload"; }
+    public String getUsage() { return "/athr | /athr config | /athr reload | /athr <search>"; }
 
     @Override
     public List<String> getAliases() { return Arrays.asList("aetheria","jef","asm"); }
@@ -32,7 +31,7 @@ public class Command extends ASMCommand {
                     ATHRConfig.openGui();
                     break;
                 default:
-                    ATHRConfig.openCategory(StringUtils.join(args, " "));
+                    ATHRConfig.openSearch(String.join(" ", args));
                     break;
             }
         } else {

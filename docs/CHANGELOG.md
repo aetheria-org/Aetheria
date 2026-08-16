@@ -30,6 +30,8 @@ Aetheria's Skyblock Mod 1.2.0: major performance improvements, farming features,
 - Centralized async execution with ThreadUtils
 - Fixed ChatUtils leaking executors
 - Switched SkyAtlas links to https://skyatlas.lol
+- Improved config saving to be better
+- Added Aetheria logs in config/aetheria/logs which give details abiut storage crashes
 
 ### Bug Fixes & Improvements
 
@@ -51,6 +53,7 @@ Aetheria's Skyblock Mod 1.2.0: major performance improvements, farming features,
 - Added Show Rates as Rough for Pristine Tracker
 - Fixed Anvil Combine Helper highlighting every enchant
 - Fixed Garden not being present as a farming island
+- `/asm <search>` now queries config search
 
 ### Performance
 

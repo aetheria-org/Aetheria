@@ -125,6 +125,15 @@ public class ConfigEditor extends GuiElement {
         editor = this;
     }
 
+    public ConfigEditor(Object config, String categoryOpen, String search) {
+        this(config, categoryOpen);
+        if (search != null && !search.isEmpty()) {
+            searchField.setText(search);
+            search();
+            searchField.setFocus(true);
+        }
+    }
+
     private void indexSubcategoryOptions(ConfigProcessor.ProcessedCategory category, LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subcategories, List<String> parentPath) {
         for (Map.Entry<String, ConfigProcessor.ProcessedSubcategory> subEntry : subcategories.entrySet()) {
             ConfigProcessor.ProcessedSubcategory sub = subEntry.getValue();
