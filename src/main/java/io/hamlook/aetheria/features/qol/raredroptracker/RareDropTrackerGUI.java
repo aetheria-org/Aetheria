@@ -6,6 +6,7 @@ import io.hamlook.aetheria.core.features.qol.RareDropTrackerConfig;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElement;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
+import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -75,23 +76,19 @@ public class RareDropTrackerGUI extends GuiElement {
         Map<String, SkyblockItem> byName = new LinkedHashMap<>();
         for (SkyblockItem item : ItemRegistry.getAllItems()) {
             if (item.displayName == null || item.displayName.trim().isEmpty()) continue;
-            String clean = stripColor(item.displayName).trim();
+            String clean = ColorUtils.stripColor(item.displayName).trim();
             if (clean.isEmpty()) continue;
             byName.putIfAbsent(clean.toLowerCase(), item);
         }
 
         List<String> names = new ArrayList<>();
         for (SkyblockItem item : byName.values()) {
-            names.add(stripColor(item.displayName).trim());
+            names.add(ColorUtils.stripColor(item.displayName).trim());
         }
         names.sort(Comparator.naturalOrder());
 
         nameToItemCache = byName;
         allNamesCache = names;
-    }
-
-    private static String stripColor(String s) {
-        return s == null ? "" : s.replaceAll("§.", "");
     }
 
     private void updatePanel(ScaledResolution sr) {
@@ -109,6 +106,7 @@ public class RareDropTrackerGUI extends GuiElement {
     }
 
     private void updateSuggestions() {
+        buildCacheIfNeeded();
         filteredNames.clear();
         if (allNamesCache == null || searchField == null) return;
 
@@ -141,7 +139,7 @@ public class RareDropTrackerGUI extends GuiElement {
         RareDropTrackerConfig config = ATHRConfig.feature.qol.rareDropTracker;
         String id = item.skyblockID.toLowerCase();
         if (config.trackedItems.containsKey(id)) {
-            message = "Already tracking " + stripColor(item.displayName);
+            message = "Already tracking " + ColorUtils.stripColor(item.displayName);
             messageColor = 0xFFFF55;
             return;
         }
@@ -149,7 +147,7 @@ public class RareDropTrackerGUI extends GuiElement {
         String displayName = item.displayName != null ? item.displayName : item.skyblockID;
         config.trackedItems.put(id, new RareDropTrackerConfig.TrackedItem(displayName));
         ATHRConfig.saveConfig();
-        message = "Now tracking " + stripColor(item.displayName);
+        message = "Now tracking " + ColorUtils.stripColor(item.displayName);
         messageColor = 0x55FF55;
         searchField.setText("");
         filteredNames.clear();
@@ -159,19 +157,19 @@ public class RareDropTrackerGUI extends GuiElement {
         RareDropTrackerConfig config = ATHRConfig.feature.qol.rareDropTracker;
         config.trackedItems.remove(id);
         ATHRConfig.saveConfig();
-        message = "Stopped tracking " + stripColor(displayName);
+        message = "Stopped tracking " + ColorUtils.stripColor(displayName);
         messageColor = 0xAAAAAA;
     }
 
     private void adjustGoal(RareDropTrackerConfig.TrackedItem item, int delta) {
         item.goal = Math.max(0, item.goal + delta);
-        ATHRConfig.saveConfig();
+        ATHRConfig.markConfigDirty();
     }
 
     private void resetCount(RareDropTrackerConfig.TrackedItem item) {
         item.count = 0;
-        ATHRConfig.saveConfig();
-        message = "Reset progress for " + stripColor(item.displayName);
+        ATHRConfig.markConfigDirty();
+        message = "Reset progress for " + ColorUtils.stripColor(item.displayName);
         messageColor = 0xAAAAAA;
     }
 
@@ -226,7 +224,7 @@ public class RareDropTrackerGUI extends GuiElement {
                     item.command = text.startsWith("/") ? text : "/" + text;
                 }
             }
-            ATHRConfig.saveConfig();
+            ATHRConfig.markConfigDirty();
         }
         cancelEdit();
     }
@@ -238,7 +236,7 @@ public class RareDropTrackerGUI extends GuiElement {
     }
 
     private int listTop(int addY) {
-        return addY + SF_H + 6 + 12 + 1 + 6 + 12;
+        return addY + SF_H + 6 + 12 + 6 + 12;
     }
 
     @Override
@@ -273,8 +271,7 @@ public class RareDropTrackerGUI extends GuiElement {
         searchField.drawTextBox();
 
         int addX = px + pw - PAD - BTN_W;
-        int addY = curY;
-        drawBtn(addX, curY, EnumChatFormatting.WHITE + "Add", fr, isHovered(addX, curY, BTN_W, SF_H));
+        drawBtn(addX, curY, EnumChatFormatting.WHITE + "Add", fr, isHovered(addX, curY));
         curY += SF_H + 6;
 
         if (!message.isEmpty()) {
@@ -346,7 +343,7 @@ public class RareDropTrackerGUI extends GuiElement {
         boolean editingCmd = id.equals(editingItemId) && "command".equals(editingField);
 
         if (editingCmd) {
-            positionEditField(px + PAD, rowY - 1, nameMaxWidth, ROW_H - 1);
+            positionEditField(px + PAD, rowY - 1, nameMaxWidth);
             editField.drawTextBox();
         } else {
             String rawName = item.displayName != null ? item.displayName : "";
@@ -355,7 +352,7 @@ public class RareDropTrackerGUI extends GuiElement {
         }
 
         if (editingGoal) {
-            positionEditField(progX, rowY - 1, progW, ROW_H - 1);
+            positionEditField(progX, rowY - 1, progW);
             editField.drawTextBox();
         } else {
             fr.drawStringWithShadow(progressStr, progX, rowY, -1);
@@ -368,11 +365,11 @@ public class RareDropTrackerGUI extends GuiElement {
         drawBracketBtn(delStr, delX, rowY, delW, mouse, fr);
     }
 
-    private void positionEditField(int x, int y, int w, int h) {
+    private void positionEditField(int x, int y, int w) {
         editField.xPosition = x;
         editField.yPosition = y;
         editField.width = Math.max(MIN_EDIT_FIELD_W, w);
-        editField.height = h;
+        editField.height = ROW_H - 1;
     }
 
     private void drawBracketBtn(String label, int x, int y, int w, int[] mouse, FontRenderer fr) {
@@ -560,8 +557,8 @@ public class RareDropTrackerGUI extends GuiElement {
         return mx >= x && mx <= x + w && my >= y && my <= y + h;
     }
 
-    private boolean isHovered(int x, int y, int w, int h) {
+    private boolean isHovered(int x, int y) {
         int[] mouse = KeybindHelper.getMouseCoords(new ScaledResolution(Minecraft.getMinecraft()));
-        return inBounds(mouse[0], mouse[1], x, y, w, h);
+        return inBounds(mouse[0], mouse[1], x, y, BTN_W, SF_H);
     }
 }

@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * the first 3 letters of an item's name, then track it so RareDropTracker can alert
  * you the moment your inventory update event shows you obtained it.
  */
-
+@RegisterCommand
 public class RareDropTrackerCommand extends ASMCommand {
 
     private static final String PREFIX = "§d[RareDrops] §7";
@@ -60,20 +60,20 @@ public class RareDropTrackerCommand extends ASMCommand {
                 break;
 
             case "search": {
-                String query = joinArgs(args, 1);
-                if (!validateQuery(sender, query)) return;
+                String query = joinArgs(args);
+                if (validateQuery(query)) return;
                 List<SkyblockItem> matches = search(query);
                 showResults(sender, query, matches, false);
                 break;
             }
 
             case "add": {
-                String query = joinArgs(args, 1);
-                if (!validateQuery(sender, query)) return;
+                String query = joinArgs(args);
+                if (validateQuery(query)) return;
 
-                SkyblockItem exact = findExactId(query);
-                if (exact != null) {
-                    track(sender, config, exact);
+                Optional<SkyblockItem> exact = findExactId(query);
+                if (exact.isPresent()) {
+                    track(config, exact.get());
                     return;
                 }
 
@@ -81,7 +81,7 @@ public class RareDropTrackerCommand extends ASMCommand {
                 if (matches.isEmpty()) {
                     ChatUtils.sendMessage(PREFIX + "§cNo items found matching §f\"" + query + "\"§c.");
                 } else if (matches.size() == 1) {
-                    track(sender, config, matches.get(0));
+                    track(config, matches.get(0));
                 } else {
                     showResults(sender, query, matches, true);
                 }
@@ -121,16 +121,16 @@ public class RareDropTrackerCommand extends ASMCommand {
         }
     }
 
-    private boolean validateQuery(ICommandSender sender, String query) {
+    private boolean validateQuery(String query) {
         if (query == null || query.trim().length() < MIN_QUERY_LENGTH) {
             ChatUtils.sendMessage(PREFIX + "§cType at least " + MIN_QUERY_LENGTH + " letters of the item's name.");
-            return false;
+            return true;
         }
         if (!ItemRegistry.isLoaded) {
             ChatUtils.sendMessage(PREFIX + "§cThe item database is still loading, try again in a moment.");
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     /**
@@ -139,22 +139,15 @@ public class RareDropTrackerCommand extends ASMCommand {
      */
     private List<SkyblockItem> search(String query) {
         String needle = query.trim().toLowerCase();
-        return ItemRegistry.getAllItems().stream()
-                .filter(i -> i.cleanNameLower != null && !i.cleanNameLower.isEmpty()
-                        && (i.cleanNameLower.contains(needle) || (i.idLower != null && i.idLower.contains(needle))))
-                .sorted(Comparator.comparing(i -> i.cleanNameLower))
-                .collect(Collectors.toList());
+        return ItemRegistry.getAllItems().stream().filter(i -> i.cleanNameLower != null && !i.cleanNameLower.isEmpty() && (i.cleanNameLower.contains(needle) || (i.idLower != null && i.idLower.contains(needle)))).sorted(Comparator.comparing(i -> i.cleanNameLower)).collect(Collectors.toList());
     }
 
-    private SkyblockItem findExactId(String query) {
+    private Optional<SkyblockItem> findExactId(String query) {
         String needle = query.trim().toLowerCase();
-        return ItemRegistry.getAllItems().stream()
-                .filter(i -> i.idLower != null && i.idLower.equals(needle))
-                .findFirst()
-                .orElse(null);
+        return ItemRegistry.getAllItems().stream().filter(i -> i.idLower != null && i.idLower.equals(needle)).findFirst();
     }
 
-    private void track(ICommandSender sender, RareDropTrackerConfig config, SkyblockItem item) {
+    private void track(RareDropTrackerConfig config, SkyblockItem item) {
         String id = item.skyblockID.toLowerCase();
         if (config.trackedItems.containsKey(id)) {
             ChatUtils.sendMessage(PREFIX + "§eAlready tracking §f" + item.displayName);
@@ -222,9 +215,9 @@ public class RareDropTrackerCommand extends ASMCommand {
         sender.addChatMessage(new ChatComponentText(""));
     }
 
-    private String joinArgs(String[] args, int from) {
-        if (args.length <= from) return "";
-        return String.join(" ", Arrays.copyOfRange(args, from, args.length));
+    private String joinArgs(String[] args) {
+        if (args.length <= 1) return "";
+        return String.join(" ", Arrays.copyOfRange(args, 1, args.length));
     }
 
     @Override

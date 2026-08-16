@@ -10,16 +10,24 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.input.Mouse;
 
+import java.util.function.Consumer;
+
 import static io.hamlook.aetheria.Resources.button_white;
 
 public class GuiOptionEditorColour extends GuiOptionEditor {
 
+    private final Consumer<String> setter;
     private String chromaColour;
     private GuiElementColour colourElement = null;
 
     public GuiOptionEditorColour(ConfigProcessor.ProcessedOption option) {
+        this(option, (String) option.get(), option::set);
+    }
+
+    protected GuiOptionEditorColour(ConfigProcessor.ProcessedOption option, String initialColour, Consumer<String> setter) {
         super(option);
-        this.chromaColour = (String) option.get();
+        this.chromaColour = initialColour;
+        this.setter = setter;
     }
 
     @Override
@@ -53,17 +61,10 @@ public class GuiOptionEditorColour extends GuiOptionEditor {
         int height = getHeight();
 
         if (Mouse.getEventButtonState() && Mouse.getEventButton() == 0 && mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24 && mouseY > y + height - 7 - 14 && mouseY < y + height - 7 + 2) {
-            colourElement =
-                    new GuiElementColour(
-                            mouseX,
-                            mouseY,
-                            (String) option.get(),
-                            val -> {
-                                option.set(val);
-                                chromaColour = val;
-                            },
-                            () -> colourElement = null
-                    );
+            colourElement = new GuiElementColour(mouseX, mouseY, chromaColour, val -> {
+                setter.accept(val);
+                chromaColour = val;
+            }, () -> colourElement = null);
         }
 
         return false;

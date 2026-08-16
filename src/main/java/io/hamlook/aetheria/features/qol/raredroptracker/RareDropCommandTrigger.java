@@ -23,6 +23,7 @@ public class RareDropCommandTrigger {
 
     private static String pendingCommand = null;
     private static long promptStartTime = 0L;
+    private static boolean messageSent = false;
 
     private RareDropCommandTrigger() {
     }
@@ -34,17 +35,23 @@ public class RareDropCommandTrigger {
     public static void arm(String command) {
         pendingCommand = command;
         promptStartTime = System.currentTimeMillis();
+        messageSent = false;
     }
 
     private static boolean isActive() {
-        return pendingCommand != null && System.currentTimeMillis() - promptStartTime < WINDOW_MS;
+        return pendingCommand == null || System.currentTimeMillis() - promptStartTime >= WINDOW_MS;
     }
 
     @SubscribeEvent
     public void onDraw(GuiScreenEvent.DrawScreenEvent.Post event) {
-        if (!isActive()) {
+        if (isActive()) {
             pendingCommand = null;
             return;
+        }
+
+        if (!messageSent) {
+            ChatUtils.sendMessage("§d§lClick anywhere with-in 5 seconds to open the command you set for this drop!");
+            messageSent = true;
         }
 
         Minecraft mc = Minecraft.getMinecraft();
@@ -59,7 +66,7 @@ public class RareDropCommandTrigger {
 
     @SubscribeEvent
     public void onMouseInputPost(GuiScreenEvent.MouseInputEvent.Post event) {
-        if (!isActive()) return;
+        if (isActive()) return;
         if (!Mouse.getEventButtonState() || Mouse.getEventButton() != 0) return;
 
         String command = pendingCommand;

@@ -110,6 +110,8 @@ public class ConfigProcessor {
                 editor = new GuiOptionEditorDropdown(option, field.getAnnotation(ConfigEditorDropdown.class).values(), (int) option.get(), true);
             else if (field.isAnnotationPresent(ConfigEditorStyle.class))
                 editor = new GuiOptionEditorStyle(option, (int) option.get());
+            else if (field.isAnnotationPresent(ConfigEditorColour.class))
+                editor = new GuiOptionEditorColourInt(option);
         }
         if (editor == null && List.class.isAssignableFrom(t) && field.isAnnotationPresent(ConfigEditorDraggableList.class))
             editor = new GuiOptionEditorDraggableList(option, field.getAnnotation(ConfigEditorDraggableList.class).exampleText());

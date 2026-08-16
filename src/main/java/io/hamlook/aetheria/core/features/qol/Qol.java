@@ -36,7 +36,7 @@ public class Qol {
     public BlockSelectionConfig blockSelection = new BlockSelectionConfig();
 
     @Expose
-   // @Category(name = "Rare Drop Tracker", desc = "Get alerted the moment a tracked item drops. Search and manage tracked items with /rdt")
+    @Category(name = "Rare Drop Tracker", desc = "Get alerted the moment a tracked item drops. Search and manage tracked items with /rdt")
     public RareDropTrackerConfig rareDropTracker = new RareDropTrackerConfig();
 
     // ── standalone options (no accordion) ───────────────────────────────────

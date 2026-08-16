@@ -81,7 +81,6 @@ public class RareDropTracker {
         }
 
         if (config.commandAlert && tracked.command != null && !tracked.command.trim().isEmpty()) {
-            ChatUtils.sendMessage("§d§lClick anywhere with-in 5 seconds to open the command you set for this drop!");
             RareDropCommandTrigger.arm(tracked.command.trim());
         }
     }
