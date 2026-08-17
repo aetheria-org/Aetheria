@@ -58,7 +58,7 @@ public class ProfileViewerAPI {
         if (!NetworkGuard.apiAllowed()) return;
         ThreadUtils.run(() -> {
             try {
-                URL url = new URL("https://capeapi.qzz.io/game/players");
+                URL url = new URL(CapeAPI.getAPIUrl("game/players"));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
@@ -109,7 +109,7 @@ public class ProfileViewerAPI {
     }
 
     public static PlayerProfile fetchUser(String username) throws Exception{
-        URL url = new URL("https://capeapi.qzz.io/game/profile/" + username);
+        URL url = new URL(CapeAPI.getAPIUrl("/game/profile/" + username));
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
