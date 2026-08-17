@@ -191,17 +191,18 @@ public class ProfileViewerGUI extends GuiScreen {
             int playerY = profileY - getScaled(25);
 
             PlayerModule.draw(playerX, playerY, scale, this.username, mouseX, mouseY);
-
-            String profile = "§aProfile: §f" + this.activeProfileData.baseData.playerProfile + " §7▼";
-            if (profileButton == null) {
-                profileButton = new PVButton(0, profileX, profileY, profileW, profileH, profile);
-                this.buttonList.add(profileButton);
-            } else {
-                profileButton.xPosition = profileX;
-                profileButton.yPosition = profileY;
-                profileButton.width = profileW;
-                profileButton.height = profileH;
-                profileButton.displayString = profile;
+            if(activeProfileData != null && activeProfileData.baseData != null && activeProfileData.baseData.playerProfile != null) {
+                String profile = "§aProfile: §f" + this.activeProfileData.baseData.playerProfile + " §7▼";
+                if (profileButton == null) {
+                    profileButton = new PVButton(0, profileX, profileY, profileW, profileH, profile);
+                    this.buttonList.add(profileButton);
+                } else {
+                    profileButton.xPosition = profileX;
+                    profileButton.yPosition = profileY;
+                    profileButton.width = profileW;
+                    profileButton.height = profileH;
+                    profileButton.displayString = profile;
+                }
             }
 
             int tabW = getScaled(200);
