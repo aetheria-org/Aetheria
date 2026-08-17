@@ -297,6 +297,119 @@ public enum StorageManager {
         return true;
     }
 
+    /**
+     * Atomically saves a raw JSON string (e.g. a cached remote data body) using the
+     * same hardened tmp → verify → fsync → rename flow as {@link #saveAtomic}, but
+     * takes a String body instead of a typed object.
+     * <p>
+     * This is the <b>caching primitive for remote data</b> (used by {@code RepoManager}
+     * for repo bodies). Example:
+     * <pre>
+     *   File cache = new File(ATHRConfig.configDirectory, "repo/mykey.json");
+     *   if (StorageManager.saveAtomicRaw(cache, json)) {   // commit a fetch (durable)
+     *       ...
+     *   }
+     * </pre>
+     * Write failures, write-verification failures and rename failures return
+     * {@code false} and raise a CrashLog report (one aggregated report per launch).
+     * Safe to call from any thread — a per-path lock serialises concurrent writers
+     * of the same file.
+     */
+    public static boolean saveAtomicRaw(File file, String json) {
+        if (file == null) return false;
+        Object lock = FILE_LOCKS.computeIfAbsent(file.getAbsolutePath(), k -> new Object());
+        synchronized (lock) {
+            return saveAtomicRawLocked(file, json);
+        }
+    }
+
+    private static boolean saveAtomicRawLocked(File file, String json) {
+        file.getParentFile().mkdirs();
+        File tmp = new File(file.getParentFile(), file.getName() + ".tmp");
+        try (Writer w = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(tmp.toPath(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING), StandardCharsets.UTF_8))) {
+            w.write(json);
+            w.flush();
+        } catch (Exception e) {
+            Aetheria.logger.severe("[ATHR] Failed to write " + tmp.getName() + ": " + e.getMessage());
+            CrashLog.report(file, "saving", "write failed: " + e.getMessage());
+            tmp.delete();
+            return false;
+        }
+
+        try {
+            String content = new String(Files.readAllBytes(tmp.toPath()), StandardCharsets.UTF_8);
+            JsonParser.parseString(content);
+        } catch (Exception e) {
+            Aetheria.logger.severe("[ATHR] Refusing to commit " + tmp.getName() + " — write verification failed: " + e.getMessage());
+            CrashLog.report(file, "saving", "write verification failed: " + e.getMessage());
+            tmp.delete();
+            return false;
+        }
+
+        try (FileChannel ch = FileChannel.open(tmp.toPath(), StandardOpenOption.WRITE)) {
+            ch.force(true);
+        } catch (Exception e) {
+            Aetheria.logger.warning("[ATHR] fsync failed for " + tmp.getName() + ", committing anyway: " + e.getMessage());
+        }
+
+        try {
+            try {
+                Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException ex) {
+                Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (Exception e) {
+            Aetheria.logger.severe("[ATHR] Failed to commit " + file.getName() + ": " + e.getMessage());
+            CrashLog.report(file, "saving", "commit failed: " + e.getMessage());
+            tmp.delete();
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Reads a raw JSON file as a String with the same corruption handling as
+     * {@link #loadSafe}: missing file → {@code null}, unparseable content → backed
+     * up to {@code *.corrupted} and {@code null} returned. Legacy windows-1252
+     * bytes are re-decoded like {@code loadSafe}.
+     * <p>
+     * The read counterpart of {@link #saveAtomicRaw} for caching remote data:
+     * <pre>
+     *   File cache = new File(ATHRConfig.configDirectory, "repo/mykey.json");
+     *   String cached = StorageManager.loadSafeRaw(cache);   // null if missing/corrupt
+     * </pre>
+     */
+    public static String loadSafeRaw(File file) {
+        if (file == null || !file.exists()) return null;
+        byte[] bytes;
+        try {
+            bytes = Files.readAllBytes(file.toPath());
+        } catch (Exception e) {
+            Aetheria.logger.severe("[ATHR] Failed to read " + file.getName() + ": " + e.getMessage());
+            CrashLog.report(file, "loading", e.getMessage());
+            backupCorrupted(file);
+            return null;
+        }
+        String json;
+        try {
+            json = decodeStrictUtf8(bytes);
+        } catch (CharacterCodingException e) {
+            json = new String(bytes, WINDOWS_1252);
+        }
+        try {
+            JsonParser.parseString(json);
+        } catch (Exception e) {
+            if (bytes.length > 0) {
+                String msg = "does not parse as JSON, treating as corrupted";
+                Aetheria.logger.warning("[ATHR] " + file.getName() + " " + msg);
+                CrashLog.report(file, "loading", msg);
+                backupCorrupted(file);
+            }
+            return null;
+        }
+        return json;
+    }
+
     private static String decodeStrictUtf8(byte[] bytes) throws CharacterCodingException {
         CharsetDecoder strict = StandardCharsets.UTF_8.newDecoder()
                 .onMalformedInput(CodingErrorAction.REPORT)

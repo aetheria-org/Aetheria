@@ -1,11 +1,13 @@
 package io.hamlook.aetheria.features.misc.invbuttons;
 
 import com.google.gson.*;
+import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.moulconfig.gui.GlScissorStack;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElementTextField;
-import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
+import io.hamlook.aetheria.repo.ATHRRepo;
+import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.Utils;
@@ -18,9 +20,7 @@ import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -62,37 +62,31 @@ public class GuiInvButtonEditor extends GuiScreen {
         if (presetNames != null) return;
         presetNames = new ArrayList<>();
         presetButtonsList = new ArrayList<>();
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(Minecraft.getMinecraft().getResourceManager().getResource(Resources.INV_PRESETS_JSON).getInputStream(), StandardCharsets.UTF_8));
-            JsonObject root = JsonParser.parseReader(br).getAsJsonObject();
-            for (Map.Entry<String, JsonElement> e : root.entrySet()) {
-                if (!e.getValue().isJsonArray()) continue;
-                List<InventoryButton> btns = new ArrayList<>();
-                for (JsonElement el : e.getValue().getAsJsonArray())
-                    if (el.isJsonObject()) {
-                        InventoryButton b = GSON.fromJson(el.getAsJsonObject(), InventoryButton.class);
-                        if (b != null) btns.add(b);
-                    }
-                if (!btns.isEmpty()) {
-                    presetNames.add(e.getKey());
-                    presetButtonsList.add(btns);
+        JsonObject root = RepoHandler.get(ATHRRepo.KEY_INV_PRESETS, JsonObject.class, null);
+        if (root == null) return;
+        for (Map.Entry<String, JsonElement> e : root.entrySet()) {
+            if (!e.getValue().isJsonArray()) continue;
+            List<InventoryButton> btns = new ArrayList<>();
+            for (JsonElement el : e.getValue().getAsJsonArray())
+                if (el.isJsonObject()) {
+                    InventoryButton b = GSON.fromJson(el.getAsJsonObject(), InventoryButton.class);
+                    if (b != null) btns.add(b);
                 }
+            if (!btns.isEmpty()) {
+                presetNames.add(e.getKey());
+                presetButtonsList.add(btns);
             }
-        } catch (Exception ignored) {
         }
     }
 
     private static void ensureExtraIconsLoaded() {
         if (extraIconsCache != null) return;
         extraIconsCache = new LinkedHashMap<>();
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(Minecraft.getMinecraft().getResourceManager().getResource(Resources.INV_EXTRA_ICONS_JSON).getInputStream(), StandardCharsets.UTF_8));
-            JsonObject root = JsonParser.parseReader(br).getAsJsonObject();
-            for (Map.Entry<String, JsonElement> e : root.entrySet())
-                if (e.getValue().isJsonPrimitive())
-                    extraIconsCache.put(e.getKey(), "extra:" + e.getValue().getAsString());
-        } catch (Exception ignored) {
-        }
+        JsonObject root = RepoHandler.get(ATHRRepo.KEY_INV_EXTRA_ICONS, JsonObject.class, null);
+        if (root == null) return;
+        for (Map.Entry<String, JsonElement> e : root.entrySet())
+            if (e.getValue().isJsonPrimitive())
+                extraIconsCache.put(e.getKey(), "extra:" + e.getValue().getAsString());
     }
 
     private static String getClipboard() {

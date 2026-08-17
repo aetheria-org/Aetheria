@@ -2,9 +2,9 @@ package io.hamlook.aetheria.features.chat.emoji;
 
 import com.google.gson.*;
 import io.hamlook.aetheria.Aetheria;
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.ATHRRepo;
+import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
@@ -14,18 +14,12 @@ import net.minecraft.util.ResourceLocation;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -33,19 +27,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * tokens and the chat-box suggestion popup.
  * <p>
  * Everything is packed into ONE json manifest (name + aliases + a small base64
- * PNG per emoji) hosted alongside Aetheria's other repo data files. On startup
- * we fetch only the small emojis_version.json first, compare it to the version
- * we have cached on disk, and only pull down the full manifest - and only then
- * re-decode textures - when it's actually changed or we have no cache at all.
- * All network access is gated through {@link NetworkGuard}.
+ * PNG per emoji) hosted alongside Aetheria's other repo data files. Update
+ * detection is delegated to {@link RepoHandler} via the shared
+ * ASMDataVersions.json manifest: the emoji version is only pulled down - and
+ * the sprite sheets re-decoded - when it actually changed or no sprites are
+ * cached. The four sprite sheets download in parallel. All network access is
+ * gated through {@link NetworkGuard}.
  */
 public class EmojiManager {
-
-    private static final String VERSION_URL = ATHRRepo.BASE + "data/emojis_version.json";
-
-    private static final File EMOJI_DIR = new File(ATHRConfig.configDirectory, "emojis");
-
-    private static final Gson GSON = new Gson();
 
     private static final Map<String, Emoji> emojis = new ConcurrentHashMap<>();
     private static final Map<String, String> aliases = new ConcurrentHashMap<>();
@@ -64,43 +53,39 @@ public class EmojiManager {
 
     public static void startInitialisation() {
         if(!NetworkGuard.githubAllowed()) return;
-        if(!checkIfUpdateNeeded()){
-            loadSpritesFromFile();
-            registerEmojis();
-            return;
-        }
-        for(String theme : EMOJI_THEMES){
-            downloadSheet(theme);
-            Aetheria.logger.info("[EMOJI] Downloaded Sheet for " + theme);
+        boolean update = RepoHandler.isUpdateNeeded(ATHRRepo.KEY_EMOJIS) || spritesCorrupted();
+        if(update){
+            downloadSheetsParallel();
         }
         loadSpritesFromFile();
         registerEmojis();
-        saveCurrentVersion();
+        if(update){
+            RepoHandler.saveVersion(ATHRRepo.KEY_EMOJIS);
+        }
     }
 
-    private static void saveCurrentVersion() {
-        try {
-            URL url = new URL(VERSION_URL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
-            if (conn.getResponseCode() == 200) {
-                String json = ElectionUtils.readResponse(conn);
-                JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
-                if (obj != null && obj.has("version")) {
-                    VersionFile vf = new VersionFile();
-                    vf.version = obj.get("version").getAsInt();
-                    File file = new File(EMOJI_DIR, "version.json");
-                    file.getParentFile().mkdirs();
-                    try (Writer w = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
-                        GSON.toJson(vf, w);
-                    }
+    private static void downloadSheetsParallel() {
+        CountDownLatch latch = new CountDownLatch(EMOJI_THEMES.length);
+        for(String theme : EMOJI_THEMES){
+            ThreadUtils.run(() -> {
+                try {
+                    downloadSheet(theme);
+                    Aetheria.logger.info("[EMOJI] Downloaded Sheet for " + theme);
+                } finally {
+                    latch.countDown();
                 }
-            }
-        } catch (Exception e) {
-            Aetheria.logger.info("[EMOJI] Failed to save version file: " + e.getMessage());
+            });
         }
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        int max = 0;
+        for (int size : sheetSizes.values()) {
+            if (size > max) max = size;
+        }
+        if (max > 0) EmojiLinks.SHEET_SIZE = max;
     }
 
     private static void registerEmojis() {
@@ -310,9 +295,8 @@ public class EmojiManager {
                 BufferedImage image = ImageIO.read(conn.getInputStream());
                 if(image == null || image.getWidth() < 32) return;
                 File path = EmojiLinks.getSpriteFile(sheet);
-                EmojiLinks.SHEET_SIZE = image.getWidth();
                 sheetSizes.put(sheet, image.getWidth());
-                Aetheria.logger.info("[EMOJI] Sheet Size for " + sheet + " = " + sheetSizes.get(sheet));
+                Aetheria.logger.info("[EMOJI] Sheet Size for " + sheet + " = " + image.getWidth());
                 ImageIO.write(image, "png", path);
                 Aetheria.logger.info("[EMOJI] Successfully downloaded Sheet for " + sheet);
             }else {
@@ -337,46 +321,6 @@ public class EmojiManager {
             }
         }
         return false;
-    }
-
-    private static boolean checkIfUpdateNeeded() {
-        if (spritesCorrupted()) return true;
-        VersionFile cachedVersion = loadVersionFile();
-        if(cachedVersion == null) return true;
-        try{
-            URL url = new URL(VERSION_URL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(15000);
-
-            if(conn.getResponseCode() == 200){
-                String json = ElectionUtils.readResponse(conn);
-                JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
-                if(obj == null) return true;
-                if(!obj.has("version")) return  true;
-                return cachedVersion.version != obj.get("version").getAsInt();
-            }
-            return true;
-        }catch(Exception e){
-            Aetheria.logger.info("Error Loading Version from Github: " + e.getMessage());
-            e.printStackTrace();
-            return true;
-        }
-    }
-
-    private static VersionFile loadVersionFile() {
-        File file = new File(EMOJI_DIR,"version.json");
-        if(!file.exists()) return null;
-        try{
-            try (Reader r = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
-                return GSON.fromJson(r, VersionFile.class);
-            }
-        }catch(Exception e){
-            Aetheria.logger.info("Error Loading Version from Files: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
     }
 
     public static boolean isLoaded() {
@@ -453,10 +397,6 @@ public class EmojiManager {
 
     public static int getAnimationTime() {
         return (int)(System.currentTimeMillis() % 86400000);
-    }
-
-    private static class VersionFile {
-        int version;
     }
 
     public static class Emoji {

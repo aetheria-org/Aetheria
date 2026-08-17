@@ -1,16 +1,15 @@
 package io.hamlook.aetheria.features.dungeons.rooms;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.Aetheria;
-import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
 import io.hamlook.aetheria.init.RegisterEvents;
-import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.repo.ATHRRepo;
+import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.block.Block;
@@ -19,7 +18,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -28,12 +26,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.math.BigInteger;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.List;
@@ -528,53 +521,8 @@ public class DungeonRoomDetector {
         }
     }
 
-    private InputStream getStreamWithFallback(String webUrl, ResourceLocation fallBack) {
-        if (!NetworkGuard.githubAllowed()) {
-            Aetheria.logger.info("GitHub calls disabled. Skipping web fetch, using fallback.");
-            return getFallbackStream(fallBack);
-        }
-        try {
-            URL url = new URL(webUrl);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(3000);
-            connection.setReadTimeout(3000);
-
-            int responseCode = connection.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                Aetheria.logger.info("Successfully loaded data from URL: " + webUrl);
-                return connection.getInputStream();
-            } else {
-                Aetheria.logger.info("Failed to fetch from URL (HTTP " + responseCode + "). Falling back to JAR.");
-            }
-        } catch (IOException e) {
-            Aetheria.logger.info("Network error connecting to URL. Falling back to JAR. Error: " + e.getMessage());
-        }
-        return getFallbackStream(fallBack);
-    }
-
-    private InputStream getFallbackStream(ResourceLocation fallBack) {
-        try {
-            Aetheria.logger.info("Loading data from fallback Path: " + fallBack.getResourcePath());
-            return Minecraft.getMinecraft().getResourceManager().getResource(fallBack).getInputStream();
-        } catch (IOException e) {
-            Aetheria.logger.info("Error loading from fallback");
-            return null;
-        }
-    }
-
     private void loadSecretLocationsJson() {
-        executor.execute(() -> {
-            String webUrl = "https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/refs/heads/main/data/secretlocations.json";
-            ResourceLocation loc = Resources.SECRET_LOCATIONS_JSON;
-            try {
-                InputStream in = getStreamWithFallback(webUrl, loc);
-                if (in == null) return;
-                secretLocationsJson = new Gson().fromJson(new InputStreamReader(in), JsonObject.class);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        secretLocationsJson = RepoHandler.get(ATHRRepo.KEY_SECRETLOCATIONS, JsonObject.class, null);
     }
 
     private void processSecrets() {
@@ -608,17 +556,7 @@ public class DungeonRoomDetector {
     }
 
     private void loadRoomsJson() {
-        executor.execute(() -> {
-            String webUrl = "https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/refs/heads/main/data/dungeonrooms.json";
-            ResourceLocation loc = Resources.DUNGEON_ROOMS_JSON;
-            try {
-                InputStream in = getStreamWithFallback(webUrl, loc);
-                if (in == null) return;
-                roomsJson = new Gson().fromJson(new InputStreamReader(in), JsonObject.class);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        roomsJson = RepoHandler.get(ATHRRepo.KEY_DUNGEONROOMS, JsonObject.class, null);
     }
 
     private int dungeonTop(int x, int z) {
