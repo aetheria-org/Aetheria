@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.qol;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.data.ApiHandler;
 import io.hamlook.aetheria.features.price.PriceMap;
@@ -8,6 +9,7 @@ import io.hamlook.aetheria.features.price.vars.recieve.PriceEntry;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
+import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -108,11 +110,12 @@ public class SkyblockTooltips {
     }
 
     public static String formatPrice(double price){
-        return String.format("%.2f",price);
+        boolean shortNumberFormat = ATHRConfig.feature.misc.itemPriceConfig.priceShortNumberFormat;
+        return shortNumberFormat ? Utils.shortNumberFormat(price,0) : String.format("%.2f",price);
     }
     public static double toDecimalDouble(double initial){
         if(initial == -1) return -1;
-        int val = (int)(initial * 100);
+        long val = Math.round(initial*100.0);
         return val / 100D;
     }
     public static PriceType detectType(PriceEntry entry) {
