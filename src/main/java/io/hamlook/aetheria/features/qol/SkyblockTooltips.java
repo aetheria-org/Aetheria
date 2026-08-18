@@ -87,10 +87,10 @@ public class SkyblockTooltips {
                 double highBin = toDecimalDouble(entry.price.getOrDefault("highestBin",-1D));
                 double lowBin = toDecimalDouble(entry.price.getOrDefault("lowestBin",-1D));
 
-                lines.add("§bAverage BIN: §6" + (avgBin > 0 ? avgBin : "N/A"));
-                lines.add("§bAverage Auction: §6" + (avgAuction > 0 ? avgAuction : "N/A"));
-                lines.add("§bHighest BIN: §6" + (highBin > 0 ? highBin : "N/A"));
-                lines.add("§bLowest BIN: §6" + (lowBin > 0 ? lowBin : "N/A"));
+                lines.add("§bAverage BIN: §6" + (avgBin > 0 ? formatPrice(avgBin) : "N/A"));
+                lines.add("§bAverage Auction: §6" + (avgAuction > 0 ? formatPrice(avgAuction) : "N/A"));
+                lines.add("§bHighest BIN: §6" + (highBin > 0 ? formatPrice(highBin) : "N/A"));
+                lines.add("§bLowest BIN: §6" + (lowBin > 0 ? formatPrice(lowBin) : "N/A"));
             }
             else if(type == PriceType.BAZAAR || type == PriceType.BZ_WITH_OFFER){
                 double buyPrice = toDecimalDouble(entry.price.getOrDefault("iBuy",-1D));
@@ -98,15 +98,18 @@ public class SkyblockTooltips {
                 double oBuyPrice = toDecimalDouble(entry.price.getOrDefault("oBuy",-1D));
                 double oSellPrice = toDecimalDouble(entry.price.getOrDefault("oSell",-1D));
 
-                lines.add("§bBazaar Insta-Buy: §6 " + (buyPrice > 0 ? buyPrice : "N/A"));
-                lines.add("§bBazaar Insta-Sell: §6 " + (sellPrice > 0 ? sellPrice : "N/A"));
-                lines.add("§bBazaar Buy-Order: §6 " + (oBuyPrice > 0 ? oBuyPrice : "N/A"));
-                lines.add("§bBazaar Sell-Order: §6 " + (oSellPrice > 0 ? oSellPrice : "N/A"));
+                lines.add("§bBazaar Insta-Buy: §6 " + (buyPrice > 0 ? formatPrice(buyPrice) : "N/A"));
+                lines.add("§bBazaar Insta-Sell: §6 " + (sellPrice > 0 ? formatPrice(sellPrice) : "N/A"));
+                lines.add("§bBazaar Buy-Order: §6 " + (oBuyPrice > 0 ? formatPrice(oBuyPrice) : "N/A"));
+                lines.add("§bBazaar Sell-Order: §6 " + (oSellPrice > 0 ? formatPrice(oSellPrice) : "N/A"));
             }
             e.toolTip.addAll(lines);
         }
     }
 
+    public static String formatPrice(double price){
+        return String.format("%.2f",price);
+    }
     public static double toDecimalDouble(double initial){
         if(initial == -1) return -1;
         int val = (int)(initial * 100);
