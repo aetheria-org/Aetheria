@@ -1,18 +1,15 @@
-package io.hamlook.aetheria.features.farming;
+package io.hamlook.aetheria.features.farming.farmingtracker;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.FarmingTrackerConfig;
+import io.hamlook.aetheria.features.farming.FarmingApi;
+import io.hamlook.aetheria.features.farming.data.Crop;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.Utils;
-import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
-import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import lombok.Getter;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.item.ItemStack;
-import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,9 +19,6 @@ public class FarmingTrackerOverlay extends Overlay {
 
     @Getter
     private static FarmingTrackerOverlay instance;
-
-    private static final int ICON_SIZE = 8;
-    private static final int ICON_GAP = 2;
 
     private static final int COUNT_LINES_START = 3;
     private static final int SESSION_TIMER_ORDINAL = COUNT_LINES_START + Crop.all().length;
@@ -37,23 +31,6 @@ public class FarmingTrackerOverlay extends Overlay {
 
     private static FarmingTrackerConfig config() {
         return ATHRConfig.feature.farming.farmingTracker;
-    }
-
-    private boolean isInFarmingLocation() {
-        SkyblockData.Location location = SkyblockData.getCurrentLocation();
-        return location == SkyblockData.Location.BARN
-                || location == SkyblockData.Location.PRIVATE_ISLAND
-                || location == SkyblockData.Location.GARDEN;
-    }
-
-    private static String formatDuration(long ms) {
-        long totalSeconds = ms / 1000;
-        long hours = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
-        long seconds = totalSeconds % 60;
-        return hours > 0
-                ? String.format("%d:%02d:%02d", hours, minutes, seconds)
-                : String.format("%02d:%02d", minutes, seconds);
     }
 
     private static final class Entry {
@@ -83,7 +60,7 @@ public class FarmingTrackerOverlay extends Overlay {
         if (ordinal == SESSION_TIMER_ORDINAL) {
             if (preview) return new Entry(null, "§7Session: §f42:17");
             String pausedTag = FarmingTracker.isPaused() ? " §7[Paused]" : "";
-            return new Entry(null, "§7Session: §f" + formatDuration(FarmingTracker.getActiveTimeMs()) + pausedTag);
+            return new Entry(null, "§7Session: §f" + Utils.formatClock(FarmingTracker.getActiveTimeMs()) + pausedTag);
         }
         if (ordinal == TOTAL_CROPS_ORDINAL) {
             if (preview) return new Entry(null, "§bTotal: §f108,240 crops");
@@ -100,14 +77,7 @@ public class FarmingTrackerOverlay extends Overlay {
             ItemStack icon = crop.getIcon();
 
             if (preview) {
-                List<String> previewParts = new ArrayList<>();
-                previewParts.add("§a" + crop.displayName + ": §f12");
-                if (crop.enchantedId != null) previewParts.add("§7E." + crop.displayName + ": §f3");
-                if (crop.blockId != null && crop.blockDisplayName != null) {
-                    previewParts.add("§7" + crop.blockDisplayName + ": §f1");
-                }
-                previewParts.add("§b(4,760/h)");
-                return new Entry(icon, String.join(" ", previewParts));
+                return new Entry(icon, "§a" + crop.displayName + ": §f12 §b(4,760/h)");
             }
 
             long raw = FarmingTracker.getCount(crop.rawId);
@@ -144,54 +114,12 @@ public class FarmingTrackerOverlay extends Overlay {
     @Override
     public List<String> getLines(boolean preview) {
         List<String> lines = new ArrayList<>();
-        for (Entry entry : buildEntries(preview)) lines.add(entry.text);
+        clearLineIcons();
+        for (Entry entry : buildEntries(preview)) {
+            lines.add(entry.text);
+            putLineIcon(entry.text, entry.icon);
+        }
         return lines;
-    }
-
-    @Override
-    public void render(boolean preview) {
-        List<Entry> entries = buildEntries(preview);
-        if (entries.isEmpty()) return;
-
-        Minecraft mc = Minecraft.getMinecraft();
-        FontRenderer fr = mc.fontRendererObj;
-        float scale = getScale();
-
-        int w = 20;
-        for (Entry entry : entries) {
-            int textWidth = fr.getStringWidth(entry.text);
-            int lineWidth = entry.icon != null ? textWidth + ICON_SIZE + ICON_GAP + 6 : textWidth + 6;
-            w = Math.max(w, lineWidth);
-        }
-        int h = entries.size() * LINE_HEIGHT + PADDING * 2;
-        lastW = w;
-        lastH = h;
-
-        Position pos = getPosition();
-        int x = pos.getAbsX(sr, (int) (w * scale));
-        int y = pos.getAbsY(sr, (int) (h * scale));
-        if (pos.isCenterX()) x -= (int) (w * scale / 2);
-        if (pos.isCenterY()) y -= (int) (h * scale / 2);
-
-        GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0f);
-        GL11.glScalef(scale, scale, 1f);
-
-        int bgColor = getBgColor();
-        if ((bgColor >>> 24) != 0) drawRoundedRect(-PADDING, -PADDING, w, h - PADDING, getCornerRadius(), bgColor);
-
-        int dy = 0;
-        for (Entry entry : entries) {
-            int textX = 0;
-            if (entry.icon != null) {
-                ItemRenderUtils.renderItemIcon(mc, entry.icon, 0, dy - 1, ICON_SIZE);
-                textX = ICON_SIZE + ICON_GAP;
-            }
-            fr.drawStringWithShadow(entry.text, textX, dy, 0xFFFFFF);
-            dy += LINE_HEIGHT;
-        }
-
-        GL11.glPopMatrix();
     }
 
     @Override
@@ -216,7 +144,11 @@ public class FarmingTrackerOverlay extends Overlay {
 
     @Override
     protected boolean isEnabled() {
-        return config().enabled && (!config().requireFarmingIsland || isInFarmingLocation());
+        if (!config().enabled) return false;
+        if (config().requireFarmingIsland && !FarmingApi.isInFarmingLocation()) return false;
+        if (config().hideWhenPaused && FarmingTracker.isPaused()) return false;
+        if (config().showOnlyWhileFarming && !FarmingApi.isCurrentlyFarming()) return false;
+        return !config().showOnlyWhileHoldingFarmingTool || FarmingApi.isHoldingFarmingTool();
     }
 
     @Override

@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.features.farming;
+package io.hamlook.aetheria.features.farming.farmingtracker;
 
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.core.ATHRConfig;
@@ -58,8 +58,7 @@ public class FarmingTrackerCommand extends ASMCommand {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
+    public List <String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
         if (args.length == 1) return Arrays.asList("on", "off", "reset");
         return Collections.emptyList();
     }

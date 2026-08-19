@@ -4,20 +4,26 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntUnaryOperator;
 
 public abstract class Overlay {
 
     protected static final int LINE_HEIGHT = 10;
     protected static final int PADDING = 3;
+    protected static final int ICON_SIZE = 8;
+    protected static final int ICON_GAP = 2;
 
     protected static final Minecraft mc = Minecraft.getMinecraft();
     protected static ScaledResolution sr;
@@ -178,16 +184,43 @@ public abstract class Overlay {
         return true;
     }
 
+    private final Map<String, ItemStack> lineIcons = new HashMap<>();
+
+    protected final void clearLineIcons() {
+        lineIcons.clear();
+    }
+
+    protected final void putLineIcon(String line, ItemStack icon) {
+        if (icon != null) lineIcons.put(line, icon);
+    }
+
+    protected ItemStack getLineIcon(String line) {
+        return lineIcons.get(line);
+    }
+
+    protected int getIconSize() {
+        return ICON_SIZE;
+    }
+
+    protected void drawLine(String line, int x, int y) {
+        mc.fontRendererObj.drawStringWithShadow(line, x, y, 0xFFFFFF);
+    }
+
     @SubscribeEvent
     public final void onRenderOverlay(RenderGameOverlayEvent.Post event) {
         if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
         sr = event.resolution;
-        if (ATHRConfig.feature == null || !isEnabled()) return;
+        if (!isLiveActive()) return;
+        render(false);
+    }
+
+    public boolean isLiveActive() {
+        if (ATHRConfig.feature == null || !isEnabled() || !extraGuard()) return false;
         if (applyOverlayHideGate()) {
             boolean shouldHide = (hideOnChat() && OverlayUtils.isChatOpen()) || (hideOnTab() && OverlayUtils.isTabHeld()) || (hideOnDebug() && OverlayUtils.isDebugActive()) || OverlayUtils.isStorageActive();
-            if (shouldHide) return;
+            if (shouldHide) return false;
         }
-        render(false);
+        return true;
     }
 
     protected boolean applyOverlayHideGate() {
@@ -206,7 +239,18 @@ public abstract class Overlay {
         return true;
     }
 
+    /**
+     * Renders the overlay at its configured {@link Position}.
+     * <p>
+     * Convention: {@code getPosition().getAbsX/getAbsY} return the box's top-left corner.
+     * For centered positions they return the screen center, so half the scaled size is subtracted.
+     * Overrides that draw their own box must use the same convention as {@code GuiPositionEditor},
+     * or the preview drifts from the drag box.
+     *
+     * @param preview true when rendered inside the position editor
+     */
     public void render(boolean preview) {
+        if (preview && isLiveActive()) return;
         if (!preview && !extraGuard()) return;
 
         List<String> lines = getLines(preview);
@@ -216,7 +260,8 @@ public abstract class Overlay {
 
         int w = getBaseWidth();
         for (String line : lines)
-            w = Math.max(w, mc.fontRendererObj.getStringWidth(line) + PADDING * 2);
+            w = Math.max(w, mc.fontRendererObj.getStringWidth(line)
+                    + (getLineIcon(line) != null ? getIconSize() + ICON_GAP : 0) + PADDING * 2);
         int h = lines.size() * LINE_HEIGHT + PADDING * 2;
         lastW = w;
         lastH = h;
@@ -236,7 +281,13 @@ public abstract class Overlay {
 
         int dy = 0;
         for (String line : lines) {
-            mc.fontRendererObj.drawStringWithShadow(line, 0, dy, 0xFFFFFF);
+            int tx = 0;
+            ItemStack icon = getLineIcon(line);
+            if (icon != null) {
+                ItemRenderUtils.renderItemIcon(mc, icon, 0, dy - 1, getIconSize());
+                tx = getIconSize() + ICON_GAP;
+            }
+            drawLine(line, tx, dy);
             dy += LINE_HEIGHT;
         }
 

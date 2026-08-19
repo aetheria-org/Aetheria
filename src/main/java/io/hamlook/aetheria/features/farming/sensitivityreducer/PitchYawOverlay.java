@@ -3,11 +3,11 @@ package io.hamlook.aetheria.features.farming.sensitivityreducer;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.SensitivityReducerConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
-import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +49,9 @@ public class PitchYawOverlay extends Overlay {
 
     @Override
     protected boolean isEnabled() {
-        return ATHRConfig.feature != null && config().showPitchYawOverlay;
+        if (ATHRConfig.feature == null || !config().showPitchYawOverlay) return false;
+        if (config().showOnlyWhileFarming && !FarmingApi.isCurrentlyFarming()) return false;
+        return !config().showOnlyWhileHoldingFarmingTool || FarmingApi.isHoldingFarmingTool();
     }
 
     @Override
@@ -85,49 +87,15 @@ public class PitchYawOverlay extends Overlay {
         return wrapped;
     }
 
-    // Overridden (rather than relying on the base per-line white rendering) so the
-    // "Pitch"/"Yaw" labels can use a full custom/chroma RGB color while the numbers
-    // stay a plain, fixed color.
+    // Two-tone per-line text: "Pitch"/"Yaw" labels use the configured color while the
+    // numbers stay white.
     @Override
-    public void render(boolean preview) {
-        if (!preview && !extraGuard()) return;
-
-        List<String> lines = getLines(preview);
-        if (lines.isEmpty()) return;
-
+    protected void drawLine(String line, int x, int y) {
+        int splitIdx = line.indexOf(':') + 1;
+        String label = line.substring(0, splitIdx);
+        String value = line.substring(splitIdx);
         int labelColor = ChromaColour.specialToChromaRGB(config().pitchYawLabelColor);
-
-        float scale = getScale();
-        int w = getBaseWidth();
-        for (String line : lines) w = Math.max(w, mc.fontRendererObj.getStringWidth(line) + PADDING * 2);
-        int h = lines.size() * LINE_HEIGHT + PADDING * 2;
-        lastW = w;
-        lastH = h;
-
-        Position pos = getPosition();
-        int x = pos.getAbsX(sr, (int) (w * scale));
-        int y = pos.getAbsY(sr, (int) (h * scale));
-        if (pos.isCenterX()) x -= (int) (w * scale / 2);
-        if (pos.isCenterY()) y -= (int) (h * scale / 2);
-
-        GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0);
-        GL11.glScalef(scale, scale, 1f);
-
-        int bgColor = getBgColor();
-        if ((bgColor >>> 24) != 0) drawRoundedRect(-PADDING, -PADDING, w, h - PADDING, getCornerRadius(), bgColor);
-
-        int dy = 0;
-        for (String line : lines) {
-            int splitIdx = line.indexOf(':') + 1;
-            String label = line.substring(0, splitIdx);
-            String value = line.substring(splitIdx);
-
-            mc.fontRendererObj.drawStringWithShadow(label, 0, dy, labelColor);
-            mc.fontRendererObj.drawStringWithShadow(value, mc.fontRendererObj.getStringWidth(label), dy, 0xFFFFFF);
-            dy += LINE_HEIGHT;
-        }
-
-        GL11.glPopMatrix();
+        mc.fontRendererObj.drawStringWithShadow(label, x, y, labelColor);
+        mc.fontRendererObj.drawStringWithShadow(value, x + mc.fontRendererObj.getStringWidth(label), y, 0xFFFFFF);
     }
 }

@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.features.farming;
+package io.hamlook.aetheria.features.farming.farmingtracker;
 
 import io.hamlook.aetheria.core.GsonBuilder;
 import io.hamlook.aetheria.core.ProfileManagedStorage;

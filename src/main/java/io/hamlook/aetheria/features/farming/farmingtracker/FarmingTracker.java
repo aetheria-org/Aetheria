@@ -1,6 +1,7 @@
-package io.hamlook.aetheria.features.farming;
+package io.hamlook.aetheria.features.farming.farmingtracker;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.features.farming.data.Crop;
 import io.hamlook.aetheria.features.misc.itemlog.ItemPickupLog;
 import io.hamlook.aetheria.features.price.PriceMap;
 import io.hamlook.aetheria.init.RegisterEvents;
@@ -55,6 +56,11 @@ public class FarmingTracker {
         if (!timerRunning) return;
         long now = System.currentTimeMillis();
         FarmingTrackerData data = FarmingTrackerData.getInstance();
+        if (ATHRConfig.feature != null && ATHRConfig.feature.farming.farmingTracker.pauseOnChat && ChatUtils.isChatOpen()) {
+            data.setActiveTimeMs(data.getActiveTimeMs() + (now - timerStartTime));
+            timerRunning = false;
+            return;
+        }
         data.setActiveTimeMs(data.getActiveTimeMs() + (now - timerStartTime));
         timerStartTime = now;
         if (now - lastActivityTime > INACTIVITY_LIMIT_MS) {
@@ -166,10 +172,6 @@ public class FarmingTracker {
 
     public static long getCount(String id) {
         return FarmingTrackerData.getInstance().getCounts().getOrDefault(id, 0L);
-    }
-
-    public static Map<String, Long> getCounts() {
-        return FarmingTrackerData.getInstance().getCounts();
     }
 
     public static double getCropRate(Crop crop) {

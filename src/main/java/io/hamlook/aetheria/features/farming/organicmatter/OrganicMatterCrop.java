@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.features.farming.organicmatter;
 
-import io.hamlook.aetheria.features.farming.Crop;
+import io.hamlook.aetheria.features.farming.data.Crop;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 

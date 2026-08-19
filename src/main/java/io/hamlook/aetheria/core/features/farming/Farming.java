@@ -23,6 +23,14 @@ public class Farming {
     public OrganicMatterTrackerConfig organicMatterTracker = new OrganicMatterTrackerConfig();
 
     @Expose
+    @Category(name = "Pests", desc = "Garden pest tracker, finder and helpers")
+    public PestsConfig pests = new PestsConfig();
+
+    @Expose
+    @Category(name = "Garden Plots", desc = "Plot numbers and highlights in the Configure Plots menu")
+    public GardenPlotsConfig gardenPlots = new GardenPlotsConfig();
+
+    @Expose
     @Category(name = "Sensitivity Reducer", desc = "Reduce mouse sensitivity while holding a crop farming tool")
     public SensitivityReducerConfig sensitivityReducer = new SensitivityReducerConfig();
 

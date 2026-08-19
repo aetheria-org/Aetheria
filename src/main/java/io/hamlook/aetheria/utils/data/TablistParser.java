@@ -2,6 +2,7 @@ package io.hamlook.aetheria.utils.data;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.features.scoreboard.BankParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
@@ -17,8 +18,12 @@ import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @RegisterEvents
@@ -29,6 +34,7 @@ public class TablistParser {
     private static final long FAST_PARSE_WINDOW_MS = 3000;
     private static final Ordering<NetworkPlayerInfo> PLAYER_ORDERING = Ordering.from(new PlayerComparator());
     private static final Pattern SB_LEVEL = Pattern.compile("SB Level: \\[(\\d+)\\] (\\d+)/(\\d+) XP");
+    private static final Pattern PEST_PLOT_ENTRY = Pattern.compile("^(\\d+)(?:\\s*[xX]\\s*(\\d+))?$");
     @Getter
     private static SkyblockData.Location currentLocation = SkyblockData.Location.NONE;
     @Getter
@@ -160,6 +166,39 @@ public class TablistParser {
                 continue;
             }
 
+            if (line.startsWith("Alive: ")) {
+                String alive = line.substring("Alive: ".length()).trim();
+                FarmingApi.setGardenAlive(alive);
+                if ("0".equals(alive)) {
+                    FarmingApi.setActivePests(Collections.emptyMap());
+                }
+                continue;
+            }
+            if (line.startsWith("Plots: ")) {
+                FarmingApi.setActivePests(parsePestPlots(line.substring("Plots: ".length())));
+                continue;
+            }
+            if (line.startsWith("Spray: ")) {
+                FarmingApi.setGardenSpray(valueAfter(raw));
+                continue;
+            }
+            if (line.startsWith("Repellent: ")) {
+                FarmingApi.setGardenRepellent(valueAfter(raw));
+                continue;
+            }
+            if (line.startsWith("Bonus: ")) {
+                FarmingApi.setGardenBonus(valueAfter(raw));
+                continue;
+            }
+            if (line.startsWith("Cooldown: ")) {
+                FarmingApi.setGardenCooldown(valueAfter(raw));
+                continue;
+            }
+            if (line.startsWith("Bonus Pest Chance: ")) {
+                FarmingApi.setGardenBonusPestChance(valueAfter(raw));
+                continue;
+            }
+
             if (inServerSection) {
                 if (line.startsWith("Dungeon: ")) {
                     currentLocation = SkyblockData.Location.DUNGEON;
@@ -171,6 +210,9 @@ public class TablistParser {
                     if (dash >= 0) s = s.substring(0, dash + 1);
                     serverPrefix = s;
                     currentLocation = matchLocation(s);
+                    if (currentLocation != SkyblockData.Location.GARDEN) {
+                        FarmingApi.clearGardenPestData();
+                    }
                     SkyblockData.Environment env = SkyblockData.detectEnvironment(s);
                     if (env != SkyblockData.getEnvironment()) {
                         ProfileDetector.onEnvironmentChanged(SkyblockData.getEnvironment(), env);
@@ -287,6 +329,29 @@ public class TablistParser {
         return clean.isEmpty() ? fallback : clean;
     }
 
+    private static String valueAfter(String raw) {
+        int idx = raw.indexOf(": ");
+        return idx < 0 ? "" : raw.substring(idx + 2).trim();
+    }
+
+    private static Map<Integer, Integer> parsePestPlots(String plotsText) {
+        Map<Integer, Integer> out = new HashMap<>();
+        for (String entry : plotsText.split(",")) {
+            Matcher m = PEST_PLOT_ENTRY.matcher(entry.trim());
+            if (!m.matches()) continue;
+            int plot;
+            int count;
+            try {
+                plot = Integer.parseInt(m.group(1));
+                count = m.group(2) == null ? 1 : Integer.parseInt(m.group(2));
+            } catch (NumberFormatException ignored) {
+                continue;
+            }
+            if (plot >= 1 && plot <= 24 && count > 0) out.put(plot, count);
+        }
+        return out;
+    }
+
     private static SkyblockData.Location matchLocation(String s) {
         if (s.startsWith("sbg")) return SkyblockData.Location.GARDEN;
         for (SkyblockData.Location loc : SkyblockData.Location.values()) {
@@ -307,7 +372,8 @@ public class TablistParser {
     public void onTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         int interval = worldJoinTime > 0 && System.currentTimeMillis() - worldJoinTime < FAST_PARSE_WINDOW_MS
-                ? FAST_PARSE_INTERVAL : TICK_INTERVAL;
+                ? FAST_PARSE_INTERVAL
+                : TICK_INTERVAL;
         if ((tickCounter = (tickCounter + 1) % interval) != 0) return;
 
         Minecraft mc = Minecraft.getMinecraft();
@@ -336,6 +402,7 @@ public class TablistParser {
         serverPrefix = "";
         scoreboardEnvironment = SkyblockData.Environment.UNKNOWN;
         BankParser.clear();
+        FarmingApi.clearGardenPestData();
     }
 
     private static class PlayerComparator implements Comparator<NetworkPlayerInfo> {

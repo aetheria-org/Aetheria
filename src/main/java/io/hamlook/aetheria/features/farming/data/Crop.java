@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.features.farming;
+package io.hamlook.aetheria.features.farming.data;
 
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
@@ -111,6 +111,25 @@ public class Crop {
 
     public static String findByChatName(String chatName) {
         return CHAT_NAME_TO_ID.get(chatName);
+    }
+
+    public static Crop findByDropName(String dropName) {
+        if (dropName == null) return null;
+        for (Crop crop : ALL) {
+            if (nameEquals(dropName, crop.displayName)) return crop;
+            if (crop.enchantedChatName != null && nameEquals(dropName, crop.enchantedChatName)) return crop;
+            if (crop.blockChatName != null && nameEquals(dropName, crop.blockChatName)) return crop;
+        }
+        return null;
+    }
+
+    private static boolean nameEquals(String a, String b) {
+        if (a.equalsIgnoreCase(b)) return true;
+        return stripTrailingS(a).equalsIgnoreCase(stripTrailingS(b));
+    }
+
+    private static String stripTrailingS(String s) {
+        return s.toLowerCase().endsWith("s") ? s.substring(0, s.length() - 1) : s;
     }
 
     public static Long rawEquivalentOf(String id) {

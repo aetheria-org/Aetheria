@@ -55,6 +55,10 @@ public class ChatUtils {
         return PLAYER_MSG_STRIPPED.matcher(msg).matches();
     }
 
+    public static boolean isPlayerChat(String msg) {
+        return isPartyMessage(msg) || isPlayerMessage(msg) || isMsgReceived(msg) || isMsgSent(msg) || isDonateMessage(msg);
+    }
+
     public static boolean isMsgReceived(String msg) {
         return MSG_RECEIVED.matcher(msg).matches() || MSG_RECEIVED_STRIPPED.matcher(msg).matches();
     }

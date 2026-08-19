@@ -14,10 +14,13 @@ import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
 import io.hamlook.aetheria.features.dungeons.reward.RewardAnalyzerOverlay;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomOverlay;
 import io.hamlook.aetheria.features.farming.BPSOverlay;
-import io.hamlook.aetheria.features.farming.FarmingTracker;
-import io.hamlook.aetheria.features.farming.FarmingTrackerOverlay;
+import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTracker;
+import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerOverlay;
 import io.hamlook.aetheria.features.farming.organicmatter.OrganicMatterTracker;
 import io.hamlook.aetheria.features.farming.organicmatter.OrganicMatterTrackerOverlay;
+import io.hamlook.aetheria.features.farming.pests.PestStats;
+import io.hamlook.aetheria.features.farming.pests.overlay.PestFinderOverlay;
+import io.hamlook.aetheria.features.farming.pests.overlay.PestTrackerOverlay;
 import io.hamlook.aetheria.features.fishing.trophy.TrophyFishOverlay;
 import io.hamlook.aetheria.features.mining.fetchur.FetchurOverlay;
 import io.hamlook.aetheria.features.mining.powder.PowderOverlay;
@@ -422,6 +425,24 @@ public class ATHRConfig {
 
     public static void resetOrganicMatterTracker() {
         OrganicMatterTracker.reset();
+    }
+
+    public static void openPestEditor() {
+        if (feature == null) return;
+        PestTrackerOverlay overlay = PestTrackerOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.farming.pests.pestTracker.pestOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.pests.pestTracker.scale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void openPestFinderEditor() {
+        if (feature == null) return;
+        PestFinderOverlay overlay = PestFinderOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.farming.pests.pestFinder.pestFinderPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.pests.pestFinder.scale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void resetPestTracker() {
+        PestStats.getInstance().reset();
     }
 
     public static void openPristineEditor() {

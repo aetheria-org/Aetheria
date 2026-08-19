@@ -13,7 +13,7 @@ public class FarmingTrackerConfig {
     @Expose
     @ConfigOption(name = "Enable", desc = "Track crop value and show the farming profit overlay")
     @ConfigEditorBoolean
-    public boolean enabled = false;
+    public boolean enabled = true;
 
     @Expose
     @ConfigOption(name = "Require Farming Location", desc = "Only track crops while in farming locations (Barn, Private Island, Garden)")
@@ -24,6 +24,11 @@ public class FarmingTrackerConfig {
     @ConfigOption(name = "Keep Tracker Across Sessions", desc = "Persist crop counts and value across world unloads / game restarts instead of resetting")
     @ConfigEditorBoolean
     public boolean persistAcrossSessions = true;
+
+    @Expose
+    @ConfigOption(name = "Pause on Chat", desc = "Pause the playtime timer while the chat GUI is open")
+    @ConfigEditorBoolean
+    public boolean pauseOnChat = true;
 
     @Expose
     @ConfigOption(name = "Hide in Chat", desc = "Hide the overlay when the chat GUI is open")
@@ -39,6 +44,21 @@ public class FarmingTrackerConfig {
     @ConfigOption(name = "Hide on F3 Debug", desc = "Hide the overlay when the F3 debug screen is open")
     @ConfigEditorBoolean
     public boolean hideOnDebug = true;
+
+    @Expose
+    @ConfigOption(name = "Hide When Paused", desc = "Hide the overlay while the playtime timer is paused")
+    @ConfigEditorBoolean
+    public boolean hideWhenPaused = true;
+
+    @Expose
+    @ConfigOption(name = "Show Only While Farming", desc = "Only show the overlay while actively farming (holding a farming tool and breaking crops)")
+    @ConfigEditorBoolean
+    public boolean showOnlyWhileFarming = true;
+
+    @Expose
+    @ConfigOption(name = "Show Only While Holding Farming Tool", desc = "Only show the overlay while holding a farming tool")
+    @ConfigEditorBoolean
+    public boolean showOnlyWhileHoldingFarmingTool = true;
 
     @Expose
     @ConfigOption(name = "Display Lines", desc = "Choose which crop lines to show and drag to reorder")
@@ -91,5 +111,5 @@ public class FarmingTrackerConfig {
     public int farmingTrackerCornerRadius = 4;
 
     @Expose
-    public Position farmingTrackerPosition = new Position(10, 120, false, false);
+    public Position farmingTrackerPosition = new Position(10, 200, false, false);
 }

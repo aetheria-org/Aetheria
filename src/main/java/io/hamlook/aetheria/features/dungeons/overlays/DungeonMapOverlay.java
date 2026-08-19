@@ -229,15 +229,15 @@ public class DungeonMapOverlay extends Overlay {
         float scaledW = gridW * scale;
         float scaledH = gridH * scale;
 
-        int cx = pos.getAbsX(sr, (int) scaledW);
-        int cy = pos.getAbsY(sr, (int) scaledH);
-        if (pos.isCenterX()) cx += (int) scaledW / 2;
-        if (pos.isCenterY()) cy += (int) scaledH / 2;
+        int bx = pos.getAbsX(sr, (int) scaledW);
+        int by = pos.getAbsY(sr, (int) scaledH);
+        if (pos.isCenterX()) bx -= (int) scaledW / 2;
+        if (pos.isCenterY()) by -= (int) scaledH / 2;
 
-        int bx = (int) (cx - scaledW / 2f) - 4;
-        int by = (int) (cy - scaledH / 2f) - 4;
-        int bw = (int) (cx + scaledW / 2f) + 4;
-        int bh = (int) (cy + scaledH / 2f) + 4;
+        int cx = bx + (int) scaledW / 2;
+        int cy = by + (int) scaledH / 2;
+        int bw = bx + (int) scaledW + 4;
+        int bh = by + (int) scaledH + 4;
         int radius = getCornerRadius();
 
         int bgColor = getBgColor();
