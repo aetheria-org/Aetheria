@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 public abstract class MixinFontRenderer_Emoji {
 
     @Unique
-    private static final Pattern EMOJI_PATTERN = Pattern.compile(":([a-zA-Z0-9_~+-]{2,}):");
+    private static final Pattern EMOJI_PATTERN = Pattern.compile(":([a-zA-Z0-9_~+-]{1,}):");
 
     @Unique
     private static final ThreadLocal<Boolean> ATHR$processing = ThreadLocal.withInitial(() -> false);
