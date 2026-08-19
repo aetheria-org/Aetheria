@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.features.dungeons.caseopening;
+package io.hamlook.aetheria.features.chestanimations.caseopening;
 
 public enum DropRarity {
     COMMON(7), FISH(6), EPIC(5), LEGENDARY(4), MYTHIC(3), DIVINE(2), PRAYTORNG(1);

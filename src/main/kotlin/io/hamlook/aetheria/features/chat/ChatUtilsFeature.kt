@@ -1,7 +1,6 @@
 package io.hamlook.aetheria.features.chat
 
 import io.hamlook.aetheria.init.RegisterEvents
-import net.minecraftforge.event.world.WorldEvent
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import net.minecraftforge.fml.common.gameevent.TickEvent
 
@@ -20,7 +19,7 @@ class ChatUtilsFeature {
     }
 
     @SubscribeEvent
-    fun onWorldLoad(event: WorldEvent.Load) {
+    fun onWorldLoad() {
         ticks = 0
         ChatCompactHandler.reset()
     }

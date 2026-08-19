@@ -1,12 +1,13 @@
-package io.hamlook.aetheria.features.dungeons.caseopening;
+package io.hamlook.aetheria.features.chestanimations.caseopening;
 
+import io.hamlook.aetheria.features.chestanimations.ItemEnum;
 import io.hamlook.aetheria.features.dungeons.utils.DungeonFloor;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.hamlook.aetheria.features.dungeons.caseopening.ItemEnum.*;
+import static io.hamlook.aetheria.features.chestanimations.ItemEnum.*;
 
 public class DungeonDropData {
 

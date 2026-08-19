@@ -36,8 +36,8 @@ public class Dungeons {
     public DungeonRoomOverlayConfig dungeonRoomOverlayConfig = new DungeonRoomOverlayConfig();
 
     @Expose
-    @Category(name = "Chest Case Opening", desc = "CS:GO style animation when opening dungeon chests")
-    public CaseOpeningConfig caseOpening = new CaseOpeningConfig();
+    @Category(name = "D.Chest Animation", desc = "Animations played when opening dungeon chests")
+    public DungeonChestAnimationConfig caseOpening = new DungeonChestAnimationConfig();
 
     @Expose
     @Category(name = "Secret Finder", desc = "Secret finder with  secret ESP, and display options")

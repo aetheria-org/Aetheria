@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.features.dungeons.caseopening;
+package io.hamlook.aetheria.features.chestanimations;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

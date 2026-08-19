@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.features.dungeons.caseopening;
+package io.hamlook.aetheria.features.chestanimations;
 
 import lombok.Getter;
 import net.minecraft.util.ResourceLocation;

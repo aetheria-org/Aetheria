@@ -36,7 +36,6 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.Color;
-import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -184,7 +183,7 @@ public class ChatUI extends GuiScreen {
         return (Math.round(alpha * msgAlpha) << 24) | (argb & 0x00FFFFFF);
     }
 
-    /** Same fade/tint as {@link #mc(int)}, but for textured (GL-color-modulated) draws: avatars,
+    /** Same fade/tint as {@link # mc(int)}, but for textured (GL-color-modulated) draws: avatars,
      *  emoji, stickers, attachments and embed thumbnails. Callers must restore full white afterward. */
     private void applyMsgGlColor() {
         if (msgFailed) {
@@ -632,7 +631,7 @@ public class ChatUI extends GuiScreen {
             // channels have something new — mirrors the "unread vs read" contrast people expect
             // from every modern chat app, instead of every channel looking identical until clicked.
             boolean unbold = unread == 0 || selected;
-            String prefix = unbold ? "" : "\u00a7l";
+            String prefix = unbold ? "" : "§l";
             String label = fontRendererObj.trimStringToWidth(prefix + "# " + channel.channelName, SIDEBAR_WIDTH - 22 - badgeReserve);
             int nameColor = selected ? 0xFFFFFFFF : (unread > 0 ? 0xFFF2F3F5 : 0xFFB5BAC1);
             drawText(label, 14, y + 9, nameColor);
@@ -1045,7 +1044,7 @@ public class ChatUI extends GuiScreen {
             boolean hover = mouseX >= dx && mouseX <= dx + dw && mouseY >= ry && mouseY <= ry + rowH;
             if (hover) drawRect(dx, ry, dx + dw, ry + rowH, 0xFF35373C);
             drawInlineEmoji(ref, dx + 4, ry + 1);
-            drawText(":" + ref.name + ":", dx + 24, ry + 5, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
+            drawText(ref.name, dx + 24, ry + 5, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
             final int selStart = start - 1;
             final int selEnd = caret;
             clickRects.add(new ClickRect(dx, ry, dw, rowH, () -> {
@@ -1579,9 +1578,10 @@ public class ChatUI extends GuiScreen {
         }
 
         for (Embed embed : layout.embeds) {
-            if ("image".equals(embed.type)) {
-                // already drawn as part of the image grid above
-            } else if ("file".equals(embed.type) || "video".equals(embed.type)) {
+
+            // images are already drawn as part of the image grid above
+
+            if ("file".equals(embed.type) || "video".equals(embed.type)) {
                 drawFileEmbed(embed, textX, cursorY, Math.min(contentWidth, 360), mouseX, mouseY);
                 cursorY += EMBED_BOX_H + 6;
             } else if ("website".equals(embed.type) || "rich".equals(embed.type)) {
@@ -1857,9 +1857,8 @@ public class ChatUI extends GuiScreen {
             extra += msg.stickers.size() * (STICKER_BOX_H + 6);
         }
         for (Embed embed : cache.embeds) {
-            if ("image".equals(embed.type)) {
-                // image attachments and image embeds share the grid, sized live in blockHeight
-            } else if ("file".equals(embed.type) || "video".equals(embed.type)) {
+            // image attachments and image embeds share the grid, sized live in blockHeight
+            if ("file".equals(embed.type) || "video".equals(embed.type)) {
                 extra += EMBED_BOX_H + 6;
             } else if ("website".equals(embed.type) || "rich".equals(embed.type)) extra += embedHeight(embed, Math.min(width, 360)) + 6;
         }
@@ -2187,7 +2186,7 @@ public class ChatUI extends GuiScreen {
                 && (e.fields == null || e.fields.isEmpty());
         if (mediaOnly) return e.imageUrl;
         String host = hostOf(e.url);
-        return "tenor.com".equals(host) || "giphy.com".equals(host) || "imgur.com".equals(host)
+        return "tenor.com".equals(host) || "giphy.com".equals(host) || "imgur.com".equals(host) || "klipy.com".equals(host)
                 || "media.tenor.com".equals(host) || "i.giphy.com".equals(host) || "i.imgur.com".equals(host)
                 ? e.imageUrl : null;
     }

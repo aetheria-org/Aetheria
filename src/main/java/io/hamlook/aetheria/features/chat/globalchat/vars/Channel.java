@@ -77,8 +77,8 @@ public class Channel {
             connection.setRequestProperty("Accept", "application/json");
             connection.setRequestProperty("username", GlobalChat.getUsername());
             connection.setRequestProperty("x-timezone-offset", String.valueOf(io.hamlook.aetheria.utils.TimeUtils.getLocalOffsetMinutes()));
-            connection.setReadTimeout(10000);
-            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(30000);
+            connection.setConnectTimeout(30000);
             if(connection.getResponseCode() == 200){
                 String response = ElectionUtils.readResponse(connection);
                 JsonElement root = JsonParser.parseString(response);

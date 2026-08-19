@@ -1,11 +1,12 @@
-package io.hamlook.aetheria.features.dungeons.caseopening;
+package io.hamlook.aetheria.features.chestanimations;
 
 import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.StringUtils;
+import io.hamlook.aetheria.features.chestanimations.caseopening.DungeonDropData;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
+import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.data.DungeonUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiChest;
@@ -27,13 +28,11 @@ public class ChestListener {
     private static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII"};
     public static GuiChest originalGui;
     private static WorldClient lastWorld = null;
-    private final Map<Integer, Boolean> crOpenedChestOb = new HashMap<>();
-    private final Map<Integer, Boolean> crOpenedChestBr = new HashMap<>();
+    private final Map<Integer, DungeonDropData.CaseMaterial> crOpenedChests = new HashMap<>();
+    private final Map<DungeonDropData.CaseMaterial, Boolean> openedChests = new HashMap<>();
     private boolean isCroesus = false;
     private boolean isCatacombsChestList = false;
     private int chestID = -1;
-    private boolean openedChestOb = false;
-    private boolean openedChestBr = false;
     private DungeonDropData.Floor curFloor;
 
     @SubscribeEvent
@@ -89,42 +88,31 @@ public class ChestListener {
         } catch (IllegalArgumentException ignored) {
         }
 
-        if (parsedMaterial != DungeonDropData.CaseMaterial.OBSIDIAN && parsedMaterial != DungeonDropData.CaseMaterial.BEDROCK) {
-            DebugLogger.log("[ChestListener] Chest \"" + name + "\" not Obsidian/Bedrock, skipping");
+        if (parsedMaterial == null) {
+            DebugLogger.log("[ChestListener] Chest \"" + name + "\" is not a supported material, skipping");
             return;
         }
 
         DungeonDropData.CaseMaterial curMaterial = parsedMaterial;
-        DebugLogger.log("[ChestListener] Chest detected: material=" + curMaterial + ", isCroesus=" + isCroesus + ", curFloor=" + curFloor + ", chestID=" + chestID);
+        String animation = ChestAnimations.getOption(curMaterial);
+        if (ChestAnimations.NONE.equals(animation)) {
+            DebugLogger.log("[ChestListener] Chest \"" + name + "\" has no animation selected, skipping");
+            return;
+        }
+        DebugLogger.log("[ChestListener] Chest detected: material=" + curMaterial + ", isCroesus=" + isCroesus + ", curFloor=" + curFloor + ", chestID=" + chestID + ", animation=" + animation);
 
         if (isCroesus) {
-            if (curMaterial == DungeonDropData.CaseMaterial.BEDROCK) {
-                if (crOpenedChestBr.containsKey(chestID)) {
-                    DebugLogger.log("[ChestListener] Already opened BR chest " + chestID + ", skipping");
-                    return;
-                }
-                crOpenedChestBr.put(chestID, true);
-            } else {
-                if (crOpenedChestOb.containsKey(chestID)) {
-                    DebugLogger.log("[ChestListener] Already opened OB chest " + chestID + ", skipping");
-                    return;
-                }
-                crOpenedChestOb.put(chestID, true);
+            if (crOpenedChests.containsKey(chestID)) {
+                DebugLogger.log("[ChestListener] Already opened chest " + chestID + ", skipping");
+                return;
             }
+            crOpenedChests.put(chestID, curMaterial);
         } else {
-            if (curMaterial == DungeonDropData.CaseMaterial.BEDROCK) {
-                if (openedChestBr) {
-                    DebugLogger.log("[ChestListener] Already opened BR, skipping");
-                    return;
-                }
-                openedChestBr = true;
-            } else {
-                if (openedChestOb) {
-                    DebugLogger.log("[ChestListener] Already opened OB, skipping");
-                    return;
-                }
-                openedChestOb = true;
+            if (Boolean.TRUE.equals(openedChests.get(curMaterial))) {
+                DebugLogger.log("[ChestListener] Already opened " + curMaterial + ", skipping");
+                return;
             }
+            openedChests.put(curMaterial, true);
             curFloor = DungeonDropData.Floor.fromDungeonFloor(DungeonUtils.getFloorFromScoreboard());
             DebugLogger.log("[ChestListener] In-dungeon chest — scoreboard floor: " + curFloor);
         }
@@ -135,7 +123,7 @@ public class ChestListener {
         }
 
         DebugLogger.log("[ChestListener] Intercepting chest → floor=" + curFloor + ", material=" + curMaterial);
-        event.gui = new GuiInterceptChest(container, curFloor, curMaterial);
+        event.gui = new GuiInterceptChest(container, curFloor, curMaterial, animation);
     }
 
     @SubscribeEvent
@@ -152,8 +140,8 @@ public class ChestListener {
         name = StringUtils.cleanColour(name);
         name = StringUtils.clean(name);
 
-        boolean isObChest = name.equalsIgnoreCase("Obsidian") && !crOpenedChestOb.containsKey(chestID);
-        boolean isBrChest = name.equalsIgnoreCase("Bedrock") && !crOpenedChestBr.containsKey(chestID);
+        boolean isObChest = name.equalsIgnoreCase("Obsidian") && crOpenedChests.get(chestID) != DungeonDropData.CaseMaterial.OBSIDIAN;
+        boolean isBrChest = name.equalsIgnoreCase("Bedrock") && crOpenedChests.get(chestID) != DungeonDropData.CaseMaterial.BEDROCK;
         if (!isObChest && !isBrChest) return;
 
         if (event.toolTip.size() > 3) {
@@ -187,10 +175,8 @@ public class ChestListener {
             isCroesus = false;
             isCatacombsChestList = false;
             chestID = -1;
-            openedChestOb = false;
-            openedChestBr = false;
-            crOpenedChestOb.clear();
-            crOpenedChestBr.clear();
+            openedChests.clear();
+            crOpenedChests.clear();
         }
     }
 }

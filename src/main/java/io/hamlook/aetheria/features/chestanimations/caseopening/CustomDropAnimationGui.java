@@ -1,8 +1,12 @@
-package io.hamlook.aetheria.features.dungeons.caseopening;
+package io.hamlook.aetheria.features.chestanimations.caseopening;
 
 import io.hamlook.aetheria.DebugLogger;
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.features.chestanimations.ChestAnimations;
+import io.hamlook.aetheria.features.chestanimations.ChestListener;
+import io.hamlook.aetheria.features.chestanimations.CitManager;
+import io.hamlook.aetheria.features.chestanimations.TextureData;
 import io.netty.util.internal.ThreadLocalRandom;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
@@ -13,6 +17,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.shader.ShaderGroup;
+import net.minecraft.inventory.ContainerChest;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
@@ -29,7 +34,6 @@ public class CustomDropAnimationGui extends GuiScreen {
     private static final ResourceLocation AUDIO = new ResourceLocation("gui.button.press");
 
     private final Minecraft mc = Minecraft.getMinecraft();
-    private final FloatFontRenderer floatFont;
     private final DungeonDropData.Rule rewardItem;
     private final DungeonDropData.Floor floor;
     private final DungeonDropData.CaseMaterial material;
@@ -56,16 +60,21 @@ public class CustomDropAnimationGui extends GuiScreen {
     private int lastBoxDistance = 0;
     private boolean hasShownResult = false;
 
-    public CustomDropAnimationGui(DungeonDropData.Rule rewardItem, DungeonDropData.Floor floor, DungeonDropData.CaseMaterial material) {
+    public CustomDropAnimationGui(ContainerChest container, DungeonDropData.Floor floor, DungeonDropData.CaseMaterial material) {
         this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(AUDIO, 1.0F));
-        this.floatFont = new FloatFontRenderer(mc.fontRendererObj);
-        this.rewardItem = rewardItem;
         this.floor = floor;
         this.material = material;
+        this.rewardItem = ChestAnimations.findBestReward(container, floor, material);
         this.randstop = (float) randStopPoint();
         this.randslow = (float) ThreadLocalRandom.current().nextDouble(-2, 2);
         this.guiOpenStartTime = System.nanoTime();
         this.lastFrameTime = System.nanoTime();
+
+        if (this.rewardItem == null) {
+            DebugLogger.log("[CustomDropAnimationGui] No matching reward found — returning to chest GUI");
+            Minecraft.getMinecraft().displayGuiScreen(ChestListener.originalGui);
+            return;
+        }
         buildCarousel(rewardItem);
     }
 
@@ -201,6 +210,7 @@ public class CustomDropAnimationGui extends GuiScreen {
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        if (rewardItem == null) return;
         // Clear the screen to prevent black background with OptiFine
         drawDefaultBackground();
 
@@ -338,7 +348,9 @@ public class CustomDropAnimationGui extends GuiScreen {
                 float textY = y + itemBoxHeight * size * 3 / 4;
                 GL11.glPushMatrix();
                 GL11.glScalef(textScale, textScale, 1f);
-                floatFont.drawCenteredString(normalizeString(carouselItems.get(i).item.name()), textX / textScale, textY / textScale, boxColor, true);
+                String text = normalizeString(carouselItems.get(i).item.name());
+                float textWidth = mc.fontRendererObj.getStringWidth(text);
+                mc.fontRendererObj.drawString(text, textX / textScale - textWidth / 2f, textY / textScale - 4.5f, boxColor, true);
                 GL11.glPopMatrix();
             }
         }

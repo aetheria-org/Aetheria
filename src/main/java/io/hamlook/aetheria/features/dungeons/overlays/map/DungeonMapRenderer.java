@@ -30,7 +30,7 @@ public class DungeonMapRenderer {
             DungeonMapGrid.RoomState.UNOPENED
     };
 
-    public static void render(DungeonMapGrid grid, float centerX, float centerY, float scale, List<String> playerNames, DungeonPlayerTracker tracker, Collection<DungeonRoom> visitedRooms) {
+    public static void render(DungeonMapGrid grid, float centerX, float centerY, float scale, List<String> playerNames, DungeonPlayerTracker tracker, Collection<DungeonRoom> visitedRooms, boolean showVisitedRoomNames, boolean colorText) {
         if (!grid.isValid()) return;
 
         DungeonMapConfig cfg = ATHRConfig.feature.dungeons.dungeonMapConfig;
@@ -107,9 +107,8 @@ public class DungeonMapRenderer {
         }
 
         // 3. Visited Room Names (centered, fixed screen scale)
-        if (cfg.rooms.showVisitedRoomNames && visitedRooms != null) {
+        if (showVisitedRoomNames && visitedRooms != null) {
             float invScale = 1f / Math.max(scale, 0.01f);
-            boolean colorText = cfg.rooms.mapColorText;
             boolean split = cfg.rooms.splitRoomMarkers;
             float roomHalf = roomSize / 2f;
             Set<DungeonMapGrid.RoomRegion> renderedRegions = new HashSet<>();
