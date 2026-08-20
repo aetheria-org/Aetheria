@@ -1,27 +1,16 @@
 package io.hamlook.aetheria.features.dungeons.overlays.map;
 
+import lombok.Getter;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.world.storage.MapData;
 
-import lombok.Getter;
 import java.awt.*;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 public class DungeonMapGrid {
 
     private static final int SAMPLE_ALPHA_THRESHOLD = 40;
-    public float worldOriginX = 200f;
-    public float worldOriginZ = 200f;
-    public int cellSizeBlocks = 32;
-
     @Getter
     private final Map<RoomOffset, RoomCell> rooms = new HashMap<>();
     @Getter
@@ -31,15 +20,18 @@ public class DungeonMapGrid {
     @Getter
     private final Map<Long, RoomRegion> regionCellMap = new HashMap<>();
     private final Map<Long, RoomState> stateCache = new HashMap<>();
+    public float worldOriginX = 200f;
+    public float worldOriginZ = 200f;
+    public int cellSizeBlocks = 32;
+    public float entrancePixelCenterX = 0f;
+    public float entrancePixelCenterZ = 0f;
+    public float blockToPixel = 0f;
     private int startPixelX = -1;
     private int startPixelY = -1;
     @Getter
     private int roomPixelSize = 0;
     @Getter
     private int connectorPixelSize = 5;
-    public float entrancePixelCenterX = 0f;
-    public float entrancePixelCenterZ = 0f;
-    public float blockToPixel = 0f;
 
     public static DungeonMapGrid parse(MapData data, int cellSizeBlocks) {
         if (data == null || data.colors == null) {
@@ -113,6 +105,162 @@ public class DungeonMapGrid {
         return grid;
     }
 
+    private static void layoutRegion(RoomRegion region) {
+        if (region.cellCount == 1) {
+            RoomOffset cell = region.cells.get(0);
+            region.tickCell = cell;
+            region.hasRowAnchor = true;
+            region.nameRowY = cell.y;
+            region.nameRowMinX = region.nameRowMaxX = cell.x;
+            return;
+        }
+        region.cells.sort((a, b) -> a.x != b.x ? Integer.compare(a.x, b.x) : Integer.compare(a.y, b.y));
+        int tallestColumn = findTallestColumn(region.cells);
+        region.tickCell = null;
+        for (RoomOffset cell : region.cells) {
+            if (cell.x == tallestColumn) {
+                region.tickCell = cell;
+                break;
+            }
+        }
+        computeRowAnchor(region);
+    }
+
+    /**
+     * Returns the x of the column with the most cells. Ties break to the lowest x
+     * because cells are sorted ascending by x and the first max-count column wins.
+     */
+    private static int findTallestColumn(List<RoomOffset> cells) {
+        int tallestColumn = cells.get(0).x;
+        int maxCount = 0;
+        int count = 0;
+        int currentX = cells.get(0).x;
+        for (RoomOffset cell : cells) {
+            if (cell.x == currentX) {
+                count++;
+            } else {
+                if (count > maxCount) {
+                    maxCount = count;
+                    tallestColumn = currentX;
+                }
+                currentX = cell.x;
+                count = 1;
+            }
+        }
+        if (count > maxCount) {
+            tallestColumn = currentX;
+        }
+        return tallestColumn;
+    }
+
+    /**
+     * Anchors the room name on its widest-row span when that row is unique;
+     * otherwise the name falls back to the bounding-box center.
+     */
+    private static void computeRowAnchor(RoomRegion region) {
+        Map<Integer, Integer> rowCounts = new HashMap<>();
+        for (RoomOffset cell : region.cells) {
+            rowCounts.merge(cell.y, 1, Integer::sum);
+        }
+        int widestRow = 0;
+        int maxRowCount = 0;
+        int tiedRows = 0;
+        for (Map.Entry<Integer, Integer> e : rowCounts.entrySet()) {
+            int c = e.getValue();
+            if (c > maxRowCount) {
+                maxRowCount = c;
+                widestRow = e.getKey();
+                tiedRows = 1;
+            } else if (c == maxRowCount) {
+                tiedRows++;
+            }
+        }
+        region.hasRowAnchor = false;
+        if (tiedRows == 1) {
+            region.hasRowAnchor = true;
+            region.nameRowY = widestRow;
+            region.nameRowMinX = Integer.MAX_VALUE;
+            region.nameRowMaxX = Integer.MIN_VALUE;
+            for (RoomOffset cell : region.cells) {
+                if (cell.y == widestRow) {
+                    region.nameRowMinX = Math.min(region.nameRowMinX, cell.x);
+                    region.nameRowMaxX = Math.max(region.nameRowMaxX, cell.x);
+                }
+            }
+        }
+    }
+
+    private static int statePriority(RoomState state) {
+        switch (state) {
+            case FAILED:
+                return 5;
+            case GREEN:
+                return 4;
+            case CLEARED:
+                return 3;
+            case UNOPENED:
+                return 2;
+            default:
+                return 1;
+        }
+    }
+
+    private static SampleResult sampleRect(Color[][] colors, int x0, int y0, int w, int h) {
+        int filled = 0;
+        Integer dominant = null;
+        for (int dx = 0; dx < w; dx++) {
+            for (int dy = 0; dy < h; dy++) {
+                int sx = x0 + dx;
+                int sy = y0 + dy;
+                if (sx >= 0 && sy >= 0 && sx < 128 && sy < 128) {
+                    Color pixel = colors[sx][sy];
+                    if (pixel.getAlpha() > SAMPLE_ALPHA_THRESHOLD) {
+                        filled++;
+                        if (dominant == null) {
+                            dominant = pixel.getRGB();
+                        }
+                    }
+                }
+            }
+        }
+        return new SampleResult(filled, dominant);
+    }
+
+    private static long pack(int x, int y) {
+        return ((long) x << 32) | (y & 0xffffffffL);
+    }
+
+    private static int findConnectorSize(Color[][] colors, int startX, int startY, int roomPixelSize) {
+        int foundConn = 8;
+        for (int i = 0; i < roomPixelSize; i++) {
+            for (int dir = 0; dir < 4; dir++) {
+                for (int j = 1; j < 8; j++) {
+                    int[] c = connectorCoords(startX, startY, roomPixelSize, dir, i, j);
+                    int cx = c[0];
+                    int cy = c[1];
+                    if (cx >= 0 && cy >= 0 && cx < 128 && cy < 128 && colors[cx][cy].getAlpha() > 80) {
+                        if (j == 1) break;
+                        foundConn = Math.min(foundConn, j - 1);
+                    }
+                }
+            }
+        }
+        return foundConn > 0 && foundConn < 8 ? foundConn : 4;
+    }
+
+    private static int[] connectorCoords(int baseX, int baseY, int roomPixelSize, int dir, int i, int j) {
+        switch (dir) {
+            case 0:
+                return new int[]{baseX + i, baseY - j};
+            case 1:
+                return new int[]{baseX + roomPixelSize + j - 1, baseY + i};
+            case 2:
+                return new int[]{baseX + i, baseY + roomPixelSize + j - 1};
+            default:
+                return new int[]{baseX - j, baseY + i};
+        }
+    }
+
     public float worldToPixelX(double worldX) {
         return (float) ((worldX + worldOriginX) * blockToPixel);
     }
@@ -163,14 +311,11 @@ public class DungeonMapGrid {
 
                                 if (green > 130 && red < 120 && blue < 120) {
                                     greenCount++;
-                                }
-                                else if (red > 180 && green > 180 && blue > 180) {
+                                } else if (red > 180 && green > 180 && blue > 180) {
                                     whiteCount++;
-                                }
-                                else if (red > 180 && green < 100 && blue < 100) {
+                                } else if (red > 180 && green < 100 && blue < 100) {
                                     redCount++;
-                                }
-                                else if (isDarkGreyRoom && red < 35 && green < 35 && blue < 35) {
+                                } else if (isDarkGreyRoom && red < 35 && green < 35 && blue < 35) {
                                     darkMarkCount++;
                                 }
                             }
@@ -180,17 +325,13 @@ public class DungeonMapGrid {
 
                 if (redCount >= 2) {
                     cell.state = RoomState.FAILED;
-                }
-                else if (greenCount >= 2) {
+                } else if (greenCount >= 2) {
                     cell.state = RoomState.GREEN;
-                }
-                else if (whiteCount >= 2) {
+                } else if (whiteCount >= 2) {
                     cell.state = RoomState.CLEARED;
-                }
-                else if (isDarkGreyRoom || darkMarkCount >= 2) {
+                } else if (isDarkGreyRoom || darkMarkCount >= 2) {
                     cell.state = RoomState.UNOPENED;
-                }
-                else {
+                } else {
                     cell.state = RoomState.DISCOVERED;
                 }
                 stateCache.put(pack(entry.getKey().x, entry.getKey().y), cell.state);
@@ -313,74 +454,6 @@ public class DungeonMapGrid {
         }
     }
 
-    private static void layoutRegion(RoomRegion region) {
-        if (region.cellCount == 1) {
-            RoomOffset cell = region.cells.get(0);
-            region.tickCell = cell;
-            region.hasRowAnchor = true;
-            region.nameRowY = cell.y;
-            region.nameRowMinX = region.nameRowMaxX = cell.x;
-            return;
-        }
-        region.cells.sort((a, b) -> a.x != b.x ? Integer.compare(a.x, b.x) : Integer.compare(a.y, b.y));
-        int tallestColumn = region.cells.get(0).x;
-        int maxCount = 0;
-        int count = 0;
-        int currentX = region.cells.get(0).x;
-        for (RoomOffset cell : region.cells) {
-            if (cell.x == currentX) {
-                count++;
-            } else {
-                if (count > maxCount) {
-                    maxCount = count;
-                    tallestColumn = currentX;
-                }
-                currentX = cell.x;
-                count = 1;
-            }
-        }
-        if (count > maxCount) {
-            tallestColumn = currentX;
-        }
-        region.tickCell = null;
-        for (RoomOffset cell : region.cells) {
-            if (cell.x == tallestColumn) {
-                region.tickCell = cell;
-                break;
-            }
-        }
-        Map<Integer, Integer> rowCounts = new HashMap<>();
-        for (RoomOffset cell : region.cells) {
-            rowCounts.merge(cell.y, 1, Integer::sum);
-        }
-        int widestRow = 0;
-        int maxRowCount = 0;
-        int tiedRows = 0;
-        for (Map.Entry<Integer, Integer> e : rowCounts.entrySet()) {
-            int c = e.getValue();
-            if (c > maxRowCount) {
-                maxRowCount = c;
-                widestRow = e.getKey();
-                tiedRows = 1;
-            } else if (c == maxRowCount) {
-                tiedRows++;
-            }
-        }
-        region.hasRowAnchor = false;
-        if (tiedRows == 1) {
-            region.hasRowAnchor = true;
-            region.nameRowY = widestRow;
-            region.nameRowMinX = Integer.MAX_VALUE;
-            region.nameRowMaxX = Integer.MIN_VALUE;
-            for (RoomOffset cell : region.cells) {
-                if (cell.y == widestRow) {
-                    region.nameRowMinX = Math.min(region.nameRowMinX, cell.x);
-                    region.nameRowMaxX = Math.max(region.nameRowMaxX, cell.x);
-                }
-            }
-        }
-    }
-
     private RoomState aggregateState(RoomRegion region) {
         RoomState best = RoomState.DISCOVERED;
         for (RoomOffset off : region.cells) {
@@ -390,21 +463,6 @@ public class DungeonMapGrid {
             }
         }
         return best;
-    }
-
-    private static int statePriority(RoomState state) {
-        switch (state) {
-            case FAILED:
-                return 5;
-            case GREEN:
-                return 4;
-            case CLEARED:
-                return 3;
-            case UNOPENED:
-                return 2;
-            default:
-                return 1;
-        }
     }
 
     public RoomRegion regionAtPixel(float pixelX, float pixelZ) {
@@ -419,31 +477,9 @@ public class DungeonMapGrid {
         return null;
     }
 
-    private static SampleResult sampleRect(Color[][] colors, int x0, int y0, int w, int h) {
-        int filled = 0;
-        Integer dominant = null;
-        for (int dx = 0; dx < w; dx++) {
-            for (int dy = 0; dy < h; dy++) {
-                int sx = x0 + dx;
-                int sy = y0 + dy;
-                if (sx >= 0 && sy >= 0 && sx < 128 && sy < 128) {
-                    Color pixel = colors[sx][sy];
-                    if (pixel.getAlpha() > SAMPLE_ALPHA_THRESHOLD) {
-                        filled++;
-                        if (dominant == null) {
-                            dominant = pixel.getRGB();
-                        }
-                    }
-                }
-            }
-        }
-        return new SampleResult(filled, dominant);
-    }
-
     public float gridToPixelX(float gridX) {
         return startPixelX + gridX * (roomPixelSize + connectorPixelSize);
     }
-
     public float gridToPixelZ(float gridZ) {
         return startPixelY + gridZ * (roomPixelSize + connectorPixelSize);
     }
@@ -460,10 +496,6 @@ public class DungeonMapGrid {
         return state != null ? state : RoomState.DISCOVERED;
     }
 
-    private static long pack(int x, int y) {
-        return ((long) x << 32) | (y & 0xffffffffL);
-    }
-
     public int getGridPixelWidth() {
         return 128;
     }
@@ -474,37 +506,6 @@ public class DungeonMapGrid {
 
     public boolean isValid() {
         return startPixelX >= 0 && !rooms.isEmpty();
-    }
-
-    private static int findConnectorSize(Color[][] colors, int startX, int startY, int roomPixelSize) {
-        int foundConn = 8;
-        for (int i = 0; i < roomPixelSize; i++) {
-            for (int dir = 0; dir < 4; dir++) {
-                for (int j = 1; j < 8; j++) {
-                    int[] c = connectorCoords(startX, startY, roomPixelSize, dir, i, j);
-                    int cx = c[0];
-                    int cy = c[1];
-                    if (cx >= 0 && cy >= 0 && cx < 128 && cy < 128 && colors[cx][cy].getAlpha() > 80) {
-                        if (j == 1) break;
-                        foundConn = Math.min(foundConn, j - 1);
-                    }
-                }
-            }
-        }
-        return foundConn > 0 && foundConn < 8 ? foundConn : 4;
-    }
-
-    private static int[] connectorCoords(int baseX, int baseY, int roomPixelSize, int dir, int i, int j) {
-        switch (dir) {
-            case 0:
-                return new int[]{baseX + i, baseY - j};
-            case 1:
-                return new int[]{baseX + roomPixelSize + j - 1, baseY + i};
-            case 2:
-                return new int[]{baseX + i, baseY + roomPixelSize + j - 1};
-            default:
-                return new int[]{baseX - j, baseY + i};
-        }
     }
 
     public enum ConnectionType {

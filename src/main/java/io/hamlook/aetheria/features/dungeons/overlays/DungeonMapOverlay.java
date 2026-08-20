@@ -16,13 +16,9 @@ import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.storage.MapData;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -59,103 +55,6 @@ public class DungeonMapOverlay extends Overlay {
         ItemStack stack = inv[8];
         if (stack == null) return null;
         return Items.filled_map.getMapData(stack, Minecraft.getMinecraft().theWorld);
-    }
-
-    public static void renderName(float pixelX, float pixelZ, int color, float headScale, float scale, String name, boolean centered) {
-        if (name == null || name.isEmpty()) return;
-
-        Minecraft mc = Minecraft.getMinecraft();
-        float stringWidth = mc.fontRendererObj.getStringWidth(name);
-
-        GlStateManager.pushMatrix();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
-        GlStateManager.enableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-
-        int alpha = (color >> 24) & 0xFF;
-        float nameAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
-        GlStateManager.color(1.0f, 1.0f, 1.0f, nameAlpha);
-
-        if (centered) {
-            GlStateManager.translate(pixelX, pixelZ, 0f);
-            GlStateManager.scale(scale, scale, 1.0f);
-
-            float paddingX = 3f;
-            float paddingY = 2f;
-            float x1 = -stringWidth / 2f - paddingX;
-            float y1 = -mc.fontRendererObj.FONT_HEIGHT / 2f - paddingY;
-            float x2 = stringWidth / 2f + paddingX;
-            float y2 = mc.fontRendererObj.FONT_HEIGHT / 2f + paddingY;
-
-            Gui.drawRect((int) x1, (int) y1, (int) x2, (int) y2, 0x60000000);
-            GlStateManager.enableTexture2D();
-            mc.fontRendererObj.drawString(name, (int) (-stringWidth / 2f), (int) (-mc.fontRendererObj.FONT_HEIGHT / 2f), 0xFFFFFFFF);
-        } else {
-            float headSize = headScale * 8f;
-            float half = headSize / 2f;
-            float cx = pixelX + half;
-            float mapScale = Math.max(ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.scale, 0.01f);
-            float cy = (pixelZ - headSize) + ATHRConfig.feature.dungeons.dungeonMapConfig.players.nameOffset / mapScale;
-
-            float nameWidth = stringWidth * scale;
-            float nameX = cx - nameWidth / 2f;
-
-            GlStateManager.translate(nameX, cy, 0f);
-            GlStateManager.scale(scale, scale, scale);
-            mc.fontRendererObj.drawString(name, 0, 0, 0xFFFFFFFF);
-        }
-
-        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
-        GlStateManager.popMatrix();
-    }
-
-    public static void renderRoomName(float pixelX, float pixelZ, float scale, String name, int color) {
-        if (name == null || name.isEmpty()) return;
-        Minecraft mc = Minecraft.getMinecraft();
-        String[] words = name.split(" ");
-        if (words.length == 0) return;
-        int fontHeight = mc.fontRendererObj.FONT_HEIGHT + 1;
-
-        GlStateManager.pushMatrix();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
-        GlStateManager.enableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.translate(pixelX, pixelZ, 0f);
-        GlStateManager.scale(scale, scale, 1.0f);
-        float yTextOffset = words.length * fontHeight / -2f;
-        for (int i = 0; i < words.length; i++) {
-            String word = words[i];
-            mc.fontRendererObj.drawString(word, (int) (-mc.fontRendererObj.getStringWidth(word) / 2f), (int) (yTextOffset + i * fontHeight), color, true);
-        }
-        GlStateManager.popMatrix();
-    }
-
-    public static void renderPlayerHead(float x, float y, int color, float scale, ResourceLocation skin, float rotation) {
-        if (skin == null) {
-            skin = DefaultPlayerSkin.getDefaultSkinLegacy();
-        }
-        int alpha = (color >> 24) & 0xFF;
-        float headAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
-        Minecraft mc = Minecraft.getMinecraft();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
-        GlStateManager.enableTexture2D();
-        GlStateManager.pushMatrix();
-        float half = (scale * 8f) / 2f;
-        float cx = x + half;
-        float cy = (y - 1f) + half;
-        GlStateManager.translate(cx, cy, 0f);
-        GlStateManager.rotate(rotation, 0f, 0f, 1f);
-        GlStateManager.translate(-cx, -cy, 0f);
-        mc.getTextureManager().bindTexture(skin);
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.color(1.0f, 1.0f, 1.0f, headAlpha);
-        Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 8f, 8f, 8, 8, (int) (scale * 8), (int) (scale * 8), 64f, 64f);
-        Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 40f, 8f, 8, 8, (int) (scale * 8), (int) (scale * 8), 64f, 64f);
-        GlStateManager.popMatrix();
-        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     @SubscribeEvent
@@ -246,6 +145,16 @@ public class DungeonMapOverlay extends Overlay {
         MapData info = player != null ? getDungeonMap(player) : null;
         if (info != null) playerTracker.matchDecorations(info.mapDecorations);
         DungeonMapRenderer.render(cachedGrid, centerX, centerY, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms(), showRoomNames, colorRoomNames);
+    }
+
+    /**
+     * Exposes the currently-cached dungeon map grid so other UI (e.g. the Leap
+     * menu overlay) can compute marker positions in the same local pixel space
+     * that renderDungeonMap() actually draws into. Returns null if no valid map
+     * has been parsed yet.
+     */
+    public DungeonMapGrid getCachedGrid() {
+        return (cachedGrid != null && cachedGrid.isValid()) ? cachedGrid : null;
     }
 
     private void updateCachedGrid(EntityPlayerSP player) {
