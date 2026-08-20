@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.opengl.GL11;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -92,7 +93,7 @@ public class DungeonMapRenderer {
                         if (region.state != state) continue;
                         int rx = (int) grid.gridToPixelX(region.tickCell.x);
                         int ry = (int) grid.gridToPixelZ(region.tickCell.y);
-                        Utils.drawTexturedRect(rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize, checkmarkSize);
+                        Utils.drawTexturedRect(rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize, checkmarkSize, GL11.GL_NEAREST);
                     }
                 } else {
                     for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
@@ -100,7 +101,7 @@ public class DungeonMapRenderer {
                         if (cell.state != state) continue;
                         int rx = (int) grid.gridToPixelX(entry.getKey().x);
                         int ry = (int) grid.gridToPixelZ(entry.getKey().y);
-                        Utils.drawTexturedRect(rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize, checkmarkSize);
+                        Utils.drawTexturedRect(rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize, checkmarkSize, GL11.GL_NEAREST);
                     }
                 }
             }
