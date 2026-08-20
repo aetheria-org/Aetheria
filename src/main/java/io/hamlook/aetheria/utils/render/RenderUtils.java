@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
@@ -374,6 +375,153 @@ public final class RenderUtils {
             return true;
         }
         return false;
+    }
+
+    public static void renderPlayerName(float pixelX, float pixelZ, int color, float headScale, float scale, String name, boolean centered) {
+        if (name == null || name.isEmpty()) return;
+
+        Minecraft mc = Minecraft.getMinecraft();
+        float stringWidth = mc.fontRendererObj.getStringWidth(name);
+
+        GlStateManager.pushMatrix();
+        GlStateManager.enableBlend();
+        GlStateManager.enableAlpha();
+        GlStateManager.enableTexture2D();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+
+        int alpha = (color >> 24) & 0xFF;
+        float nameAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
+        GlStateManager.color(1.0f, 1.0f, 1.0f, nameAlpha);
+
+        if (centered) {
+            GlStateManager.translate(pixelX, pixelZ, 0f);
+            GlStateManager.scale(scale, scale, 1.0f);
+
+            float paddingX = 3f;
+            float paddingY = 2f;
+            float x1 = -stringWidth / 2f - paddingX;
+            float y1 = -mc.fontRendererObj.FONT_HEIGHT / 2f - paddingY;
+            float x2 = stringWidth / 2f + paddingX;
+            float y2 = mc.fontRendererObj.FONT_HEIGHT / 2f + paddingY;
+
+            Gui.drawRect((int) x1, (int) y1, (int) x2, (int) y2, 0x60000000);
+            GlStateManager.enableTexture2D();
+            mc.fontRendererObj.drawString(name, (int) (-stringWidth / 2f), (int) (-mc.fontRendererObj.FONT_HEIGHT / 2f), 0xFFFFFFFF);
+        } else {
+            float headSize = headScale * 8f;
+            float half = headSize / 2f;
+            float cx = pixelX + half;
+            float mapScale = Math.max(ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.scale, 0.01f);
+            float cy = (pixelZ - headSize) + ATHRConfig.feature.dungeons.dungeonMapConfig.players.nameOffset / mapScale;
+
+            float nameWidth = stringWidth * scale;
+            float nameX = cx - nameWidth / 2f;
+
+            GlStateManager.translate(nameX, cy, 0f);
+            GlStateManager.scale(scale, scale, scale);
+            mc.fontRendererObj.drawString(name, 0, 0, 0xFFFFFFFF);
+        }
+
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+        GlStateManager.popMatrix();
+    }
+
+    public static void renderRoomName(float pixelX, float pixelZ, float scale, String name, int color) {
+        if (name == null || name.isEmpty()) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        String[] words = name.split(" ");
+        if (words.length == 0) return;
+        int fontHeight = mc.fontRendererObj.FONT_HEIGHT + 1;
+
+        GlStateManager.pushMatrix();
+        GlStateManager.enableBlend();
+        GlStateManager.enableAlpha();
+        GlStateManager.enableTexture2D();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.translate(pixelX, pixelZ, 0f);
+        GlStateManager.scale(scale, scale, 1.0f);
+        float yTextOffset = words.length * fontHeight / -2f;
+        for (int i = 0; i < words.length; i++) {
+            String word = words[i];
+            mc.fontRendererObj.drawString(word, (int) (-mc.fontRendererObj.getStringWidth(word) / 2f), (int) (yTextOffset + i * fontHeight), color, true);
+        }
+        GlStateManager.popMatrix();
+    }
+
+    public static void renderPlayerHead(float x, float y, int color, float scale, ResourceLocation skin, float rotation) {
+        if (skin == null) {
+            skin = DefaultPlayerSkin.getDefaultSkinLegacy();
+        }
+        int alpha = (color >> 24) & 0xFF;
+        float headAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
+        Minecraft mc = Minecraft.getMinecraft();
+        GlStateManager.enableBlend();
+        GlStateManager.enableAlpha();
+        GlStateManager.enableTexture2D();
+        GlStateManager.pushMatrix();
+        float half = (scale * 8f) / 2f;
+        float cx = x + half;
+        float cy = (y - 1f) + half;
+        GlStateManager.translate(cx, cy, 0f);
+        GlStateManager.rotate(rotation, 0f, 0f, 1f);
+        GlStateManager.translate(-cx, -cy, 0f);
+        mc.getTextureManager().bindTexture(skin);
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.color(1.0f, 1.0f, 1.0f, headAlpha);
+        Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 8f, 8f, 8, 8, (int) (scale * 8), (int) (scale * 8), 64f, 64f);
+        Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 40f, 8f, 8, 8, (int) (scale * 8), (int) (scale * 8), 64f, 64f);
+        GlStateManager.popMatrix();
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+
+    public static void renderPlayerArrow(float x, float y, float scale, float rotation, int rgbColor, boolean isSelf) {
+        Minecraft mc = Minecraft.getMinecraft();
+        float size = scale * 8f;
+        float half = size / 2f;
+        float cx = x + half;
+        float cy = (y - 1f) + half;
+
+        GlStateManager.pushMatrix();
+        GlStateManager.enableTexture2D();
+        GlStateManager.enableBlend();
+        GlStateManager.enableAlpha();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+
+        GlStateManager.translate(cx, cy, 0f);
+        GlStateManager.rotate(rotation + 180f, 0f, 0f, 1f);
+
+        mc.getTextureManager().bindTexture(Resources.DEFAULT_MAP_ICONS);
+
+        int iconType = isSelf ? 1 : 0;
+        float u0 = (iconType % 4) / 4f;
+        float v0 = (iconType / 4) / 4f;
+        float u1 = (iconType % 4 + 1) / 4f;
+        float v1 = (iconType / 4 + 1) / 4f;
+
+        int alphaByte = (rgbColor >>> 24) & 0xFF;
+        float a = (alphaByte == 0) ? 1.0f : alphaByte / 255f;
+        float r = ((rgbColor >> 16) & 0xFF) / 255f;
+        float g = ((rgbColor >> 8) & 0xFF) / 255f;
+        float b = (rgbColor & 0xFF) / 255f;
+        GlStateManager.color(r, g, b, a);
+
+        Tessellator tessellator = Tessellator.getInstance();
+        WorldRenderer worldrenderer = tessellator.getWorldRenderer();
+        worldrenderer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+        worldrenderer.pos(-half, half, 0.0D).tex(u0, v1).endVertex();
+        worldrenderer.pos(half, half, 0.0D).tex(u1, v1).endVertex();
+        worldrenderer.pos(half, -half, 0.0D).tex(u1, v0).endVertex();
+        worldrenderer.pos(-half, -half, 0.0D).tex(u0, v0).endVertex();
+        tessellator.draw();
+
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+        GlStateManager.popMatrix();
+    }
+
+    public static void renderMapCheckmark(ResourceLocation texture, float x, float y, float size) {
+        Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
+        GlStateManager.color(1f, 1f, 1f, 1f);
+        drawTexturedRect(x, y, size, size, GL11.GL_NEAREST);
     }
 
     public static int renderStringTrimWidth(String str, boolean shadow, int x, int y, int width, int color, int maxLines) {

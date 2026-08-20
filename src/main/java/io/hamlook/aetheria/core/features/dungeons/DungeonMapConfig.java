@@ -98,7 +98,7 @@ public class DungeonMapConfig {
         @Expose
         @ConfigOption(name = "Player Icon Style", desc = "Head shows the player's skin face. Arrow shows a Hypixel-map-style directional triangle (blue/yellow/orange/red per teammate, white for you)")
         @ConfigEditorDropdown(values = {"Head", "Arrow"}, initialIndex = 1)
-        public int playerIconStyle = 1;
+        public int playerIconStyles = 1;
 
         @Expose
         @ConfigOption(name = "Show Player Username", desc = "Show Player's Username in Dungeon Map")
@@ -114,6 +114,11 @@ public class DungeonMapConfig {
         @ConfigOption(name = "Marker Scale", desc = "Control how big the player marker display is")
         @ConfigEditorSliderAnnotation(minValue = 0.25f, maxValue = 2f, minStep = 0.05f)
         public float headScale = 1f;
+
+        @Expose
+        @ConfigOption(name = "Use Entity Position for Self", desc = "Use your real entity position for your own marker so it updates every frame (smoother) instead of waiting for map decoration updates")
+        @ConfigEditorBoolean
+        public boolean accurateSelfPosition = true;
 
         @Expose
         @ConfigOption(name = "Name Font Size", desc = "Control how big the name display is")
