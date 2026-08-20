@@ -32,11 +32,18 @@ public class PestFinderOverlay extends Overlay {
     }
 
     private static String warpHint(boolean preview) {
-        int key = config().warpKey;
-        if (key == Keyboard.KEY_NONE) return "§7Warp key: §8Not set";
-        Integer plot = preview ? 4 : FarmingApi.getNearestInfestedPlot();
-        if (plot == null) return null;
-        return "§7Press §e" + KeybindHelper.getKeyName(key) + " §7to warp to §bPlot " + plot;
+        try {
+            PestFinderConfig cfg = config();
+            if (cfg == null) return null;
+            int key = cfg.warpKey;
+            if (key == Keyboard.KEY_NONE) return "§7Warp key: §8Not set";
+            Integer plot = preview ? 4 : FarmingApi.getNearestInfestedPlot();
+            if (plot == null) return null;
+            if (!preview && cfg.hideWarpHintInPlot && FarmingApi.isPlayerInPlot(plot)) return null;
+            return "§7Press §e" + KeybindHelper.getKeyName(key) + " §7to warp to §bPlot " + plot;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static String value(String stored) {
@@ -146,6 +153,10 @@ public class PestFinderOverlay extends Overlay {
         if (mc.thePlayer == null || mc.currentScreen != null) return;
         if (SkyblockData.getCurrentLocation() != SkyblockData.Location.GARDEN) return;
         if (!KeybindHelper.isKeyPressed(config.warpKey)) return;
+        if (config.hideWarpHintInPlot) {
+            Integer nearest = FarmingApi.getNearestInfestedPlot();
+            if (nearest != null && FarmingApi.isPlayerInPlot(nearest)) return;
+        }
         FarmingApi.warpToNearestInfestedPlot();
     }
 }
