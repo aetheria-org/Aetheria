@@ -149,7 +149,7 @@ public class OptionsMenu extends GuiScreen {
 
         int btnX = width / 2 - BTN_W / 2;
         int btnBaseY = height / 2 + 10;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < BTN_LABELS.length; i++) {
             int by = btnBaseY + i * (BTN_H + BTN_GAP);
             boolean hov = mouseX >= btnX && mouseX <= btnX + BTN_W && mouseY >= by && mouseY <= by + BTN_H;
 
@@ -191,7 +191,7 @@ public class OptionsMenu extends GuiScreen {
         // Main buttons
         int btnX = width / 2 - BTN_W / 2;
         int btnBaseY = height / 2 + 10;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < BTN_LABELS.length; i++) {
             int by = btnBaseY + i * (BTN_H + BTN_GAP);
             if (mouseX >= btnX && mouseX <= btnX + BTN_W && mouseY >= by && mouseY <= by + BTN_H) {
                 switch (i) {
