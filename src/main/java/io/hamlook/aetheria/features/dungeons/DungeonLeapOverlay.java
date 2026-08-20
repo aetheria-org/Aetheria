@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.dungeons;
 
 import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
+import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapGrid;
 import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonPlayerTracker;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
@@ -64,13 +65,18 @@ public class DungeonLeapOverlay {
 
     private void drawLeapGUI(int mouseX, int mouseY, float partialTicks, GuiScreen gui) {
         float scale = 2f;
-        float size = 128f;
         float centerX = gui.width / 2f;
         float centerY = gui.height / 2f;
         overlay.renderDungeonMap(centerX, centerY, scale, true, true);
 
-        float left = centerX - (size * scale) / 2f;
-        float top = centerY - (size * scale) / 2f;
+        DungeonMapGrid grid = overlay.getCachedGrid();
+        if (grid == null) return;
+
+        // Match the same centering math DungeonMapRenderer uses when it draws the
+        // grid, so marker positions line up with what's actually on screen instead
+        // of assuming a fixed 128x128 box.
+        float left = centerX - grid.getGridPixelWidth() * scale / 2f;
+        float top = centerY - grid.getGridPixelHeight() * scale / 2f;
         float headPixelSize = 8f * scale;
         float halfHeadPixelSize = headPixelSize * 0.5f;
 
@@ -78,7 +84,7 @@ public class DungeonLeapOverlay {
         Minecraft mc = Minecraft.getMinecraft();
 
         for (String player : tracker.playerNames) {
-            float[] pos = tracker.getPosition(player);
+            float[] pos = tracker.getPixelPosition(player, grid);
             if (pos == null || pos.length < 3) continue;
             float posX = left + pos[0] * scale;
             float posY = top + pos[1] * scale;

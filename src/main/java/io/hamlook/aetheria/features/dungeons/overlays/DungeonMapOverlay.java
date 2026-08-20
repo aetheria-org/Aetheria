@@ -19,6 +19,9 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -26,11 +29,16 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.storage.MapData;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import org.lwjgl.opengl.GL11;
 
 import java.util.*;
 
 @RegisterEvents
 public class DungeonMapOverlay extends Overlay {
+
+    // Vanilla's own map icon atlas — same texture the vanilla map item and NEF's dungeon map use.
+    // Icon 0 = small colorable arrow (teammates), icon 1 = larger arrow (self position).
+    private static final ResourceLocation MAP_ICONS_TEXTURE = new ResourceLocation("textures/map/map_icons.png");
 
     public static boolean dungeonRunEnded = false;
     @Getter
@@ -158,6 +166,50 @@ public class DungeonMapOverlay extends Overlay {
         GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
+    public static void renderPlayerArrow(float x, float y, float scale, float rotation, int rgbColor, boolean isSelf) {
+        Minecraft mc = Minecraft.getMinecraft();
+        float size = scale * 8f;
+        float half = size / 2f;
+        float cx = x + half;
+        float cy = (y - 1f) + half;
+
+        GlStateManager.pushMatrix();
+        GlStateManager.enableTexture2D();
+        GlStateManager.enableBlend();
+        GlStateManager.enableAlpha();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+
+        GlStateManager.translate(cx, cy, 0f);
+        GlStateManager.rotate(rotation + 180f, 0f, 0f, 1f);
+
+        mc.getTextureManager().bindTexture(MAP_ICONS_TEXTURE);
+
+        int iconType = isSelf ? 1 : 0;
+        float u0 = (iconType % 4) / 4f;
+        float v0 = (iconType / 4) / 4f;
+        float u1 = (iconType % 4 + 1) / 4f;
+        float v1 = (iconType / 4 + 1) / 4f;
+
+        int alphaByte = (rgbColor >>> 24) & 0xFF;
+        float a = (alphaByte == 0) ? 1.0f : alphaByte / 255f;
+        float r = ((rgbColor >> 16) & 0xFF) / 255f;
+        float g = ((rgbColor >> 8) & 0xFF) / 255f;
+        float b = (rgbColor & 0xFF) / 255f;
+        GlStateManager.color(r, g, b, a);
+
+        Tessellator tessellator = Tessellator.getInstance();
+        WorldRenderer worldrenderer = tessellator.getWorldRenderer();
+        worldrenderer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+        worldrenderer.pos(-half, half, 0.0D).tex(u0, v1).endVertex();
+        worldrenderer.pos(half, half, 0.0D).tex(u1, v1).endVertex();
+        worldrenderer.pos(half, -half, 0.0D).tex(u1, v0).endVertex();
+        worldrenderer.pos(-half, -half, 0.0D).tex(u0, v0).endVertex();
+        tessellator.draw();
+
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+        GlStateManager.popMatrix();
+    }
+
     @SubscribeEvent
     public void onUnload(WorldEvent.Unload e) {
         cachedGrid = null;
@@ -242,10 +294,21 @@ public class DungeonMapOverlay extends Overlay {
 
     public void renderDungeonMap(float centerX, float centerY, float scale, boolean showRoomNames, boolean colorRoomNames) {
         if (cachedGrid == null || !cachedGrid.isValid()) return;
-        EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
-        MapData info = player != null ? getDungeonMap(player) : null;
-        if (info != null) playerTracker.matchDecorations(info.mapDecorations);
+        // Player marker positions are now sourced from each tracked EntityPlayer's
+        // real world coordinates (see DungeonPlayerTracker.getPixelPosition), so the
+        // map's own decoration bytes (which carry no player identity) no longer need
+        // to be matched against playerTracker at all.
         DungeonMapRenderer.render(cachedGrid, centerX, centerY, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms(), showRoomNames, colorRoomNames);
+    }
+
+    /**
+     * Exposes the currently-cached dungeon map grid so other UI (e.g. the Leap
+     * menu overlay) can compute marker positions in the same local pixel space
+     * that renderDungeonMap() actually draws into. Returns null if no valid map
+     * has been parsed yet.
+     */
+    public DungeonMapGrid getCachedGrid() {
+        return (cachedGrid != null && cachedGrid.isValid()) ? cachedGrid : null;
     }
 
     private void updateCachedGrid(EntityPlayerSP player) {

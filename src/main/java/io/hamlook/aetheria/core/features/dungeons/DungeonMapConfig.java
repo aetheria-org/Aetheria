@@ -93,10 +93,12 @@ public class DungeonMapConfig {
 
     public static class Players {
 
-        @Expose
-        @ConfigOption(name = "Show Player Head", desc = "Show Player Heads in the Dungeon Map")
-        @ConfigEditorBoolean
         public boolean showPlayerHead = true;
+
+        @Expose
+        @ConfigOption(name = "Player Icon Style", desc = "Head shows the player's skin face. Arrow shows a Hypixel-map-style directional triangle (blue/yellow/orange/red per teammate, white for you)")
+        @ConfigEditorDropdown(values = {"Head", "Arrow"}, initialIndex = 1)
+        public int playerIconStyle = 1;
 
         @Expose
         @ConfigOption(name = "Show Player Username", desc = "Show Player's Username in Dungeon Map")
@@ -109,7 +111,7 @@ public class DungeonMapConfig {
         public boolean showPlayerRank = false;
 
         @Expose
-        @ConfigOption(name = "Head Scale", desc = "Control how big the head display is")
+        @ConfigOption(name = "Marker Scale", desc = "Control how big the player marker display is")
         @ConfigEditorSliderAnnotation(minValue = 0.25f, maxValue = 2f, minStep = 0.05f)
         public float headScale = 1f;
 
@@ -119,7 +121,7 @@ public class DungeonMapConfig {
         public float nameSize = 1f;
 
         @Expose
-        @ConfigOption(name = "Name Offset from Head", desc = "Control how below the name is from the player head")
+        @ConfigOption(name = "Name Offset from Marker", desc = "Control how below the name is from the player marker")
         @ConfigEditorSliderAnnotation(minValue = 1f, maxValue = 20f, minStep = 1f)
         public float nameOffset = 6f;
     }
@@ -138,7 +140,7 @@ public class DungeonMapConfig {
 
         @Expose
         @ConfigOption(name = "Room Checkmarks", desc = "Room checkmark icons based on room state (Default / NEU icon sets)")
-        @ConfigEditorDropdown(values = {"None", "Default", "NEU"}, initialIndex = 1)
+        @ConfigEditorDropdown(values = {"Default", "NEU"}, initialIndex = 1)
         public int mapCheckmark = 1;
 
         @Expose

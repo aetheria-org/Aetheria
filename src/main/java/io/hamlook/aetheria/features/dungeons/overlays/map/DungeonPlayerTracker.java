@@ -5,13 +5,10 @@ import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.Vec4b;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class DungeonPlayerTracker {
 
@@ -19,13 +16,9 @@ public class DungeonPlayerTracker {
     @Getter
     public final List<String> playerNames = new ArrayList<>();
 
-    private final Map<String, float[]> currentPositions = new HashMap<>();
-    private final List<Vec4b> decorationBuffer = new ArrayList<>();
-
     public void clear() {
         players.clear();
         playerNames.clear();
-        currentPositions.clear();
     }
 
     public void populate() {
@@ -81,36 +74,22 @@ public class DungeonPlayerTracker {
         return hasLetter;
     }
 
-    public void matchDecorations(Map<String, Vec4b> mapDecorations) {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null || playerNames.isEmpty()) return;
-        if (mapDecorations == null || mapDecorations.isEmpty()) return;
-
-        currentPositions.clear();
-
-        decorationBuffer.clear();
-        decorationBuffer.addAll(mapDecorations.values());
-        List<Vec4b> decorations = decorationBuffer;
-
-        int decoIndex = 0;
-        for (String playerName : playerNames) {
-            if (decoIndex >= decorations.size()) break;
-
-            Vec4b deco = decorations.get(decoIndex++);
-            byte type = deco.func_176110_a();
-
-            if (type != 0 && type != 1 && type != 3) continue;
-
-            float x = (float) deco.func_176112_b() / 2.0F + 64.0F;
-            float z = (float) deco.func_176113_c() / 2.0F + 64.0F;
-            float yaw = (float) (deco.func_176111_d() * 360) / 16.0F;
-
-            currentPositions.put(playerName, new float[]{x, z, yaw});
-        }
-    }
-
-    public float[] getPosition(String name) {
-        return currentPositions.get(name);
+    /**
+     * Resolves a tracked player's marker position in the dungeon map's local pixel
+     * space, using their actual world position/yaw rather than the map's own
+     * decoration bytes (which carry no name/UUID field — just icon type + x/z +
+     * rotation nibble, and so can't be reliably bound to a specific username; a
+     * prior version of this class matched them to playerNames positionally, which
+     * silently swapped self/teammate identity whenever the decoration map's
+     * iteration order didn't match party order — i.e. constantly).
+     * Returns null if the entity isn't currently loaded (e.g. out of render distance).
+     */
+    public float[] getPixelPosition(String name, DungeonMapGrid grid) {
+        EntityPlayer entity = getEntity(name);
+        if (entity == null || entity.isDead) return null;
+        float px = grid.worldToPixelX(entity.posX);
+        float pz = grid.worldToPixelZ(entity.posZ);
+        return new float[]{px, pz, entity.rotationYaw};
     }
 
     public EntityPlayer getEntity(String name) {
