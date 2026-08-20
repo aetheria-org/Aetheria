@@ -36,8 +36,6 @@ import java.util.*;
 @RegisterEvents
 public class DungeonMapOverlay extends Overlay {
 
-    // Vanilla's own map icon atlas — same texture the vanilla map item and NEF's dungeon map use.
-    // Icon 0 = small colorable arrow (teammates), icon 1 = larger arrow (self position).
     private static final ResourceLocation MAP_ICONS_TEXTURE = new ResourceLocation("textures/map/map_icons.png");
 
     public static boolean dungeonRunEnded = false;
