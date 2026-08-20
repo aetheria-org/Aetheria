@@ -13,8 +13,8 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RegisterEvents
 public final class FarmingApi {
@@ -25,6 +25,7 @@ public final class FarmingApi {
     private static final long VACUUM_WINDOW_MS = 10_000L;
     private static volatile long lastVacuumHeldMs = 0L;
     private static volatile String cachedHeldItemId = "";
+    private static int currentPlotId = -1;
 
     // Garden plots 1-24
     private static final AxisAlignedBB[] GARDEN_PLOTS = {
@@ -72,7 +73,7 @@ public final class FarmingApi {
     @Setter
     @Getter
     private static String gardenBonusPestChance = "";
-    private static final Map<Integer, Integer> ACTIVE_PESTS = new HashMap<>();
+    private static final Map<Integer, Integer> ACTIVE_PESTS = new ConcurrentHashMap<>();
 
     private FarmingApi() {
     }
@@ -86,11 +87,28 @@ public final class FarmingApi {
     public void onTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null) return;
+        if (mc == null || mc.thePlayer == null) return;
         cachedHeldItemId = ItemUtils.getInternalName(mc.thePlayer.getHeldItem());
         if (cachedHeldItemId.contains("VACUUM")) {
             lastVacuumHeldMs = System.currentTimeMillis();
         }
+        if (mc.thePlayer.ticksExisted % 5 == 0) {
+            currentPlotId = SkyblockData.getCurrentLocation() == SkyblockData.Location.GARDEN ? computePlayerPlotId() : -1;
+        }
+    }
+
+    private static int computePlayerPlotId() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc == null || mc.thePlayer == null) return -1;
+        double px = mc.thePlayer.posX;
+        double pz = mc.thePlayer.posZ;
+        for (int i = 0; i < GARDEN_PLOTS.length; i++) {
+            AxisAlignedBB box = GARDEN_PLOTS[i];
+            if (px >= box.minX && px <= box.maxX && pz >= box.minZ && pz <= box.maxZ) {
+                return i + 1;
+            }
+        }
+        return -1;
     }
 
     public static boolean isCurrentlyFarming() {
@@ -99,7 +117,7 @@ public final class FarmingApi {
 
     public static boolean isHoldingFarmingTool() {
         Minecraft mc = Minecraft.getMinecraft();
-        return mc.thePlayer != null && FarmingToolIds.isFarmingTool(cachedHeldItemId);
+        return mc != null && mc.thePlayer != null && FarmingToolIds.isFarmingTool(cachedHeldItemId);
     }
 
     public static boolean isInFarmingLocation() {
@@ -111,7 +129,7 @@ public final class FarmingApi {
 
     public static boolean isHoldingVacuum() {
         Minecraft mc = Minecraft.getMinecraft();
-        boolean holdingNow = mc.thePlayer != null && cachedHeldItemId.contains("VACUUM");
+        boolean holdingNow = mc != null && mc.thePlayer != null && cachedHeldItemId.contains("VACUUM");
         if (holdingNow) lastVacuumHeldMs = System.currentTimeMillis();
         return holdingNow || System.currentTimeMillis() - lastVacuumHeldMs < VACUUM_WINDOW_MS;
     }
@@ -133,11 +151,20 @@ public final class FarmingApi {
         gardenCooldown = "";
         gardenBonusPestChance = "";
         ACTIVE_PESTS.clear();
+        currentPlotId = -1;
+    }
+
+    public static int getCurrentPlotId() {
+        return currentPlotId;
+    }
+
+    public static boolean isPlayerInPlot(Integer plotId) {
+        return plotId != null && plotId == currentPlotId;
     }
 
     public static Integer getNearestInfestedPlot() {
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null || ACTIVE_PESTS.isEmpty()) return null;
+        if (mc == null || mc.thePlayer == null || ACTIVE_PESTS.isEmpty()) return null;
         Integer best = null;
         double bestDist = Double.MAX_VALUE;
         for (Integer id : ACTIVE_PESTS.keySet()) {
@@ -157,7 +184,10 @@ public final class FarmingApi {
     public static void warpToNearestInfestedPlot() {
         Integer plot = getNearestInfestedPlot();
         if (plot == null) return;
-        Minecraft.getMinecraft().thePlayer.sendChatMessage("/tptoplot " + plot);
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc != null && mc.thePlayer != null) {
+            mc.thePlayer.sendChatMessage("/tptoplot " + plot);
+        }
     }
 
     public static java.util.List<Integer> getSortedInfestedPlotIds() {

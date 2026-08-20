@@ -22,6 +22,11 @@ public class PestFinderConfig {
     public int warpKey = Keyboard.KEY_NONE;
 
     @Expose
+    @ConfigOption(name = "Hide Warp In Current Plot", desc = "Hide the warp keybind hint and suppress the keybind when you are already in a plot with a pest")
+    @ConfigEditorBoolean
+    public boolean hideWarpHintInPlot = true;
+
+    @Expose
     @ConfigOption(name = "Show While Holding Vacuum Only", desc = "Only show the overlay while holding a vacuum")
     @ConfigEditorBoolean
     public boolean showOnlyWhileHoldingVacuum = true;
