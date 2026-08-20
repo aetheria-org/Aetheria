@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.chestanimations;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.features.chestanimations.caseopening.DungeonDropData;
 import net.minecraft.client.Minecraft;
@@ -34,10 +35,10 @@ public class GuiInterceptChest extends GuiContainer {
 
         GuiScreen gui = ChestAnimations.create(animation, container, floor, material);
         if (gui != null) {
-            DebugLogger.log("[GuiInterceptChest] Launching animation: " + animation);
+            Aetheria.logger.info("[GuiInterceptChest] Launching animation: " + animation + " tickCount=" + tickCount);
             Minecraft.getMinecraft().displayGuiScreen(gui);
         } else {
-            DebugLogger.log("[GuiInterceptChest] No animation found for \"" + animation + "\" — returning to chest GUI");
+            Aetheria.logger.info("[GuiInterceptChest] No animation found for \"" + animation + "\" — returning to chest GUI");
             Minecraft.getMinecraft().displayGuiScreen(ChestListener.originalGui);
         }
     }

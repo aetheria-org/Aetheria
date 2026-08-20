@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.chestanimations;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.dungeons.DungeonChestAnimationConfig;
@@ -59,20 +60,24 @@ public final class ChestAnimations {
      * Scans the reward slots of a dungeon chest container and returns the best matching drop for the given floor/material.
      */
     public static DungeonDropData.Rule findBestReward(ContainerChest container, DungeonDropData.Floor floor, DungeonDropData.CaseMaterial material) {
-        if (container == null) return null;
+        if (container == null) {
+            Aetheria.logger.info("[ChestAnimations] findBestReward: container is null");
+            return null;
+        }
         IInventory lower = ContainerUtils.getLowerInventory(container);
-        if (lower == null) return null;
+        if (lower == null) {
+            Aetheria.logger.info("[ChestAnimations] findBestReward: lower inventory is null");
+            return null;
+        }
         int size = lower.getSizeInventory();
         int dropCount = DungeonDropData.getDrops(material, floor).size();
-        DebugLogger.log("[ChestAnimations] Scanning — floor=" + floor + ", material=" + material + ", possible drops=" + dropCount + ", inventory size=" + size);
+        Aetheria.logger.info("[ChestAnimations] findBestReward: floor=" + floor + ", material=" + material + ", possibleDrops=" + dropCount + ", invSize=" + size);
 
-        if (ATHRConfig.feature != null && ATHRConfig.feature.debug.enableDebug) {
-            for (int i = 0; i < size; i++) {
-                ItemStack s = lower.getStackInSlot(i);
-                if (s == null || s.getItem() == null) continue;
-                String id = ItemUtils.getEffectiveItemId(s);
-                DebugLogger.log("[ChestAnimations] [ALL] Slot " + i + ": " + s.getDisplayName() + " (id=" + id + ")");
-            }
+        for (int i = 0; i < size; i++) {
+            ItemStack s = lower.getStackInSlot(i);
+            if (s == null || s.getItem() == null) continue;
+            String id = ItemUtils.getEffectiveItemId(s);
+            Aetheria.logger.info("[ChestAnimations] Slot " + i + ": \"" + s.getDisplayName() + "\" id=" + id);
         }
 
         DungeonDropData.Rule best = null;
@@ -82,16 +87,19 @@ public final class ChestAnimations {
 
             String itemId = ItemUtils.getEffectiveItemId(stack);
             if (itemId.isEmpty()) continue;
-            DebugLogger.log("[ChestAnimations] Slot " + i + ": " + itemId);
 
-            DungeonDropData.Rule found = DungeonDropData.getDrops(material, floor).stream().filter(r -> r.item.name().equals(itemId)).findFirst().orElse(null);
-            if (found == null) continue;
+            DungeonDropData.Rule found = DungeonDropData.getDrops(material, floor).stream().filter(r -> r.item.getId().equals(itemId)).findFirst().orElse(null);
+            if (found == null) {
+                Aetheria.logger.info("[ChestAnimations] Slot " + i + " id=" + itemId + " does not match any known drop");
+                continue;
+            }
 
             if (best == null || found.rarity < best.rarity || (found.rarity == best.rarity && found.item.name().compareTo(best.item.name()) < 0)) {
                 best = found;
-                DebugLogger.log("[ChestAnimations] New best reward: " + best.item.name() + " (rarity " + best.rarity + ")");
+                Aetheria.logger.info("[ChestAnimations] New best reward: " + best.item.name() + " (rarity " + best.rarity + ")");
             }
         }
+        Aetheria.logger.info("[ChestAnimations] findBestReward result: " + (best == null ? "NULL" : best.item.name()));
         return best;
     }
 }

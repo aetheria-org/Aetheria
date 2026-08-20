@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.chestanimations;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chestanimations.caseopening.DungeonDropData;
@@ -20,7 +21,9 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @RegisterEvents
 public class ChestListener {
@@ -28,7 +31,7 @@ public class ChestListener {
     private static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII"};
     public static GuiChest originalGui;
     private static WorldClient lastWorld = null;
-    private final Map<Integer, DungeonDropData.CaseMaterial> crOpenedChests = new HashMap<>();
+    private final Map<Integer, Set<DungeonDropData.CaseMaterial>> crOpenedChests = new HashMap<>();
     private final Map<DungeonDropData.CaseMaterial, Boolean> openedChests = new HashMap<>();
     private boolean isCroesus = false;
     private boolean isCatacombsChestList = false;
@@ -42,10 +45,13 @@ public class ChestListener {
 
         originalGui = (GuiChest) event.gui;
         ContainerChest container = ContainerUtils.getOpenChest(event.gui);
-        if (container == null) return;
+        if (container == null) {
+            Aetheria.logger.info("[ChestListener] GuiOpen: no ContainerChest found, not intercepting");
+            return;
+        }
 
         String name = ContainerUtils.getTitle(container);
-        DebugLogger.log("[ChestListener] GUI opened: \"" + name + "\"");
+        Aetheria.logger.info("[ChestListener] GuiOpen title=\"" + name + "\" isCroesus=" + isCroesus + " isCatacombsChestList=" + isCatacombsChestList + " chestID=" + chestID + " curFloor=" + curFloor);
 
         if (name.contains("Croesus")) {
             isCroesus = true;
@@ -96,33 +102,34 @@ public class ChestListener {
         DungeonDropData.CaseMaterial curMaterial = parsedMaterial;
         String animation = ChestAnimations.getOption(curMaterial);
         if (ChestAnimations.NONE.equals(animation)) {
-            DebugLogger.log("[ChestListener] Chest \"" + name + "\" has no animation selected, skipping");
+            Aetheria.logger.info("[ChestListener] Chest \"" + name + "\" has no animation selected (material=" + curMaterial + "), skipping");
             return;
         }
-        DebugLogger.log("[ChestListener] Chest detected: material=" + curMaterial + ", isCroesus=" + isCroesus + ", curFloor=" + curFloor + ", chestID=" + chestID + ", animation=" + animation);
+        Aetheria.logger.info("[ChestListener] Chest detected: material=" + curMaterial + ", animation=" + animation);
 
         if (isCroesus) {
-            if (crOpenedChests.containsKey(chestID)) {
-                DebugLogger.log("[ChestListener] Already opened chest " + chestID + ", skipping");
+            Set<DungeonDropData.CaseMaterial> opened = crOpenedChests.get(chestID);
+            if (opened != null && opened.contains(curMaterial)) {
+                Aetheria.logger.info("[ChestListener] Already opened chestID=" + chestID + " material=" + curMaterial + " (croesus), skipping animation");
                 return;
             }
-            crOpenedChests.put(chestID, curMaterial);
+            crOpenedChests.computeIfAbsent(chestID, k -> new HashSet<>()).add(curMaterial);
         } else {
             if (Boolean.TRUE.equals(openedChests.get(curMaterial))) {
-                DebugLogger.log("[ChestListener] Already opened " + curMaterial + ", skipping");
+                Aetheria.logger.info("[ChestListener] Already opened " + curMaterial + " this run, skipping animation");
                 return;
             }
             openedChests.put(curMaterial, true);
             curFloor = DungeonDropData.Floor.fromDungeonFloor(DungeonUtils.getFloorFromScoreboard());
-            DebugLogger.log("[ChestListener] In-dungeon chest — scoreboard floor: " + curFloor);
+            Aetheria.logger.info("[ChestListener] In-dungeon chest — scoreboard floor: " + curFloor);
         }
 
         if (curFloor == null) {
-            DebugLogger.log("[ChestListener] ERROR: floor is null! Cannot start animation. " + "Make sure you navigate through Croesus → chest list first.");
+            Aetheria.logger.warning("[ChestListener] ERROR: floor is null! Cannot start animation. Make sure you navigate through Croesus → chest list first.");
             return;
         }
 
-        DebugLogger.log("[ChestListener] Intercepting chest → floor=" + curFloor + ", material=" + curMaterial);
+        Aetheria.logger.info("[ChestListener] Intercepting chest → floor=" + curFloor + ", material=" + curMaterial);
         event.gui = new GuiInterceptChest(container, curFloor, curMaterial, animation);
     }
 
@@ -140,8 +147,9 @@ public class ChestListener {
         name = StringUtils.cleanColour(name);
         name = StringUtils.clean(name);
 
-        boolean isObChest = name.equalsIgnoreCase("Obsidian") && crOpenedChests.get(chestID) != DungeonDropData.CaseMaterial.OBSIDIAN;
-        boolean isBrChest = name.equalsIgnoreCase("Bedrock") && crOpenedChests.get(chestID) != DungeonDropData.CaseMaterial.BEDROCK;
+        Set<DungeonDropData.CaseMaterial> opened = crOpenedChests.get(chestID);
+        boolean isObChest = name.equalsIgnoreCase("Obsidian") && (opened == null || !opened.contains(DungeonDropData.CaseMaterial.OBSIDIAN));
+        boolean isBrChest = name.equalsIgnoreCase("Bedrock") && (opened == null || !opened.contains(DungeonDropData.CaseMaterial.BEDROCK));
         if (!isObChest && !isBrChest) return;
 
         if (event.toolTip.size() > 3) {
