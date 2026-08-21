@@ -28,17 +28,30 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Mouse;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
 @RegisterEvents
 public class DungeonLeapOverlay {
 
+    // ==========================================
+    // CONSTANTS & CONFIGURATION
+    // ==========================================
+    private static final float MAP_SCALE = 2.0f;
+    private static final float MAP_SIZE = 128.0f;
+    private static final float BASE_HEAD_SIZE = 8.0f;
+
+    private static final int GRID_BUTTON_WIDTH = 110;
+    private static final int GRID_BUTTON_HEIGHT = 20;
+    private static final int GRID_PADDING = 6;
+    private static final int GRID_START_Y = 10;
+
     public static DungeonMapOverlay overlay;
     public static DungeonPlayerTracker tracker;
-
     public static ContainerChest leapChest;
     public static boolean isLeapGUI = false;
+
     public static void start(){
         overlay = DungeonMapOverlay.getInstance();
         if(overlay.isEnabled() && overlay.isLiveActive()) {
@@ -53,21 +66,17 @@ public class DungeonLeapOverlay {
 
     @SubscribeEvent
     public void onGui(GuiScreenEvent.BackgroundDrawnEvent event) {
-        if(isLeapGUI) return;
-        if(!(event.gui instanceof GuiContainer)) return;
+        if (isLeapGUI) return;
+        if (!(event.gui instanceof GuiContainer)) return;
         GuiContainer gui = (GuiContainer) event.gui;
-        if(!(gui.inventorySlots instanceof ContainerChest)) return;
+        if (!(gui.inventorySlots instanceof ContainerChest)) return;
+
         ContainerChest chest = (ContainerChest) gui.inventorySlots;
         String title = ContainerUtils.getTitle(chest);
-        Aetheria.logger.info("[DungeonLeap] Detected chest GUI title: " + title);
+
         isLeapGUI = isLeapGUI(title);
-        if(overlay == null){
-            start();
-        }
-        if(isLeapGUI){
-            leapChest = chest;
-            Aetheria.logger.info("[DungeonLeap] Leap GUI detected");
-        }
+        if (overlay == null) start();
+        if (isLeapGUI) leapChest = chest;
     }
 
     @SubscribeEvent
@@ -79,87 +88,141 @@ public class DungeonLeapOverlay {
         }
     }
 
-    private void drawLeapGUI(int mouseX,int mouseY,GuiScreen gui) {
-        float scale = 2f;
-        float size = 128f;
-        float centerX = (gui.width / 2f);
-        float centerY = (gui.height / 2f) + (size/2f);
-        float left = centerX - (size * scale) / 2f;
-        float top = centerY - (size * scale) / 2f;
-        float headPixelSize = 8f * scale;
+    private void drawLeapGUI(int mouseX, int mouseY, GuiScreen gui) {
+        MapLayout mapLayout = getMapLayout(gui);
 
-        GuiScreen.drawRect((int) left, (int) top, (int) (left + (size*scale)), (int) (top+(size*scale)),new Color(0,0,0,120).getRGB());
-        overlay.renderDungeonMap(centerX, centerY, scale, true, true);
+        GuiScreen.drawRect(
+                (int) mapLayout.left,
+                (int) mapLayout.top,
+                (int) (mapLayout.left + (MAP_SIZE * MAP_SCALE)),
+                (int) (mapLayout.top + (MAP_SIZE * MAP_SCALE)),
+                0x78000000
+        );
+
+        overlay.renderDungeonMap(mapLayout.centerX, mapLayout.centerY, MAP_SCALE, true, true);
 
         Minecraft mc = Minecraft.getMinecraft();
 
         for (String player : tracker.playerNames) {
             float[] pos = tracker.getPosition(player);
             if (pos == null || pos.length < 3) continue;
-            float posX = left + pos[0] * scale;
-            float posY = top + pos[1] * scale;
+
+            float posX = mapLayout.left + pos[0] * MAP_SCALE;
+            float posY = mapLayout.top + pos[1] * MAP_SCALE;
             float yaw = pos[2];
 
             ResourceLocation skin = getPlayerSkin(player, mc);
             if (ATHRConfig.feature.dungeons.leapConfig.useArrowIcons) {
-                RenderUtils.renderPlayerArrow(posX - headPixelSize / 2f, posY - headPixelSize / 2f, scale, yaw, getArrowColor(player), isSelf(player));
+                RenderUtils.renderPlayerArrow(
+                        posX - mapLayout.headPixelSize / 2f,
+                        posY - mapLayout.headPixelSize / 2f,
+                        MAP_SCALE,
+                        yaw,
+                        getArrowColor(player),
+                        isSelf(player)
+                );
             } else {
-                RenderUtils.renderPlayerHead(posX - headPixelSize / 2f, posY - headPixelSize / 2f, -1, scale, skin, yaw);
+                RenderUtils.renderPlayerHead(
+                        posX - mapLayout.headPixelSize / 2f,
+                        posY - mapLayout.headPixelSize / 2f,
+                        -1,
+                        MAP_SCALE,
+                        skin,
+                        yaw
+                );
             }
         }
-        if(ATHRConfig.feature.dungeons.leapConfig.playerBList) renderTopGridButtons(gui, mc, mouseX, mouseY);
-    }
 
-    private boolean isSelf(String player) {
-        return Minecraft.getMinecraft().thePlayer.getGameProfile().getName().equalsIgnoreCase(player);
-    }
-
-    private int getArrowColor(String player){
-        if(isSelf(player)) return 0xFFFFFFFF;
-        return 0xFF5AA5FF;
+        if (ATHRConfig.feature.dungeons.leapConfig.playerBList) {
+            renderTopGridButtons(gui, mc, mouseX, mouseY);
+        }
     }
 
     private void renderTopGridButtons(GuiScreen gui, Minecraft mc, int mouseX, int mouseY) {
-        List<String> players = tracker.playerNames;
-        players.remove(Minecraft.getMinecraft().thePlayer.getGameProfile().getName());
+        List<String> players = getFilteredPartyMembers();
         if (players.isEmpty()) return;
 
-        int buttonWidth = 110;
-        int buttonHeight = 20;
-        int padding = 6;
-
-        int startY = 10;
-        int totalWidth = (buttonWidth * 2) + padding;
-        int startX = (gui.width - totalWidth) / 2;
+        GridLayout grid = getGridLayout(gui.width);
 
         for (int i = 0; i < players.size(); i++) {
             String player = players.get(i);
-            int row = i / 2;
-            int col = i % 2;
+            Rectangle bounds = grid.getButtonBounds(i);
 
-            int x = startX + col * (buttonWidth + padding);
-            int y = startY + row * (buttonHeight + padding);
-
-            boolean isHovered = mouseX >= x && mouseX <= x + buttonWidth && mouseY >= y && mouseY <= y + buttonHeight;
+            boolean isHovered = mouseX >= bounds.x && mouseX <= bounds.x + bounds.width &&
+                    mouseY >= bounds.y && mouseY <= bounds.y + bounds.height;
 
             int bgColor = isHovered ? 0xCC444444 : 0x00000000;
+
             NineSliceUtils.draw(
                     Resources.betterContainerNineSlice(ATHRConfig.feature.qol.betterContainers.style),
-                    x,y,buttonWidth,buttonHeight,3,18
+                    bounds.x, bounds.y, bounds.width, bounds.height, 3, 18
             );
-            GuiScreen.drawRect(x,y,x+buttonWidth,y+buttonHeight,bgColor);
+
+            GuiScreen.drawRect(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, bgColor);
 
             ResourceLocation skin = getPlayerSkin(player, mc);
-            RenderUtils.renderPlayerHead(x + 3, y + 3, -1, 2f, skin, 0);
+            RenderUtils.renderPlayerHead(bounds.x + 3, bounds.y + 3, -1, 2f, skin, 0);
+            mc.fontRendererObj.drawStringWithShadow(player, bounds.x + 22, bounds.y + 6, 0xFFFFFFFF);
+        }
+    }
 
-            mc.fontRendererObj.drawStringWithShadow(player, x + 22, y + 6, 0xFFFFFFFF);
+
+    @SubscribeEvent
+    public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
+        if (!isLeapGUI || tracker == null) return;
+        if (Mouse.getEventButton() == 0 && Mouse.getEventButtonState()) {
+
+            int mouseX = Mouse.getEventX() * event.gui.width / event.gui.mc.displayWidth;
+            int mouseY = event.gui.height - Mouse.getEventY() * event.gui.height / event.gui.mc.displayHeight - 1;
+
+            List<String> players = getFilteredPartyMembers();
+
+            // 1. Check Button Grid Clicks
+            if (ATHRConfig.feature.dungeons.leapConfig.playerBList && !players.isEmpty()) {
+                GridLayout grid = getGridLayout(event.gui.width);
+
+                for (int i = 0; i < players.size(); i++) {
+                    Rectangle bounds = grid.getButtonBounds(i);
+                    if (bounds.contains(mouseX, mouseY)) {
+                        leapToPlayer(players.get(i));
+                        event.setCanceled(true);
+                        return;
+                    }
+                }
+            }
+
+            // 2. Check Map Head Clicks
+            if (ATHRConfig.feature.dungeons.leapConfig.clickablePlayers) {
+                MapLayout mapLayout = getMapLayout(event.gui);
+
+                for (String player : tracker.playerNames) {
+                    float[] pos = tracker.getPosition(player);
+                    if (pos == null || pos.length < 3) continue;
+
+                    float posX = mapLayout.left + pos[0] * MAP_SCALE;
+                    float posY = mapLayout.top + pos[1] * MAP_SCALE;
+                    float yaw = pos[2];
+
+                    if (checkIfClickedOptimized(posX, posY, yaw, mapLayout.halfHeadPixelSize, mouseX, mouseY)) {
+                        leapToPlayer(player);
+                        event.setCanceled(true);
+                        break;
+                    }
+                }
+            }
         }
     }
 
     private void leapToPlayer(String player) {
-        if(!isLeapGUI || leapChest == null) return;
-        int upperChestSlots = leapChest.getLowerChestInventory().getSizeInventory();
+        if (!isLeapGUI || leapChest == null) return;
         Minecraft mc = Minecraft.getMinecraft();
+        if (mc.playerController == null) return;
+
+        int upperChestSlots = leapChest.getLowerChestInventory().getSizeInventory();
+
+        // Compile regex ONCE outside the slot-check loop
+        Pattern pattern = Pattern.compile(".*\\b" + Pattern.quote(player) + "\\b.*");
+
         for (int slot = 0; slot < upperChestSlots; slot++) {
             Slot slot1 = leapChest.getSlot(slot);
             if (slot1 == null || !slot1.getHasStack()) continue;
@@ -168,76 +231,36 @@ public class DungeonLeapOverlay {
             if (stack.getItem().getRegistryName().equals(Item.getItemFromBlock(Blocks.stained_glass_pane).getRegistryName())) continue;
 
             String displayName = ColorUtils.stripColor(stack.getDisplayName());
-            Pattern pattern = Pattern.compile(".*\\b" + Pattern.quote(player) + "\\b.*");
 
             if (pattern.matcher(displayName).matches()) {
-                Aetheria.logger.info("[DungeonLeap] Clicking slot " + slot + " for player " + player);
-                mc.playerController.windowClick(leapChest.windowId,slot,0,0,mc.thePlayer);
+                mc.playerController.windowClick(leapChest.windowId, slot, 0, 0, mc.thePlayer);
                 break;
             }
         }
     }
 
-    @SubscribeEvent
-    public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
-        if (!isLeapGUI || tracker == null) return;
-        if (Mouse.getEventButton() == 0 && Mouse.getEventButtonState()) {
-            int mouseX = Mouse.getEventX() * event.gui.width / event.gui.mc.displayWidth;
-            int mouseY = event.gui.height - Mouse.getEventY() * event.gui.height / event.gui.mc.displayHeight - 1;
-
-
-            List<String> players = tracker.playerNames;
-            players.remove(Minecraft.getMinecraft().thePlayer.getGameProfile().getName());
-
-            if (ATHRConfig.feature.dungeons.leapConfig.playerBList) {
-                int buttonWidth = 110;
-                int buttonHeight = 20;
-                int padding = 6;
-                int startY = 10;
-                int totalWidth = (buttonWidth * 2) + padding;
-                int startX = (event.gui.width - totalWidth) / 2;
-
-                for (int i = 0; i < players.size(); i++) {
-                    String player = players.get(i);
-                    int row = i / 2;
-                    int col = i % 2;
-
-                    int x = startX + col * (buttonWidth + padding);
-                    int y = startY + row * (buttonHeight + padding);
-
-                    if (mouseX >= x && mouseX <= x + buttonWidth && mouseY >= y && mouseY <= y + buttonHeight) {
-                        leapToPlayer(player);
-                        event.setCanceled(true);
-                        return;
-                    }
-                }
-            }
-
-            if (ATHRConfig.feature.dungeons.leapConfig.clickablePlayers) {
-                float scale = 2f;
-                float size = 128f;
-                float centerX = event.gui.width / 2f;
-                float centerY = (event.gui.height / 2f) + (size / 2f);
-                float left = centerX - (size * scale) / 2f;
-                float top = centerY - (size * scale) / 2f;
-                float headPixelSize = 8f * scale;
-                float halfHeadPixelSize = headPixelSize * 0.5f;
-
-                for (String player : tracker.playerNames) {
-                    float[] pos = tracker.getPosition(player);
-                    if (pos == null || pos.length < 3) continue;
-                    float posX = left + pos[0] * scale;
-                    float posY = top + pos[1] * scale;
-                    float yaw = pos[2];
-
-                    if (checkIfClickedOptimized(posX, posY, yaw, halfHeadPixelSize, mouseX, mouseY)) {
-                        leapToPlayer(player);
-                        event.setCanceled(true);
-                        break;
-                    }
-                }
-            }
+    private List<String> getFilteredPartyMembers() {
+        List<String> players = new ArrayList<>(tracker.playerNames);
+        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        if (player != null) {
+            players.remove(player.getGameProfile().getName());
         }
+        return players;
+    }
+
+    private MapLayout getMapLayout(GuiScreen gui) {
+        float centerX = gui.width / 2f;
+        float centerY = (gui.height / 2f) + (MAP_SIZE / 2f);
+        float left = centerX - (MAP_SIZE * MAP_SCALE) / 2f;
+        float top = centerY - (MAP_SIZE * MAP_SCALE) / 2f;
+        float headPixelSize = BASE_HEAD_SIZE * MAP_SCALE;
+        return new MapLayout(centerX, centerY, left, top, headPixelSize, headPixelSize * 0.5f);
+    }
+
+    private GridLayout getGridLayout(int screenWidth) {
+        int totalWidth = (GRID_BUTTON_WIDTH * 2) + GRID_PADDING;
+        int startX = (screenWidth - totalWidth) / 2;
+        return new GridLayout(startX, GRID_START_Y, GRID_BUTTON_WIDTH, GRID_BUTTON_HEIGHT, GRID_PADDING);
     }
 
     private boolean checkIfClickedOptimized(float posX, float posY, float yaw, float halfSize, int mouseX, int mouseY) {
@@ -279,4 +302,46 @@ public class DungeonLeapOverlay {
         return ColorUtils.stripColor(title).equals("Spirit Leap") && ATHRConfig.feature.dungeons.leapConfig.dungeonLeapOverlay;
     }
 
+
+    private boolean isSelf(String player) {
+        return Minecraft.getMinecraft().thePlayer.getGameProfile().getName().equalsIgnoreCase(player);
+    }
+
+    private int getArrowColor(String player){
+        if(isSelf(player)) return 0xFFFFFFFF;
+        return 0xFF5AA5FF;
+    }
+
+    private static class MapLayout {
+        final float centerX, centerY, left, top, headPixelSize, halfHeadPixelSize;
+
+        MapLayout(float centerX, float centerY, float left, float top, float headPixelSize, float halfHeadPixelSize) {
+            this.centerX = centerX;
+            this.centerY = centerY;
+            this.left = left;
+            this.top = top;
+            this.headPixelSize = headPixelSize;
+            this.halfHeadPixelSize = halfHeadPixelSize;
+        }
+    }
+
+    private static class GridLayout {
+        final int startX, startY, buttonWidth, buttonHeight, padding;
+
+        GridLayout(int startX, int startY, int buttonWidth, int buttonHeight, int padding) {
+            this.startX = startX;
+            this.startY = startY;
+            this.buttonWidth = buttonWidth;
+            this.buttonHeight = buttonHeight;
+            this.padding = padding;
+        }
+
+        Rectangle getButtonBounds(int index) {
+            int row = index / 2;
+            int col = index % 2;
+            int x = startX + col * (buttonWidth + padding);
+            int y = startY + row * (buttonHeight + padding);
+            return new Rectangle(x, y, buttonWidth, buttonHeight);
+        }
+    }
 }
