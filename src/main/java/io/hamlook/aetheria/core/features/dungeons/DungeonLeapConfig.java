@@ -25,4 +25,9 @@ public class DungeonLeapConfig {
     @ConfigAnnotations.ConfigEditorBoolean
     public boolean clickablePlayers = true;
 
+
+    @Expose
+    @ConfigAnnotations.ConfigOption(name = "Exclude Self",desc = "Make it not draw yourself in the map preview.")
+    @ConfigAnnotations.ConfigEditorBoolean
+    public boolean excludeSelf = true;
 }

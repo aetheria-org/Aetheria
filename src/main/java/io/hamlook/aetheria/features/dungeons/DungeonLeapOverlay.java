@@ -102,8 +102,8 @@ public class DungeonLeapOverlay {
         overlay.renderDungeonMap(mapLayout.centerX, mapLayout.centerY, MAP_SCALE, true, true);
 
         Minecraft mc = Minecraft.getMinecraft();
-
-        for (String player : tracker.playerNames) {
+        List<String> players = ATHRConfig.feature.dungeons.leapConfig.excludeSelf ? getFilteredPartyMembers() : tracker.playerNames;
+        for (String player : players) {
             float[] pos = tracker.getPosition(player);
             if (pos == null || pos.length < 3) continue;
 
