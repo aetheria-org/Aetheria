@@ -494,9 +494,9 @@ public final class RenderUtils {
 
         int iconType = isSelf ? 1 : 0;
         float u0 = (iconType % 4) / 4f;
-        float v0 = (iconType / 4) / 4f;
+        float v0 = (iconType / 4f) / 4f;
         float u1 = (iconType % 4 + 1) / 4f;
-        float v1 = (iconType / 4 + 1) / 4f;
+        float v1 = (iconType / 4f + 1) / 4f;
 
         int alphaByte = (rgbColor >>> 24) & 0xFF;
         float a = (alphaByte == 0) ? 1.0f : alphaByte / 255f;

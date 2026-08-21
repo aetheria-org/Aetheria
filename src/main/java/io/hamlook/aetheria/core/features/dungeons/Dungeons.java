@@ -52,6 +52,10 @@ public class Dungeons {
     public PriceEstimatorConfig priceEstimator = new PriceEstimatorConfig();
 
     @Expose
+    @Category(name = "D.Leap Overlay",desc = "Custom Overlay for Spirit Leap/Infinileap with a Dungeon Map Preview.")
+    public DungeonLeapConfig leapConfig = new DungeonLeapConfig();
+
+    @Expose
     @ConfigOption(name = "Hide Blessing Messages", desc = "Hides the 'DUNGEON BUFF! ... found a Blessing of ...' chat spam in dungeons")
     @ConfigEditorBoolean
     public boolean hideBlessingMessages = false;

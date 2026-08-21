@@ -97,8 +97,8 @@ public class EmojiManager {
             URL url = new URL(EmojiLinks.getEmojiJSON());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestProperty("User-Agent", "Aetheria");
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
+            connection.setConnectTimeout(30000);
+            connection.setReadTimeout(30000);
 
             int responseCode = connection.getResponseCode();
             Aetheria.logger.info("[EMOJI] Fetching emoji.json — response code: " + responseCode);
@@ -150,8 +150,8 @@ public class EmojiManager {
             URL url = new URL(EmojiLinks.getCustomEmojiJSON());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestProperty("User-Agent", "Aetheria");
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
+            connection.setConnectTimeout(30000);
+            connection.setReadTimeout(30000);
 
             int responseCode = connection.getResponseCode();
             if (responseCode == 200) {
@@ -288,8 +288,8 @@ public class EmojiManager {
             URL url = new URL(EmojiLinks.getSpriteURL(urlSuffix));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(30000);
+            conn.setReadTimeout(30000);
 
             if(conn.getResponseCode() == 200){
                 BufferedImage image = ImageIO.read(conn.getInputStream());

@@ -79,7 +79,7 @@ public class CapeLoader {
     }
 
     private static void loadCape(String id) throws Exception {
-        String url = RAW_BASE + "/capes/" + id + ".json";
+        String url = RAW_BASE + "capes/" + id + ".json";
 
         String json = httpGet(url);
         if (json == null) throw new Exception("Failed to fetch JSON for: " + id);
@@ -120,8 +120,8 @@ public class CapeLoader {
             URL url = new URL(urlStr);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(15000);
+            conn.setConnectTimeout(30000);
+            conn.setReadTimeout(30000);
             conn.setRequestProperty("User-Agent", "Aetheria/1.0");
             conn.setRequestProperty("Accept", "application/vnd.github+json");
 

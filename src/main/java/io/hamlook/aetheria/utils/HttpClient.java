@@ -10,7 +10,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public class HttpClient {
-    private static final int TIMEOUT_MS = 5000;
+    private static final int TIMEOUT_MS = 30000;
     private static final String USER_AGENT = "Aetheria/" + Aetheria.VERSION;
 
     private static String readAll(HttpURLConnection conn) throws Exception {
