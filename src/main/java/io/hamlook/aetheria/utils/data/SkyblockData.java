@@ -161,10 +161,8 @@ public final class SkyblockData {
         spots.put("mushroom gorge", Collections.unmodifiableList(Arrays.asList(
                 new BlockPos(220, 41, -578),
                 new BlockPos(234, 54, -500),
-                new BlockPos(265, 55, -436),
                 new BlockPos(187, 42, -520),
                 new BlockPos(303, 51, -409),
-                new BlockPos(172, 48, -459),
                 new BlockPos(189, 43, -443))));
         spots.put("overgrown mushroom cave", Collections.unmodifiableList(Arrays.asList(
                 new BlockPos(247, 57, -421),
