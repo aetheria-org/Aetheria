@@ -18,9 +18,15 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatStyle;
 import net.minecraft.util.IChatComponent;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import java.io.File;
+import java.io.FileWriter;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Base64;
 
@@ -90,6 +96,22 @@ public class SyncCommand extends ASMCommand {
                 int responseCode = conn.getResponseCode();
 
                 if (responseCode >= 200 && responseCode < 300) {
+                    String responseBody = ElectionUtils.readResponse(conn);
+                    String secretHash = "";
+                    try {
+                        JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
+                        if (json.has("secretHash")) {
+                            secretHash = json.get("secretHash").getAsString();
+                        }
+                    } catch (Exception ignored) {}
+
+                    if (!secretHash.isEmpty()) {
+                        File secretFile = new File(ATHRConfig.configDirectory, "synccode.secret");
+                        try (FileWriter writer = new FileWriter(secretFile)) {
+                            writer.write(secretHash);
+                        }
+                    }
+
                     IChatComponent text = new ChatComponentText("§a[SkyAtlas] Your sync code is: §e§l" + syncCode);
                     text.setChatStyle(new ChatStyle().setChatClickEvent(
                             new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, syncCode)

@@ -3,14 +3,17 @@ package io.hamlook.aetheria.utils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
 
+import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
 
 /**
  * Gates community features (Global Chat, Diana Parties) behind a player being
@@ -77,12 +80,22 @@ public final class CommunityAccess {
     private static boolean checkSynced() {
         if (!NetworkGuard.apiAllowed()) return false;
         try {
+            String secretHash = "";
+            File secretFile = new File(ATHRConfig.configDirectory, "synccode.secret");
+            if (secretFile.exists()) {
+                secretHash = Files.readString(secretFile.toPath()).trim();
+            }
+            if (secretHash.isEmpty()) {
+                return false;
+            }
+
             URL url = new URL(CapeAPI.getAPIUrl("is-synced"));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
             connection.setRequestProperty("x-playername",
                     Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
+            connection.setRequestProperty("x-sync-code", secretHash);
             connection.setReadTimeout(10000);
             connection.setConnectTimeout(10000);
             int code = connection.getResponseCode();
