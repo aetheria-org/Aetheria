@@ -47,8 +47,8 @@ public class VisitorsConfig {
 
     @Expose
     @ConfigOption(name = "Sign Fill Mode", desc = "Autofill writes the required amount into the Bazaar amount sign automatically. Click to Fill fills it when you click a shopping list row while the sign is open")
-    @ConfigEditorDropdown(values = {"Autofill", "Click to Fill", "None"}, initialIndex = 1)
-    public int signFillMode = 1;
+    @ConfigEditorDropdown(values = {"Autofill", "Click to Fill", "None"}, initialIndex = 0)
+    public int signFillMode = 0;
 
     @Expose
     @ConfigOption(name = "Reset List", desc = "Clear all learned visitor items and rewards")
@@ -76,12 +76,12 @@ public class VisitorsConfig {
         public boolean editPosDummy = false;
 
         @Expose
-        public Position panelPos = new Position(-350, 120, false, false);
+        public Position panelPos = new Position(-22, 127, false, false);
 
         @Expose
         @ConfigOption(name = "Scale", desc = "Size of the panel")
         @ConfigEditorSliderAnnotation(minValue = 0.5f, maxValue = 3f, minStep = 0.1f)
-        public float scale = 1f;
+        public float scale = 0.7f;
 
         @Expose
         @ConfigOption(name = "Visible", desc = "Where the panel is shown")
@@ -94,9 +94,9 @@ public class VisitorsConfig {
         public boolean showPrices = true;
 
         @Expose
-        @ConfigOption(name = "Show Profit", desc = "Show total reward value and profit estimate (rewards minus items you still need to buy)")
+        @ConfigOption(name = "Show Profit Estimate", desc = "Show total reward value and profit estimate (rewards minus items you still need to buy)")
         @ConfigEditorBoolean
-        public boolean showProfit = false;
+        public boolean showProfit = true;
     }
 
     public static class OverlayConfig {
@@ -119,7 +119,7 @@ public class VisitorsConfig {
         @Expose
         @ConfigOption(name = "Show Profit Estimate", desc = "Show total reward value and profit estimate (rewards minus items you still need to buy)")
         @ConfigEditorBoolean
-        public boolean showProfit = false;
+        public boolean showProfit = true;
 
         @Expose
         @ConfigOption(name = "Hide While Farming", desc = "Hide the overlay while actively farming (holding a farming tool and breaking crops)")
@@ -147,6 +147,6 @@ public class VisitorsConfig {
         public int cornerRadius = 4;
 
         @Expose
-        public Position overlayPos = new Position(-400, 140, false, false);
+        public Position overlayPos = new Position(-373, 192, false, false);
     }
 }
