@@ -9,6 +9,7 @@ import io.hamlook.aetheria.features.chat.globalchat.vars.*;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.EmojiParser;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.chat.ExpiringArrayList;
 import net.minecraft.client.Minecraft;
@@ -17,7 +18,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -44,7 +44,7 @@ public class GlobalChat {
     public static ConcurrentHashMap<String, IEmoji> usableEmojis = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, Sticker> usableStickers = new ConcurrentHashMap<>();
 
-    public static ExpiringArrayList<Notification> notifications = new ExpiringArrayList<>();
+    public static final ExpiringArrayList<Notification> notifications = new ExpiringArrayList<>();
     /** True once the missed-mentions fetch ran this session (prevents duplicate toasts on reconnect). */
     private static volatile boolean missedMentionsFetched = false;
     /** True while a fetch is in flight; blocks a second concurrent request (e.g. onOpen + channel refresh racing). */
@@ -64,20 +64,22 @@ public class GlobalChat {
     }
 
     public static void initialise(){
-        try{
-            usableEmojis.clear();
-            for (IEmoji emoji : EmojiParser.loadDefaults()) {
-                registerIEmoji(emoji);
-            }
-            Aetheria.logger.info("[GlobalChat]: " + usableEmojis.size() + " default emojis usable.");
+        ThreadUtils.run(() -> {
+            try{
+                    usableEmojis.clear();
+                    for (IEmoji emoji : EmojiParser.loadDefaults()) {
+                        registerIEmoji(emoji);
+                    }
+                    Aetheria.logger.info("[GlobalChat]: " + usableEmojis.size() + " default emojis usable.");
 
-            URL url = new URL(CapeAPI.getAPIUrl("channels"));
-            loadChannels(url);
-            onSocketConnected();
-        }catch(Exception e){
-            Aetheria.logger.warning("[GlobalChat]: Failed to load channels: " + Arrays.toString(e.getStackTrace()));
-            e.printStackTrace();
-        }
+                    URL url = new URL(CapeAPI.getAPIUrl("channels"));
+                    loadChannels(url);
+                    onSocketConnected();
+            }catch(Exception e){
+                Aetheria.logger.warning("[GlobalChat]: Failed to load channels: " + Arrays.toString(e.getStackTrace()));
+                e.printStackTrace();
+            }
+        });
     }
 
     /** Called whenever the websocket (re)connects: deferred resource loads + missed-mention catch-up. */
@@ -547,20 +549,20 @@ public class GlobalChat {
                         : msg.has("discordID") ? "discordID" : null;
                 if(idField == null) continue;
                 deleted++;
-                removed += removeFromChannel(msg, idField);
+                removed += removeFromChannel(msg);
             }
         }else if(json.has("messageID") && json.has("channelId")){
             deleted = 1;
-            removed = removeFromChannel(json, "messageID");
+            removed = removeFromChannel(json);
         }else if(json.has("discordID") && json.has("channelId")){
             deleted = 1;
-            removed = removeFromChannel(json, "discordID");
+            removed = removeFromChannel(json);
         }
         Aetheria.logger.info("[GlobalChat]: Removed " + removed + " line(s) for " + deleted + " deleted message(s).");
     }
 
     /** Assumes the caller already verified {@code msg.has("channelId")}. */
-    private static int removeFromChannel(JsonObject msg, String idField) {
+    private static int removeFromChannel(JsonObject msg) {
         if(!msg.has("channelId") || msg.get("channelId").isJsonNull()) return 0;
         Channel channel = channels.get(msg.get("channelId").getAsString());
         if(channel == null) return 0;

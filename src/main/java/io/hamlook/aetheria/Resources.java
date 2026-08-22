@@ -5,6 +5,7 @@ import net.minecraft.util.ResourceLocation;
 
 public final class Resources {
 
+
     public static final ResourceLocation DISCORD = new ResourceLocation("aetheria:discord.png");
     public static final ResourceLocation GITHUB = new ResourceLocation("aetheria:github.png");
     public static final ResourceLocation MODRINTH = new ResourceLocation("aetheria:modrinth.png");
@@ -44,6 +45,7 @@ public final class Resources {
     public static final ResourceLocation PROTECT_ITEM_STAR = new ResourceLocation("aetheria", "textures/gui/protect_star.png");
     public static final ResourceLocation CAPES_UI = new ResourceLocation("aetheria", "textures/gui/capesUI.png");
     public static final ResourceLocation DVD_LOGO = new ResourceLocation("aetheria", "textures/dvd.png");
+    public static final ResourceLocation ASM_LOGO = new ResourceLocation("aetheria", "logo.png");
 
     public static final ResourceLocation GHOSTTRACKER_KILLS = new ResourceLocation("aetheria", "ghosttracker/kills.png");
     public static final ResourceLocation GHOSTTRACKER_SORROW = new ResourceLocation("aetheria", "ghosttracker/sorrow.png");

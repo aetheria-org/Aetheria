@@ -32,7 +32,7 @@ public final class TextRenderUtils {
         drawStringScaled(str, fr, x - newLen / 2f, y - 8 * factor / 2f, shadow, colour, factor);
     }
 
-    public static void drawStringScaleAware(String text, float xPos, float yPos, float uiScale, boolean displayScale) {
+    public static void drawStringScaleAware(String text, float xPos, float yPos,int color, float uiScale, boolean displayScale) {
         GlStateManager.pushMatrix();
         GlStateManager.disableBlend();
         GlStateManager.enableAlpha();
@@ -42,15 +42,19 @@ public final class TextRenderUtils {
 
         GlStateManager.translate(xPos, yPos, 0);
         GlStateManager.scale(finalScale, finalScale, 1f);
-        Minecraft.getMinecraft().fontRendererObj.drawString(text, 0, 0, -1);
+        Minecraft.getMinecraft().fontRendererObj.drawString(text, 0, 0, color);
         GlStateManager.popMatrix();
+    }
+
+    public static void drawStringScaleAware(String text, float xPos, float yPos, float uiScale, boolean displayScale) {
+        drawStringScaleAware(text,xPos,yPos,-1,uiScale,displayScale);
     }
 
     public static void drawStringScaleAware(String text, float xPos, float yPos, float uiScale) {
         drawStringScaleAware(text, xPos, yPos, uiScale, true);
     }
 
-    public static void drawCenteredStringScaleAware(String text, float xPos, float yPos, float uiScale, boolean displayScale) {
+    public static void drawCenteredStringScaleAware(String text, float xPos, float yPos,int color, float uiScale, boolean displayScale) {
         GlStateManager.pushMatrix();
         GlStateManager.disableBlend();
         GlStateManager.enableAlpha();
@@ -62,8 +66,12 @@ public final class TextRenderUtils {
         GlStateManager.scale(finalScale, finalScale, 1f);
 
         FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
-        fr.drawString(text, -fr.getStringWidth(text) / 2f, -fr.FONT_HEIGHT / 2f, -1, false);
+        fr.drawString(text, -fr.getStringWidth(text) / 2f, -fr.FONT_HEIGHT / 2f, color, false);
         GlStateManager.popMatrix();
+    }
+
+    public static void drawCenteredStringScaleAware(String text, float xPos, float yPos, float uiScale, boolean displayScale) {
+        drawCenteredStringScaleAware(text, xPos, yPos, -1,uiScale, displayScale);
     }
 
     public static void drawCenteredStringScaleAware(String text, float xPos, float yPos, float uiScale) {

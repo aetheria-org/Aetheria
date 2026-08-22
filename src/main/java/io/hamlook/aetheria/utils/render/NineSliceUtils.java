@@ -12,6 +12,7 @@ public class NineSliceUtils {
 
     public static void draw(ResourceLocation texture, int x, int y, int w, int h, int cornerSize, int texSize) {
         Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
+        GlStateManager.enableTexture2D();
         GlStateManager.enableBlend();
         GlStateManager.color(1f, 1f, 1f, 1f);
 

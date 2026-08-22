@@ -38,11 +38,11 @@ public class GCImage {
     public List<BufferedImage> images;
     public List<ResourceLocation> frames = new ArrayList<>();
     /** Per-frame display delay in ms, one entry per frame (same order as {@link #frames}). */
-    public List<Integer> delays = new ArrayList<>();
+    public List<Integer> delays;
     public int frameDelay;
     public String id;
-    public volatile int curFrame = 0;
-    public volatile long lastUpdate = 0;
+    public transient volatile int curFrame = 0;
+    public transient volatile long lastUpdate = 0;
     public boolean circularMask = false;
     public String url = "";
 
@@ -50,8 +50,8 @@ public class GCImage {
     public int width = 0;
     public int height = 0;
 
-    public volatile boolean isLoaded = false;
-    public volatile boolean loadFailed = false;
+    public transient volatile boolean isLoaded = false;
+    public transient volatile boolean loadFailed = false;
 
     public static final int[] QUALITIES = {240,360,480,720,1080,1440,3,840};
     private static final Pattern META_TAG_PATTERN = Pattern.compile(
@@ -89,20 +89,15 @@ public class GCImage {
         return frameDelay > 0 ? frameDelay : 100;
     }
 
-    public ResourceLocation getTextureToRender(boolean isHovered) {
+    public ResourceLocation getTextureToRender(boolean animated) {
         if (!isLoaded || frames.isEmpty()) return null;
         if (frames.size() == 1) return frames.get(0);
-        if (ATHRConfig.feature != null && ATHRConfig.feature.network.globalChatConfig.reducedAnimations && !isHovered) return frames.get(0);
+        if (ATHRConfig.feature != null && ATHRConfig.feature.network.globalChatConfig.reducedAnimations && !animated) return frames.get(0);
 
         updateFrame();
         return frames.get(curFrame);
     }
 
-    public static String buildAvatarUrl(String userId, String hash) {
-        boolean animated = hash.startsWith("a_");
-        String base = "https://cdn.discordapp.com/avatars/" + userId + "/" + hash + ".webp?size=240";
-        return animated ? (base + "&animated=true") : base;
-    }
 
     /** True if the URL (ignoring any query string) ends in a common raster/animated image extension. */
     public static boolean looksLikeImageUrl(String url) {
@@ -472,10 +467,10 @@ public class GCImage {
                         try {
                             IIOMetadata metadata = reader.getImageMetadata(i);
                             IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(metadata.getNativeMetadataFormatName());
-                            fx = intAttr(root, "ImageDescriptor", "imageLeftPosition", 0);
-                            fy = intAttr(root, "ImageDescriptor", "imageTopPosition", 0);
-                            fw = intAttr(root, "ImageDescriptor", "imageWidth", fw);
-                            fh = intAttr(root, "ImageDescriptor", "imageHeight", fh);
+                            fx = intAttr(root, "imageLeftPosition", 0);
+                            fy = intAttr(root, "imageTopPosition", 0);
+                            fw = intAttr(root, "imageWidth", fw);
+                            fh = intAttr(root, "imageHeight", fh);
                             disposal = disposalOf(getNode(root, "GraphicControlExtension"));
                         } catch (Exception ignored) {}
                     }
@@ -572,17 +567,17 @@ public class GCImage {
     private static int disposalOf(IIOMetadataNode graphicControl) {
         if (graphicControl == null) return 0;
         String dm = graphicControl.getAttribute("disposalMethod");
-        if (dm == null || dm.isEmpty()) return 0;
+        if (dm.isEmpty()) return 0;
         if ("restoreToBackground".equalsIgnoreCase(dm)) return 2;
         if ("restoreToPrevious".equalsIgnoreCase(dm)) return 3;
         return 0;
     }
 
-    private static int intAttr(IIOMetadataNode root, String nodeName, String attr, int def) {
-        IIOMetadataNode node = getNode(root, nodeName);
+    private static int intAttr(IIOMetadataNode root, String attr, int def) {
+        IIOMetadataNode node = getNode(root, "ImageDescriptor");
         if (node == null) return def;
         String v = node.getAttribute(attr);
-        if (v == null || v.isEmpty()) return def;
+        if (v.isEmpty()) return def;
         try {
             return Integer.parseInt(v);
         } catch (NumberFormatException e) {
