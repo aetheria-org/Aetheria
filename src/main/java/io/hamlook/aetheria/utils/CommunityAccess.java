@@ -1,6 +1,5 @@
 package io.hamlook.aetheria.utils;
 
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
@@ -13,6 +12,7 @@ import net.minecraft.client.Minecraft;
 import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 /**
@@ -83,7 +83,7 @@ public final class CommunityAccess {
             String secretHash = "";
             File secretFile = new File(ATHRConfig.configDirectory, "synccode.secret");
             if (secretFile.exists()) {
-                secretHash = Files.readString(secretFile.toPath()).trim();
+                secretHash = new String(Files.readAllBytes(secretFile.toPath()), StandardCharsets.UTF_8);
             }
             if (secretHash.isEmpty()) {
                 return false;
