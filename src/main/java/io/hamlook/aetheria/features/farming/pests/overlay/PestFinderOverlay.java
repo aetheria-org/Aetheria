@@ -1,11 +1,13 @@
 package io.hamlook.aetheria.features.farming.pests.overlay;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.features.farming.PestFinderConfig;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
@@ -15,6 +17,7 @@ import org.lwjgl.input.Keyboard;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RegisterEvents
 public class PestFinderOverlay extends Overlay {
@@ -31,17 +34,28 @@ public class PestFinderOverlay extends Overlay {
         return ATHRConfig.feature.farming.pests.pestFinder;
     }
 
+    private static boolean warpHintFailureLogged = false;
+
+    private static Integer targetPlot(boolean preview) {
+        return preview ? 4 : FarmingApi.getTargetInfestedPlot();
+    }
+
     private static String warpHint(boolean preview) {
         try {
             PestFinderConfig cfg = config();
             if (cfg == null) return null;
             int key = cfg.warpKey;
             if (key == Keyboard.KEY_NONE) return "§7Warp key: §8Not set";
-            Integer plot = preview ? 4 : FarmingApi.getNearestInfestedPlot();
+            Integer plot = targetPlot(preview);
             if (plot == null) return null;
             if (!preview && cfg.hideWarpHintInPlot && FarmingApi.isPlayerInPlot(plot)) return null;
             return "§7Press §e" + KeybindHelper.getKeyName(key) + " §7to warp to §bPlot " + plot;
         } catch (Exception e) {
+            if (!warpHintFailureLogged) {
+                warpHintFailureLogged = true;
+                Aetheria.logger.warning("[PestFinder] warpHint failed: " + e);
+                ChatUtils.sendMessage("§c[Aetheria] §7Pest Finder warp hint failed: §f" + e);
+            }
             return null;
         }
     }
@@ -55,12 +69,14 @@ public class PestFinderOverlay extends Overlay {
     }
 
     private static String plotsText() {
-        List<Integer> ids = FarmingApi.getSortedInfestedPlotIds();
-        if (ids.isEmpty()) return "§8-";
+        Map<Integer, Integer> pests = FarmingApi.getActivePests();
+        if (pests.isEmpty()) return "§8-";
         StringBuilder sb = new StringBuilder();
-        for (int id : ids) {
-            if (sb.length() > 0) sb.append(", ");
-            sb.append(id);
+        for (Integer id : FarmingApi.getSortedInfestedPlotIds()) {
+            if (sb.length() > 0) sb.append("§7, ");
+            sb.append("§b").append(id);
+            Integer count = pests.get(id);
+            if (count != null && count > 1) sb.append(" §8x§c").append(count);
         }
         return sb.toString();
     }
@@ -83,8 +99,8 @@ public class PestFinderOverlay extends Overlay {
             case 0:
                 return preview ? "§7Total: §e2" : "§7Total: §e" + orZero(FarmingApi.getGardenAlive());
             case 1:
-                if (preview) return "§7Plots: §b2, 4";
-                return FarmingApi.getActivePests().isEmpty() ? null : "§7Plots: §b" + plotsText();
+                if (preview) return "§7Plots: §b1, §b5 §8x§c3";
+                return FarmingApi.getActivePests().isEmpty() ? null : "§7Plots: " + plotsText();
             case 2:
                 return "§7Spray: " + (preview ? "§7None" : value(FarmingApi.getGardenSpray()));
             case 3:
@@ -154,9 +170,9 @@ public class PestFinderOverlay extends Overlay {
         if (SkyblockData.getCurrentLocation() != SkyblockData.Location.GARDEN) return;
         if (!KeybindHelper.isKeyPressed(config.warpKey)) return;
         if (config.hideWarpHintInPlot) {
-            Integer nearest = FarmingApi.getNearestInfestedPlot();
-            if (nearest != null && FarmingApi.isPlayerInPlot(nearest)) return;
+            Integer nearest = FarmingApi.getTargetInfestedPlot();
+            if (FarmingApi.isPlayerInPlot(nearest)) return;
         }
-        FarmingApi.warpToNearestInfestedPlot();
+        FarmingApi.warpToTargetPlot();
     }
 }

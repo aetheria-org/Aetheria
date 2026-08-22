@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.farming.farmingtracker;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.features.farming.data.Crop;
 import io.hamlook.aetheria.features.misc.itemlog.ItemPickupLog;
 import io.hamlook.aetheria.features.price.PriceMap;
@@ -116,10 +117,31 @@ public class FarmingTracker {
         if (!isEnabled()) return;
         if (!locationOk()) return;
         if (delta <= 0) return;
-        if (Crop.findByRawId(internalId) == null) return;
+        String key = resolveTrackedId(internalId, displayName);
+        if (key == null) return;
+        if (!toolHoldOk()) return;
 
-        FarmingTrackerData.getInstance().getCounts().merge(internalId, (long) delta, Long::sum);
+        FarmingTrackerData.getInstance().getCounts().merge(key, (long) delta, Long::sum);
         updateActivity();
+    }
+
+    /** Canonical crop id for a pickup, or null when it is not a tracked crop. */
+    private static String resolveTrackedId(String internalId, String displayName) {
+        Crop byId = Crop.findByRawId(internalId);
+        if (byId != null) return byId.rawId;
+        // Fallback: match by display name (covers enchanted/block tiers and
+        // any future server id quirks).
+        Crop byName = Crop.findByDropName(displayName);
+        if (byName == null) return null;
+        if (displayName.equals(byName.enchantedChatName) && byName.enchantedId != null) return byName.enchantedId;
+        if (displayName.equals(byName.blockChatName) && byName.blockId != null) return byName.blockId;
+        return byName.rawId;
+    }
+
+    private static boolean toolHoldOk() {
+        if (ATHRConfig.feature == null) return false;
+        if (!ATHRConfig.feature.farming.farmingTracker.requireFarmingToolHold) return true;
+        return FarmingApi.heldFarmingToolRecently();
     }
 
     @SubscribeEvent
@@ -149,6 +171,7 @@ public class FarmingTracker {
 
         String id = Crop.findByChatName(m.group(2));
         if (id == null) return;
+        if (!toolHoldOk()) return;
 
         FarmingTrackerData.getInstance().getCounts().merge(id, quantity, Long::sum);
         updateActivity();

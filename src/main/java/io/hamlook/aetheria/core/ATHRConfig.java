@@ -445,6 +445,26 @@ public class ATHRConfig {
         PestStats.getInstance().reset();
     }
 
+    public static void openVisitorOverlayEditor() {
+        if (feature == null) return;
+        io.hamlook.aetheria.features.farming.visitors.VisitorShoppingListOverlay overlay =
+                io.hamlook.aetheria.features.farming.visitors.VisitorShoppingListOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.farming.visitors.overlay.overlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.visitors.overlay.scale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void openVisitorPanelEditor() {
+        if (feature == null) return;
+        io.hamlook.aetheria.features.farming.visitors.VisitorPanel panel =
+                io.hamlook.aetheria.features.farming.visitors.VisitorPanel.getInstance();
+        if (panel == null) return;
+        screenToOpen = new GuiPositionEditor(feature.farming.visitors.panel.panelPos, panel::getLastWidth, panel::getLastHeight, panel::renderPreview, ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.visitors.panel.scale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void resetVisitorList() {
+        io.hamlook.aetheria.features.farming.FarmingApi.clearVisitorData();
+    }
+
     public static void openPristineEditor() {
         if (feature == null) return;
         PristineOverlay overlay = PristineOverlay.getInstance();

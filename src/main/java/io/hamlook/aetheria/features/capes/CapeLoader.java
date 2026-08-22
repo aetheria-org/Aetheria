@@ -2,14 +2,13 @@ package io.hamlook.aetheria.features.capes;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.utils.HttpClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.BufferedReader;import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -47,7 +46,6 @@ public class CapeLoader {
                 loadCape(id);
             } catch (Exception e) {
                 Aetheria.logger.info("[CapeLoader] Failed to load cape: " + id + " — " + e.getMessage());
-                e.printStackTrace();
             }
         }
 
@@ -146,24 +144,9 @@ public class CapeLoader {
 
     private static BufferedImage fetchImage(String urlStr) {
         try {
-            URL url = new URL(urlStr);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(8000);
-            conn.setReadTimeout(8000);
-            conn.setRequestProperty("User-Agent", "Aetheria/1.0");
-
-            int status = conn.getResponseCode();
-            if (status != 200) {
-                Aetheria.logger.info("[CapeLoader] Texture fetch failed: " + status + " for " + urlStr);
-                return null;
-            }
-
-            return ImageIO.read(conn.getInputStream());
-
+            return HttpClient.fetchImage(urlStr, "Aetheria/1.0");
         } catch (Exception e) {
             Aetheria.logger.info("[CapeLoader] fetchImage failed: " + e.getMessage());
-            e.printStackTrace();
             return null;
         }
     }

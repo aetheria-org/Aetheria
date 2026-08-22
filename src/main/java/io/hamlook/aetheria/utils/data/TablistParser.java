@@ -18,6 +18,7 @@ import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -64,6 +65,14 @@ public class TablistParser {
 
     public static boolean isEventActive(String eventName) {
         return activeEvent != null && activeEvent.contains(eventName);
+    }
+
+    /**
+     * Tab entries in the exact order parseTablist iterates them (team-then-name
+     * alphabetical). Debug dumps must use this, not raw getPlayerInfoMap() order.
+     */
+    public static List<NetworkPlayerInfo> getParserOrderedInfos(Minecraft mc) {
+        return PLAYER_ORDERING.sortedCopy(mc.thePlayer.sendQueue.getPlayerInfoMap());
     }
 
     private static net.minecraft.util.IChatComponent getTabFooter() {
@@ -123,11 +132,14 @@ public class TablistParser {
     private static void parseTablist(Minecraft mc) {
         scoreboardEnvironment = SkyblockData.detectEnvironmentFromScoreboard();
         GuiPlayerTabOverlay tab = mc.ingameGUI.getTabList();
-        List<NetworkPlayerInfo> infos = PLAYER_ORDERING.sortedCopy(mc.thePlayer.sendQueue.getPlayerInfoMap());
+        List<NetworkPlayerInfo> infos = getParserOrderedInfos(mc);
 
         boolean inServerSection = false;
         boolean inAccountSection = false;
         boolean expectEventTime = false;
+        boolean readingVisitors = false;
+        boolean visitorsSectionSeen = false;
+        List<String> parsedVisitors = new ArrayList<>();
 
         String pendingEvent = null;
 
@@ -196,6 +208,21 @@ public class TablistParser {
             }
             if (line.startsWith("Bonus Pest Chance: ")) {
                 FarmingApi.setGardenBonusPestChance(valueAfter(raw));
+                continue;
+            }
+
+            if (line.startsWith("Visitors")) {
+                readingVisitors = true;
+                visitorsSectionSeen = true;
+                continue;
+            }
+            if (readingVisitors) {
+                if (line.startsWith("Next Visitor")) {
+                    readingVisitors = false;
+                } else {
+                    String name = ColorUtils.stripColor(raw).trim();
+                    if (!name.isEmpty()) parsedVisitors.add(name);
+                }
                 continue;
             }
 
@@ -311,6 +338,8 @@ public class TablistParser {
             activeEventTimeLeft = null;
         }
 
+        FarmingApi.setActiveVisitors(parsedVisitors, visitorsSectionSeen);
+
         if (serverPrefix.isEmpty()) {
             SkyblockData.Environment env = scoreboardEnvironment;
             if (env != SkyblockData.Environment.UNKNOWN && env != SkyblockData.getEnvironment()) {
@@ -319,8 +348,7 @@ public class TablistParser {
         }
     }
 
-    private static String parseAmount(String raw, String fallback) {
-        String afterColon = raw.substring(raw.indexOf(": ") + 2);
+    private static String parseAmount(String raw, String fallback) {        String afterColon = raw.substring(raw.indexOf(": ") + 2);
         String clean = ColorUtils.stripColor(afterColon).trim();
         if (clean.contains(" / ")) {
             String[] parts = clean.split(" / ", 2);
@@ -398,6 +426,7 @@ public class TablistParser {
         sbLevel = 0;
         sbCurrentXp = 0;
         sbMaxXp = 0;
+        FarmingApi.clearActiveVisitors();
         ElectionUtils.clearTablistMayor();
         serverPrefix = "";
         scoreboardEnvironment = SkyblockData.Environment.UNKNOWN;

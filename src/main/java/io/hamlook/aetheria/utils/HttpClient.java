@@ -2,6 +2,8 @@ package io.hamlook.aetheria.utils;
 
 import io.hamlook.aetheria.Aetheria;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -11,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 
 public class HttpClient {
     private static final int TIMEOUT_MS = 30000;
+    private static final int IMAGE_TIMEOUT_MS = 30000;
     private static final String USER_AGENT = "Aetheria/" + Aetheria.VERSION;
 
     private static String readAll(HttpURLConnection conn) throws Exception {
@@ -39,6 +42,33 @@ public class HttpClient {
         String newEtag = conn.getHeaderField("ETag");
         String body = readAll(conn);
         return new FetchResult(body, newEtag != null ? newEtag : etag, true);
+    }
+
+    /**
+     * Fetches a remote image and decodes it into a {@link BufferedImage}.
+     * Uses a dedicated timeout (image sheets can be large) separate from text fetches.
+     * Throws on HTTP errors, connection failures or undecodable bodies.
+     */
+    public static BufferedImage fetchImage(String url) throws Exception {
+        return fetchImage(url, USER_AGENT);
+    }
+
+    /** Same as {@link #fetchImage(String)} but with an explicit User-Agent (for backends that expect a fixed one). */
+    public static BufferedImage fetchImage(String url, String userAgent) throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        conn.setRequestMethod("GET");
+        conn.setConnectTimeout(IMAGE_TIMEOUT_MS);
+        conn.setReadTimeout(IMAGE_TIMEOUT_MS);
+        conn.setRequestProperty("User-Agent", userAgent);
+
+        int code = conn.getResponseCode();
+        if (code < 200 || code >= 300) throw new RuntimeException("HTTP " + code);
+
+        try (java.io.InputStream in = conn.getInputStream()) {
+            BufferedImage img = ImageIO.read(in);
+            if (img == null) throw new RuntimeException("Undecodable image body from " + url);
+            return img;
+        }
     }
 
     public int post(String url, String body, String contentType) throws Exception {

@@ -117,7 +117,8 @@ public class OrganicMatterTrackerOverlay extends Overlay {
     @Override
     protected boolean isEnabled() {
         if (!config().enabled) return false;
-        if (config().requireFarmingIsland && !FarmingApi.isInFarmingLocation()) return false;
+        boolean locationOk = !config().requireFarmingIsland || FarmingApi.isInFarmingLocation();
+        if (!locationOk) return false;
         if (config().hideWhenPaused && OrganicMatterTracker.isPaused()) return false;
         if (config().showOnlyWhileFarming && !FarmingApi.isCurrentlyFarming()) return false;
         if (config().showOnlyWhileHoldingFarmingTool && !FarmingApi.isHoldingFarmingTool()) return false;

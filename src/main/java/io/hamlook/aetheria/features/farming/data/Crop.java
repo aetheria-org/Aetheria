@@ -52,14 +52,14 @@ public class Crop {
             case "NETHER_STALK": return new ItemStack(Items.nether_wart);
             case "WILD_ROSE": return new ItemStack(Item.getItemFromBlock(Blocks.double_plant), 1, 4);
             case "MOONFLOWER": return new ItemStack(Item.getItemFromBlock(Blocks.red_flower), 1, 1);
-            case "SUNFLOWER": return new ItemStack(Item.getItemFromBlock(Blocks.double_plant), 1, 0);
+            case "DOUBLE_PLANT": return new ItemStack(Item.getItemFromBlock(Blocks.double_plant), 1, 0);
             case "SEEDS": return new ItemStack(Items.wheat_seeds);
             default: return null;
         }
     }
 
     private static final Crop[] ALL = new Crop[]{
-            new Crop("WHEAT", "ENCHANTED_WHEAT", "Enchanted Wheat", "ENCHANTED_HAY_BLOCK", "Enchanted Hay Bale", "Wheat"),
+            new Crop("WHEAT", "ENCHANTED_WHEAT", "Enchanted Wheat", "ENCHANTED_HAY_BALE", "Enchanted Hay Bale", "Wheat"),
             new Crop("CARROT_ITEM", "ENCHANTED_CARROT", "Enchanted Carrot", "ENCHANTED_GOLDEN_CARROT", "Enchanted Golden Carrot", "Carrot"),
             new Crop("POTATO_ITEM", "ENCHANTED_POTATO", "Enchanted Potato", "ENCHANTED_BAKED_POTATO", "Enchanted Baked Potato", "Potato"),
             new Crop("PUMPKIN", "ENCHANTED_PUMPKIN", "Enchanted Pumpkin", "POLISHED_PUMPKIN", "Polished Pumpkin", "Pumpkin"),
@@ -72,7 +72,7 @@ public class Crop {
             new Crop("NETHER_STALK", "ENCHANTED_NETHER_STALK", "Enchanted Nether Wart", "MUTANT_NETHER_STALK", "Mutant Nether Wart", "Nether Wart"),
             new Crop("WILD_ROSE", "ENCHANTED_WILD_ROSE", "Enchanted Wild Rose", "COMPACTED_WILD_ROSE", "Compacted Wild Rose", "Wild Rose"),
             new Crop("MOONFLOWER", "ENCHANTED_MOONFLOWER", "Enchanted Moonflower", "COMPACTED_MOONFLOWER", "Compacted Moonflower", "Moonflower"),
-            new Crop("SUNFLOWER", "ENCHANTED_SUNFLOWER", "Enchanted Sunflower", "COMPACTED_SUNFLOWER", "Compacted Sunflower", "Sunflower"),
+            new Crop("DOUBLE_PLANT", "ENCHANTED_SUNFLOWER", "Enchanted Sunflower", "COMPACTED_SUNFLOWER", "Compacted Sunflower", "Sunflower"),
             new Crop("SEEDS", "Seeds"),
     };
 

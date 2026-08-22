@@ -148,7 +148,8 @@ public class GCImage {
 
             } catch (Exception e) {
                 Aetheria.logger.warning("[GCImage] Failed to load image from " + url + ": " + e);
-                if (url.toLowerCase().endsWith(".gif")) {
+                boolean notFound = e instanceof DownloadException && ((DownloadException) e).code == 404;
+                if (!notFound && url.toLowerCase().endsWith(".gif")) {
                     Aetheria.logger.warning("[GCImage] Trying to fetch animated webp instead.");
                     String webpUrl = url.substring(0, url.length() - 4) + ".webp?animated=true";
                     try {
@@ -165,7 +166,6 @@ public class GCImage {
                     }
                 }
                 gcImage.loadFailed = true;
-                e.printStackTrace();
             }
         });
         return gcImage.id;
@@ -203,7 +203,6 @@ public class GCImage {
             } catch (Exception e) {
                 Aetheria.logger.warning("[GCImage] Failed to load embed from " + pageUrl + ": " + e);
                 gcImage.loadFailed = true;
-                e.printStackTrace();
             }
         });
         return gcImage.id;
@@ -289,6 +288,13 @@ public class GCImage {
         connection.setConnectTimeout(15000);
         connection.setReadTimeout(15000);
 
+        int code = connection.getResponseCode();
+        if (code < 200 || code >= 300) {
+            String hint = code == 404 && url.contains("discordapp.com")
+                    ? " (expired or deleted Discord attachment)" : "";
+            throw new DownloadException(code, "HTTP " + code + hint + ": " + url);
+        }
+
         int expectedLength = connection.getContentLength();
 
         try (InputStream is = new BufferedInputStream(connection.getInputStream());
@@ -307,6 +313,16 @@ public class GCImage {
                         + " of " + expectedLength + " bytes from " + url);
             }
             return data;
+        }
+    }
+
+    /** Carries the HTTP status so callers can react (e.g. skip retries on a definitive 404). */
+    private static class DownloadException extends IOException {
+        final int code;
+
+        DownloadException(int code, String message) {
+            super(message);
+            this.code = code;
         }
     }
 
@@ -458,7 +474,6 @@ public class GCImage {
                         frame = reader.read(i);
                     } catch (Exception frameEx) {
                         decodeFailures++;
-                        frameEx.printStackTrace();
                         continue;
                     }
                     if (frame == null) {

@@ -6,7 +6,9 @@ import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ElectionUtils;
+import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.ThreadUtils;
+import io.hamlook.aetheria.core.StorageManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
@@ -137,9 +139,7 @@ public class EmojiManager {
             }
             if (!emojis.isEmpty()) loaded.set(true);
         }catch (Exception e){
-            Aetheria.logger.info("[EMOJI] Failed to load emojis from github");
-            Aetheria.logger.info("[EMOJI] Error: " + e.getMessage());
-            e.printStackTrace();
+            Aetheria.logger.warning("[EMOJI] Failed to load emojis from github: " + e.getMessage());
         }
         loadCustomEmojis();
         Aetheria.logger.info("[EMOJI] Successfully Loaded " + emojis.size() + " emojis, " + aliases.size() + " aliases, & " + customEmojis.size() + " custom emojis.");
@@ -222,11 +222,10 @@ public class EmojiManager {
             if (file.exists()) file.delete();
             downloadSheet(EmojiLinks.CUSTOM_SHEET);
             try {
-                BufferedImage img = ImageIO.read(file);
-                if (img != null && img.getWidth() >= maxRequired) {
-                    sheetSizes.put(EmojiLinks.CUSTOM_SHEET, img.getWidth());
-                    EmojiLinks.SHEET_SIZE = img.getWidth();
-                    BufferedImage fImg = img;
+                BufferedImage fImg = ImageIO.read(file);
+                if (fImg != null && fImg.getWidth() >= maxRequired) {
+                    sheetSizes.put(EmojiLinks.CUSTOM_SHEET, fImg.getWidth());
+                    EmojiLinks.SHEET_SIZE = fImg.getWidth();
                     Minecraft.getMinecraft().addScheduledTask(() -> {
                         try {
                             DynamicTexture texture = new DynamicTexture(fImg);
@@ -257,9 +256,7 @@ public class EmojiManager {
                 sheetSizes.put(sheet, sheetImage.getWidth());
                 Aetheria.logger.info("[EMOJI] Sheet Size for " + sheet + " = " + sheetSizes.get(sheet));
             } catch (IOException e) {
-                Aetheria.logger.info("[EMOJI] Error Loading " + sheet + " from file at path: " + spriteFile.getPath());
-                Aetheria.logger.info("[EMOJI] Error: " + e.getMessage());
-                e.printStackTrace();
+                Aetheria.logger.warning("[EMOJI] Error Loading " + sheet + " from file at path: " + spriteFile.getPath() + " — " + e.getMessage());
             }
         }
         if (!images.isEmpty()) {
@@ -284,28 +281,18 @@ public class EmojiManager {
 
     private static void downloadSheet(String sheet) {
         String urlSuffix = EmojiLinks.sheetToURL(sheet);
-        try{
-            URL url = new URL(EmojiLinks.getSpriteURL(urlSuffix));
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
-            conn.setConnectTimeout(30000);
-            conn.setReadTimeout(30000);
-
-            if(conn.getResponseCode() == 200){
-                BufferedImage image = ImageIO.read(conn.getInputStream());
-                if(image == null || image.getWidth() < 32) return;
-                File path = EmojiLinks.getSpriteFile(sheet);
+        try {
+            BufferedImage image = HttpClient.fetchImage(EmojiLinks.getSpriteURL(urlSuffix));
+            if (image.getWidth() < 32) return;
+            File path = EmojiLinks.getSpriteFile(sheet);
+            if (StorageManager.saveAtomicImage(path, image)) {
                 sheetSizes.put(sheet, image.getWidth());
-                Aetheria.logger.info("[EMOJI] Sheet Size for " + sheet + " = " + image.getWidth());
-                ImageIO.write(image, "png", path);
-                Aetheria.logger.info("[EMOJI] Successfully downloaded Sheet for " + sheet);
-            }else {
-                Aetheria.logger.info("[EMOJI](" + conn.getResponseCode() + ") Error Downloading " + sheet + " from url: " + url.getPath());
+                Aetheria.logger.info("[EMOJI] Successfully downloaded Sheet for " + sheet + " (" + image.getWidth() + " px)");
+            } else {
+                Aetheria.logger.warning("[EMOJI] Failed to save downloaded Sheet " + sheet + " to " + path.getPath());
             }
-        }catch (Exception e){
-            Aetheria.logger.info("[EMOJI] Error Downloading " + sheet + " from url: " + urlSuffix);
-            Aetheria.logger.info("[EMOJI] Error: " + e.getMessage());
-            e.printStackTrace();
+        } catch (Exception e) {
+            Aetheria.logger.warning("[EMOJI] Error Downloading " + sheet + " from url: " + urlSuffix + " — " + e.getMessage());
         }
     }
 

@@ -19,6 +19,8 @@ import io.hamlook.aetheria.features.scoreboard.MaxwellPowerSync;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.features.waypoints.WaypointStorage;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -340,6 +342,69 @@ public enum StorageManager {
         try {
             String content = new String(Files.readAllBytes(tmp.toPath()), StandardCharsets.UTF_8);
             JsonParser.parseString(content);
+        } catch (Exception e) {
+            Aetheria.logger.severe("[ATHR] Refusing to commit " + tmp.getName() + " — write verification failed: " + e.getMessage());
+            CrashLog.report(file, "saving", "write verification failed: " + e.getMessage());
+            tmp.delete();
+            return false;
+        }
+
+        try (FileChannel ch = FileChannel.open(tmp.toPath(), StandardOpenOption.WRITE)) {
+            ch.force(true);
+        } catch (Exception e) {
+            Aetheria.logger.warning("[ATHR] fsync failed for " + tmp.getName() + ", committing anyway: " + e.getMessage());
+        }
+
+        try {
+            try {
+                Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException ex) {
+                Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (Exception e) {
+            Aetheria.logger.severe("[ATHR] Failed to commit " + file.getName() + ": " + e.getMessage());
+            CrashLog.report(file, "saving", "commit failed: " + e.getMessage());
+            tmp.delete();
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Atomically saves a {@link BufferedImage} as PNG using the same hardened
+     * tmp → verify → fsync → rename flow as {@link #saveAtomicRaw}. The binary
+     * counterpart for cached remote images (emoji sprite sheets, skins).
+     * <p>
+     * Write failures, read-back verification failures and rename failures return
+     * {@code false} and raise a CrashLog report. Safe to call from any thread —
+     * a per-path lock serialises concurrent writers of the same file.
+     */
+    public static boolean saveAtomicImage(File file, BufferedImage image) {
+        if (file == null || image == null) return false;
+        Object lock = FILE_LOCKS.computeIfAbsent(file.getAbsolutePath(), k -> new Object());
+        synchronized (lock) {
+            return saveAtomicImageLocked(file, image);
+        }
+    }
+
+    private static boolean saveAtomicImageLocked(File file, BufferedImage image) {
+        file.getParentFile().mkdirs();
+        File tmp = new File(file.getParentFile(), file.getName() + ".tmp");
+        try (OutputStream os = Files.newOutputStream(tmp.toPath(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            ImageIO.write(image, "png", os);
+            os.flush();
+        } catch (Exception e) {
+            Aetheria.logger.severe("[ATHR] Failed to write " + tmp.getName() + ": " + e.getMessage());
+            CrashLog.report(file, "saving", "write failed: " + e.getMessage());
+            tmp.delete();
+            return false;
+        }
+
+        try {
+            BufferedImage check = ImageIO.read(tmp);
+            if (check == null || check.getWidth() != image.getWidth() || check.getHeight() != image.getHeight()) {
+                throw new Exception("read-back mismatch (" + (check == null ? "null" : check.getWidth() + "x" + check.getHeight()) + ")");
+            }
         } catch (Exception e) {
             Aetheria.logger.severe("[ATHR] Refusing to commit " + tmp.getName() + " — write verification failed: " + e.getMessage());
             CrashLog.report(file, "saving", "write verification failed: " + e.getMessage());

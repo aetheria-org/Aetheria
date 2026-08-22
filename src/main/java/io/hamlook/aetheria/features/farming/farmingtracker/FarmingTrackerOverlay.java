@@ -145,7 +145,8 @@ public class FarmingTrackerOverlay extends Overlay {
     @Override
     protected boolean isEnabled() {
         if (!config().enabled) return false;
-        if (config().requireFarmingIsland && !FarmingApi.isInFarmingLocation()) return false;
+        boolean locationOk = !config().requireFarmingIsland || FarmingApi.isInFarmingLocation();
+        if (!locationOk) return false;
         if (config().hideWhenPaused && FarmingTracker.isPaused()) return false;
         if (config().showOnlyWhileFarming && !FarmingApi.isCurrentlyFarming()) return false;
         return !config().showOnlyWhileHoldingFarmingTool || FarmingApi.isHoldingFarmingTool();

@@ -21,6 +21,11 @@ public class FarmingTrackerConfig {
     public boolean requireFarmingIsland = true;
 
     @Expose
+    @ConfigOption(name = "Require Farming Tool", desc = "Only track crops dropped within 2 seconds of holding a farming tool")
+    @ConfigEditorBoolean
+    public boolean requireFarmingToolHold = true;
+
+    @Expose
     @ConfigOption(name = "Keep Tracker Across Sessions", desc = "Persist crop counts and value across world unloads / game restarts instead of resetting")
     @ConfigEditorBoolean
     public boolean persistAcrossSessions = true;

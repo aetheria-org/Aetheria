@@ -17,9 +17,14 @@ public class PestFinderConfig {
     public boolean enabled = true;
 
     @Expose
-    @ConfigOption(name = "Warp Key", desc = "Hold to teleport to the nearest infested plot (/tptoplot). Requires FakePixel or another mod with that command")
+    @ConfigOption(name = "Warp Key", desc = "Hold to teleport to an infested plot (/tptoplot)")
     @ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
     public int warpKey = Keyboard.KEY_NONE;
+
+    @Expose
+    @ConfigOption(name = "Warp Target", desc = "Which infested plot the warp key teleports to. Most Pests breaks ties by picking the closer plot")
+    @ConfigEditorDropdown(values = {"Closest", "Most Pests"}, initialIndex = 0)
+    public int warpTarget = 0;
 
     @Expose
     @ConfigOption(name = "Hide Warp In Current Plot", desc = "Hide the warp keybind hint and suppress the keybind when you are already in a plot with a pest")
@@ -60,7 +65,7 @@ public class PestFinderConfig {
     @ConfigOption(name = "Display Lines", desc = "Choose which pest finder lines to show and drag to reorder")
     @ConfigEditorDraggableList(exampleText = {
             "§7Total: §e2",
-            "§7Plots: §b2, 4",
+            "§7Plots: §b1, §b5 §8x§c3",
             "§7Spray: §7None",
             "§7Repellent: §7None",
             "§7Bonus: §c§lINACTIVE",

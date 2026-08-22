@@ -27,6 +27,10 @@ public class Farming {
     public PestsConfig pests = new PestsConfig();
 
     @Expose
+    @Category(name = "Visitors", desc = "Visitor shopping list, rewards tracking and Bazaar helpers")
+    public VisitorsConfig visitors = new VisitorsConfig();
+
+    @Expose
     @Category(name = "Garden Plots", desc = "Plot numbers and highlights in the Configure Plots menu")
     public GardenPlotsConfig gardenPlots = new GardenPlotsConfig();
 

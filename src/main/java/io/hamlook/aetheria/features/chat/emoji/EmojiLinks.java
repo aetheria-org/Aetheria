@@ -20,6 +20,10 @@ public class EmojiLinks {
 
     private static final File BASE_DIR = new File(ATHRConfig.configDirectory, "emojis");
 
+    static {
+        BASE_DIR.mkdirs();
+    }
+
     public static final String GOOGLE_SHEET = "google.png";
     public static final String IOS_SHEET = "ios.png";
     public static final String DISCORD_SHEET = "discord.png";

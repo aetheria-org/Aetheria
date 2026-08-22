@@ -19,7 +19,7 @@ public enum PestType {
     SLUG("Slug", "Plant Matter", "Slow and Groovy Vinyl", 9, "RED_MUSHROOM", "BROWN_MUSHROOM"),
     BEETLE("Beetle", "Dung", "Not Just a Pest Vinyl", 10, "NETHER_STALK"),
     FIREFLY("Firefly", "Jelly", "Firefly in the Hole Vinyl", 11, "MOONFLOWER"),
-    DRAGONFLY("Dragonfly", null, "Imagine Dragonflies Vinyl", -1, "SUNFLOWER"),
+    DRAGONFLY("Dragonfly", null, "Imagine Dragonflies Vinyl", -1, "DOUBLE_PLANT"),
     PRAYING_MANTIS("Praying Mantis", null, "Pray For Me Vinyl", 12, "WILD_ROSE"),
     FIELD_MOUSE("Field Mouse", null, null, 5),
     LUNAR_MOTH("Lunar Moth", null, null, -1);
