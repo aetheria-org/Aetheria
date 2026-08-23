@@ -78,6 +78,29 @@ public final class SkyblockData {
         return getScoreboardLines().stream().map(s -> net.minecraft.util.StringUtils.stripControlCodes(s).trim()).collect(Collectors.toList());
     }
 
+    private static String purseLineCache;
+    private static int purseLineCacheTick = -1;
+
+    /**
+     * Stripped sidebar line containing "Purse"/"Piggy", or null. Memoized per
+     * game tick so multiple consumers share one scoreboard read per tick.
+     */
+    public static String getPurseLine() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null || mc.thePlayer == null) {
+            purseLineCacheTick = -1;
+            purseLineCache = null;
+            return null;
+        }
+        if (purseLineCacheTick != mc.thePlayer.ticksExisted) {
+            purseLineCacheTick = mc.thePlayer.ticksExisted;
+            purseLineCache = getCleanScoreboardLines().stream()
+                    .filter(l -> l.contains("Purse") || l.contains("Piggy"))
+                    .findFirst().orElse(null);
+        }
+        return purseLineCache;
+    }
+
     public static String getCurrentProfile() {
         return currentProfile;
     }

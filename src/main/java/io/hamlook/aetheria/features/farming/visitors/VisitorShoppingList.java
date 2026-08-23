@@ -202,6 +202,11 @@ public final class VisitorShoppingList {
                     + (signSubmitAtMs > 0 ? ", auto-submit pending" : ""));
         }
 
+        String purseLine = SkyblockData.getPurseLine();
+        double purseCoins = getPurseCoins();
+        lines.add("purse: " + (purseLine == null ? "sidebar line not seen"
+                : "'" + purseLine + "' = " + purseCoins));
+
         double copperTotal = FarmingApi.bonusTotal(VisitorBonus.Type.COPPER);
         double bitsTotal = FarmingApi.bonusTotal(VisitorBonus.Type.BITS);
         if (copperTotal > 0 || bitsTotal > 0) {
@@ -699,9 +704,31 @@ public final class VisitorShoppingList {
         if (itemId == null || amount <= 0) return;
         int missing = missingAmount(itemId, amount);
         if (missing <= 0) {
+            SoundUtils.playSound("note.pling");
             ChatUtils.sendMessage("§e[ASM] §7You already have enough §f" + itemNameOf(itemId) + "§7.");
             return;
         }
+
+        VisitorsConfig cfg = config();
+        if (cfg != null && cfg.checkInventorySpace && !hasInventorySpace(itemId, missing)) {
+            int slotsNeeded = (int) Math.ceil(missing / (double) maxStackSize(itemId));
+            SoundUtils.playSound("note.pling");
+            ChatUtils.sendMessage("§c[ASM] §7Not enough inventory space! Need §e" + slotsNeeded
+                    + "§7 more empty slot(s) for §e" + missing + "x " + itemNameOf(itemId)
+                    + "§7 (have §e" + countEmptyMainInventorySlots() + "§7 free).");
+            return;
+        }
+        if (cfg != null && cfg.checkPurseCoins) {
+            double cost = unitPrice(itemId) * missing;
+            double purse = getPurseCoins();
+            if (cost > 0 && purse >= 0 && purse < cost) {
+                SoundUtils.playSound("note.pling");
+                ChatUtils.sendMessage("§c[ASM] §7Not enough coins! Need §6" + formatPrice(cost)
+                        + "§7, purse has §6" + formatPrice(purse) + "§7.");
+                return;
+            }
+        }
+
         String name = itemNameOf(itemId);
         FarmingApi.setSearchedItem(itemId, name);
         FarmingApi.setPendingSign(amount);
@@ -722,6 +749,62 @@ public final class VisitorShoppingList {
         if (itemId == null) return 0;
         int have = getHaveCounts().getOrDefault(itemId, 0);
         return Math.max(0, listedTotal - have);
+    }
+
+    /** Purse as a numeric value from the sidebar line; -1 when absent/unparseable. */
+    private static double getPurseCoins() {
+        String line = SkyblockData.getPurseLine();
+        if (line == null) return -1;
+        int ci = line.indexOf(": ");
+        String value = ci >= 0 ? line.substring(ci + 2) : line;
+        return parseCoinAmount(value);
+    }
+
+    /** Parses "1,234.5k"-style coin amounts; -1 when unparseable. */
+    private static double parseCoinAmount(String raw) {
+        if (raw == null) return -1;
+        String s = ColorUtils.stripColor(raw).trim().replace(",", "");
+        if (s.isEmpty()) return -1;
+        double mult = 1;
+        switch (Character.toLowerCase(s.charAt(s.length() - 1))) {
+            case 'k': mult = 1_000; break;
+            case 'm': mult = 1_000_000; break;
+            case 'b': mult = 1_000_000_000; break;
+            default:
+                if (!Character.isDigit(s.charAt(s.length() - 1))) return -1;
+        }
+        try {
+            return Double.parseDouble(mult == 1 ? s : s.substring(0, s.length() - 1)) * mult;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * Bazaar deliveries never top up partial stacks: the missing amount needs
+     * ceil(missing / maxStackSize) fully empty slots.
+     */
+    private static boolean hasInventorySpace(String itemId, int missing) {
+        int maxStack = maxStackSize(itemId);
+        int slotsNeeded = (int) Math.ceil(missing / (double) maxStack);
+        return slotsNeeded <= countEmptyMainInventorySlots();
+    }
+
+    private static int maxStackSize(String itemId) {
+        SkyblockItem item = ItemRegistry.getItem(itemId);
+        ItemStack stack = item != null ? item.getStack() : null;
+        return stack != null ? stack.getMaxStackSize() : 64;
+    }
+
+    /** Empty slots across hotbar + main inventory (armor is a separate array). */
+    public static int countEmptyMainInventorySlots() {
+        EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
+        if (player == null || player.inventory == null) return 0;
+        int empty = 0;
+        for (ItemStack stack : player.inventory.mainInventory) {
+            if (stack == null || stack.stackSize <= 0) empty++;
+        }
+        return empty;
     }
 
     public static void scheduleSignSubmit(GuiEditSign gui) {

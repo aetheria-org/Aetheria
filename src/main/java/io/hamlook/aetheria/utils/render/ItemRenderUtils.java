@@ -17,7 +17,11 @@ public class ItemRenderUtils {
     public static void renderItemIcon(Minecraft mc, ItemStack stack, int x, int y, int size) {
         if (stack == null) return;
 
+        boolean depthWasOn = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+
+        GlStateManager.pushAttrib();
         GlStateManager.enableDepth();
+        GlStateManager.color(1f, 1f, 1f, 1f);
         RenderHelper.enableGUIStandardItemLighting();
         GlStateManager.pushMatrix();
         GlStateManager.translate(x, y, 0);
@@ -25,7 +29,24 @@ public class ItemRenderUtils {
         mc.getRenderItem().renderItemIntoGUI(stack, 0, 0);
         GlStateManager.popMatrix();
         RenderHelper.disableStandardItemLighting();
-        GlStateManager.disableDepth();
+        GlStateManager.popAttrib();
+
+        // Restore the depth state this helper used to leave disabled globally,
+        // which broke depth-dependent rendering drawn afterwards (e.g. the
+        // inventory player preview).
+        if (depthWasOn) {
+            GlStateManager.enableDepth();
+        } else {
+            GlStateManager.disableDepth();
+        }
+        GlStateManager.disableLighting();
+        // Enchanted items run the glint pass, which leaves a multiplicative
+        // blend function set; restore standard alpha blending or everything
+        // drawn after us renders dark.
+        GlStateManager.tryBlendFuncSeparate(
+                GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
+        GlStateManager.enableTexture2D();
+        GlStateManager.color(1f, 1f, 1f, 1f);
         GlStateManager.enableBlend();
     }
 

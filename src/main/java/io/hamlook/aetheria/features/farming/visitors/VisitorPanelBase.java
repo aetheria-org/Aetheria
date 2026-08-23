@@ -1,11 +1,13 @@
 package io.hamlook.aetheria.features.farming.visitors;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.VisitorsConfig;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.features.qol.BetterContainers;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.debug.GLDebugProbe;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import net.minecraft.client.Minecraft;
@@ -16,9 +18,9 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.util.ChatComponentText;
 import net.minecraft.event.ClickEvent;
 import net.minecraft.event.HoverEvent;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -94,7 +96,7 @@ public abstract class VisitorPanelBase {
         blockReason = "";
         mouseX = mx;
         mouseY = my;
-        drawPanel(ls, gui, undoContainerTranslate);
+        drawPanel(ls, gui, undoContainerTranslate, true);
         maybeShowTip(ls);
     }
 
@@ -103,12 +105,26 @@ public abstract class VisitorPanelBase {
         if (ls.isEmpty()) return;
         mouseX = -1;
         mouseY = -1;
-        drawPanel(ls, Minecraft.getMinecraft().currentScreen, false);
+        drawPanel(ls, Minecraft.getMinecraft().currentScreen, false, false);
     }
 
-    private void drawPanel(List<VisitorLine> ls, GuiScreen gui, boolean undoContainerTranslate) {
+    // GL diagnostics via the shared fail-safe probe (see utils/debug/GLDebugProbe).
+    // Gated by Debug -> Enable Debug; zero output by default.
+    private boolean glDebugEnabled = false;
+
+    private void glProbe(String point, boolean live) {
+        if (!live || !glDebugEnabled) return;
+        Aetheria.logger.info("[PANEL-GL] " + point + " " + GLDebugProbe.state());
+    }
+
+    private void drawPanel(List<VisitorLine> ls, GuiScreen gui, boolean undoContainerTranslate, boolean live) {
         VisitorsConfig.PanelConfig pc = panelConfig();
         float s = pc == null ? 1f : Math.max(0.1f, pc.scale);
+
+        glDebugEnabled = live && ATHRConfig.feature != null
+                && ATHRConfig.feature.debug != null
+                && ATHRConfig.feature.debug.enableDebug
+                && GLDebugProbe.throttle("VisitorPanel", 1000L);
 
         Minecraft mc = Minecraft.getMinecraft();
         int w = PAD * 2;
@@ -136,20 +152,33 @@ public abstract class VisitorPanelBase {
         lastDrawnAtMs = System.currentTimeMillis();
 
         boolean compensate = undoContainerTranslate && gui instanceof GuiContainer;
+        glProbe("ENTER", live);
         if (compensate) {
             GlStateManager.pushMatrix();
             GlStateManager.translate(-((GuiContainer) gui).guiLeft, -((GuiContainer) gui).guiTop, 50);
         }
         try {
             GlStateManager.pushMatrix();
+            // Force an unlit white state: other container features leave the
+            // lighting mode enabled, which shades the panel text darker.
+            GlStateManager.disableLighting();
+            GlStateManager.color(1f, 1f, 1f, 1f);
             GlStateManager.translate(x, y, 0);
             GlStateManager.scale(s, s, 1);
 
+            glProbe("PRE_BG", live);
             clickables.clear();
             drawPanelBackground(0, 0, w, h);
+            // The nine-slice helper disables blending on exit; restore the
+            // standard alpha blend or all following text/rects render unblended
+            // (darker text, broken hover highlights).
+            GlStateManager.enableBlend();
+            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+            glProbe("POST_BG", live);
             GlStateManager.color(1f, 1f, 1f, 1f);
             int dy = PAD;
             boolean anyItemRow = false;
+            boolean iconProbed = false;
             for (int i = 0; i < ls.size(); i++) {
                 VisitorLine line = ls.get(i);
                 int rowH = rowHeights[i];
@@ -167,10 +196,19 @@ public abstract class VisitorPanelBase {
                     int tx = PAD;
                     if (clickableRow) {
                         anyItemRow = true;
+                        // renderItemIcon manages its own lighting/GL state; the
+                        // outer pair here used to re-pollute blend+lighting
+                        // after each icon, darkening the row text.
                         if (line.icon != null) {
-                            RenderHelper.enableGUIStandardItemLighting();
                             ItemRenderUtils.renderItemIcon(mc, line.icon, tx, dy + ((ITEM_ROW_H - ICON_SIZE) / 2), ICON_SIZE);
-                            RenderHelper.disableStandardItemLighting();
+                            GlStateManager.disableLighting();
+                            GlStateManager.color(1f, 1f, 1f, 1f);
+                            GlStateManager.enableBlend();
+                            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+                            if (!iconProbed) {
+                                glProbe("POST_ICON", live);
+                                iconProbed = true;
+                            }
                         }
                         tx += ICON_SIZE + ICON_GAP;
                         clickable = new Clickable(
@@ -185,6 +223,7 @@ public abstract class VisitorPanelBase {
                 if (clickable != null) clickables.add(clickable);
                 dy += rowH;
             }
+            glProbe("POST_ROWS", live);
         } finally {
             GlStateManager.popMatrix();
             if (compensate) GlStateManager.popMatrix();
@@ -202,6 +241,7 @@ public abstract class VisitorPanelBase {
         if (cfg == null || cfg.shoppingListTipHidden) return;
 
         tipShownThisLaunch = true;
+        io.hamlook.aetheria.utils.SoundUtils.playSound("note.pling");
         ChatComponentText line1 = new ChatComponentText("§e[ASM] §7Tip: click an item in the shopping list to open it on the Bazaar.");
         ChatComponentText line2 = new ChatComponentText("§7The order amount is filled for you automatically. ");
         ChatComponentText hide = new ChatComponentText("§a[HIDE]");

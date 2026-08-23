@@ -23,7 +23,7 @@ public class PestFinderConfig {
 
     @Expose
     @ConfigOption(name = "Warp Target", desc = "Which infested plot the warp key teleports to. Most Pests breaks ties by picking the closer plot")
-    @ConfigEditorDropdown(values = {"Closest", "Most Pests"}, initialIndex = 0)
+    @ConfigEditorDropdown(values = {"Closest", "Most Pests"})
     public int warpTarget = 0;
 
     @Expose

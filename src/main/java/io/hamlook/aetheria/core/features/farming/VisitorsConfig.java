@@ -22,6 +22,21 @@ public class VisitorsConfig {
     public boolean showTimeToFarm = true;
 
     @Expose
+    @ConfigOption(name = "Custom Tooltip", desc = "Replace the vanilla Accept Offer tooltip with prices, have-counts, coins-per-copper and net profit")
+    @ConfigEditorBoolean
+    public boolean customTooltip = true;
+
+    @Expose
+    @ConfigOption(name = "Check Inventory Space", desc = "Block shopping list clicks when not enough EMPTY inventory slots exist. Bazaar purchases never top up partial stacks, so each 64 items need their own slot (sacks are not counted)")
+    @ConfigEditorBoolean
+    public boolean checkInventorySpace = true;
+
+    @Expose
+    @ConfigOption(name = "Check Purse Coins", desc = "Block shopping list clicks when your purse cannot cover the estimated cost")
+    @ConfigEditorBoolean
+    public boolean checkPurseCoins = true;
+
+    @Expose
     @ConfigOption(name = "Copper Price", desc = "Show coins-per-copper on the Copper reward line in visitor menus")
     @ConfigEditorBoolean
     public boolean copperPriceDisplay = true;

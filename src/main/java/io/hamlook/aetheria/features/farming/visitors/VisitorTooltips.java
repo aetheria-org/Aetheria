@@ -30,7 +30,7 @@ public final class VisitorTooltips {
     public static List<String> replaceToolTip(ItemStack stack) {
         if (stack == null || ATHRConfig.feature == null) return null;
         VisitorsConfig cfg = ATHRConfig.feature.farming.visitors;
-        if (cfg == null || !cfg.enabled) return null;
+        if (cfg == null || !cfg.enabled || !cfg.customTooltip) return null;
         if (!"Accept Offer".equals(ColorUtils.stripColor(stack.getDisplayName()).trim())) return null;
 
         String visitor = openVisitorName();
