@@ -18,6 +18,7 @@ import org.lwjgl.input.Keyboard;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 @RegisterEvents
 public class PestFinderOverlay extends Overlay {
@@ -31,6 +32,11 @@ public class PestFinderOverlay extends Overlay {
     }
 
     private static PestFinderConfig config() {
+        if (ATHRConfig.feature == null
+                || ATHRConfig.feature.farming == null
+                || ATHRConfig.feature.farming.pests == null) {
+            return null;
+        }
         return ATHRConfig.feature.farming.pests.pestFinder;
     }
 
@@ -53,8 +59,11 @@ public class PestFinderOverlay extends Overlay {
         } catch (Exception e) {
             if (!warpHintFailureLogged) {
                 warpHintFailureLogged = true;
-                Aetheria.logger.warning("[PestFinder] warpHint failed: " + e);
-                ChatUtils.sendMessage("§c[Aetheria] §7Pest Finder warp hint failed: §f" + e);
+                Aetheria.logger.log(Level.WARNING, "[PestFinder] warpHint failed", e);
+                String at = e.getStackTrace().length > 0
+                        ? " (" + e.getStackTrace()[0] + ")" : "";
+                ChatUtils.sendMessage("§c[ASM] §7Pest Finder warp hint failed: §f"
+                        + e + at);
             }
             return null;
         }

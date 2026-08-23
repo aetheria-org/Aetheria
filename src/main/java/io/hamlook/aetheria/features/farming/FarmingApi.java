@@ -181,6 +181,7 @@ public final class FarmingApi {
     }
 
     private static double plotDistanceSq(Minecraft mc, Integer plotId) {
+        if (mc.thePlayer == null) return Double.MAX_VALUE;
         AxisAlignedBB box = GARDEN_PLOTS[plotId - 1];
         double dx = mc.thePlayer.posX - (box.minX + box.maxX) / 2.0;
         double dz = mc.thePlayer.posZ - (box.minZ + box.maxZ) / 2.0;
