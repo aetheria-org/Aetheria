@@ -12,4 +12,9 @@ public interface GuiChatHook {
      * view-only mode (e.g. opened with Z).
      */
     boolean chatutils$isTypingMode();
+
+    /**
+     * Current text in the chat input box, or {@code ""} if there is no field.
+     */
+    String chatutils$getInputText();
 }

@@ -52,6 +52,11 @@ public class TrevorConfig {
     public boolean peltResetDummy = false;
 
     @Expose
+    @ConfigOption(name = "Pelt Tracker Pause on Chat", desc = "Pause the pelts/hour active-time clock while the chat GUI is open")
+    @ConfigEditorBoolean
+    public boolean peltPauseOnChat = true;
+
+    @Expose
     public Position peltTrackerPos = new Position(2, 100, false, false);
 
     @Expose
