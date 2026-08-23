@@ -28,6 +28,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Base64;
 
@@ -36,6 +38,28 @@ public class SyncCommand extends ASMCommand {
 
     private static String SYNC_CODE = "";
     private static long lastUse = 0;
+
+    private static File getGlobalConfigDir() {
+        String os = System.getProperty("os.name").toLowerCase();
+        String baseDir;
+        if (os.contains("win")) {
+            baseDir = System.getenv("APPDATA");
+        } else {
+            String xdgConfig = System.getenv("XDG_CONFIG_HOME");
+            if (xdgConfig != null && !xdgConfig.isEmpty()) {
+                baseDir = xdgConfig;
+            } else {
+                baseDir = System.getProperty("user.home") + "/.config";
+            }
+        }
+        return new File(baseDir, "Aetheria");
+    }
+
+    private static File getSecretFile() {
+        File dir = getGlobalConfigDir();
+        if (!dir.exists()) dir.mkdirs();
+        return new File(dir, "synccode.secret");
+    }
 
     @Override
     public String getName() {
@@ -107,7 +131,7 @@ public class SyncCommand extends ASMCommand {
                     } catch (Exception ignored) {}
 
                     if (!secretHash.isEmpty()) {
-                        File secretFile = new File(ATHRConfig.configDirectory, "synccode.secret");
+                        File secretFile = getSecretFile();
                         try (FileWriter writer = new FileWriter(secretFile)) {
                             writer.write(secretHash);
                         }
