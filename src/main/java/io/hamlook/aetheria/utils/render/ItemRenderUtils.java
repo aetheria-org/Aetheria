@@ -1,12 +1,16 @@
 package io.hamlook.aetheria.utils.render;
 
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.Utils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderItem;
+import net.minecraft.client.resources.model.IBakedModel;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
@@ -14,6 +18,25 @@ import org.lwjgl.opengl.GL14;
 
 
 public class ItemRenderUtils {
+
+    /** Draws an item's plain 2D inventory sprite as a bare textured quad instead of going through
+     *  {@code RenderItem} — bypasses vanilla's internal {@code GlStateManager.color(1,1,1,1)}
+     *  reset, so unlike {@link #renderItemIcon}, this actually respects the ambient alpha and
+     *  fades for real. Only correct for items whose baked model is a single flat sprite (plain
+     *  tools/food/etc.) — full 3D block-form items (skulls, cubes) have no single representative
+     *  face to pull, so those should keep using {@link #renderItemIcon}. */
+    public static void renderFlatItemIcon(ItemStack stack, float x, float y, float size, float alpha) {
+        if (stack == null) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        IBakedModel model = mc.getRenderItem().getItemModelMesher().getItemModel(stack);
+        TextureAtlasSprite sprite = model.getParticleTexture();
+        if (sprite == null) return;
+
+        mc.getTextureManager().bindTexture(TextureMap.locationBlocksTexture);
+        GlStateManager.color(1f, 1f, 1f, alpha);
+        Utils.drawTexturedRect(x, y, size, size, sprite.getMinU(), sprite.getMaxU(), sprite.getMinV(), sprite.getMaxV());
+        GlStateManager.color(1f, 1f, 1f, alpha);
+    }
 
     public static void renderItemIcon(Minecraft mc, ItemStack stack, int x, int y, int size) {
         if (stack == null) return;

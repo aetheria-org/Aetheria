@@ -8,6 +8,7 @@ import io.hamlook.aetheria.core.features.cosmetics.Cosmetics;
 import io.hamlook.aetheria.core.features.debug.Debug;
 import io.hamlook.aetheria.core.features.diana.Diana;
 import io.hamlook.aetheria.core.features.dungeons.Dungeons;
+import io.hamlook.aetheria.core.features.eventnotification.EventNotification;
 import io.hamlook.aetheria.core.features.fishing.Fishing;
 import io.hamlook.aetheria.core.features.misc.Misc;
 import io.hamlook.aetheria.core.features.mining.Mining;
@@ -64,6 +65,10 @@ public class Config {
     @Expose
     @Category(name = "Fishing", desc = "Fishing features")
     public final Fishing fishing = new Fishing();
+
+    @Expose
+    @Category(name = "Event Notification", desc = "Popup countdowns for SkyBlock events")
+    public final EventNotification eventNotification = new EventNotification();
 
     @Expose
     @Category(name = "Network & Privacy", desc = "Manage network calls")
@@ -138,6 +143,7 @@ public class Config {
             case "openPitchYawEditor": ATHRConfig.openPitchYawEditor(); break;
             case "openKillComboEditor": ATHRConfig.openKillComboEditor(); break;
             case "openGhostEditor": ATHRConfig.openGhostEditor(); break;
+            case "openEventNotifierEditor": ATHRConfig.openEventNotifierEditor(); break;
             case "resetGhostTracker": ATHRConfig.resetGhostTracker(); break;
             case "resetKillCombo": ATHRConfig.resetKillCombo(); break;
             case "resetDianaTracker": ATHRConfig.resetDianaTracker(); break;

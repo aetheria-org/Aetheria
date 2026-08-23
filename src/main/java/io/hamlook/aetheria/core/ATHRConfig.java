@@ -13,6 +13,7 @@ import io.hamlook.aetheria.features.dungeons.overlays.DungeonBreakerOverlay;
 import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
 import io.hamlook.aetheria.features.dungeons.reward.RewardAnalyzerOverlay;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomOverlay;
+import io.hamlook.aetheria.features.events.EventNotifierOverlay;
 import io.hamlook.aetheria.features.farming.BPSOverlay;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTracker;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerOverlay;
@@ -514,6 +515,13 @@ public class ATHRConfig {
         GhostOverlay overlay = GhostOverlay.getInstance();
         if (overlay == null) return;
         screenToOpen = new GuiPositionEditor(feature.misc.ghostTrackerConfig.ghostOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.ghostTrackerConfig.ghostScale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void openEventNotifierEditor() {
+        if (feature == null) return;
+        EventNotifierOverlay overlay = EventNotifierOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.eventNotification.overlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.eventNotification.overlayScale).withParent(Minecraft.getMinecraft().currentScreen);
     }
 
     public static void resetGhostTracker() {
