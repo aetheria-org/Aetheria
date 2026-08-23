@@ -52,7 +52,6 @@ public class TrevorSolver {
     private static final Pattern QUEST_REWARD = Pattern.compile("^Killing the animal rewarded you (\\d+) Pelts?\\.?$");
     private static final String ACCEPT_PROMPT_TEXT = "Accept the trapper's task to hunt the animal?";
     private static final String NO_QUEST_YET_TEXT = "Sorry I don't have any animals for you to hunt.";
-    private static final long CONFIRM_LOCK_TIMEOUT_MS = 10_000;
 
     private static final int ACTION_CALL_TREVOR = 1;
     private static final String CMD_WARP_TRAPPER = "/warp trapper";
@@ -222,10 +221,10 @@ public class TrevorSolver {
 
         // The [YES]/[NO] prompt doesn't expire server-side on its own (only a
         // new Trevor dialogue or leaving the island clears it), so the lock is
-        // only timed out here if the player opted into it; by default the
-        // hotkey just waits for the prompt indefinitely.
-        if (confirmLocked && config.hotkeys.confirmLockTimeout
-                && System.currentTimeMillis() - confirmLockedAtMs > CONFIRM_LOCK_TIMEOUT_MS) {
+        // only timed out here if the player set the slider above 0s; at the
+        // default of 0s the hotkey just waits for the prompt indefinitely.
+        if (confirmLocked && config.hotkeys.confirmLockTimeoutSeconds > 0
+                && System.currentTimeMillis() - confirmLockedAtMs > config.hotkeys.confirmLockTimeoutSeconds * 1000L) {
             confirmLocked = false;
             pendingConfirmCommand = null;
         }
@@ -266,7 +265,7 @@ public class TrevorSolver {
 
         if (nearest != null && config.detectAlert && alertedIds.add(nearest.getEntityId())) {
             if (mc.ingameGUI != null) mc.ingameGUI.displayTitle("§6§lANIMAL DETECTED", "§e" + questAnimal, 5, 40, 10);
-            ChatUtils.sendMessage("§6[Aetheria] §eAnimal detected: §6" + questAnimal);
+            ChatUtils.sendMessage("§6[ASM] §eAnimal detected: §6" + questAnimal);
         }
     }
 

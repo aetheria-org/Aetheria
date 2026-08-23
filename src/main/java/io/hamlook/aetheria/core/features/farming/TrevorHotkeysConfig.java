@@ -22,9 +22,9 @@ public class TrevorHotkeysConfig {
     public int warpKey = Keyboard.KEY_F;
 
     @Expose
-    @ConfigOption(name = "Confirm Lock Timeout", desc = "The [YES]/[NO] prompt doesn't expire on its own, so the hotkey normally waits for it indefinitely. Enable this to give up on the prompt after 10s and let the key go back to its usual warp/call action.")
-    @ConfigEditorBoolean
-    public boolean confirmLockTimeout = false;
+    @ConfigOption(name = "Confirm Lock Timeout", desc = "The [YES]/[NO] prompt doesn't expire on its own, so by default (0s) the hotkey waits for it indefinitely. Set above 0 to give up on the prompt after that many seconds and let the key go back to its usual warp/call action.")
+    @ConfigEditorSliderAnnotation(minValue = 0f, maxValue = 10f, minStep = 1f)
+    public int confirmLockTimeoutSeconds = 0;
 
     @Expose
     @ConfigOption(name = "Desert Warp Helper", desc = "If the hunt spawns in Desert Settlement or Oasis, press the desert warp key to run /warp desert. §cOnly enable this if you have unlocked the Desert warp!")
