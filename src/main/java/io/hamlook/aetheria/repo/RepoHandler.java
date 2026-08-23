@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.repo;
 
+import java.io.File;
 import java.lang.reflect.Type;
 
 /**
@@ -70,6 +71,36 @@ public class RepoHandler {
     }
 
     /**
+     * Register an ETag-gated source: re-validated with a conditional GET on every
+     * launch and server join. A 304 keeps the cached body (zero transfer); a 200
+     * updates the in-memory cache and the atomic disk copy at
+     * {@code repo/<key>.json}. Auto-propagates content changes without any
+     * manifest entry — no ASMDataVersions bump needed for these keys.
+     */
+    public static void registerEtagFetch(String key, String url) {
+        MANAGER.registerEtagFetch(key, url);
+    }
+
+    /**
+     * Same as {@link #registerEtagFetch(String, String)} plus one-time migration:
+     * on first load, if the new cache file does not exist yet, {@code legacyBody}
+     * is moved into place and the value in {@code legacyEtag} seeds the ETag map
+     * (so the first refresh is a conditional GET instead of a full download).
+     */
+    public static void registerEtagFetch(String key, String url, File legacyBody, File legacyEtag) {
+        MANAGER.registerEtagFetch(key, url, legacyBody, legacyEtag);
+    }
+
+    /**
+     * Drops the cached body (memory + disk) and stored ETag for a key so the next
+     * refresh performs an unconditional full download. Call when parsing the body
+     * failed — the recovery path for corrupt/unusable data.
+     */
+    public static void invalidateBody(String key) {
+        MANAGER.invalidateBody(key);
+    }
+
+    /**
      * Register a manifest-only key (no body of its own) — used to gate downloads
      * the feature manages itself, e.g. the emoji sheets.
      */
@@ -131,6 +162,15 @@ public class RepoHandler {
      */
     public static String getJson(String key) {
         return MANAGER.raw(key);
+    }
+
+    /**
+     * The disk-cache file ({@code repo/<key>.json}) used for versioned bodies —
+     * exposed so features that manage their own downloads (e.g. capes) store
+     * their caches in the same folder layout as RepoManager.
+     */
+    public static File cacheFile(String key) {
+        return MANAGER.cacheFile(key);
     }
 
     /**

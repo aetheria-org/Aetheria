@@ -7,37 +7,33 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
+import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
+import net.minecraft.entity.player.EntityPlayer;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 
 public class CapeManager {
 
     public static final Map<String, Cape> capes = new ConcurrentHashMap<>();
     public static final Map<String, String> activeCapes = new ConcurrentHashMap<>();
-
-    private static long lastFetched = 0L;
-    private static long POLL_INTERVAL_MS = 900000;
-
-
-    public static String CLIENT_SIDE_CAPE_ID = "";
-
     private static final AtomicBoolean isFetching = new AtomicBoolean(false);
     private static final Gson gson = new Gson();
+    private static final HttpClient HTTP = new HttpClient();
+    public static String CLIENT_SIDE_CAPE_ID = "";
     public static int capeCalls = 0;
+    private static long lastFetched = 0L;
+    private static long POLL_INTERVAL_MS = 900000;
 
     public static void equipCape(String playerName, Cape cape) {
         activeCapes.put(playerName, cape.id);
@@ -80,32 +76,23 @@ public class CapeManager {
     public static void fetchIDFromAPI() {
         if (!NetworkGuard.apiAllowed()) return;
         try {
-            String apiURL = CapeAPI.getAPIUrl("/cape");
-            URL url = new URL(apiURL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(5000);
-            if (conn.getResponseCode() == 200) {
-                capeCalls++;
-                String json = readResponse(conn);
-                Type type = new TypeToken<Map<String, String>>(){}.getType();
-                Map<String, String> map = gson.fromJson(json, type);
-                activeCapes.clear();
-                map.forEach((key, value) -> {
-                    if (key != null && value != null) {
-                        activeCapes.put(key, value);
-                    } else {
-                        Aetheria.logger.warning("[CapeManager] Skipped a bad entry from API json. Key: " + key + ", Value: " + value);
-                    }
-                });
-                activeCapes.putAll(map);
-                lastFetched = System.currentTimeMillis();
-            }
+            String json = HTTP.fetch(CapeAPI.getAPIUrl("/cape"), null).body();
+            Type type = new TypeToken<Map<String, String>>() {
+            }.getType();
+            Map<String, String> map = gson.fromJson(json, type);
+            if (map == null) return;
+            activeCapes.clear();
+            map.forEach((key, value) -> {
+                if (key != null && value != null) {
+                    activeCapes.put(key, value);
+                } else {
+                    Aetheria.logger.warning("[CapeManager] Skipped a bad entry from API json. Key: " + key + ", Value: " + value);
+                }
+            });
+            capeCalls++;
+            lastFetched = System.currentTimeMillis();
         } catch (Exception e) {
-            Aetheria.logger.severe("Failed to fetch capes: " + e);
-            Aetheria.logger.info(Arrays.toString(e.getStackTrace()));
+            Aetheria.logger.log(Level.SEVERE, "[CapeManager] Failed to fetch capes", e);
         }
     }
 
@@ -126,7 +113,7 @@ public class CapeManager {
             }
             return conn.getResponseCode() == 200;
         } catch (Exception e) {
-            e.printStackTrace();
+            Aetheria.logger.log(Level.SEVERE, "[CapeManager] Failed to push cape", e);
             return false;
         }
     }
@@ -140,18 +127,10 @@ public class CapeManager {
             conn.setRequestProperty("x-mod-secret", CapeAPI.getModSecret());
             conn.getResponseCode();
         } catch (Exception e) {
-            e.printStackTrace();
+            Aetheria.logger.log(Level.SEVERE, "[CapeManager] Failed to delete cape", e);
         }
     }
 
-    private static String readResponse(HttpURLConnection conn) throws Exception {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) sb.append(line);
-            return sb.toString().trim();
-        }
-    }
     public static Cape getCapeForPlayer(String pl) {
         String capeID = activeCapes.get(pl);
 
@@ -160,24 +139,14 @@ public class CapeManager {
         }
         if (capeID == null || capeID.equals("pending")) return null;
         if (capeID.equals("none")) {
-            String ownName = Minecraft.getMinecraft().thePlayer.getGameProfile().getName();
-            if (pl.equals(ownName) && !CLIENT_SIDE_CAPE_ID.isEmpty()) {
+            EntityPlayer self = Minecraft.getMinecraft().thePlayer;
+            if (self != null && pl.equals(self.getGameProfile().getName()) && !CLIENT_SIDE_CAPE_ID.isEmpty()) {
                 return getCape(CLIENT_SIDE_CAPE_ID);
             }
             return null;
         }
         Cape cape = capes.get(capeID);
         return (cape != null && cape.isLoaded()) ? cape : null;
-    }
-
-    public static boolean doesntHaveCape(String user) {
-        if (!ATHRConfig.feature.cosmetics.capes.capesEnabled) return true;
-        String id = activeCapes.get(user);
-        return id == null || id.equals("none") || id.equals("pending");
-    }
-
-    public static void applyCape(String player,Cape cape){
-        activeCapes.put(player,cape.id);
     }
 
     public static void initialise(boolean force) {
@@ -189,15 +158,11 @@ public class CapeManager {
         ThreadUtils.run("CapeLoader-Init", CapeLoader::loadAllCapes);
     }
 
-    public static void register(Cape cape){
+    public static void register(Cape cape) {
         capes.put(cape.id, cape);
     }
 
-    public static void registerAll(List<Cape> capes){
-        capes.forEach(CapeManager::register);
-    }
-
-    public static Cape getCape(String id){
+    public static Cape getCape(String id) {
         return capes.get(id);
     }
 

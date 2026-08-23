@@ -33,14 +33,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * {@code config/Aetheria/repo/<key>.json} (via
  * {@code StorageManager.saveAtomicRaw}) and their versions tracked in
  * {@code config/Aetheria/repo/versions.json}, gated by the remote
- * {@code ASMDataVersions.json} manifest ({@code {key: version}}). Always-fetch
+ * {@code ASMDataVersions.json} manifest ({@code {key: version}}). ETag-gated
+ * sources skip the manifest and instead re-validate with a conditional GET on
+ * every refresh, persisting validators in {@code repo/etags.json}. Always-fetch
  * sources skip the manifest, the version file and disk persistence entirely.
  * <p>
- * Boot: {@link #warmupAll()} loads cached bodies + versions from disk on the
- * calling thread (consumers can read immediately), then refreshes everything in
- * the background. {@link #refresh(String)} re-checks a single key and re-fetches
- * the manifest at most once per 10s ({@link #MANIFEST_TTL_MS}) so concurrent
- * refreshes (multiple keys on server join) coalesce into one manifest fetch.
+ * Boot: {@link #warmupAll()} loads cached bodies + versions + etags from disk on
+ * the calling thread (consumers can read immediately), then refreshes everything
+ * in the background. {@link #refresh(String)} re-checks a single key and
+ * re-fetches the manifest at most once per 10s ({@link #MANIFEST_TTL_MS}) so
+ * concurrent refreshes (multiple keys on server join) coalesce into one manifest
+ * fetch; etag and always-fetch keys skip the manifest entirely.
  * <p>
  * A version is only persisted after a successful body fetch — a failed/404 fetch
  * leaves the old version so the key retries next launch. Registration must
@@ -51,16 +54,19 @@ public class RepoManager {
     private static final String MANIFEST_URL = ATHRRepo.BASE + "data/ASMDataVersions.json";
     private static final File REPO_DIR = new File(ATHRConfig.configDirectory, "repo");
     private static final File VERSIONS_FILE = new File(REPO_DIR, "versions.json");
+    private static final File ETAGS_FILE = new File(REPO_DIR, "etags.json");
     private static final Type VERSIONS_TYPE = new TypeToken<Map<String, Integer>>() {
     }.getType();
-
+    private static final Type ETAGS_TYPE = new TypeToken<Map<String, String>>() {
+    }.getType();
+    private static final long MANIFEST_TTL_MS = 10_000L;
     private final HttpClient http = new HttpClient();
     private final JsonCache cache = new JsonCache(new GsonBuilder().create());
     private final Gson gson = new Gson();
     private final ConcurrentMap<String, Source> sources = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, List<Runnable>> listeners = new ConcurrentHashMap<>();
     private final Map<String, Integer> localVersions = new ConcurrentHashMap<>();
-    private static final long MANIFEST_TTL_MS = 10_000L;
+    private final ConcurrentMap<String, String> etags = new ConcurrentHashMap<>();
     private volatile JsonObject manifest;
     private volatile long manifestFetchedAt = 0L;
 
@@ -74,6 +80,21 @@ public class RepoManager {
 
     public void registerAlwaysFetch(String key, String url) {
         sources.put(key, new Source(url, true, false, true));
+    }
+
+    /**
+     * ETag-gated source: re-validated with a conditional GET on every launch and
+     * server join. A 304 keeps the cached body (zero transfer); a 200 updates the
+     * in-memory cache and the atomic disk copy at {@code repo/<key>.json}.
+     * Auto-propagates content changes without any manifest entry.
+     */
+    public void registerEtagFetch(String key, String url) {
+        sources.put(key, new Source(url, true, false, false, true, null, null));
+    }
+
+    /** Same as {@link #registerEtagFetch(String, String)} plus one-time migration of a legacy cache file. */
+    public void registerEtagFetch(String key, String url, File legacyBody, File legacyEtag) {
+        sources.put(key, new Source(url, true, false, false, true, legacyBody, legacyEtag));
     }
 
     public void registerVersionOnly(String key) {
@@ -100,10 +121,12 @@ public class RepoManager {
         for (String key : sources.keySet()) {
             Source src = sources.get(key);
             if (src.versionOnly) continue;
-            if (!src.alwaysFetch) {
-                if (m == null) continue;
-                if (!shouldFetch(key, m)) continue;
+            if (src.alwaysFetch || src.etagFetch) {
+                (src.parallel ? parallel : serial).add(key);
+                continue;
             }
+            if (m == null) continue;
+            if (!shouldFetch(key, m)) continue;
             (src.parallel ? parallel : serial).add(key);
         }
         if (!serial.isEmpty()) {
@@ -121,7 +144,7 @@ public class RepoManager {
         if (!NetworkGuard.githubAllowed()) return;
         ThreadUtils.run(() -> {
             Source src = sources.get(key);
-            if (src != null && src.alwaysFetch) {
+            if (src != null && (src.alwaysFetch || src.etagFetch)) {
                 fetchBody(key);
                 return;
             }
@@ -162,19 +185,54 @@ public class RepoManager {
     }
 
     private void loadFromDisk() {
+        Map<String, String> storedEtags = StorageManager.loadSafe(ETAGS_FILE, ETAGS_TYPE, gson);
+        if (storedEtags != null) etags.putAll(storedEtags);
         for (String key : sources.keySet()) {
             Source src = sources.get(key);
             if (src.versionOnly) continue;
-            File f = bodyFile(key);
             if (src.alwaysFetch) {
+                File f = bodyFile(key);
                 if (f.exists()) f.delete();
                 continue;
             }
+            if (src.etagFetch) migrateLegacyCache(key, src);
+            File f = bodyFile(key);
             String json = StorageManager.loadSafeRaw(f);
             if (json != null) cache.store(key, json);
         }
         Map<String, Integer> versions = StorageManager.loadSafe(VERSIONS_FILE, VERSIONS_TYPE, gson);
         if (versions != null) localVersions.putAll(versions);
+    }
+
+    private void migrateLegacyCache(String key, Source src) {
+        if (src.legacyBody == null || !src.legacyBody.isFile()) return;
+        try {
+            File target = bodyFile(key);
+            boolean sameFile = src.legacyBody.toPath().toAbsolutePath()
+                    .equals(target.toPath().toAbsolutePath());
+            if (!target.exists() && !sameFile) {
+                java.nio.file.Files.move(src.legacyBody.toPath(), target.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                Aetheria.logger.info("[ATHR] Migrated legacy cache " + src.legacyBody.getName()
+                        + " -> " + target.getName());
+            }
+            if (src.legacyEtag != null && src.legacyEtag.isFile()) {
+                String value = new String(java.nio.file.Files.readAllBytes(src.legacyEtag.toPath()),
+                        java.nio.charset.StandardCharsets.UTF_8).trim();
+                if (!value.isEmpty()) {
+                    if (!value.startsWith("\"")) value = "\"" + value + "\"";
+                    etags.put(key, value);
+                    persistEtags();
+                }
+                src.legacyEtag.delete();
+            }
+        } catch (Exception e) {
+            Aetheria.logger.warning("[ATHR] Legacy cache migration failed (" + key + "): " + e.getMessage());
+        }
+    }
+
+    private synchronized void persistEtags() {
+        StorageManager.saveAtomicRaw(ETAGS_FILE, gson.toJson(new HashMap<>(etags)));
     }
 
     private synchronized JsonObject ensureManifest() {
@@ -209,6 +267,10 @@ public class RepoManager {
         if (src == null || src.versionOnly || !src.claim()) return;
         try {
             if (!NetworkGuard.githubAllowed()) return;
+            if (src.etagFetch) {
+                fetchEtagBody(key, src);
+                return;
+            }
             HttpClient.FetchResult res = http.fetch(src.url, null);
             if (!res.modified() || res.body() == null) return;
             cache.store(key, res.body());
@@ -228,6 +290,35 @@ public class RepoManager {
         }
     }
 
+    private void fetchEtagBody(String key, Source src) throws Exception {
+        String conditional = cache.retrieve(key) != null ? etags.get(key) : null;
+        HttpClient.FetchResult res = http.fetch(src.url, conditional);
+        if (!res.modified() || res.body() == null) {
+            Aetheria.logger.info("[ATHR] " + key + " up-to-date (etag)");
+            return;
+        }
+        cache.store(key, res.body());
+        StorageManager.saveAtomicRaw(bodyFile(key), res.body());
+        String etag = res.etag();
+        if (etag != null && !etag.equals(etags.get(key))) {
+            etags.put(key, etag);
+            persistEtags();
+        }
+        notifyListeners(key);
+    }
+
+    /**
+     * Drops the cached body (memory + disk) and the stored ETag for a key, so the
+     * next refresh performs an unconditional full download. Used by consumers whose
+     * parse of the body failed — the recovery path for corrupt/unusable data.
+     */
+    public void invalidateBody(String key) {
+        cache.drop(key);
+        bodyFile(key).delete();
+        etags.remove(key);
+        persistEtags();
+    }
+
     private Integer manifestVersion(JsonObject m, String key) {
         if (m == null || !m.has(key)) return null;
         return m.get(key).getAsInt();
@@ -235,6 +326,10 @@ public class RepoManager {
 
     private void persistVersions() {
         StorageManager.saveAtomic(VERSIONS_FILE, new HashMap<>(localVersions), gson);
+    }
+
+    public File cacheFile(String key) {
+        return bodyFile(key);
     }
 
     private File bodyFile(String key) {
@@ -258,13 +353,24 @@ public class RepoManager {
         final boolean parallel;
         final boolean versionOnly;
         final boolean alwaysFetch;
+        final boolean etagFetch;
+        final File legacyBody;
+        final File legacyEtag;
         private final AtomicBoolean loading = new AtomicBoolean();
 
         Source(String url, boolean parallel, boolean versionOnly, boolean alwaysFetch) {
+            this(url, parallel, versionOnly, alwaysFetch, false, null, null);
+        }
+
+        Source(String url, boolean parallel, boolean versionOnly, boolean alwaysFetch,
+               boolean etagFetch, File legacyBody, File legacyEtag) {
             this.url = url;
             this.parallel = parallel;
             this.versionOnly = versionOnly;
             this.alwaysFetch = alwaysFetch;
+            this.etagFetch = etagFetch;
+            this.legacyBody = legacyBody;
+            this.legacyEtag = legacyEtag;
         }
 
         boolean claim() {

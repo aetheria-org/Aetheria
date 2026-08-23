@@ -31,7 +31,7 @@ public class Aetheria {
 
     public static final String MODID = "aetheria";
     public static final String NAME = "Aetheria";
-    public static final String VERSION = "1.2.1-alpha";
+    public static final String VERSION = "1.2.2-alpha";
 
     public static ATHRConfig config;
     public static Logger logger;

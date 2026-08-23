@@ -95,30 +95,31 @@ public class EmojiManager {
         aliases.clear();
         customEmojis.clear();
         customAliases.clear();
-        try {
-            URL url = new URL(EmojiLinks.getEmojiJSON());
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestProperty("User-Agent", "Aetheria");
-            connection.setConnectTimeout(30000);
-            connection.setReadTimeout(30000);
+        String json = RepoHandler.getJson(ATHRRepo.KEY_EMOJI_DATA);
+        if (json == null || json.isEmpty()) {
+            Aetheria.logger.info("[EMOJI] emoji data not fetched yet - defaults arrive when the repo refresh lands");
+            RepoHandler.addListener(ATHRRepo.KEY_EMOJI_DATA, EmojiManager::loadDefaultEmojisFromRepo);
+        } else {
+            loadDefaultEmojis(json);
+        }
+        loadCustomEmojis();
+        Aetheria.logger.info("[EMOJI] Successfully Loaded " + emojis.size() + " emojis, " + aliases.size() + " aliases, & " + customEmojis.size() + " custom emojis.");
+    }
 
-            int responseCode = connection.getResponseCode();
-            Aetheria.logger.info("[EMOJI] Fetching emoji.json — response code: " + responseCode);
-            if(responseCode == 200){
-                String json = ElectionUtils.readResponse(connection);
-                if(json.isEmpty()){
-                    Aetheria.logger.info("[EMOJI] emoji.json was empty");
-                    return;
-                }
-                JsonArray obj = JsonParser.parseString(json).getAsJsonArray();
-                if(obj == null || obj.isEmpty()){
-                    Aetheria.logger.info("[EMOJI] emoji.json parsed to empty array");
-                    return;
-                }
-                for(JsonElement element : obj){
+    private static void loadDefaultEmojisFromRepo() {
+        String json = RepoHandler.getJson(ATHRRepo.KEY_EMOJI_DATA);
+        if (json == null || json.isEmpty()) return;
+        loadDefaultEmojis(json);
+    }
+
+    private static void loadDefaultEmojis(String json) {
+        try {
+            JsonArray obj = JsonParser.parseString(json).getAsJsonArray();
+            if (obj != null && !obj.isEmpty()) {
+                for (JsonElement element : obj) {
                     JsonObject object = element.getAsJsonObject();
-                    if(!object.has("short_name") ||
-                    !object.has("sheet_x") || !object.has("sheet_y")) continue;
+                    if (!object.has("short_name") ||
+                            !object.has("sheet_x") || !object.has("sheet_y")) continue;
 
                     String shortName = object.get("short_name").getAsString();
                     int rawX = object.get("sheet_x").getAsInt();
@@ -127,22 +128,22 @@ public class EmojiManager {
                     int sheetX = (rawX * (EmojiLinks.SHEET_RESOLUTION + 2)) + 1;
                     int sheetY = (rawY * (EmojiLinks.SHEET_RESOLUTION + 2)) + 1;
                     Emoji emoji = new Emoji(shortName, sheetX, sheetY);
-                    emojis.put(shortName,emoji);
-                    if(object.has("short_names")){
+                    emojis.put(shortName, emoji);
+                    if (object.has("short_names")) {
                         JsonArray names = object.get("short_names").getAsJsonArray();
                         for (JsonElement name : names) {
-                            aliases.put(name.getAsString(),shortName);
+                            aliases.put(name.getAsString(), shortName);
                         }
                     }
-
                 }
+                loaded.set(true);
+                Aetheria.logger.info("[EMOJI] Loaded " + emojis.size() + " emojis & " + aliases.size() + " aliases from repo data.");
+            } else {
+                Aetheria.logger.info("[EMOJI] emoji.json parsed to empty array");
             }
-            if (!emojis.isEmpty()) loaded.set(true);
-        }catch (Exception e){
-            Aetheria.logger.warning("[EMOJI] Failed to load emojis from github: " + e.getMessage());
+        } catch (Exception e) {
+            Aetheria.logger.warning("[EMOJI] Failed to parse repo emoji data: " + e.getMessage());
         }
-        loadCustomEmojis();
-        Aetheria.logger.info("[EMOJI] Successfully Loaded " + emojis.size() + " emojis, " + aliases.size() + " aliases, & " + customEmojis.size() + " custom emojis.");
     }
 
     private static void loadCustomEmojis() {

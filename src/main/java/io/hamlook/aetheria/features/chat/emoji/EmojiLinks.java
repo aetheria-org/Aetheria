@@ -53,10 +53,6 @@ public class EmojiLinks {
         return new ResourceLocation(BASE_RESOURCE, "emojis/" + sprite);
     }
 
-    public static String getEmojiJSON() {
-        return "https://raw.githubusercontent.com/iamcal/emoji-data/master/emoji.json";
-    }
-
     public static String getCustomEmojiJSON() {
         return CUSTOM_BASE_URL + "emojis.json";
     }

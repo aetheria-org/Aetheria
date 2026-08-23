@@ -5,30 +5,25 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.globalchat.vars.IEmoji;
-import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.repo.ATHRRepo;
+import io.hamlook.aetheria.repo.RepoHandler;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Loads Discord's default emoji data and converts between raw unicode emoji characters
- * and Discord shortcodes ({@code :name:}). The data (from the iamcal/emoji-data project)
- * is cached at {@code config/Aetheria/emoji_pretty.json}; if the cache is missing it is
- * downloaded once from GitHub on a background thread.
- * <p>
- * Textures are resolved from the same repo ({@code img-twitter-72/{unified}.png}), so an
+ * and Discord shortcodes ({@code :name:}). The data (iamcal/emoji-data compact
+ * {@code emoji.json}) lives in the Aetheria-REPO under {@code emojis/emoji.json} and is
+ * downloaded, version-gated and disk-cached by the RepoManager ({@code emojidata} key).
+ * Textures are resolved from the upstream repo ({@code img-twitter-72/{unified}.png}), so an
  * emoji that exists in the data always has an image. The {@code unified} string (e.g.
  * {@code "0023-FE0F-20E3"}) is a hyphen-separated list of hex code points: {@code 0023}
  * is the base character (#), {@code FE0F} is Variation Selector-16 (render as emoji instead
@@ -37,9 +32,6 @@ import java.util.regex.Pattern;
  */
 public class EmojiParser {
 
-    private static final String DATA_URL = "https://raw.githubusercontent.com/iamcal/emoji-data/master/emoji_pretty.json";
-    private static final File DATA_FILE = new File(ATHRConfig.configDirectory, "emoji_pretty.json");
-    private static final String IMG_BASE = "https://raw.githubusercontent.com/iamcal/emoji-data/master/img-twitter-72/";
     private static final char VARIATION_SELECTOR = '️';
     private static final Pattern SHORTCODE_PATTERN = Pattern.compile(":([a-zA-Z0-9_~+-]+):");
 
@@ -48,65 +40,50 @@ public class EmojiParser {
     private static final Set<Character> possibleStarts = ConcurrentHashMap.newKeySet();
     private static volatile int maxEmojiLength = 1;
     private static volatile boolean loaded = false;
-    private static final AtomicBoolean fetching = new AtomicBoolean(false);
+    private static volatile List<IEmoji> defaults = null;
+    private static final List<Runnable> defaultsCallbacks = new CopyOnWriteArrayList<>();
 
     private EmojiParser() {}
 
     /**
      * Loads the emoji data and returns an {@link IEmoji} for every shortcode
      * (aliases included) so defaults can be registered into the usable emoji list.
-     * Idempotent - the data maps are only populated once. Reads the cached file first;
-     * if it is missing, starts an async download from GitHub and returns empty.
+     * Idempotent - the data maps are only populated once. Parses the repo-cached body;
+     * if it has not been fetched yet (very first launch), a listener is registered so
+     * defaults arrive mid-session once the background refresh lands.
      */
     public static List<IEmoji> loadDefaults() {
-        if (loaded) return new ArrayList<>();
-        if (DATA_FILE.exists()) {
-            try {
-                String content = new String(Files.readAllBytes(DATA_FILE.toPath()), StandardCharsets.UTF_8);
-                List<IEmoji> result = parseJson(content);
-                Aetheria.logger.info("[EmojiParser]: Loaded " + result.size() + " default emoji shortcodes.");
-                return result;
-            } catch (Exception e) {
-                Aetheria.logger.warning("[EmojiParser] Failed to read cached emoji data: " + e.getMessage());
-            }
+        if (loaded) return getDefaults();
+        List<IEmoji> result = loadFromRepo();
+        if (result.isEmpty()) {
+            RepoHandler.addListener(ATHRRepo.KEY_EMOJI_DATA, EmojiParser::loadFromRepo);
         }
-        if (NetworkGuard.githubAllowed()) {
-            if (fetching.compareAndSet(false, true)) {
-                fetchEmojiDataAsync();
-            }
-        } else {
-            Aetheria.logger.info("[EmojiParser] Network disabled and no cached emoji data - defaults unavailable this session.");
-        }
-        return new ArrayList<>();
+        return result;
     }
 
-    private static void fetchEmojiDataAsync() {
-        ThreadUtils.run("Aetheria-Emoji-Fetch", () -> {
-            try {
-                HttpClient.FetchResult result = new HttpClient().fetch(DATA_URL, null);
-                if (result == null || result.body() == null || result.body().isEmpty()) {
-                    Aetheria.logger.warning("[EmojiParser] Failed to fetch emoji data from GitHub.");
-                    return;
-                }
-                File parent = DATA_FILE.getParentFile();
-                if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                    Aetheria.logger.warning("[EmojiParser] Could not create config directory: " + parent.getAbsolutePath());
-                    return;
-                }
-                File tmp = new File(parent != null ? parent : new File("."), DATA_FILE.getName() + ".tmp");
-                Files.write(tmp.toPath(), result.body().getBytes(StandardCharsets.UTF_8));
-                Files.move(tmp.toPath(), DATA_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                Aetheria.logger.info("[EmojiParser] Downloaded emoji data to " + DATA_FILE.getAbsolutePath());
-                if (!loaded) {
-                    List<IEmoji> emojis = parseJson(new String(Files.readAllBytes(DATA_FILE.toPath()), StandardCharsets.UTF_8));
-                    Aetheria.logger.info("[EmojiParser]: Loaded " + emojis.size() + " default emoji shortcodes.");
-                }
-            } catch (Exception e) {
-                Aetheria.logger.warning("[EmojiParser] Failed to download emoji data: " + e.getMessage());
-            } finally {
-                fetching.set(false);
-            }
-        });
+    /** Registers a callback fired once default emoji data is available (immediately if already loaded). */
+    public static void onDefaultsLoaded(Runnable callback) {
+        if (loaded) {
+            callback.run();
+            return;
+        }
+        defaultsCallbacks.add(callback);
+    }
+
+    private static synchronized List<IEmoji> loadFromRepo() {
+        if (loaded) return getDefaults();
+        String json = RepoHandler.getJson(ATHRRepo.KEY_EMOJI_DATA);
+        if (json == null || json.isEmpty()) return new ArrayList<>();
+        List<IEmoji> result = parseJson(json);
+        Aetheria.logger.info("[EmojiParser]: Loaded " + result.size() + " default emoji shortcodes.");
+        for (Runnable callback : defaultsCallbacks) callback.run();
+        defaultsCallbacks.clear();
+        return result;
+    }
+
+    private static List<IEmoji> getDefaults() {
+        List<IEmoji> snapshot = defaults;
+        return snapshot != null ? snapshot : new ArrayList<>();
     }
 
     private static List<IEmoji> parseJson(String content) {
@@ -138,6 +115,7 @@ public class EmojiParser {
             }
         }
         loaded = true;
+        defaults = result;
         return result;
     }
 
@@ -152,7 +130,7 @@ public class EmojiParser {
         emoji.id = imageName;
         emoji.identifier = primary;
         emoji.shortcode = ":" + name + ":";
-        emoji.url = IMG_BASE + imageName + ".png";
+        emoji.url = "https://raw.githubusercontent.com/iamcal/emoji-data/master/img-twitter-72/" + imageName + ".png";
         emoji.surrogates = surrogates;
         return emoji;
     }
