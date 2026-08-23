@@ -427,8 +427,18 @@ public class CustomDropAnimationGui extends GuiScreen {
             GlStateManager.pushMatrix();
             GlStateManager.translate(imageX, imageY, 0.0f);
             GlStateManager.scale(imageSize / 16f, imageSize / 16f, 1.0f);
-            mc.getRenderItem().renderItemAndEffectIntoGUI(renderStack, 0, 0);
-            GlStateManager.popMatrix();
+            try {
+                mc.getRenderItem().renderItemAndEffectIntoGUI(renderStack, 0, 0);
+            } finally {
+                // Enchanted stacks leave a multiplicative glint blend function
+                // set; restore standard alpha blending for the text drawn after
+                // us (carousel item names).
+                GlStateManager.tryBlendFuncSeparate(
+                        GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
+                GlStateManager.enableBlend();
+                GlStateManager.color(1f, 1f, 1f, 1f);
+                GlStateManager.popMatrix();
+            }
             return;
         }
 

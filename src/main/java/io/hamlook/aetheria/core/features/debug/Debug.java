@@ -21,7 +21,7 @@ public class Debug {
     public boolean dungeonRoomHighlight = false;
 
     @Expose
-    @ConfigOption(name = "Enable debug features", desc = "DO NOT TURN ON UNLESS YOU KNOW WHAT YOURE DOING!")
+    @ConfigOption(name = "Enable debug features", desc = "DO NOT TURN ON UNLESS YOU KNOW WHAT YOUR DOING!")
     @ConfigEditorBoolean
     public boolean enableDebug = false;
 

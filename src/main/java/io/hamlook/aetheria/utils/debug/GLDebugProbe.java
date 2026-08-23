@@ -72,6 +72,18 @@ public final class GLDebugProbe {
         return true;
     }
 
+    /** Logs {@code message} as a warning, throttled per key; fail-safe. */
+    public static void warnThrottled(String key, long intervalMs, String message) {
+        if (disabled) return;
+        try {
+            if (throttle(key, intervalMs)) {
+                Aetheria.logger.warning(message);
+            }
+        } catch (Exception e) {
+            disable(e);
+        }
+    }
+
     private static void disable(Exception e) {
         disabled = true;
         Aetheria.logger.warning("[GLDebugProbe] disabled after failure: " + e);
