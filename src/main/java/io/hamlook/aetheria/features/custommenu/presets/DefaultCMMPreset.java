@@ -37,7 +37,7 @@ public class DefaultCMMPreset extends CustomMMConfig {
         addElement(new Sprite(new Position("CENTER", "CENTER", -80, 140),
                 160, 160, null, Resources.ASM_LOGO));
 
-        addElement(new Text(new Position("CENTER","CENTER",0,10), true,"§6Minecraft §7- §5Aetheria's Skyblock Mod",-1,1.2f));
+        addElement(new Text(new Position("CENTER","CENTER",0,12), true,"<gradient:#E0FF91>Minecraft</gradient:#7dd1f5> <gradient:#7dd1f5>- Aetheria's Skyblock Mod</gradient:E0FF91>",-1,1.2f));
         this.background = ImageManager.images.get(GCImage.createGCImage("https://hypixel.net/attachments/2021-01-26_13-52-16-png.2297033/"));
 
     }

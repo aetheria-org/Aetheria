@@ -36,5 +36,13 @@ public class CMMElement {
         Aetheria.logger.info("[CMM] Element Position: " + this.xPos + " | " + this.yPos);
     }
 
+    public int[] getCorners(){
+        int[] corners = new int[4];
+        corners[0] = this.xPos;
+        corners[1] = this.yPos;
+        corners[2] = this.xPos + this.width;
+        corners[3] = this.yPos + this.height;
+        return corners;
+    }
     public void draw(int mouseX, int mouseY, float partialTicks) {}
 }
