@@ -36,8 +36,11 @@ public class CapeLoader {
             Aetheria.logger.warning("[CapeLoader] No capes available (fetch failed and no usable cache)");
             return;
         }
-        for (Cape cape : capes) loadTexture(cape);
-        Aetheria.logger.info("[CapeLoader] Loading " + capes.size() + " capes.");
+        for (Cape cape : capes) {
+            loadTexture(cape);
+            CapeManager.register(cape);
+        }
+        Aetheria.logger.info("[CapeLoader] Registered " + capes.size() + " capes.");
     }
 
     static String textureUrl(String texture) {

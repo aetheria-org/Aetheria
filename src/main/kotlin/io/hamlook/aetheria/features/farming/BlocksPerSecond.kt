@@ -83,7 +83,9 @@ class BPSOverlay : Overlay(50, 20) {
     override fun getBgColor(): Int = config.bpsBgColor
     override fun getCornerRadius(): Int = config.bpsCornerRadius
     override fun isEnabled(): Boolean =
-        config.bpsCalculator && (!config.bpsRequireFarmingIsland || isInFarmingLocation())
+        config.bpsCalculator
+                && (!config.bpsRequireFarmingIsland || isInFarmingLocation())
+                && (!config.showOnlyWhileFarming || FarmingApi.isCurrentlyFarming())
 
     override fun hideOnChat() = config.hideOnChat
     override fun hideOnTab() = config.hideOnTab

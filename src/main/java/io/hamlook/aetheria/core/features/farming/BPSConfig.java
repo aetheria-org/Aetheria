@@ -37,6 +37,11 @@ public class BPSConfig {
     public boolean bpsRequireFarmingIsland = true;
 
     @Expose
+    @ConfigOption(name = "Show Only While Farming", desc = "Only show the overlay while actively farming (holding a farming tool and breaking crops)")
+    @ConfigEditorBoolean
+    public boolean showOnlyWhileFarming = true;
+
+    @Expose
     @ConfigOption(name = "Reset Timeout", desc = "Seconds of inactivity before resetting BPS counter")
     @ConfigEditorSliderAnnotation(minValue = 1, maxValue = 30, minStep = 1)
     public int bpsResetTimeout = 5;

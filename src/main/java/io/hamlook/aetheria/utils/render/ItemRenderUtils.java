@@ -28,16 +28,18 @@ public class ItemRenderUtils {
 
         beginGuiItemRender();
         try {
+            GlStateManager.pushMatrix();
+            GlStateManager.translate(x, y, 0);
+            GlStateManager.scale(size / 16f, size / 16f, 1f);
             GlStateManager.enableDepth();
-            mc.getRenderItem().renderItemIntoGUI(stack, x, y);
+            mc.getRenderItem().renderItemIntoGUI(stack, 0, 0);
         } catch (Exception e) {
-            // A broken item model must not leak the pushed attrib/matrix
-            // levels: exhausted GL stacks corrupt everything rendered after
-            // us (Intel drivers report the exhaustion as GL_OUT_OF_MEMORY).
+            // A broken item model must not leak the pushed attrib/matrix.
             io.hamlook.aetheria.utils.debug.GLDebugProbe.warnThrottled(
                     "itemicon." + label, 5_000L,
                     "[ItemRenderUtils] icon render failed for " + label + ": " + e);
         } finally {
+            GlStateManager.popMatrix();
             endGuiItemRender();
         }
 
@@ -58,7 +60,7 @@ public class ItemRenderUtils {
     /**
      * Standard state for GUI item rendering: unlit-safe white color, standard
      * alpha blend function. Callers that draw text/rects right after an item
-     * render must return to this state - vanilla item rendering leaves blend
+     * render must return to this state. Vanilla item rendering leaves blend
      * disabled and a multiplicative glint function (enchanted stacks), which
      * darkens everything drawn after it.
      */
