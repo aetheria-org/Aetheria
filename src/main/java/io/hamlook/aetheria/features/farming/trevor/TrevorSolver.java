@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.farming.trevor;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.TrevorConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.features.chat.GuiChatHook;
 import io.hamlook.aetheria.features.waypoints.WaypointRenderer;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
@@ -10,10 +11,13 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiChat;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityArmorStand;
+import net.minecraft.event.ClickEvent;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
+import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
@@ -46,17 +50,27 @@ public class TrevorSolver {
     private static final Pattern QUEST_START = Pattern.compile(
             "^\\[NPC\\] Trevor: You can find your (Trackable|Untrackable|Undetected|Endangered|Elusive) (Cow|Pig|Sheep|Rabbit|Chicken|Horse) near the (.+?)\\.?$");
     private static final Pattern QUEST_REWARD = Pattern.compile("^Killing the animal rewarded you (\\d+) Pelts?\\.?$");
-    private static final long WARP_WINDOW_MS = 5000;
+    private static final String ACCEPT_PROMPT_TEXT = "Accept the trapper's task to hunt the animal?";
+    private static final String NO_QUEST_YET_TEXT = "Sorry I don't have any animals for you to hunt.";
+
+    private static final int ACTION_CALL_TREVOR = 1;
+    private static final String CMD_WARP_TRAPPER = "/warp trapper";
+    private static final String CMD_CALL_TREVOR = "/call trevor";
+    private static final String CMD_WARP_DESERT = "/warp desert";
 
     private String questAnimal = null;
     private String questRarityLower = null;
     private String questAnimalLower = null;
+    private String questAreaLower = null;
+    private String pendingConfirmCommand = null;
+    /** True from the "Accept the trapper's task?" prompt until Trevor answers (quest granted or on cooldown); repurposes the quest hotkey to confirm instead of warp/call. */
+    private boolean confirmLocked = false;
+    private long confirmLockedAtMs = 0;
     private List<BlockPos> activeSpots = Collections.emptyList();
     private EntityArmorStand trackedAnimal = null;
     private final Set<Integer> alertedIds = new HashSet<>();
     private static boolean onFarmingIsland = false;
     private int tickCounter = 0;
-    private long lastRewardMs = 0;
 
     public static boolean isOnFarmingIsland() {
         return onFarmingIsland;
@@ -73,40 +87,128 @@ public class TrevorSolver {
         if (!ChatUtils.isFromServer(event)) return;
         String msg = ChatUtils.clean(event);
 
+        if (ChatUtils.isPlayerMessage(msg) || ChatUtils.isPartyMessage(msg)
+                || ChatUtils.getGuildSender(msg) != null || ChatUtils.isMsgReceived(msg)) return;
+
+        if (msg.contains(ACCEPT_PROMPT_TEXT)) {
+            confirmLocked = true;
+            confirmLockedAtMs = System.currentTimeMillis();
+            pendingConfirmCommand = null;
+            return;
+        }
+
+        if (msg.contains(NO_QUEST_YET_TEXT)) {
+            confirmLocked = false;
+            pendingConfirmCommand = null;
+            return;
+        }
+
         Matcher start = QUEST_START.matcher(msg);
         if (start.matches()) {
             questAnimal = start.group(1) + " " + start.group(2);
             questRarityLower = start.group(1).toLowerCase(Locale.ROOT);
             questAnimalLower = start.group(2).toLowerCase(Locale.ROOT);
+            questAreaLower = start.group(3).toLowerCase(Locale.ROOT).trim();
             activeSpots = SkyblockData.getTrevorSpotsForArea(start.group(3));
+            confirmLocked = false;
+            pendingConfirmCommand = null;
             PeltOverlay.startCooldown();
+            if (config.hotkeys.desertWarpHelper && isDesertArea(questAreaLower)) {
+                sendKeyHint(config.hotkeys.desertWarpKey, "to teleport to §6Desert");
+            }
             return;
         }
 
-        // Trevor's NPC line must be matched above this filter: the
-        // player-message pattern also matches "[NPC] Trevor: ...". The reward
-        // pattern is anchored so relayed chat can't spoof it, but filter
-        // player/party/guild/DM chat anyway before matching.
-        if (ChatUtils.isPlayerMessage(msg) || ChatUtils.isPartyMessage(msg)
-                || ChatUtils.getGuildSender(msg) != null || ChatUtils.isMsgReceived(msg)) return;
+        if (msg.contains("[YES]") && msg.toLowerCase(Locale.ROOT).contains("select an option")) {
+            pendingConfirmCommand = findConfirmCommand(event.message, "YES");
+            if (pendingConfirmCommand != null && config.hotkeys.warpHelper) {
+                sendKeyHint(config.hotkeys.warpKey, "to confirm the hunt");
+            }
+            return;
+        }
 
         Matcher reward = QUEST_REWARD.matcher(msg);
         if (reward.matches()) {
             PeltOverlay.addPelts(Integer.parseInt(reward.group(1)));
-            lastRewardMs = System.currentTimeMillis();
+            if (config.hotkeys.warpHelper) {
+                sendKeyHint(config.hotkeys.warpKey, warpHelperHint(config.hotkeys.warpHelperAction));
+            }
             reset();
         }
+    }
+
+    private static void sendKeyHint(int keyCode, String action) {
+        ChatUtils.sendMessage("§6[ASM] §ePress '§6" + KeybindHelper.getKeyName(keyCode) + "§e' " + action + "§e.");
+    }
+
+    private static String warpHelperCommand(int action) {
+        return action == ACTION_CALL_TREVOR ? CMD_CALL_TREVOR : CMD_WARP_TRAPPER;
+    }
+
+    private static String warpHelperHint(int action) {
+        return action == ACTION_CALL_TREVOR ? "to call §6Trevor" : "to teleport to §6Trapper's Den";
+    }
+
+    private static boolean isDesertArea(String areaLower) {
+        return "desert settlement".equals(areaLower) || "oasis".equals(areaLower);
+    }
+
+    /**
+     * Hypixel mints a fresh session UUID for every NPC dialogue, so the real
+     * /selectnpcoption command can't be hardcoded; it has to be read off the
+     * clickable [YES]/[NO] component the server just sent, every time.
+     */
+    private static String findConfirmCommand(IChatComponent component, String optionText) {
+        String clean = StringUtils.stripControlCodes(component.getUnformattedTextForChat()).trim();
+        if (optionText.equalsIgnoreCase(clean)) {
+            ClickEvent click = component.getChatStyle().getChatClickEvent();
+            if (click != null && click.getAction() == ClickEvent.Action.RUN_COMMAND) {
+                return click.getValue();
+            }
+        }
+        for (IChatComponent sibling : component.getSiblings()) {
+            String found = findConfirmCommand(sibling, optionText);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent event) {
         TrevorConfig config = config();
-        if (config == null || !config.enabled || !config.warpHelper) return;
-        if (mc.thePlayer == null || mc.currentScreen != null) return;
-        if (!KeybindHelper.isKeyPressed(config.warpKey)) return;
-        if (lastRewardMs == 0 || System.currentTimeMillis() - lastRewardMs > WARP_WINDOW_MS) return;
-        lastRewardMs = 0;
-        mc.thePlayer.sendChatMessage("/warp trapper");
+        if (config == null || !config.enabled || !onFarmingIsland) return;
+        if (mc.thePlayer == null) return;
+        // The confirm prompt lives in chat, so players naturally have chat open
+        // (pressed 't') to see it: allow the hotkey through GuiChat specifically
+        // while locked and the input box is still empty, so it can't hijack a
+        // keystroke the player is using to type an unrelated message. Every
+        // other screen/state still blocks it as before.
+        boolean confirmPassthrough = confirmLocked && mc.currentScreen instanceof GuiChat
+                && ((GuiChatHook) mc.currentScreen).chatutils$getInputText().isEmpty();
+        if (mc.currentScreen != null && !confirmPassthrough) return;
+
+        // While a confirm prompt is pending, the quest hotkey confirms the hunt
+        // instead of its usual warp/call action, so one key covers both without
+        // risking a mistimed /warp trapper or /call trevor mid-confirmation.
+        if (config.hotkeys.warpHelper && KeybindHelper.isKeyPressed(config.hotkeys.warpKey)) {
+            if (confirmLocked) {
+                if (pendingConfirmCommand != null) {
+                    ChatUtils.sendChatCommand(pendingConfirmCommand);
+                    pendingConfirmCommand = null;
+                }
+                return;
+            }
+            ChatUtils.sendChatCommand(warpHelperCommand(config.hotkeys.warpHelperAction));
+            return;
+        }
+
+        // Desert warp only matters while an active hunt is actually in Desert
+        // Settlement/Oasis: it exists to close the distance to the quest spot,
+        // not as a general-purpose warp, so it goes dead once the hunt ends.
+        if (config.hotkeys.desertWarpHelper && questAnimal != null && isDesertArea(questAreaLower)
+                && KeybindHelper.isKeyPressed(config.hotkeys.desertWarpKey)) {
+            ChatUtils.sendChatCommand(CMD_WARP_DESERT);
+        }
     }
 
     @SubscribeEvent
@@ -116,6 +218,16 @@ public class TrevorSolver {
         if (config == null || !config.enabled || mc.theWorld == null || mc.thePlayer == null) return;
         if (++tickCounter < 5) return;
         tickCounter = 0;
+
+        // The [YES]/[NO] prompt doesn't expire server-side on its own (only a
+        // new Trevor dialogue or leaving the island clears it), so the lock is
+        // only timed out here if the player set the slider above 0s; at the
+        // default of 0s the hotkey just waits for the prompt indefinitely.
+        if (confirmLocked && config.hotkeys.confirmLockTimeoutSeconds > 0
+                && System.currentTimeMillis() - confirmLockedAtMs > config.hotkeys.confirmLockTimeoutSeconds * 1000L) {
+            confirmLocked = false;
+            pendingConfirmCommand = null;
+        }
 
         // Cheap island gate first: the farming islands (Barn + Mushroom Desert)
         // report Location.BARN via the tab list server prefix.
@@ -153,7 +265,7 @@ public class TrevorSolver {
 
         if (nearest != null && config.detectAlert && alertedIds.add(nearest.getEntityId())) {
             if (mc.ingameGUI != null) mc.ingameGUI.displayTitle("§6§lANIMAL DETECTED", "§e" + questAnimal, 5, 40, 10);
-            ChatUtils.sendMessage("§6[Aetheria] §eAnimal detected: §6" + questAnimal);
+            ChatUtils.sendMessage("§6[ASM] §eAnimal detected: §6" + questAnimal);
         }
     }
 
@@ -204,6 +316,10 @@ public class TrevorSolver {
         questAnimal = null;
         questRarityLower = null;
         questAnimalLower = null;
+        questAreaLower = null;
+        pendingConfirmCommand = null;
+        confirmLocked = false;
+        confirmLockedAtMs = 0;
         activeSpots = Collections.emptyList();
         trackedAnimal = null;
         alertedIds.clear();

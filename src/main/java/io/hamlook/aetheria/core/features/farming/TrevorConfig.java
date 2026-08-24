@@ -3,7 +3,6 @@ package io.hamlook.aetheria.core.features.farming;
 import com.google.gson.annotations.Expose;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
 import io.hamlook.aetheria.utils.Position;
-import org.lwjgl.input.Keyboard;
 
 public class TrevorConfig {
 
@@ -53,15 +52,14 @@ public class TrevorConfig {
     public boolean peltResetDummy = false;
 
     @Expose
+    @ConfigOption(name = "Pelt Tracker Pause on Chat", desc = "Pause the pelts/hour active-time clock while the chat GUI is open")
+    @ConfigEditorBoolean
+    public boolean peltPauseOnChat = true;
+
+    @Expose
     public Position peltTrackerPos = new Position(2, 100, false, false);
 
     @Expose
-    @ConfigOption(name = "Trapper Warp Helper", desc = "After the pelt reward message, press the warp key within 5s to run /warp trapper. §cOnly enable this if you have unlocked the Trapper's Den warp!")
-    @ConfigEditorBoolean
-    public boolean warpHelper = false;
-
-    @Expose
-    @ConfigOption(name = "Warp Key", desc = "Key that warps you to the Trapper's Den during the 5s window after a kill")
-    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_F)
-    public int warpKey = Keyboard.KEY_F;
+    @Category(name = "Hotkeys", desc = "Hotkeys to warp to or call Trevor after a hunt, and to warp closer to a Desert Settlement/Oasis hunt")
+    public TrevorHotkeysConfig hotkeys = new TrevorHotkeysConfig();
 }
