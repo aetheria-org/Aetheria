@@ -91,12 +91,12 @@ public class VisitorsConfig {
         public boolean editPosDummy = false;
 
         @Expose
-        public Position panelPos = new Position(-22, 127, false, false);
+        public Position panelPos = new Position(-80, 238, false, false);
 
         @Expose
         @ConfigOption(name = "Scale", desc = "Size of the panel")
         @ConfigEditorSliderAnnotation(minValue = 0.5f, maxValue = 3f, minStep = 0.1f)
-        public float scale = 0.7f;
+        public float scale = 1f;
 
         @Expose
         @ConfigOption(name = "Visible", desc = "Where the panel is shown")
@@ -162,6 +162,6 @@ public class VisitorsConfig {
         public int cornerRadius = 4;
 
         @Expose
-        public Position overlayPos = new Position(-373, 192, false, false);
+        public Position overlayPos = new Position(23, 219, false, false);
     }
 }
