@@ -176,6 +176,12 @@ public class TrevorSolver {
         TrevorConfig config = config();
         if (config == null || !config.enabled || mc.theWorld == null || mc.thePlayer == null) return;
 
+        // Cheap island gate first: the farming islands (Barn + Mushroom Desert)
+        // report Location.BARN via the tab list server prefix.
+        SkyblockData.Location loc = SkyblockData.getCurrentLocation();
+        onFarmingIsland = loc == SkyblockData.Location.BARN;
+        if (!onFarmingIsland) trackedAnimal = null;
+
         // Hotkeys are tick-polled (not event-based) so behavior is identical with
         // and without input-replacement mods: vanilla Forge never dispatches key
         // events while a screen is open, rawinput-style mods do. No menu open =
@@ -209,28 +215,11 @@ public class TrevorSolver {
             ChatUtils.sendChatCommand(CMD_WARP_DESERT);
         }
 
-        if (++tickCounter < 5) return;
-        tickCounter = 0;
-
-        // The [YES]/[NO] prompt doesn't expire server-side on its own (only a
-        // new Trevor dialogue or leaving the island clears it), so the lock is
-        // only timed out here if the player set the slider above 0s; at the
-        // default of 0s the hotkey just waits for the prompt indefinitely.
         if (confirmLocked && config.hotkeys.confirmLockTimeoutSeconds > 0
                 && System.currentTimeMillis() - confirmLockedAtMs > config.hotkeys.confirmLockTimeoutSeconds * 1000L) {
             confirmLocked = false;
             pendingConfirmCommand = null;
         }
-
-        // Cheap island gate first: the farming islands (Barn + Mushroom Desert)
-        // report Location.BARN via the tab list server prefix.
-        SkyblockData.Location loc = SkyblockData.getCurrentLocation();
-        if (loc != SkyblockData.Location.BARN) {
-            trackedAnimal = null;
-            onFarmingIsland = false;
-            return;
-        }
-        onFarmingIsland = true;
 
         // Only scan while a quest is active; matching the quest's exact rarity +
         // animal keeps other players' trapper animals (and the just-killed one
@@ -239,6 +228,9 @@ public class TrevorSolver {
             trackedAnimal = null;
             return;
         }
+
+        if (++tickCounter < 5) return;
+        tickCounter = 0;
 
         EntityArmorStand nearest = null;
         double nearestDist = Double.MAX_VALUE;
