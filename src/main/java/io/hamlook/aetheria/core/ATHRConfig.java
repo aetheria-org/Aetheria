@@ -86,6 +86,7 @@ public class ATHRConfig {
     private static boolean pristineToggleKeyWasDown = false;
     private static boolean ghostToggleKeyWasDown = false;
     private static boolean ghostResetKeyWasDown = false;
+    private static boolean globalChatOpenKeyWasDown = false;
     private static boolean registered = false;
     private static boolean configLoaded = false;
     private static boolean configDirty = false;
@@ -603,5 +604,11 @@ public class ATHRConfig {
             resetGhostTracker();
         }
         ghostResetKeyWasDown = feature != null && isKeyOrMouseDown(feature.misc.ghostTrackerConfig.ghostResetKey);
+
+        boolean globalChatOpenKeyDown = feature != null && isKeyOrMouseDown(feature.network.globalChatConfig.openChatKey);
+        if (globalChatOpenKeyDown && !globalChatOpenKeyWasDown && Minecraft.getMinecraft().currentScreen == null) {
+            io.hamlook.aetheria.features.chat.globalchat.GChatCommand.tryOpen();
+        }
+        globalChatOpenKeyWasDown = globalChatOpenKeyDown;
     }
 }
