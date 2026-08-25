@@ -22,22 +22,28 @@ public class CalculatorUtils {
 
     public static boolean isPlainNumber(String s) {
         if (s == null || s.isEmpty()) return false;
-        boolean hasDot = false;
+        int i = 0;
         boolean hasDigit = false;
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (c == '.') {
-                if (hasDot) return false;
-                hasDot = true;
-            } else if (c == ',') {
-                // grouping separator in formatted output (e.g. "7,000")
-            } else if (c >= '0' && c <= '9') {
-                hasDigit = true;
-            } else {
-                return false;
-            }
+        while (i < s.length() && DIGITS.indexOf(s.charAt(i)) != -1) {
+            i++;
+            hasDigit = true;
         }
-        return hasDigit;
+        if (!hasDigit) return false;
+        while (i < s.length() && s.charAt(i) == ',') {
+            int end = readCommaGroup(s, i);
+            if (end == -1) return false;
+            i = end;
+        }
+        if (i < s.length() && s.charAt(i) == '.') {
+            i++;
+            boolean hasFrac = false;
+            while (i < s.length() && DIGITS.indexOf(s.charAt(i)) != -1) {
+                i++;
+                hasFrac = true;
+            }
+            if (!hasFrac) return false;
+        }
+        return i == s.length();
     }
 
     // Calculate and format result
@@ -56,19 +62,58 @@ public class CalculatorUtils {
         return evaluate(shuntingYard(lex(source.toLowerCase(Locale.ROOT))));
     }
 
-    private static void readDigitsInto(Token token, String source, boolean decimals) {
+    private static void appendDigit(Token token, char ch, boolean decimals) throws CalculatorException {
+        int d = DIGITS.indexOf(ch);
+        if (d == -1) return;
+        if (decimals) token.exponent--;
+        if (token.numericValue > (Long.MAX_VALUE - d) / 10)
+            throw new CalculatorException("Number too large", token.tokenStart, token.tokenLength);
+        token.numericValue = token.numericValue * 10 + d;
+        token.tokenLength++;
+    }
+
+    private static void readDigitsInto(Token token, String source, boolean decimals) throws CalculatorException {
         int start = token.tokenStart + token.tokenLength;
-        for (int j = 0; j + start < source.length(); j++) {
-            int d = DIGITS.indexOf(source.charAt(j + start));
-            if (d == -1) return;
-            if (decimals) token.exponent--;
-            token.numericValue = token.numericValue * 10 + d;
-            token.tokenLength++;
+        for (int j = start; j < source.length(); j++) {
+            if (DIGITS.indexOf(source.charAt(j)) == -1) return;
+            appendDigit(token, source.charAt(j), decimals);
         }
+    }
+
+    // Validates a thousands-separator group at commaIndex: exactly 3 digits,
+    // not followed by a fourth digit. Returns index past the group, or -1.
+    private static int readCommaGroup(String source, int commaIndex) {
+        int end = commaIndex + 4;
+        if (end > source.length()) return -1;
+        for (int j = commaIndex + 1; j < end; j++) {
+            if (DIGITS.indexOf(source.charAt(j)) == -1) return -1;
+        }
+        if (end < source.length() && DIGITS.indexOf(source.charAt(end)) != -1) return -1;
+        return end;
+    }
+
+    // After a complete number token ending at endIndex, attaches a trailing postfix
+    // multiplier (100k, 2s, 5!) if present. Returns the index after the postfix char.
+    private static int maybePostop(String source, int endIndex, List<Token> tokens) {
+        if (endIndex < source.length()) {
+            char next = source.charAt(endIndex);
+            if (POSTOPS.indexOf(next) != -1) {
+                Token post = new Token();
+                post.tokenStart = endIndex;
+                post.tokenLength = 1;
+                post.type = TokenType.POSTOP;
+                post.operatorValue = String.valueOf(next);
+                tokens.add(post);
+                return endIndex + 1;
+            }
+        }
+        return endIndex;
     }
 
     private static List<Token> lex(String source) throws CalculatorException {
         List<Token> tokens = new ArrayList<>();
+        Deque<Boolean> parenFuncs = new ArrayDeque<>();
+        TokenType prevType = null;
 
         for (int i = 0; i < source.length(); ) {
             char c = source.charAt(i);
@@ -84,41 +129,68 @@ public class CalculatorUtils {
                 t.tokenLength = 1;
                 t.type = TokenType.BINOP;
                 t.operatorValue = String.valueOf(c);
-            } else if (c == ')' || c == '(') {
+            } else if (c == '(') {
                 t.tokenLength = 1;
-                t.type = c == ')' ? TokenType.RPAREN : TokenType.LPAREN;
-                t.operatorValue = String.valueOf(c);
+                t.type = TokenType.LPAREN;
+                t.operatorValue = "(";
+                parenFuncs.push(prevType == TokenType.FUNCTION);
+            } else if (c == ')') {
+                t.tokenLength = 1;
+                t.type = TokenType.RPAREN;
+                t.operatorValue = ")";
+                if (!parenFuncs.isEmpty()) parenFuncs.pop();
             } else if (c == ',') {
-                t.tokenLength = 1;
-                t.type = TokenType.COMMA;
-                t.operatorValue = ",";
+                Token prev = tokens.isEmpty() ? null : tokens.get(tokens.size() - 1);
+                boolean groupingAllowed = prev != null && prev.type == TokenType.NUMBER
+                        && prev.allowsGrouping && prev.tokenStart + prev.tokenLength == i
+                        && (parenFuncs.isEmpty() || !parenFuncs.peek());
+                if (!groupingAllowed) {
+                    t.tokenLength = 1;
+                    t.type = TokenType.COMMA;
+                    t.operatorValue = ",";
+                } else {
+                    int groupEnd = readCommaGroup(source, i);
+                    if (groupEnd == -1) throw new CalculatorException("Invalid number format", i, 1);
+                    for (int j = i + 1; j < groupEnd; j++) appendDigit(prev, source.charAt(j), false);
+                    prev.tokenLength = groupEnd - prev.tokenStart;
+                    i = maybePostop(source, groupEnd, tokens);
+                    prevType = tokens.get(tokens.size() - 1).type;
+                    continue;
+                }
             } else if (c == '.') {
+                Token prev = tokens.isEmpty() ? null : tokens.get(tokens.size() - 1);
+                boolean continuesNumber = prev != null && prev.type == TokenType.NUMBER
+                        && prev.allowsGrouping && prev.tokenStart + prev.tokenLength == i;
+                if (continuesNumber) {
+                    // fraction after a comma-grouped integer ("3,200.5")
+                    prev.allowsGrouping = false;
+                    int digitsBefore = prev.tokenLength;
+                    prev.tokenLength++;
+                    readDigitsInto(prev, source, true);
+                    if (prev.tokenLength == digitsBefore + 1)
+                        throw new CalculatorException("Invalid number literal", i, 1);
+                    i = maybePostop(source, prev.tokenStart + prev.tokenLength, tokens);
+                    prevType = tokens.get(tokens.size() - 1).type;
+                    continue;
+                }
                 t.tokenLength = 1;
                 t.type = TokenType.NUMBER;
                 readDigitsInto(t, source, true);
                 if (t.tokenLength == 1) throw new CalculatorException("Invalid number literal", i, 1);
             } else if (DIGITS.indexOf(c) != -1) {
                 t.type = TokenType.NUMBER;
+                t.allowsGrouping = true;
                 readDigitsInto(t, source, false);
                 if (i + t.tokenLength < source.length() && source.charAt(i + t.tokenLength) == '.') {
+                    t.allowsGrouping = false;
                     t.tokenLength++;
                     readDigitsInto(t, source, true);
                 }
 
-                // Check for postfix after number (100k, 50m, etc)
-                if (i + t.tokenLength < source.length()) {
-                    char next = source.charAt(i + t.tokenLength);
-                    if (POSTOPS.indexOf(next) != -1) {
-                        tokens.add(t);
-                        i += t.tokenLength;
-
-                        t = new Token();
-                        t.tokenStart = i;
-                        t.tokenLength = 1;
-                        t.type = TokenType.POSTOP;
-                        t.operatorValue = String.valueOf(next);
-                    }
-                }
+                tokens.add(t);
+                i = maybePostop(source, i + t.tokenLength, tokens);
+                prevType = tokens.get(tokens.size() - 1).type;
+                continue;
             } else if (Character.isLetter(c)) {
                 int start = i;
                 int end = i;
@@ -140,6 +212,7 @@ public class CalculatorUtils {
 
             tokens.add(t);
             i += t.tokenLength;
+            prevType = t.type;
         }
         return tokens;
     }
@@ -168,8 +241,21 @@ public class CalculatorUtils {
     private static List<Token> shuntingYard(List<Token> tokens) throws CalculatorException {
         Deque<Token> op = new ArrayDeque<>();
         List<Token> out = new ArrayList<>();
+        TokenType prevType = null;
 
-        for (Token t : tokens) {
+        for (Token raw : tokens) {
+            Token t = raw;
+            if (t.type == TokenType.BINOP && (t.operatorValue.equals("-") || t.operatorValue.equals("+"))
+                    && isUnaryPosition(prevType)) {
+                if (t.operatorValue.equals("+")) continue;
+                Token unary = new Token();
+                unary.type = TokenType.UNARYMINUS;
+                unary.operatorValue = "-";
+                unary.tokenStart = t.tokenStart;
+                unary.tokenLength = t.tokenLength;
+                t = unary;
+            }
+
             switch (t.type) {
                 case NUMBER:
                 case POSTOP:
@@ -180,6 +266,9 @@ public class CalculatorUtils {
                 case LPAREN:
                     op.push(t);
                     break;
+                case UNARYMINUS:
+                    op.push(t);
+                    break;
                 case COMMA:
                     while (!op.isEmpty() && op.peek().type != TokenType.LPAREN) {
                         out.add(op.pop());
@@ -188,8 +277,17 @@ public class CalculatorUtils {
                 case BINOP:
                     int p = getPrecedence(t);
                     boolean rightAssoc = isRightAssociative(t);
-                    while (!op.isEmpty() && op.peek().type == TokenType.BINOP) {
-                        int opPrec = getPrecedence(op.peek());
+                    while (!op.isEmpty()) {
+                        Token top = op.peek();
+                        if (top.type == TokenType.UNARYMINUS) {
+                            if (p < 3) {
+                                out.add(op.pop());
+                                continue;
+                            }
+                            break;
+                        }
+                        if (top.type != TokenType.BINOP) break;
+                        int opPrec = getPrecedence(top);
                         if ((rightAssoc && opPrec > p) || (!rightAssoc && opPrec >= p)) {
                             out.add(op.pop());
                         } else {
@@ -212,6 +310,7 @@ public class CalculatorUtils {
                     }
                     break;
             }
+            prevType = t.type;
         }
         while (!op.isEmpty()) {
             Token l = op.pop();
@@ -220,6 +319,12 @@ public class CalculatorUtils {
             out.add(l);
         }
         return out;
+    }
+
+    private static boolean isUnaryPosition(TokenType prevType) {
+        return prevType == null || prevType == TokenType.BINOP
+                || prevType == TokenType.LPAREN || prevType == TokenType.COMMA
+                || prevType == TokenType.UNARYMINUS;
     }
 
     private static BigDecimal evaluate(List<Token> rpn) throws CalculatorException {
@@ -292,6 +397,9 @@ public class CalculatorUtils {
                         }
                         break;
                     }
+                    case UNARYMINUS:
+                        stack.push(stack.pop().negate());
+                        break;
                     case FUNCTION: {
                         BigDecimal result = evaluateFunction(t.operatorValue, stack, t);
                         stack.push(result);
@@ -301,6 +409,8 @@ public class CalculatorUtils {
                         throw new CalculatorException("Unexpected token", t.tokenStart, t.tokenLength);
                 }
             }
+            if (stack.size() != 1)
+                throw new CalculatorException("Unexpected value in expression", 0, 0);
             return stack.pop().stripTrailingZeros();
         } catch (NoSuchElementException e) {
             throw new CalculatorException("Unfinished expression", 0, 0);
@@ -393,12 +503,13 @@ public class CalculatorUtils {
         return new BigDecimal(result);
     }
 
-    private enum TokenType {NUMBER, BINOP, LPAREN, RPAREN, POSTOP, FUNCTION, CONSTANT, COMMA}
+    private enum TokenType {NUMBER, BINOP, UNARYMINUS, LPAREN, RPAREN, POSTOP, FUNCTION, CONSTANT, COMMA}
 
     private static class Token {
         TokenType type;
         String operatorValue;
         long numericValue;
+        boolean allowsGrouping;
         int exponent, tokenStart, tokenLength;
     }
 
