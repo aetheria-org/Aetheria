@@ -66,6 +66,16 @@ public class VisitorsConfig {
     public int signFillMode = 0;
 
     @Expose
+    @ConfigOption(name = "Copy Amount To Clipboard", desc = "Copy the required amount to your clipboard when clicking a shopping list row")
+    @ConfigEditorBoolean
+    public boolean copyAmountToClipboard = false;
+
+    @Expose
+    @ConfigOption(name = "Reset Data", desc = "When learned visitor data is cleared automatically. Changing Servers: only when connecting to a different server address. Never: only via the Reset button. On Rejoin: every time you fully disconnect and join again")
+    @ConfigEditorDropdown(values = {"Changing Servers", "Never", "On Rejoin"}, initialIndex = 2)
+    public int resetMode = 2;
+
+    @Expose
     @ConfigOption(name = "Reset List", desc = "Clear all learned visitor items and rewards")
     @ConfigEditorButton(runnableId = "resetVisitorList", buttonText = "Reset")
     public boolean resetVisitorListDummy = false;
@@ -102,6 +112,16 @@ public class VisitorsConfig {
         @ConfigOption(name = "Visible", desc = "Where the panel is shown")
         @ConfigEditorDropdown(values = {"Only on Garden", "Farming Islands", "Anywhere"}, initialIndex = 0)
         public int visible = 0;
+
+        @Expose
+        @ConfigOption(name = "Show In", desc = "Which menus the panel appears in. Relevant Menus: visitor menus, Bazaar, your inventory and signs. All Menus: any chest, inventory or sign")
+        @ConfigEditorDropdown(values = {"Visitors", "Bazaar", "Inventory", "Relevant Menus", "All Menus"}, initialIndex = 3)
+        public int showIn = 3;
+
+        @Expose
+        @ConfigOption(name = "Only Show With Data", desc = "Hide the panel entirely until at least one visitor offer has been learned")
+        @ConfigEditorBoolean
+        public boolean onlyShowWithData = true;
 
         @Expose
         @ConfigOption(name = "Show Price Estimates", desc = "Show an estimated coin price next to each item and the total cost in the title")

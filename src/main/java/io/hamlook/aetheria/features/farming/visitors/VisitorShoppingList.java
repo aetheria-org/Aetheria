@@ -37,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @RegisterEvents
 public final class VisitorShoppingList {
@@ -62,14 +63,21 @@ public final class VisitorShoppingList {
     private static int pendingBzsTicks = 0;
     private static long signSubmitAtMs = 0L;
     private static GuiEditSign pendingSubmitSign;
+    private static String lastRemoteAddress = null;
 
     static {
         VisitorBazaarHighlight.register();
     }
 
-    @SubscribeEvent
-    public void onServerJoin(FMLNetworkEvent.ClientConnectedToServerEvent event) {
-        clearSessionState();
+    public static void onServerJoined(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+        String address = event.manager == null ? "" : String.valueOf(event.manager.getRemoteAddress());
+        boolean addressChanged = lastRemoteAddress != null && !lastRemoteAddress.equals(address);
+        lastRemoteAddress = address;
+        clearTransientState();
+        int mode = config() != null ? config().resetMode : 2;
+        if (mode == 2 || (mode == 0 && addressChanged)) {
+            FarmingApi.clearVisitorData();
+        }
     }
 
     @SubscribeEvent
@@ -81,8 +89,7 @@ public final class VisitorShoppingList {
         pendingSubmitSign = null;
     }
 
-    private static void clearSessionState() {
-        FarmingApi.clearVisitorData();
+    private static void clearTransientState() {
         lastParsedScreen = null;
         pendingScreen = null;
         PARSE_LOG.clear();
@@ -153,6 +160,16 @@ public final class VisitorShoppingList {
         event.title("Visitors");
         List<String> lines = new ArrayList<>();
 
+        VisitorsConfig cfg = config();
+        String[] resetModes = {"Changing Servers", "Never", "On Rejoin"};
+        String[] showIns = {"Visitors", "Bazaar", "Inventory", "Relevant Menus", "All Menus"};
+        int resetMode = cfg != null ? cfg.resetMode : 2;
+        int showIn = cfg != null && cfg.panel != null ? cfg.panel.showIn : 3;
+        lines.add("reset mode: " + (resetMode >= 0 && resetMode < resetModes.length ? resetModes[resetMode] : resetMode)
+                + ", last remote address: " + (lastRemoteAddress == null ? "<none yet>" : lastRemoteAddress));
+        lines.add("panel show-in: " + (showIn >= 0 && showIn < showIns.length ? showIns[showIn] : showIn)
+                + ", only-show-with-data: " + (cfg == null || cfg.panel == null || cfg.panel.onlyShowWithData));
+
         List<String> active = FarmingApi.getActiveVisitors();
         if (active.isEmpty()) {
             boolean onGarden = SkyblockData.getCurrentLocation() == SkyblockData.Location.GARDEN;
@@ -160,6 +177,13 @@ public final class VisitorShoppingList {
                     + (onGarden ? "" : " (location is " + SkyblockData.getCurrentLocation() + ", not Garden)"));
         } else {
             lines.add("tab capture (" + active.size() + "): " + String.join(", ", active));
+        }
+
+        List<String> mirror = FarmingApi.getLastGardenVisitorsSnapshot();
+        if (!mirror.isEmpty() && mirror.equals(active)) {
+            lines.add("garden mirror (" + mirror.size() + "): same as tab capture");
+        } else if (!mirror.isEmpty()) {
+            lines.add("garden mirror (" + mirror.size() + "): " + String.join(", ", mirror));
         }
 
         Map<String, LinkedHashMap<String, Integer>> needsMap = FarmingApi.getVisitorNeeds();
@@ -336,8 +360,8 @@ public final class VisitorShoppingList {
         if (size <= 13) return;
         String title = ContainerUtils.getTitle(chest);
 
-        // Search-results chest: canonicalize the signature to the full searched
-        // name (the title itself may be truncated at ~32 chars).
+        if (hasNoContents(chest)) return;
+
         if (title.startsWith("Search: ")) {
             if (nameMatchesFlow(title)) {
                 FarmingApi.setLastChestSignature(FarmingApi.getSearchedItemName());
@@ -346,21 +370,95 @@ public final class VisitorShoppingList {
             return;
         }
 
-        if (nameMatchesFlow(title)) {
-            String canonical = FarmingApi.getSearchedItemName();
-            if (!FarmingApi.getLastChestSignature().equals(canonical)) {
-                FarmingApi.setLastChestSignature(canonical);
+        if (findSlotNamed(chest, "Custom Amount") != null && findSlotNamed(chest, "Buy Instantly") == null) {
+            String found = findNeededIdInContents(chest);
+            if (found == null) return;
+            FarmingApi.setLastChestSignature(found.equals(FarmingApi.getSearchedItemId())
+                    ? FarmingApi.getSearchedItemName() : "");
+            return;
+        }
+
+        ItemStack buySlot = findSlotNamed(chest, "Buy Instantly");
+        if (buySlot != null) {
+            String id = neededIdByName(firstLoreLine(buySlot));
+            if (id != null && id.equals(FarmingApi.getSearchedItemId())) {
+                FarmingApi.setLastChestSignature(FarmingApi.getSearchedItemName());
+            } else {
+                FarmingApi.setLastChestSignature("");
             }
             return;
         }
 
-
-        ItemStack buySlot = chest.getLowerChestInventory().getStackInSlot(10);
-        if (buySlot == null || !"Buy Instantly".equals(stripped(buySlot))) {
+        if (nameMatchesFlow(title)) {
+            FarmingApi.setLastChestSignature(FarmingApi.getSearchedItemName());
+        } else {
             FarmingApi.setLastChestSignature("");
-            return;
         }
-        FarmingApi.setLastChestSignature(FarmingApi.getSearchedItemName());
+    }
+
+    private static boolean hasNoContents(ContainerChest chest) {
+        int size = chest.getLowerChestInventory().getSizeInventory();
+        for (int i = 0; i < size; i++) {
+            ItemStack stack = chest.getLowerChestInventory().getStackInSlot(i);
+            if (stack != null && stack.stackSize > 0) return false;
+        }
+        return true;
+    }
+
+    static ItemStack findSlotNamed(ContainerChest chest, String name) {
+        int size = chest.getLowerChestInventory().getSizeInventory();
+        for (int i = 0; i < size; i++) {
+            ItemStack stack = chest.getLowerChestInventory().getStackInSlot(i);
+            if (stack != null && name.equalsIgnoreCase(stripped(stack))) return stack;
+        }
+        return null;
+    }
+
+    private static String findNeededIdInContents(ContainerChest chest) {
+        int size = chest.getLowerChestInventory().getSizeInventory();
+        Set<String> needs = FarmingApi.getVisitorNeeds().keySet();
+        for (int i = 0; i < size; i++) {
+            ItemStack stack = chest.getLowerChestInventory().getStackInSlot(i);
+            if (stack == null) continue;
+            String internal = ItemUtils.getInternalName(stack);
+            if (internal != null && needs.contains(internal)) return internal;
+        }
+        return null;
+    }
+
+    static String firstLoreLine(ItemStack stack) {
+        for (String raw : ItemUtils.getLoreLinesWithoutColor(stack)) {
+            String line = ColorUtils.stripColor(raw).trim();
+            if (!line.isEmpty()) return line;
+        }
+        return null;
+    }
+
+    private static final long NEEDED_NAMES_TTL_MS = 1000L;
+    private static Map<String, String> neededNamesCache = Collections.emptyMap();
+    private static long neededNamesAt = 0L;
+    private static int neededNamesCount = -1;
+
+    static String neededIdByName(String displayName) {
+        if (displayName == null || displayName.isEmpty()) return null;
+        return neededNames().get(displayName.toLowerCase(Locale.ROOT));
+    }
+
+    private static Map<String, String> neededNames() {
+        Map<String, LinkedHashMap<String, Integer>> needs = FarmingApi.getVisitorNeeds();
+        long now = System.currentTimeMillis();
+        if (needs.size() != neededNamesCount || neededNamesCache.isEmpty() != needs.isEmpty()
+                || now - neededNamesAt >= NEEDED_NAMES_TTL_MS) {
+            Map<String, String> map = new HashMap<>();
+            for (String id : needs.keySet()) {
+                String name = itemNameOf(id);
+                if (name != null && !name.isEmpty()) map.put(name.toLowerCase(Locale.ROOT), id);
+            }
+            neededNamesCache = map;
+            neededNamesCount = needs.size();
+            neededNamesAt = now;
+        }
+        return neededNamesCache;
     }
 
     /**
@@ -405,7 +503,7 @@ public final class VisitorShoppingList {
         pendingScreen = null;
     }
 
-    private static void noteParse(String msg) {
+    static void noteParse(String msg) {
         if (!PARSE_LOG.isEmpty() && PARSE_LOG.peekLast().equals(msg)) return;
         PARSE_LOG.addLast(msg);
         while (PARSE_LOG.size() > PARSE_LOG_MAX) PARSE_LOG.removeFirst();
@@ -725,16 +823,19 @@ public final class VisitorShoppingList {
             }
         }
 
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.currentScreen instanceof GuiEditSign) {
+            writeIntoSign(mc, missing);
+            return;
+        }
+
         String name = itemNameOf(itemId);
         FarmingApi.setSearchedItem(itemId, name);
         FarmingApi.setPendingSign(amount);
 
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.currentScreen instanceof GuiEditSign && signFillMode() == 1) {
-            writeIntoSign(mc, missing);
-            return;
+        if (cfg != null && cfg.copyAmountToClipboard) {
+            Utils.copyToClipboard(String.valueOf(missing));
         }
-        Utils.copyToClipboard(String.valueOf(missing));
         pendingBzsCommand = "/bzs " + name;
         pendingBzsTicks = 3;
         if (mc.currentScreen != null) mc.thePlayer.closeScreen();
@@ -825,11 +926,6 @@ public final class VisitorShoppingList {
 
     private static String text(net.minecraft.util.IChatComponent component) {
         return component == null ? "" : ColorUtils.stripColor(component.getUnformattedText()).trim();
-    }
-
-    public static int signFillMode() {
-        VisitorsConfig cfg = config();
-        return cfg == null ? 2 : cfg.signFillMode;
     }
 
     public static boolean hiddenAt(int mode) {

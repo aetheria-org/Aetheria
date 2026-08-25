@@ -80,8 +80,6 @@ public class CalculatorUtils {
         }
     }
 
-    // Validates a thousands-separator group at commaIndex: exactly 3 digits,
-    // not followed by a fourth digit. Returns index past the group, or -1.
     private static int readCommaGroup(String source, int commaIndex) {
         int end = commaIndex + 4;
         if (end > source.length()) return -1;
@@ -92,8 +90,6 @@ public class CalculatorUtils {
         return end;
     }
 
-    // After a complete number token ending at endIndex, attaches a trailing postfix
-    // multiplier (100k, 2s, 5!) if present. Returns the index after the postfix char.
     private static int maybePostop(String source, int endIndex, List<Token> tokens) {
         if (endIndex < source.length()) {
             char next = source.charAt(endIndex);
@@ -162,7 +158,6 @@ public class CalculatorUtils {
                 boolean continuesNumber = prev != null && prev.type == TokenType.NUMBER
                         && prev.allowsGrouping && prev.tokenStart + prev.tokenLength == i;
                 if (continuesNumber) {
-                    // fraction after a comma-grouped integer ("3,200.5")
                     prev.allowsGrouping = false;
                     int digitsBefore = prev.tokenLength;
                     prev.tokenLength++;

@@ -33,6 +33,7 @@ public final class FarmingApi {
     private static final AxisAlignedBB[] GARDEN_PLOTS = {new AxisAlignedBB(192, 67, 96, 288, 100, 192), new AxisAlignedBB(96, 67, 192, 192, 100, 288), new AxisAlignedBB(192, 67, 288, 288, 100, 384), new AxisAlignedBB(288, 67, 192, 384, 100, 288), new AxisAlignedBB(96, 67, 96, 192, 100, 192), new AxisAlignedBB(288, 67, 96, 384, 100, 192), new AxisAlignedBB(96, 67, 288, 192, 100, 384), new AxisAlignedBB(288, 67, 288, 384, 100, 384), new AxisAlignedBB(192, 67, 0, 288, 100, 96), new AxisAlignedBB(0, 67, 192, 96, 100, 288), new AxisAlignedBB(384, 67, 192, 480, 100, 288), new AxisAlignedBB(192, 67, 384, 288, 100, 480), new AxisAlignedBB(96, 67, 0, 192, 100, 96), new AxisAlignedBB(288, 67, 0, 384, 100, 96), new AxisAlignedBB(0, 67, 96, 96, 100, 192), new AxisAlignedBB(384, 67, 96, 480, 100, 192), new AxisAlignedBB(0, 67, 288, 96, 100, 384), new AxisAlignedBB(384, 67, 288, 480, 100, 384), new AxisAlignedBB(96, 67, 384, 192, 100, 480), new AxisAlignedBB(288, 67, 384, 384, 100, 480), new AxisAlignedBB(0, 67, 0, 96, 100, 96), new AxisAlignedBB(384, 67, 0, 480, 100, 96), new AxisAlignedBB(0, 67, 384, 96, 100, 480), new AxisAlignedBB(384, 67, 384, 480, 100, 480)};
     private static final Map<Integer, Integer> ACTIVE_PESTS = new ConcurrentHashMap<>();
     private static final List<String> ACTIVE_VISITORS = new CopyOnWriteArrayList<>();
+    private static final List<String> LAST_GARDEN_VISITORS = new CopyOnWriteArrayList<>();
     private static final Map<String, LinkedHashMap<String, Integer>> VISITOR_NEEDS = new ConcurrentHashMap<>();
     private static final Map<String, LinkedHashMap<String, Integer>> VISITOR_REWARDS = new ConcurrentHashMap<>();
     private static final Map<String, List<VisitorBonus>> VISITOR_BONUSES = new ConcurrentHashMap<>();
@@ -210,11 +211,18 @@ public final class FarmingApi {
         return ACTIVE_VISITORS;
     }
 
+    public static List<String> getLastGardenVisitorsSnapshot() {
+        return new ArrayList<>(LAST_GARDEN_VISITORS);
+    }
     public static void setActiveVisitors(List<String> visitors, boolean sectionSeen) {
         visitorsSectionSeen = sectionSeen;
         ACTIVE_VISITORS.clear();
         ACTIVE_VISITORS.addAll(visitors);
-        if (sectionSeen) pruneVisitors();
+        if (sectionSeen) {
+            LAST_GARDEN_VISITORS.clear();
+            LAST_GARDEN_VISITORS.addAll(visitors);
+            pruneVisitors();
+        }
     }
 
     public static void clearActiveVisitors() {
@@ -295,15 +303,26 @@ public final class FarmingApi {
         VISITOR_BONUSES.keySet().retainAll(ACTIVE_VISITORS);
     }
 
+    private static List<String> visitorsForCounts() {
+        return ACTIVE_VISITORS.isEmpty() ? LAST_GARDEN_VISITORS : ACTIVE_VISITORS;
+    }
+
     public static int effectiveVisitorCount(String visitor) {
         if (visitor == null || visitor.isEmpty()) return 0;
-        int frequency = Collections.frequency(ACTIVE_VISITORS, visitor);
+        int frequency = Collections.frequency(visitorsForCounts(), visitor);
         if (frequency == 0) return 0;
         Long completedAt = COMPLETED_VISITORS.get(visitor);
         if (completedAt != null && System.currentTimeMillis() - completedAt < COMPLETION_TTL_MS) {
             frequency--;
         }
         return Math.max(0, frequency);
+    }
+
+    public static boolean hasVisitorData() {
+        for (String visitor : VISITOR_NEEDS.keySet()) {
+            if (effectiveVisitorCount(visitor) > 0) return true;
+        }
+        return false;
     }
 
     public static void markVisitorCompleted(String visitor) {
@@ -316,6 +335,7 @@ public final class FarmingApi {
         VISITOR_REWARDS.clear();
         VISITOR_BONUSES.clear();
         COMPLETED_VISITORS.clear();
+        LAST_GARDEN_VISITORS.clear();
         searchedItemId = "";
         searchedItemName = "";
         lastChestSignature = "";

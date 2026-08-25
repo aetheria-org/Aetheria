@@ -11,6 +11,7 @@ import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.data.ApiHandler;
 import io.hamlook.aetheria.features.capes.CapeManager;
 import io.hamlook.aetheria.features.chestanimations.CitManager;
+import io.hamlook.aetheria.features.farming.visitors.VisitorShoppingList;
 import io.hamlook.aetheria.features.misc.pet.PetCache;
 import io.hamlook.aetheria.features.profile.GuiWaiter;
 import io.hamlook.aetheria.init.EventRegistrar;
@@ -76,5 +77,6 @@ public class Aetheria {
         RepoHandler.refresh(ATHRRepo.KEY_TIMERS);
         RepoHandler.refresh(ATHRRepo.KEY_UPDATE);
         ApiHandler.onServerJoin();
+        VisitorShoppingList.onServerJoined(e);
     }
 }
