@@ -26,7 +26,6 @@ public class CustomScoreboard extends Overlay {
     private static final int PAD_X = 4;
     private static final int PAD_Y = 4;
     private static final int LINE_GAP = 1;
-    private static final int SUPERSAMPLE = 2;
 
     private static final int LINE_SERVER       = 0;
     private static final int LINE_TIME         = 1;
@@ -430,7 +429,6 @@ public class CustomScoreboard extends Overlay {
 
         float scale    = getScale();
         int lh         = LINE_HEIGHT + LINE_GAP;
-        int ss         = SUPERSAMPLE;
         int alignment  = ATHRConfig.feature.scoreboard.lineAlignment;
         int minWidth   = ATHRConfig.feature.scoreboard.minWidth;
 
@@ -453,16 +451,14 @@ public class CustomScoreboard extends Overlay {
 
         GL11.glPushMatrix();
         GL11.glTranslatef(x, y, 0);
-        GL11.glScalef(scale / ss, scale / ss, 1f);
+        GL11.glScalef(scale, scale, 1f);
 
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0)
-            drawRoundedRect(0, 0, boxW * ss, boxH * ss, getCornerRadius() * ss, bgColor);
-
-        GL11.glScalef(ss, ss, 1f);
+            drawRoundedRect(0, 0, boxW, boxH, getCornerRadius(), bgColor);
 
         int textY = PAD_Y;
         if (SkyblockData.isOnSkyblock()) {
