@@ -41,12 +41,15 @@ import java.util.regex.Pattern;
  * enough for 5-minute/1-minute pre-event thresholds, and defeats the whole point of parsing only
  * once a year instead of re-fetching for precision. Since one SkyBlock day is exactly 20 real
  * minutes on this server, every entry's exact start time is instead computed by pure day-offset
- * arithmetic from a single anchor (the first, most-precise mention seen). Longer events
- * (Spooky/Zoo/New Year/Jerry) get previewed on several consecutive day-slots before they happen —
- * each is a real, individually-correct day-offset computation, so the fix isn't in the arithmetic,
- * it's a same-type/near-time upsert in {@link #handleSegment} that collapses those re-mentions
- * back into the single occurrence they describe. Anything that computes to a moment already in
- * the past is dropped, per instructions.
+ * arithmetic from a single anchor (the first, most-precise mention seen). Multi-day events
+ * (Zoo/Spooky/New Year/Fishing Festival/Mining Fiesta) stay on the calendar for every day they're
+ * actually running, not as a preview of a future start — so the FIRST day-slot mention of a given
+ * occurrence is its real start, and every later mention within that same run is just the event
+ * still being shown as ongoing. {@link #handleSegment}'s same-type/near-time upsert keeps that
+ * first mention and discards the redundant later ones, using each type's own real duration (see
+ * {@link #durationForType}) both to size how wide a "same occurrence" window is and to compute
+ * {@code end} directly, rather than inferring either from how many day-slots got walked. Anything
+ * that computes to a moment already in the past is dropped, per instructions.
  */
 @RegisterEvents
 public class CalendarParser {
@@ -243,16 +246,18 @@ public class CalendarParser {
     private long anchorSkyblockDay = 0;
 
     /**
-     * Longer events (Spooky/Zoo/New Year/Jerry) get previewed on several consecutive day-slots
-     * before they actually happen — each preview mention is its own real day-slot, so day-offset
-     * arithmetic correctly computes a different (and each individually correct) time for every one
-     * of them, 20-40 minutes apart; the fix isn't in the arithmetic, it's recognizing they're all
-     * describing the same occurrence. Walking days in order means the last mention seen in a
-     * cluster is always the closest to the true day, so dedup keeps whichever computes later.
-     * 45 minutes is comfortably under Farming Contest's real 60-minute gap between genuine hourly
-     * occurrences, so those are never merged into each other.
+     * How far apart two same-type mentions can be and still count as the same occurrence, rather
+     * than two genuinely separate ones. A single global window can't work here: hourly types
+     * (Farming Contest/Dark Auction) need it comfortably under their ~60-minute real recurrence gap
+     * so two real occurrences never merge, while a multi-day event needs it wider than its own full
+     * run so its last day-slot mention doesn't get treated as a new occurrence. Sizing it off each
+     * type's own {@link #durationForType} plus one day of slack satisfies both at once — short
+     * types get a small window from their small duration, long types get one sized to their actual
+     * multi-day span (up to Mining Fiesta's 7 days/140 minutes).
      */
-    private static final long DEDUPE_WINDOW_MS = 45 * 60_000L;
+    private static long dedupeWindowForType(String type) {
+        return durationForType(type) + SKYBLOCK_DAY_MS;
+    }
 
     private SkyblockEvent handleSegment(String rest, long absoluteSkyblockDay, long now) {
         String withoutCountdown = rest;
@@ -278,13 +283,10 @@ public class CalendarParser {
         for (SkyblockEvent existing : parsed) {
             if (!typeName.equals(existing.event.event)) continue;
             long existingStart = Instant.parse(existing.start).toEpochMilli();
-            if (Math.abs(existingStart - startMs) >= DEDUPE_WINDOW_MS) continue;
-            if (startMs > existingStart) {
-                // A later day-slot mention of the same occurrence, closer to the true day —
-                // refine in place rather than add a duplicate. Keep crops already collected.
-                existing.start = Instant.ofEpochMilli(startMs).toString();
-                existing.end = Instant.ofEpochMilli(startMs + durationForType(typeName)).toString();
-            }
+            if (Math.abs(existingStart - startMs) >= dedupeWindowForType(typeName)) continue;
+            // A later day-slot mention of the same run — the first mention is the real start
+            // (this server doesn't preview events ahead of time), so this one is redundant.
+            // existing.start/end already reflect the type's real duration; nothing to update.
             return existing;
         }
 
@@ -297,6 +299,13 @@ public class CalendarParser {
         return event;
     }
 
+    /** Mining Fiesta and Fishing Festival only appear on the calendar at all under specific
+     *  mayors, so a normal SkyBlock year may never mention them, and their exact printed wording
+     *  hasn't been confirmed in-game yet (unlike the other types below, all matched on the exact
+     *  text already seen). Matched by prefix instead of exact equality — same tolerance the
+     *  existing "New Year" suffix match already relies on — so a status word tacked on the end
+     *  (as Election/Jerry Workshop already do: "Booth Opens!", "Over!", "Opens") doesn't stop
+     *  them from being recognized. */
     private static String normalizeType(String raw) {
         switch (raw) {
             case "Farming Contest":
@@ -308,20 +317,30 @@ public class CalendarParser {
             case "Jerry Workshop Opens":
                 return raw;
             default:
-                return raw.endsWith("New Year's Celebration") ? "New Year" : null;
+                if (raw.endsWith("New Year's Celebration")) return "New Year";
+                if (raw.startsWith("Mining Fiesta")) return "Mining Fiesta";
+                if (raw.startsWith("Fishing Festival")) return "Fishing Festival";
+                return null;
         }
     }
 
-    /** Only Farming Contest/Dark Auction/Election durations are known precisely (they're short,
-     *  fixed-length server mechanics); everything else states "Event lasts for 1h 0m 0s" in its
-     *  own lore, which this mirrors directly rather than re-deriving from the day-length ratio. */
+    /** Real per-type durations (confirmed in-game), not derived from how many day-slots a type
+     *  happens to be mentioned on. Farming Contest/Dark Auction/Election are short, fixed-length
+     *  server mechanics. Jerry Workshop's real event runs a full month, but the calendar only ever
+     *  prints one 20-minute "opens" marker for it — so for parsing purposes it behaves like the
+     *  short types (single mention, no multi-day run to dedupe). Traveling Zoo/Spooky
+     *  Festival/New Year/Fishing Festival each run 60 minutes (3 SkyBlock days); Mining Fiesta
+     *  runs a full SkyBlock week, 140 minutes (7 days) — the outlier that a flat one-size-fits-all
+     *  default previously got wrong. */
     private static long durationForType(String type) {
         switch (type) {
             case "Dark Auction": return 40_000L;
             case "Election Booth Opens!":
             case "Election Over!": return 60_000L;
-            case "Farming Contest": return 20 * 60_000L;
-            default: return 60 * 60_000L;
+            case "Farming Contest":
+            case "Jerry Workshop Opens": return 20 * 60_000L;
+            case "Mining Fiesta": return 140 * 60_000L;
+            default: return 60 * 60_000L; // Traveling Zoo, Spooky Festival, New Year, Fishing Festival
         }
     }
 
