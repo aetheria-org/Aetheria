@@ -9,42 +9,13 @@ import net.minecraft.command.ICommandSender;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 @RegisterCommand
 public class TimerCommand extends ASMCommand {
 
-    private static final Pattern TIME_PATTERN = Pattern.compile("(\\d+)([dhms])", Pattern.CASE_INSENSITIVE);
-
     private static final String PREFIX = "§b[ATHR Timer] §f";
     private static final List<String> TAB_OPTS = Arrays.asList("cancel", "pause", "resume", "show", "add");
-
-    private static long parseTime(String input) {
-        Matcher m = TIME_PATTERN.matcher(input);
-        long total = 0;
-        boolean any = false;
-        while (m.find()) {
-            any = true;
-            long val = Long.parseLong(m.group(1));
-            switch (m.group(2).toLowerCase()) {
-                case "d":
-                    total += val * 86_400_000L;
-                    break;
-                case "h":
-                    total += val * 3_600_000L;
-                    break;
-                case "m":
-                    total += val * 60_000L;
-                    break;
-                case "s":
-                    total += val * 1_000L;
-                    break;
-            }
-        }
-        return any ? total : -1L;
-    }
 
     private static void printStatus(UptimeManager mgr) {
         if (!mgr.isActive()) {
@@ -127,7 +98,7 @@ public class TimerCommand extends ASMCommand {
                     ChatUtils.sendMessage(PREFIX + "§cUsage: §e/athrtimeradd <time> §7(e.g. 5m, 1h)");
                     break;
                 }
-                long addMs = parseTime(String.join("", Arrays.copyOfRange(args, 1, args.length)));
+                long addMs = TimeFormatter.parseDurationMs(String.join("", Arrays.copyOfRange(args, 1, args.length)));
                 if (addMs <= 0) {
                     ChatUtils.sendMessage(PREFIX + "§cInvalid time. Examples: §e5m §c| §e30s §c| §e1h");
                     break;
@@ -143,7 +114,7 @@ public class TimerCommand extends ASMCommand {
             }
 
             default: {
-                long durationMs = parseTime(String.join("", args));
+                long durationMs = TimeFormatter.parseDurationMs(String.join("", args));
                 if (durationMs <= 0) {
                     ChatUtils.sendMessage(PREFIX + "§cUnknown sub-command or invalid time. " + "Examples: §e/athrtimer1h30m §c| §e/athrtimerpause §c| §e/athrtimershow");
                     break;

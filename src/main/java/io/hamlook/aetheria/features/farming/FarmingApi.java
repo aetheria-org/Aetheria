@@ -6,6 +6,7 @@ import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerData;
 import io.hamlook.aetheria.features.farming.sensitivityreducer.FarmingToolIds;
 import io.hamlook.aetheria.features.farming.visitors.VisitorBonus;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import lombok.Getter;
@@ -18,6 +19,8 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @RegisterEvents
 public final class FarmingApi {
@@ -137,6 +140,25 @@ public final class FarmingApi {
 
     public static boolean isPlayerInPlot(Integer plotId) {
         return plotId != null && plotId == currentPlotId;
+    }
+
+    private static final Pattern COOLDOWN_TIME = Pattern.compile("(?:(\\d+)\\s*h)?\\s*(?:(\\d+)\\s*m)?\\s*(?:(\\d+)\\s*s)");
+
+    public static long getGardenCooldownMs() {
+        String s = ColorUtils.stripColor(gardenCooldown).trim();
+        if (s.isEmpty()) return -1L;
+        if (s.matches("\\d+:\\d{2}")) {
+            String[] parts = s.split(":");
+            return (Long.parseLong(parts[0]) * 60L + Long.parseLong(parts[1])) * 1000L;
+        }
+        Matcher m = COOLDOWN_TIME.matcher(s);
+        if (!m.find()) return -1L;
+        long ms = 0L;
+        boolean any = false;
+        if (m.group(1) != null) { ms += Long.parseLong(m.group(1)) * 3_600_000L; any = true; }
+        if (m.group(2) != null) { ms += Long.parseLong(m.group(2)) * 60_000L; any = true; }
+        if (m.group(3) != null) { ms += Long.parseLong(m.group(3)) * 1000L; any = true; }
+        return any ? ms : -1L;
     }
 
     /** The plot the warp key targets, selected by the configured {@code PestFinderConfig.warpTarget} strategy */

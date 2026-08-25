@@ -12,4 +12,8 @@ public class PestsConfig {
     @Expose
     @Category(name = "Pest Finder", desc = "Garden pest tab data overlay and warp keybind")
     public PestFinderConfig pestFinder = new PestFinderConfig();
+
+    @Expose
+    @Category(name = "Pest Alert", desc = "Warn you when the pest cooldown drops below a set time")
+    public PestAlertConfig pestAlert = new PestAlertConfig();
 }

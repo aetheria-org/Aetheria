@@ -1,6 +1,46 @@
 package io.hamlook.aetheria.utils.time;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class TimeFormatter {
+
+    private static final Pattern DURATION_TOKEN = Pattern.compile(
+            "(\\d+)\\s*(d|days|day|h|hours|hour|hrs|hr|m|mins|min|minutes|minute|s|secs|sec|seconds|second)?",
+            Pattern.CASE_INSENSITIVE);
+
+    public static long parseDurationMs(String raw) {
+        if (raw == null || raw.isEmpty()) return -1L;
+        Matcher m = DURATION_TOKEN.matcher(raw.toLowerCase());
+        long total = 0L;
+        boolean any = false;
+        while (m.find()) {
+            long value;
+            try {
+                value = Long.parseLong(m.group(1));
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            String unit = m.group(2) == null ? "" : m.group(2);
+            char first = unit.isEmpty() ? 's' : unit.charAt(0);
+            any = true;
+            switch (first) {
+                case 'd':
+                    total += value * 86_400_000L;
+                    break;
+                case 'h':
+                    total += value * 3_600_000L;
+                    break;
+                case 'm':
+                    total += value * 60_000L;
+                    break;
+                default:
+                    total += value * 1_000L;
+                    break;
+            }
+        }
+        return any ? total : -1L;
+    }
 
     public static String formatTime(long millis) {
         long totalSeconds = millis / 1000;
