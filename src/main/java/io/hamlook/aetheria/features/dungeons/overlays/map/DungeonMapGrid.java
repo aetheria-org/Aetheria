@@ -26,7 +26,15 @@ public class DungeonMapGrid {
     public float entrancePixelCenterX = 0f;
     public float entrancePixelCenterZ = 0f;
     public float blockToPixel = 0f;
+    /**
+     * Pixel-space anchor (entrance room corner) this grid is built from
+     * Progressive map reveal can move the raster-first pixel to a newly drawn
+     * room, so reparses seed the previously captured anchor instead of re-scanning
+     * keeping every parse of a run in the same coordinate fram
+     */
+    @Getter
     private int startPixelX = -1;
+    @Getter
     private int startPixelY = -1;
     @Getter
     private int roomPixelSize = 0;
@@ -34,6 +42,16 @@ public class DungeonMapGrid {
     private int connectorPixelSize = 5;
 
     public static DungeonMapGrid parse(MapData data, int cellSizeBlocks) {
+        return parse(data, cellSizeBlocks, -1, -1);
+    }
+
+    /**
+     * {@code anchorX}/{@code anchorY} seed the entrance corner from a previous
+     * parse of the same run; pass -1/-1 to locate it by raster scan (first valid
+     * parse only). Seeding keeps RoomOffset(0,0) on the entrance room across
+     * reparses, so progressively drawn rooms land at stable grid coordinates.
+     */
+    public static DungeonMapGrid parse(MapData data, int cellSizeBlocks, int anchorX, int anchorY) {
         if (data == null || data.colors == null) {
             return new DungeonMapGrid();
         }
@@ -56,27 +74,43 @@ public class DungeonMapGrid {
         DungeonMapGrid grid = new DungeonMapGrid();
         grid.cellSizeBlocks = cellSizeBlocks;
 
-        for (int x = 0; x < 128; x++) {
-            for (int y = 0; y < 128; y++) {
-                Color c = colors[x][y];
-                int rawByte = data.colors[y * 128 + x] & 0xFF;
-                if (c.getAlpha() > 80 && rawByte / 4 == 7) {
-                    grid.startPixelX = x;
-                    grid.startPixelY = y;
-                    int foundRoomSize = 0;
-                    for (int d = 0; d <= 31; d++) {
-                        if (x + d < 128 && y + d < 128) {
-                            Color c2 = colors[x + d][y + d];
-                            if (c2.getAlpha() > 80 && (data.colors[(y + d) * 128 + (x + d)] & 0xFF) / 4 == 7) {
-                                foundRoomSize = Math.max(foundRoomSize, d + 1);
-                            }
-                        }
+        boolean seeded = anchorX >= 0 && anchorX < 128 && anchorY >= 0 && anchorY < 128 && data.colors[anchorY * 128 + anchorX] != 0 && data.colors[anchorY * 128 + anchorX] / 4 == 7;
+        if (seeded) {
+            grid.startPixelX = anchorX;
+            grid.startPixelY = anchorY;
+            int foundRoomSize = 0;
+            for (int d = 0; d <= 31; d++) {
+                if (anchorX + d < 128 && anchorY + d < 128) {
+                    Color c2 = colors[anchorX + d][anchorY + d];
+                    if (c2.getAlpha() > 80 && (data.colors[(anchorY + d) * 128 + (anchorX + d)] & 0xFF) / 4 == 7) {
+                        foundRoomSize = Math.max(foundRoomSize, d + 1);
                     }
-                    grid.roomPixelSize = Math.max(foundRoomSize, 4);
-                    break;
                 }
             }
-            if (grid.startPixelX >= 0) break;
+            grid.roomPixelSize = Math.max(foundRoomSize, 4);
+        } else {
+            for (int x = 0; x < 128; x++) {
+                for (int y = 0; y < 128; y++) {
+                    Color c = colors[x][y];
+                    int rawByte = data.colors[y * 128 + x] & 0xFF;
+                    if (c.getAlpha() > 80 && rawByte / 4 == 7) {
+                        grid.startPixelX = x;
+                        grid.startPixelY = y;
+                        int foundRoomSize = 0;
+                        for (int d = 0; d <= 31; d++) {
+                            if (x + d < 128 && y + d < 128) {
+                                Color c2 = colors[x + d][y + d];
+                                if (c2.getAlpha() > 80 && (data.colors[(y + d) * 128 + (x + d)] & 0xFF) / 4 == 7) {
+                                    foundRoomSize = Math.max(foundRoomSize, d + 1);
+                                }
+                            }
+                        }
+                        grid.roomPixelSize = Math.max(foundRoomSize, 4);
+                        break;
+                    }
+                }
+                if (grid.startPixelX >= 0) break;
+            }
         }
 
         if (grid.startPixelX < 0 || grid.roomPixelSize <= 0) {
@@ -480,6 +514,7 @@ public class DungeonMapGrid {
     public float gridToPixelX(float gridX) {
         return startPixelX + gridX * (roomPixelSize + connectorPixelSize);
     }
+
     public float gridToPixelZ(float gridZ) {
         return startPixelY + gridZ * (roomPixelSize + connectorPixelSize);
     }

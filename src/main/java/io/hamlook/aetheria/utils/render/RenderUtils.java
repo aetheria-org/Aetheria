@@ -3,6 +3,8 @@ package io.hamlook.aetheria.utils.render;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
 import io.hamlook.aetheria.features.chat.emoji.CustomEmoji;
 import io.hamlook.aetheria.features.chat.emoji.EmojiLinks;
 import io.hamlook.aetheria.features.chat.emoji.EmojiManager;
@@ -60,18 +62,17 @@ public final class RenderUtils {
         int maxWidth = Math.max(8, w - 10);
         String display = fr.trimStringToWidth(text, maxWidth);
 
+        String toDisplay = display.isEmpty() ? "§7Search..." : display;
         if (field.isFocused()) {
-            String toDisplay = display.isEmpty() ? "§7Search..." : display;
             fr.drawStringWithShadow(toDisplay, x + 5, textY, display.isEmpty() ? 0x8F8F8F : 0xFFFFFFFF);
 
+            int cursor = Math.min(field.getCursorPosition(), text.length());
             if (System.currentTimeMillis() % 1000 > 500) {
-                int cursor = Math.min(field.getCursorPosition(), text.length());
                 String beforeCursor = text.substring(0, cursor);
                 int beforeWidth = fr.getStringWidth(fr.trimStringToWidth(beforeCursor, maxWidth));
                 Gui.drawRect(x + 5 + beforeWidth, y - 5 + h / 2, x + 6 + beforeWidth, y + 4 + h / 2, 0xFFFFFFFF);
             }
         } else {
-            String toDisplay = display.isEmpty() ? "§7Search..." : display;
             fr.drawString(toDisplay, x + 5, textY, 0x8F8F8F);
         }
     }
@@ -187,33 +188,6 @@ public final class RenderUtils {
         }
     }
 
-    public static void drawFloatingRect(int x, int y, int width, int height) {
-        drawFloatingRectWithAlpha(x, y, width, height, 0xFF, true);
-    }
-
-    public static void drawFloatingRectWithAlpha(int x, int y, int width, int height, int alpha, boolean shadow) {
-        int main = (alpha << 24) | 0xc0c0c0;
-        int light = (alpha << 24) | 0xf0f0f0;
-        int dark = (alpha << 24) | 0x909090;
-        Gui.drawRect(x, y, x + 1, y + height, light);
-        Gui.drawRect(x + 1, y, x + width, y + 1, light);
-        Gui.drawRect(x + width - 1, y + 1, x + width, y + height, dark);
-        Gui.drawRect(x + 1, y + height - 1, x + width - 1, y + height, dark);
-        Gui.drawRect(x + 1, y + 1, x + width - 1, y + height - 1, main);
-        if (shadow) {
-            Gui.drawRect(x + width, y + 2, x + width + 2, y + height + 2, (alpha * 3 / 5) << 24);
-            Gui.drawRect(x + 2, y + height, x + width, y + height + 2, (alpha * 3 / 5) << 24);
-        }
-    }
-
-    public static void drawInnerBox(int left, int top, int width, int height) {
-        Gui.drawRect(left, top, left + width, top + height, 0x60080808);
-        Gui.drawRect(left, top, left + 1, top + height, 0xff080808);
-        Gui.drawRect(left, top, left + width, top + 1, 0xff080808);
-        Gui.drawRect(left + width - 1, top, left + width, top + height, 0xff282828);
-        Gui.drawRect(left, top + height - 1, left + width, top + height, 0xff282828);
-    }
-
     public static void drawTexturedRect(float x, float y, float width, float height) {
         drawTexturedRect(x, y, width, height, 0, 1, 0, 1);
     }
@@ -250,19 +224,6 @@ public final class RenderUtils {
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
     }
-
-    public static void drawTexturedModalRect(int x, int y, int textureX, int textureY, int width, int height) {
-        final double f = 0.00390625;
-        Tessellator t = Tessellator.getInstance();
-        WorldRenderer wr = t.getWorldRenderer();
-        wr.begin(7, DefaultVertexFormats.POSITION_TEX);
-        wr.pos(x, y + height, 0).tex((textureX) * f, (textureY + height) * f).endVertex();
-        wr.pos(x + width, y + height, 0).tex((textureX + width) * f, (textureY + height) * f).endVertex();
-        wr.pos(x + width, y, 0).tex((textureX + width) * f, (textureY) * f).endVertex();
-        wr.pos(x, y, 0).tex((textureX) * f, (textureY) * f).endVertex();
-        t.draw();
-    }
-
 
     public static void drawGradientRect(int zLevel, int left, int top, int right, int bottom, int startColor, int endColor) {
         float sA = (startColor >> 24 & 255) / 255f, sR = (startColor >> 16 & 255) / 255f;
@@ -333,9 +294,9 @@ public final class RenderUtils {
             Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
 
             float uMin = (float) emoji.sheetX / sheetW;
-            float uMax = (float)(emoji.sheetX + EmojiLinks.SHEET_RESOLUTION) / sheetW;
+            float uMax = (float) (emoji.sheetX + EmojiLinks.SHEET_RESOLUTION) / sheetW;
             float vMin = (float) emoji.sheetY / sheetW;
-            float vMax = (float)(emoji.sheetY + EmojiLinks.SHEET_RESOLUTION) / sheetW;
+            float vMax = (float) (emoji.sheetY + EmojiLinks.SHEET_RESOLUTION) / sheetW;
             drawTexturedRect(x, y, size, size, uMin, uMax, vMin, vMax, GL11.GL_LINEAR);
             GlStateManager.popMatrix();
             return true;
@@ -357,9 +318,9 @@ public final class RenderUtils {
             SpritePos pos = customEmoji.sprites.get(frameIndex);
 
             float uMin = (float) pos.x / sheetW;
-            float uMax = (float)(pos.x + customEmoji.width) / sheetW;
+            float uMax = (float) (pos.x + customEmoji.width) / sheetW;
             float vMin = (float) pos.y / sheetW;
-            float vMax = (float)(pos.y + customEmoji.height) / sheetW;
+            float vMax = (float) (pos.y + customEmoji.height) / sheetW;
             if (uMax > 1f || vMax > 1f) {
                 Aetheria.logger.info("[EMOJI] UV OOB for :" + nameOrAlias + ": sheetW=" + sheetW + " pos=(" + pos.x + "," + pos.y + ") size=" + customEmoji.width + "x" + customEmoji.height + " uMax=" + uMax + " vMax=" + vMax);
                 return false;
@@ -468,8 +429,8 @@ public final class RenderUtils {
         mc.getTextureManager().bindTexture(skin);
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
         GlStateManager.color(1.0f, 1.0f, 1.0f, headAlpha);
-        Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 8f, 8f, 8, 8, (int) (scale * 8), (int) (scale * 8), 64f, 64f);
-        Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 40f, 8f, 8, 8, (int) (scale * 8), (int) (scale * 8), 64f, 64f);
+        drawSkinRegion(x, y - 1f, scale * 8f, 8f);
+        drawSkinRegion(x, y - 1f, scale * 8f, 40f);
         GlStateManager.popMatrix();
         GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
     }
@@ -488,15 +449,20 @@ public final class RenderUtils {
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
 
         GlStateManager.translate(cx, cy, 0f);
-        GlStateManager.rotate(rotation + 180f, 0f, 0f, 1f);
+        GlStateManager.rotate(rotation, 0f, 0f, 1f);
+        GlStateManager.translate(-half * 0.125f, half * 0.125f, 0f);
 
         mc.getTextureManager().bindTexture(Resources.DEFAULT_MAP_ICONS);
 
         int iconType = isSelf ? 1 : 0;
+        // map_icons.png is a 32x32 atlas with a 4x4 grid of 8x8 icons.
+        // Row coordinate must use INTEGER division first: float division
+        // (iconType / 4f / 4f) shifts sampling 2px down, bleeding the row below.
+        // iconType is 0 or 1, so both sprites live in atlas row 0 (v = 0..0.25).
         float u0 = (iconType % 4) / 4f;
-        float v0 = (iconType / 4f) / 4f;
-        float u1 = (iconType % 4 + 1) / 4f;
-        float v1 = (iconType / 4f + 1) / 4f;
+        float u1 = u0 + 1 / 4f;
+        float v0 = 0f;
+        float v1 = 0.25f;
 
         int alphaByte = (rgbColor >>> 24) & 0xFF;
         float a = (alphaByte == 0) ? 1.0f : alphaByte / 255f;
@@ -505,68 +471,149 @@ public final class RenderUtils {
         float b = (rgbColor & 0xFF) / 255f;
         GlStateManager.color(r, g, b, a);
 
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
+
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer worldrenderer = tessellator.getWorldRenderer();
         worldrenderer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
-        worldrenderer.pos(-half, half, 0.0D).tex(u0, v1).endVertex();
-        worldrenderer.pos(half, half, 0.0D).tex(u1, v1).endVertex();
-        worldrenderer.pos(half, -half, 0.0D).tex(u1, v0).endVertex();
-        worldrenderer.pos(-half, -half, 0.0D).tex(u0, v0).endVertex();
+        worldrenderer.pos(-half, half, 0.0D).tex(u0, v0).endVertex();
+        worldrenderer.pos(half, half, 0.0D).tex(u1, v0).endVertex();
+        worldrenderer.pos(half, -half, 0.0D).tex(u1, v1).endVertex();
+        worldrenderer.pos(-half, -half, 0.0D).tex(u0, v1).endVertex();
         tessellator.draw();
 
         GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
         GlStateManager.popMatrix();
     }
 
+    public static void renderFramedHead(float cx, float cy, float yaw, float frameSize, String frameColorStr, ResourceLocation skin, boolean flowChroma) {
+        float headAlpha = 1f;
+        Minecraft mc = Minecraft.getMinecraft();
+        if (frameColorStr == null || frameColorStr.isEmpty()) frameColorStr = "0:255:85:255:85";
+        if (skin == null) skin = DefaultPlayerSkin.getDefaultSkinLegacy();
+
+        // Flow requires both the feature toggle and a chroma speed above 0 in
+        // the color string; otherwise the solid picked color is rendered.
+        boolean flow = flowChroma && ChromaColour.getSpeed(frameColorStr) > 0;
+        int solidArgb = 0;
+        int chromaBase = 0;
+        int chromaMode = 0;
+        float chromaSize = 0f;
+        if (flow) {
+            ChromaStyle style = ChromaStyle.of(frameColorStr);
+            chromaBase = style.toArgb();
+            chromaMode = style.getMode();
+            chromaSize = style.getSize();
+        } else {
+            solidArgb = ChromaColour.specialToChromaRGB(frameColorStr);
+        }
+
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(cx, cy, 0f);
+        GlStateManager.rotate(yaw, 0f, 0f, 1f);
+
+        float half = frameSize / 2f;
+        float headHalf = half * 0.72f;
+
+        GlStateManager.disableLighting();
+        GlStateManager.enableBlend();
+        GlStateManager.enableAlpha();
+
+        GlStateManager.disableCull();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+
+        Tessellator tessellator = Tessellator.getInstance();
+        WorldRenderer wr = tessellator.getWorldRenderer();
+
+        GlStateManager.disableTexture2D();
+        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
+        if (flow) {
+            int strips = Math.max(4, (int) Math.ceil(frameSize));
+            float stripW = frameSize / strips;
+            for (int i = 0; i < strips; i++) {
+                float sx = -half + i * stripW;
+                float ex = (i == strips - 1) ? half : sx + stripW;
+                int argb = ChromaColour.applyChromaShift(chromaBase, cx + sx, cy, chromaMode, chromaSize);
+                float a = ((argb >>> 24) & 0xFF) / 255f;
+                float r = argbR(argb), g = argbG(argb), b = argbB(argb);
+                wr.pos(sx, -half, 0d).color(r, g, b, a).endVertex();
+                wr.pos(sx, half, 0d).color(r, g, b, a).endVertex();
+                wr.pos(ex, half, 0d).color(r, g, b, a).endVertex();
+                wr.pos(ex, -half, 0d).color(r, g, b, a).endVertex();
+            }
+        } else {
+            float a = ((solidArgb >>> 24) & 0xFF) / 255f;
+            float r = argbR(solidArgb), g = argbG(solidArgb), b = argbB(solidArgb);
+            wr.pos(-half, -half, 0d).color(r, g, b, a).endVertex();
+            wr.pos(-half, half, 0d).color(r, g, b, a).endVertex();
+            wr.pos(half, half, 0d).color(r, g, b, a).endVertex();
+            wr.pos(half, -half, 0d).color(r, g, b, a).endVertex();
+        }
+        tessellator.draw();
+
+        GlStateManager.enableTexture2D();
+        mc.getTextureManager().bindTexture(skin);
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.color(1f, 1f, 1f, headAlpha);
+        drawSkinRegion(-headHalf, -headHalf, headHalf * 2f, 8f);
+        drawSkinRegion(-headHalf, -headHalf, headHalf * 2f, 40f);
+
+        GlStateManager.disableTexture2D();
+        float tw = frameSize / 3f;
+        float th = frameSize / 3.5f;
+        int cApex, cBaseL, cBaseR;
+        if (flow) {
+            cApex = ChromaColour.applyChromaShift(chromaBase, cx, cy - half - th, chromaMode, chromaSize);
+            cBaseL = ChromaColour.applyChromaShift(chromaBase, cx - tw / 2f, cy - half, chromaMode, chromaSize);
+            cBaseR = ChromaColour.applyChromaShift(chromaBase, cx + tw / 2f, cy - half, chromaMode, chromaSize);
+        } else {
+            cApex = solidArgb;
+            cBaseL = solidArgb;
+            cBaseR = solidArgb;
+        }
+        wr.begin(GL11.GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
+        wr.pos(-tw / 2f, -half, 0d).color(argbR(cBaseL), argbG(cBaseL), argbB(cBaseL),
+                ((cBaseL >>> 24) & 0xFF) / 255f).endVertex();
+        wr.pos(tw / 2f, -half, 0d).color(argbR(cBaseR), argbG(cBaseR), argbB(cBaseR),
+                ((cBaseR >>> 24) & 0xFF) / 255f).endVertex();
+        wr.pos(0f, -half - th, 0d).color(argbR(cApex), argbG(cApex), argbB(cApex),
+                ((cApex >>> 24) & 0xFF) / 255f).endVertex();
+        tessellator.draw();
+
+        GlStateManager.enableTexture2D();
+        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManager.popMatrix();
+    }
+
+    /** One textured layer of a skinhead quad at float coords (POSITION_TEX). Both face and hat layers share texture row y=8. */
+    private static void drawSkinRegion(float x, float y, float size, float texU) {
+        Tessellator tessellator = Tessellator.getInstance();
+        WorldRenderer wr = tessellator.getWorldRenderer();
+        float u0 = texU / 64f, v0 = 8f / 64f, u1 = (texU + 8f) / 64f, v1 = 16f / 64f;
+        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+        wr.pos(x, y + size, 0d).tex(u0, v1).endVertex();
+        wr.pos(x + size, y + size, 0d).tex(u1, v1).endVertex();
+        wr.pos(x + size, y, 0d).tex(u1, v0).endVertex();
+        wr.pos(x, y, 0d).tex(u0, v0).endVertex();
+        tessellator.draw();
+    }
+
+    private static float argbR(int argb) {
+        return ((argb >> 16) & 0xFF) / 255f;
+    }
+
+    private static float argbG(int argb) {
+        return ((argb >> 8) & 0xFF) / 255f;
+    }
+
+    private static float argbB(int argb) {
+        return (argb & 0xFF) / 255f;
+    }
+
     public static void renderMapCheckmark(ResourceLocation texture, float x, float y, float size) {
         Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
         GlStateManager.color(1f, 1f, 1f, 1f);
         drawTexturedRect(x, y, size, size, GL11.GL_NEAREST);
-    }
-
-    public static int renderStringTrimWidth(String str, boolean shadow, int x, int y, int width, int color, int maxLines) {
-        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getMinecraft();
-        net.minecraft.client.gui.FontRenderer fr = mc.fontRendererObj;
-
-        if (str == null || str.isEmpty()) return 0;
-
-        String[] words = str.split(" ");
-        StringBuilder currentLine = new StringBuilder();
-        int linesRendered = 0;
-        int yOffset = 0;
-
-        for (String word : words) {
-            String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
-            int testWidth = fr.getStringWidth(testLine);
-
-            if (testWidth > width && currentLine.length() > 0) {
-                if (shadow) {
-                    fr.drawStringWithShadow(currentLine.toString(), x, y + yOffset, color);
-                } else {
-                    fr.drawString(currentLine.toString(), x, y + yOffset, color);
-                }
-                yOffset += fr.FONT_HEIGHT;
-                linesRendered++;
-
-                if (maxLines > 0 && linesRendered >= maxLines) {
-                    return yOffset;
-                }
-
-                currentLine = new StringBuilder(word);
-            } else {
-                currentLine = new StringBuilder(testLine);
-            }
-        }
-
-        if (currentLine.length() > 0) {
-            if (shadow) {
-                fr.drawStringWithShadow(currentLine.toString(), x, y + yOffset, color);
-            } else {
-                fr.drawString(currentLine.toString(), x, y + yOffset, color);
-            }
-            yOffset += fr.FONT_HEIGHT;
-        }
-
-        return yOffset;
     }
 }

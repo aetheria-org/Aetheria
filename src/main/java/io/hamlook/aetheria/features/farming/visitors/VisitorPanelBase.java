@@ -17,7 +17,6 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.event.ClickEvent;
 import net.minecraft.event.HoverEvent;
@@ -39,7 +38,7 @@ public abstract class VisitorPanelBase {
     private static final int ICON_GAP = 3;
     private static final int ITEM_ROW_H = ICON_SIZE + 3;
 
-    private final List<Clickable> clickables = new ArrayList<>();
+    private final List<Clickable> clickTargets = new ArrayList<>();
     private int mouseX = -1;
     private int mouseY = -1;
 
@@ -122,7 +121,6 @@ public abstract class VisitorPanelBase {
         float s = pc == null ? 1f : Math.max(0.1f, pc.scale);
 
         glDebugEnabled = live && ATHRConfig.feature != null
-                && ATHRConfig.feature.debug != null
                 && ATHRConfig.feature.debug.enableDebug
                 && GLDebugProbe.throttle("VisitorPanel", 1000L);
 
@@ -167,7 +165,7 @@ public abstract class VisitorPanelBase {
             GlStateManager.scale(s, s, 1);
 
             glProbe("PRE_BG", live);
-            clickables.clear();
+            clickTargets.clear();
             drawPanelBackground(0, 0, w, h);
             // The nine-slice helper disables blending on exit; restore the
             // standard alpha blend or all following text/rects render unblended
@@ -177,7 +175,6 @@ public abstract class VisitorPanelBase {
             glProbe("POST_BG", live);
             GlStateManager.color(1f, 1f, 1f, 1f);
             int dy = PAD;
-            boolean anyItemRow = false;
             boolean iconProbed = false;
             for (int i = 0; i < ls.size(); i++) {
                 VisitorLine line = ls.get(i);
@@ -195,7 +192,6 @@ public abstract class VisitorPanelBase {
                     if (hovered && clickableRow) Gui.drawRect(2, dy, w - 2, dy + rowH, 0x28FFFFFF);
                     int tx = PAD;
                     if (clickableRow) {
-                        anyItemRow = true;
                         // renderItemIcon manages its own lighting/GL state; the
                         // outer pair here used to re-pollute blend+lighting
                         // after each icon, darkening the row text.
@@ -220,7 +216,7 @@ public abstract class VisitorPanelBase {
                         mc.fontRendererObj.drawStringWithShadow(line.text, tx, dy + 2, 0xFFFFFF);
                     }
                 }
-                if (clickable != null) clickables.add(clickable);
+                if (clickable != null) clickTargets.add(clickable);
                 dy += rowH;
             }
             glProbe("POST_ROWS", live);
@@ -236,7 +232,7 @@ public abstract class VisitorPanelBase {
      */
     private static void maybeShowTip(List<VisitorLine> ls) {
         if (tipShownThisLaunch) return;
-        if (!ls.stream().anyMatch(l -> l.kind == VisitorLine.Kind.ITEM)) return;
+        if (ls.stream().noneMatch(l -> l.kind == VisitorLine.Kind.ITEM)) return;
         VisitorsConfig cfg = ATHRConfig.feature == null ? null : ATHRConfig.feature.farming.visitors;
         if (cfg == null || cfg.shoppingListTipHidden) return;
 
@@ -279,7 +275,7 @@ public abstract class VisitorPanelBase {
 
     @SubscribeEvent
     public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
-        if (clickables.isEmpty()) return;
+        if (clickTargets.isEmpty()) return;
         boolean visible = panelEnabled();
         if (!visible) return;
         if (!Mouse.getEventButtonState() || Mouse.getEventButton() != 0) return;
@@ -287,7 +283,7 @@ public abstract class VisitorPanelBase {
         if (mc.currentScreen == null) return;
         int mx = Mouse.getEventX() * mc.currentScreen.width / mc.displayWidth;
         int my = mc.currentScreen.height - Mouse.getEventY() * mc.currentScreen.height / mc.displayHeight - 1;
-        for (Clickable clickable : clickables) {
+        for (Clickable clickable : clickTargets) {
             if (clickable.contains(mx, my)) {
                 event.setCanceled(true);
                 VisitorShoppingList.onRowClick(clickable.itemId, clickable.amount);

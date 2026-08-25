@@ -3,7 +3,6 @@ package io.hamlook.aetheria.features.farming.trevor;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.TrevorConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.features.chat.GuiChatHook;
 import io.hamlook.aetheria.features.waypoints.WaypointRenderer;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
@@ -11,7 +10,6 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiChat;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.event.ClickEvent;
@@ -23,7 +21,6 @@ import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.InputEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
@@ -174,23 +171,25 @@ public class TrevorSolver {
     }
 
     @SubscribeEvent
-    public void onKeyInput(InputEvent.KeyInputEvent event) {
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         TrevorConfig config = config();
-        if (config == null || !config.enabled || !onFarmingIsland) return;
-        if (mc.thePlayer == null) return;
-        // The confirm prompt lives in chat, so players naturally have chat open
-        // (pressed 't') to see it: allow the hotkey through GuiChat specifically
-        // while locked and the input box is still empty, so it can't hijack a
-        // keystroke the player is using to type an unrelated message. Every
-        // other screen/state still blocks it as before.
-        boolean confirmPassthrough = confirmLocked && mc.currentScreen instanceof GuiChat
-                && ((GuiChatHook) mc.currentScreen).chatutils$getInputText().isEmpty();
-        if (mc.currentScreen != null && !confirmPassthrough) return;
+        if (config == null || !config.enabled || mc.theWorld == null || mc.thePlayer == null) return;
+
+        // Hotkeys are tick-polled (not event-based) so behavior is identical with
+        // and without input-replacement mods: vanilla Forge never dispatches key
+        // events while a screen is open, rawinput-style mods do. No menu open =
+        // no text field to hijack, so the typing concern is structurally gone.
+        if (mc.currentScreen != null || !onFarmingIsland) {
+            KeybindHelper.resetKeyTap(config.hotkeys.warpKey);
+            KeybindHelper.resetKeyTap(config.hotkeys.desertWarpKey);
+            return;
+        }
 
         // While a confirm prompt is pending, the quest hotkey confirms the hunt
         // instead of its usual warp/call action, so one key covers both without
         // risking a mistimed /warp trapper or /call trevor mid-confirmation.
-        if (config.hotkeys.warpHelper && KeybindHelper.isKeyPressed(config.hotkeys.warpKey)) {
+        if (config.hotkeys.warpHelper && KeybindHelper.isKeyTapped(config.hotkeys.warpKey)) {
             if (confirmLocked) {
                 if (pendingConfirmCommand != null) {
                     ChatUtils.sendChatCommand(pendingConfirmCommand);
@@ -206,16 +205,10 @@ public class TrevorSolver {
         // Settlement/Oasis: it exists to close the distance to the quest spot,
         // not as a general-purpose warp, so it goes dead once the hunt ends.
         if (config.hotkeys.desertWarpHelper && questAnimal != null && isDesertArea(questAreaLower)
-                && KeybindHelper.isKeyPressed(config.hotkeys.desertWarpKey)) {
+                && KeybindHelper.isKeyTapped(config.hotkeys.desertWarpKey)) {
             ChatUtils.sendChatCommand(CMD_WARP_DESERT);
         }
-    }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        TrevorConfig config = config();
-        if (config == null || !config.enabled || mc.theWorld == null || mc.thePlayer == null) return;
         if (++tickCounter < 5) return;
         tickCounter = 0;
 

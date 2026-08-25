@@ -42,11 +42,6 @@ public class MixinGuiChat implements GuiChatHook {
         return inputField != null && inputField.isFocused();
     }
 
-    @Override
-    public String chatutils$getInputText() {
-        return inputField != null ? inputField.getText() : "";
-    }
-
     // ── Copy on click ─────────────────────────────────────────────────────────
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)

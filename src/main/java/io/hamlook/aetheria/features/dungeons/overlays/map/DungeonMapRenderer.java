@@ -26,7 +26,7 @@ public class DungeonMapRenderer {
 
     private static final DungeonMapGrid.RoomState[] ICON_STATES = {DungeonMapGrid.RoomState.GREEN, DungeonMapGrid.RoomState.CLEARED, DungeonMapGrid.RoomState.FAILED, DungeonMapGrid.RoomState.UNOPENED};
 
-    public static void render(DungeonMapGrid grid, float centerX, float centerY, float scale, List<String> playerNames, DungeonPlayerTracker tracker, Collection<DungeonRoom> visitedRooms, boolean showVisitedRoomNames, boolean colorText) {
+    public static void render(DungeonMapGrid grid, float centerX, float centerY, float scale, List<String> playerNames, DungeonPlayerTracker tracker, Collection<DungeonRoom> visitedRooms, boolean showVisitedRoomNames, boolean colorText, boolean mapCalibrated) {
         if (!grid.isValid()) return;
 
         DungeonMapConfig cfg = ATHRConfig.feature.dungeons.dungeonMapConfig;
@@ -135,9 +135,8 @@ public class DungeonMapRenderer {
         // overridden with the real entity position (accurateSelfPosition) for smoother
         // movement; self stays anchored to its own decoration index.
         float invScale = 1f / Math.max(scale, 0.01f);
-        float headScale = cfg.players.headScale * 1.25f * invScale;
-        float headPixelSize = 8f * headScale;
-        boolean useArrowIcons = cfg.players.playerIconStyles == 1;
+        DungeonMapConfig.Self selfCfg = cfg.players.self;
+        DungeonMapConfig.Teammates teammatesCfg = cfg.players.teammates;
         String selfName = mc.thePlayer != null ? mc.thePlayer.getName() : null;
         int teammateOrdinal = 0;
 
@@ -154,34 +153,68 @@ public class DungeonMapRenderer {
             NetworkPlayerInfo info = tracker.getNetworkPlayerInfo(name, mc);
 
             boolean isSelf = name.equalsIgnoreCase(selfName);
-            if (isSelf && cfg.players.accurateSelfPosition && entity != null && !entity.isDead) {
+            // Entity-based self tracking requires a calibrated map<->world frame:
+            // before the entrance latch the fallback origin would pin the marker
+            // to the entrance pixel, so uncalibrated runs draw self from its
+            // decoration (same as teammates) until calibration completes.
+            if (isSelf && mapCalibrated && cfg.players.accurateSelfPosition && entity != null && !entity.isDead) {
                 px = grid.worldToPixelX(entity.posX);
                 pz = grid.worldToPixelZ(entity.posZ);
-                yaw = entity.rotationYaw;
+                // Same +180 convention as the decoration decode (vanilla parity).
+                yaw = entity.rotationYaw + 180f;
             }
 
-            if (useArrowIcons) {
+            int style = isSelf ? selfCfg.iconStyle : teammatesCfg.iconStyle;
+            float groupScale = isSelf ? selfCfg.markerScale : teammatesCfg.markerScale;
+            float headScale = groupScale * 1.25f * invScale;
+            float markerSize = 8f * headScale;
+
+            if (style == 1) {
                 int color = isSelf ? SELF_ARROW_COLOR : TEAMMATE_ARROW_COLORS[teammateOrdinal % TEAMMATE_ARROW_COLORS.length];
                 if (!isSelf) teammateOrdinal++;
-                float arrowScale = isSelf ? headScale * 1.15f : headScale;
-                float arrowSize = 8f * arrowScale;
-                RenderUtils.renderPlayerArrow(px - arrowSize / 2f, pz - arrowSize / 2f, arrowScale, yaw, color, isSelf);
+                RenderUtils.renderPlayerArrow(px - markerSize / 2f, pz - markerSize / 2f, headScale, yaw, color, isSelf);
+            } else if (style == 2) {
+                boolean flowChroma = isSelf ? selfCfg.frameFlowChroma : teammatesCfg.frameFlowChroma;
+                String frameColorStr = isSelf ? selfCfg.frameColor : teammatesCfg.frameColor;
+                RenderUtils.renderFramedHead(px, pz, yaw, markerSize, frameColorStr, tracker.resolveSkin(name, mc), flowChroma);
             } else {
-                RenderUtils.renderPlayerHead(px - headPixelSize / 2f, pz - headPixelSize / 2f, -1, headScale, tracker.resolveSkin(name, mc), yaw);
+                RenderUtils.renderPlayerHead(px - markerSize / 2f, pz - markerSize / 2f, -1, headScale, tracker.resolveSkin(name, mc), yaw);
             }
 
             if (cfg.players.showPlayerUsername) {
                 String displayName = getDisplayName(name, info, entity);
                 if (!cfg.players.showPlayerRank) {
-                    int idx = displayName.lastIndexOf("]");
-                    if (idx >= 0) displayName = displayName.substring(idx + 1).trim();
+                    displayName = stripRankKeepColor(displayName);
                 }
 
-                RenderUtils.renderPlayerName(px - headPixelSize / 2f, pz - headPixelSize / 2f, -1, headScale, cfg.players.nameSize * NAME_TEXT_SCALE * invScale, displayName, false);
+                RenderUtils.renderPlayerName(px - markerSize / 2f, pz - markerSize / 2f, -1, headScale, cfg.players.nameSize * NAME_TEXT_SCALE * invScale, displayName, false);
             }
         }
 
         GlStateManager.popMatrix();
+    }
+
+    /**
+     * Strips the rank prefix (up to the last ']') while preserving the rank's
+     * color: if the name segment carries no color code of its own, the last
+     * color code found inside the prefix is applied to the name.
+     */
+    private static String stripRankKeepColor(String displayName) {
+        int idx = displayName.lastIndexOf(']');
+        if (idx < 0) return displayName;
+        String namePart = displayName.substring(idx + 1).trim();
+        if (namePart.startsWith("§")) return namePart;
+        String color = "";
+        for (int i = idx - 1; i >= 1; i--) {
+            if (displayName.charAt(i) == '§') {
+                char c = Character.toLowerCase(displayName.charAt(i + 1));
+                if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+                    color = "§" + c;
+                    break;
+                }
+            }
+        }
+        return color.isEmpty() ? namePart : color + namePart;
     }
 
     private static String getDisplayName(String name, NetworkPlayerInfo info, EntityPlayer entity) {

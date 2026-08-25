@@ -93,12 +93,18 @@ public class DungeonMapConfig {
 
     public static class Players {
 
+        @Expose
+        @ConfigOption(name = "Show Player Markers", desc = "Show player markers on the dungeon map")
+        @ConfigEditorBoolean
         public boolean showPlayerHead = true;
 
         @Expose
-        @ConfigOption(name = "Player Icon Style", desc = "Head shows the player's skin face. Arrow shows a Hypixel-map-style directional triangle (blue/yellow/orange/red per teammate, white for you)")
-        @ConfigEditorDropdown(values = {"Head", "Arrow"}, initialIndex = 1)
-        public int playerIconStyles = 1;
+        @Category(name = "You", desc = "Your own marker style and size")
+        public Self self = new Self();
+
+        @Expose
+        @Category(name = "Teammates", desc = "Other players' marker style and size")
+        public Teammates teammates = new Teammates();
 
         @Expose
         @ConfigOption(name = "Show Player Username", desc = "Show Player's Username in Dungeon Map")
@@ -109,11 +115,6 @@ public class DungeonMapConfig {
         @ConfigOption(name = "Show Player Rank", desc = "Show Player's rank in username display in Dungeon Map")
         @ConfigEditorBoolean
         public boolean showPlayerRank = false;
-
-        @Expose
-        @ConfigOption(name = "Marker Scale", desc = "Control how big the player marker display is")
-        @ConfigEditorSliderAnnotation(minValue = 0.25f, maxValue = 2f, minStep = 0.05f)
-        public float headScale = 1f;
 
         @Expose
         @ConfigOption(name = "Use Entity Position for Self", desc = "Use your real entity position for your own marker so it updates every frame (smoother) instead of waiting for map decoration updates")
@@ -129,6 +130,52 @@ public class DungeonMapConfig {
         @ConfigOption(name = "Name Offset from Marker", desc = "Control how below the name is from the player marker")
         @ConfigEditorSliderAnnotation(minValue = 1f, maxValue = 20f, minStep = 1f)
         public float nameOffset = 6f;
+    }
+
+    public static class Self {
+
+        @Expose
+        @ConfigOption(name = "Icon Style", desc = "Head shows your skin face. Arrow shows a Hypixel-map-style directional pointer (white). Head + Direction frames the head with your frame color and adds a direction nub")
+        @ConfigEditorDropdown(values = {"Head", "Arrow", "Head + Direction"}, initialIndex = 2)
+        public int iconStyle = 2;
+
+        @Expose
+        @ConfigOption(name = "Marker Scale", desc = "Control how big your own marker is")
+        @ConfigEditorSliderAnnotation(minValue = 0.25f, maxValue = 2f, minStep = 0.05f)
+        public float markerScale = 1.15f;
+
+        @Expose
+        @ConfigOption(name = "Frame Color", desc = "Frame color for your marker in Head + Direction mode")
+        @ConfigEditorColour
+        public String frameColor = "0:255:85:255:85";
+
+        @Expose
+        @ConfigOption(name = "Flow Chroma Frame", desc = "Animate the frame with flowing rainbow chroma. Only active when Frame Color has a chroma speed above 0 — at speed 0 the solid picked color is used")
+        @ConfigEditorBoolean
+        public boolean frameFlowChroma = true;
+    }
+
+    public static class Teammates {
+
+        @Expose
+        @ConfigOption(name = "Icon Style", desc = "Head shows each player's skin face. Arrow shows Hypixel-map-style directional pointers (blue/yellow/orange/red per teammate). Head + Direction frames the head with the frame color and adds a direction nub")
+        @ConfigEditorDropdown(values = {"Head", "Arrow", "Head + Direction"})
+        public int iconStyle = 0;
+
+        @Expose
+        @ConfigOption(name = "Marker Scale", desc = "Control how big other players' markers are")
+        @ConfigEditorSliderAnnotation(minValue = 0.25f, maxValue = 2f, minStep = 0.05f)
+        public float markerScale = 1f;
+
+        @Expose
+        @ConfigOption(name = "Frame Color", desc = "Frame color for teammates in Head + Direction mode")
+        @ConfigEditorColour
+        public String frameColor = "0:255:255:255:85";
+
+        @Expose
+        @ConfigOption(name = "Flow Chroma Frame", desc = "Animate the frame with flowing rainbow chroma. Only active when Frame Color has a chroma speed above 0 — at speed 0 the solid picked color is used")
+        @ConfigEditorBoolean
+        public boolean frameFlowChroma = true;
     }
 
     public static class Rooms {

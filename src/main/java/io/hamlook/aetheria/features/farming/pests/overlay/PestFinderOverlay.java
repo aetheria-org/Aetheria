@@ -12,7 +12,7 @@ import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.InputEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.input.Keyboard;
 
 import java.util.ArrayList;
@@ -32,9 +32,7 @@ public class PestFinderOverlay extends Overlay {
     }
 
     private static PestFinderConfig config() {
-        if (ATHRConfig.feature == null
-                || ATHRConfig.feature.farming == null
-                || ATHRConfig.feature.farming.pests == null) {
+        if (ATHRConfig.feature == null || ATHRConfig.feature.farming.pests == null) {
             return null;
         }
         return ATHRConfig.feature.farming.pests.pestFinder;
@@ -43,7 +41,36 @@ public class PestFinderOverlay extends Overlay {
     private static boolean warpHintFailureLogged = false;
 
     private static Integer targetPlot(boolean preview) {
-        return preview ? 4 : FarmingApi.getTargetInfestedPlot();
+        try {
+            return preview ? 4 : FarmingApi.getTargetInfestedPlot();
+        } catch (Throwable t) {
+            // The empty-map path is provably null-safe, yet a bare NPE has been
+            // observed attributed to this exact line with no deeper frame. Catch
+            // at the source and dump full state once (debug-gated) so the next
+            // occurrence identifies itself instead of hiding behind the caller.
+            logWarpHintFailure(t);
+            return null;
+        }
+    }
+
+    private static void logWarpHintFailure(Throwable t) {
+        if (!debugEnabled() || warpHintFailureLogged) return;
+        warpHintFailureLogged = true;
+        Aetheria.logger.log(Level.WARNING, "[PestFinder] warpHint failed", t);
+        StringBuilder frames = new StringBuilder();
+        for (StackTraceElement frame : t.getStackTrace()) {
+            if (frames.length() > 0) frames.append(" <- ");
+            frames.append(frame);
+            if (frames.length() > 600) break;
+        }
+        ChatUtils.sendMessage("§c[ASM] §7Pest Finder warp hint failed: §f" + t
+                + " §7at §f" + frames
+                + " §7[pests=" + FarmingApi.getActivePests()
+                + ", preview=" + "see-log" + "]");
+    }
+
+    private static boolean debugEnabled() {
+        return ATHRConfig.feature != null && ATHRConfig.feature.debug.enableDebug;
     }
 
     private static String warpHint(boolean preview) {
@@ -57,14 +84,7 @@ public class PestFinderOverlay extends Overlay {
             if (!preview && cfg.hideWarpHintInPlot && FarmingApi.isPlayerInPlot(plot)) return null;
             return "§7Press §e" + KeybindHelper.getKeyName(key) + " §7to warp to §bPlot " + plot;
         } catch (Exception e) {
-            if (!warpHintFailureLogged) {
-                warpHintFailureLogged = true;
-                Aetheria.logger.log(Level.WARNING, "[PestFinder] warpHint failed", e);
-                String at = e.getStackTrace().length > 0
-                        ? " (" + e.getStackTrace()[0] + ")" : "";
-                ChatUtils.sendMessage("§c[ASM] §7Pest Finder warp hint failed: §f"
-                        + e + at);
-            }
+            logWarpHintFailure(e);
             return null;
         }
     }
@@ -92,9 +112,12 @@ public class PestFinderOverlay extends Overlay {
 
     @Override
     public List<String> getLines(boolean preview) {
+        PestFinderConfig cfg = config();
+        List<Integer> ordinals = cfg != null ? cfg.pestFinderLines : PestFinderConfig.DEFAULT_LINES;
+        if (!preview && cfg == null) return new ArrayList<>();
         List<String> lines = new ArrayList<>();
         lines.add("§6§lPests");
-        for (int ordinal : config().pestFinderLines) {
+        for (int ordinal : ordinals) {
             String line = entryLine(ordinal, preview);
             if (line != null) {
                 lines.add(line);
@@ -129,55 +152,68 @@ public class PestFinderOverlay extends Overlay {
 
     @Override
     public Position getPosition() {
-        return config().pestFinderPos;
+        PestFinderConfig cfg = config();
+        return cfg != null ? cfg.pestFinderPos : new Position(-368, 52, false, false);
     }
 
     @Override
     public float getScale() {
-        return config().scale;
+        PestFinderConfig cfg = config();
+        return cfg != null ? cfg.scale : 1f;
     }
 
     @Override
     public int getBgColor() {
-        return config().bgColor;
+        PestFinderConfig cfg = config();
+        return cfg != null ? cfg.bgColor : 0x80000000;
     }
 
     @Override
     public int getCornerRadius() {
-        return config().cornerRadius;
+        PestFinderConfig cfg = config();
+        return cfg != null ? cfg.cornerRadius : 4;
     }
 
     @Override
     protected boolean isEnabled() {
-        if (!config().enabled || !SkyblockData.isOnSkyblock() || SkyblockData.getCurrentLocation() != SkyblockData.Location.GARDEN)
+        PestFinderConfig cfg = config();
+        if (cfg == null || !cfg.enabled || !SkyblockData.isOnSkyblock() || SkyblockData.getCurrentLocation() != SkyblockData.Location.GARDEN)
             return false;
-        if (config().showOnlyWhileHoldingVacuum && !FarmingApi.isHoldingVacuum()) return false;
-        if (config().hideWhileFarming && FarmingApi.isCurrentlyFarming()) return false;
-        return !config().hideOnFarmingTool || !FarmingApi.isHoldingFarmingTool();
+        if (cfg.showOnlyWhileHoldingVacuum && !FarmingApi.isHoldingVacuum()) return false;
+        if (cfg.hideWhileFarming && FarmingApi.isCurrentlyFarming()) return false;
+        return !cfg.hideOnFarmingTool || !FarmingApi.isHoldingFarmingTool();
     }
 
     @Override
     protected boolean hideOnChat() {
-        return config().hideOnChat;
+        PestFinderConfig cfg = config();
+        return cfg == null || cfg.hideOnChat;
     }
 
     @Override
     protected boolean hideOnTab() {
-        return config().hideOnTab;
+        PestFinderConfig cfg = config();
+        return cfg == null || cfg.hideOnTab;
     }
 
     @Override
     protected boolean hideOnDebug() {
-        return config().hideOnDebug;
+        PestFinderConfig cfg = config();
+        return cfg == null || cfg.hideOnDebug;
     }
 
     @SubscribeEvent
-    public void onKeyInput(InputEvent.KeyInputEvent event) {
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
         PestFinderConfig config = config();
-        if (config == null || !config.enabled || config.warpKey == Keyboard.KEY_NONE) return;
-        if (mc.thePlayer == null || mc.currentScreen != null) return;
-        if (SkyblockData.getCurrentLocation() != SkyblockData.Location.GARDEN) return;
-        if (!KeybindHelper.isKeyPressed(config.warpKey)) return;
+        int warpKey = config != null ? config.warpKey : 0;
+        boolean active = config != null && config.enabled && warpKey != Keyboard.KEY_NONE
+                && mc.thePlayer != null && mc.currentScreen == null
+                && SkyblockData.getCurrentLocation() == SkyblockData.Location.GARDEN;
+        if (!active || !KeybindHelper.isKeyTapped(warpKey)) {
+            KeybindHelper.resetKeyTap(warpKey);
+            return;
+        }
         if (config.hideWarpHintInPlot) {
             Integer nearest = FarmingApi.getTargetInfestedPlot();
             if (FarmingApi.isPlayerInPlot(nearest)) return;

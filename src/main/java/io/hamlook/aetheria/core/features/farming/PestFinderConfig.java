@@ -7,9 +7,13 @@ import org.lwjgl.input.Keyboard;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class PestFinderConfig {
+
+    /** Default display-line ordinals; shared with the overlay's null-config preview fallback. */
+    public static final List<Integer> DEFAULT_LINES = Collections.unmodifiableList(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7));
 
     @Expose
     @ConfigOption(name = "Enable", desc = "Show the Garden pest tab data (total pests, plots, spray, repellent, bonus, cooldown) as an overlay")
@@ -73,7 +77,7 @@ public class PestFinderConfig {
             "§7Bonus Pest Chance: §245",
             "§7Press §e<Key> §7to warp to §bPlot 4"
     })
-    public List<Integer> pestFinderLines = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7));
+    public List<Integer> pestFinderLines = new ArrayList<>(DEFAULT_LINES);
 
     @Expose
     @ConfigOption(name = "Edit Position", desc = "Drag to reposition the pest finder overlay")

@@ -34,10 +34,29 @@ public class DungeonMapOverlay extends Overlay {
     public static DungeonPlayerTracker playerTracker = new DungeonPlayerTracker();
     private DungeonMapGrid cachedGrid = null;
     private byte[] lastMapColors = null;
-    private boolean spawnRecorded = false;
+    /**
+     * Frozen map<->world calibration, captured once the entrance room's world
+     * position is known (detector latch) and never re-derived afterwards: the
+     * server's dungeon map keeps a fixed pixel<->world mapping for the whole
+     * run, so recalculating from freshly parsed geometry (whose raster-first
+     * anchor can relocate as rooms are drawn) would offset entity-based self
+     * tracking. Kept separate from {@link DungeonMapGrid} fields so live parse
+     * values remain untouched for other consumers.
+     */
+    private boolean mapCalibrated = false;
+    private float calibOriginX = 0f;
+    private float calibOriginZ = 0f;
+    private float calibBtp = 0f;
+    /** Entrance-corner pixel anchor from this run's first valid parse; -1 until captured. */
+    private int anchorStartX = -1;
+    private int anchorStartY = -1;
     private double entranceCenterX = 0;
     private double entranceCenterZ = 0;
     private int lastPopulateTick = -40;
+
+    public static boolean isMapCalibrated() {
+        return instance != null && instance.mapCalibrated;
+    }
 
     public DungeonMapOverlay() {
         super(128, 128);
@@ -64,7 +83,12 @@ public class DungeonMapOverlay extends Overlay {
         playerTracker.clear();
         DungeonRoomDetector.getVisitedRooms().clear();
         dungeonRunEnded = false;
-        spawnRecorded = false;
+        mapCalibrated = false;
+        calibOriginX = 0f;
+        calibOriginZ = 0f;
+        calibBtp = 0f;
+        anchorStartX = -1;
+        anchorStartY = -1;
         lastPopulateTick = -40;
     }
 
@@ -144,7 +168,7 @@ public class DungeonMapOverlay extends Overlay {
         EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
         MapData info = player != null ? getDungeonMap(player) : null;
         if (info != null) playerTracker.matchDecorations(info.mapDecorations);
-        DungeonMapRenderer.render(cachedGrid, centerX, centerY, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms(), showRoomNames, colorRoomNames);
+        DungeonMapRenderer.render(cachedGrid, centerX, centerY, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms(), showRoomNames, colorRoomNames, mapCalibrated);
     }
 
     /**
@@ -162,19 +186,36 @@ public class DungeonMapOverlay extends Overlay {
         if (info == null) return;
         if (!Arrays.equals(info.colors, lastMapColors)) {
             lastMapColors = Arrays.copyOf(info.colors, info.colors.length);
-            cachedGrid = DungeonMapGrid.parse(info, ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.cellSizeBlocks);
+            // Reparses seed this run's captured entrance-corner anchor so the grid
+            // coordinate frame is identical every parse; only the very first valid
+            // parse (entrance-only map) locates the anchor by raster scan.
+            cachedGrid = anchorStartX >= 0
+                    ? DungeonMapGrid.parse(info, ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.cellSizeBlocks, anchorStartX, anchorStartY)
+                    : DungeonMapGrid.parse(info, ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.cellSizeBlocks);
             if (cachedGrid.isValid()) {
-                if (!spawnRecorded && DungeonRoomDetector.roomBoundsValid && DungeonRoomDetector.originBlock != null) {
+                if (anchorStartX < 0) {
+                    anchorStartX = cachedGrid.getStartPixelX();
+                    anchorStartY = cachedGrid.getStartPixelY();
+                }
+                // Calibration latch: pair the entrance's world position (block
+                // scanner) with its pixel position (this parse — anchored to the
+                // same corner the calibration freezes). One-shot per run.
+                if (!mapCalibrated && DungeonRoomDetector.roomBoundsValid && DungeonRoomDetector.originBlock != null) {
                     entranceCenterX = (DungeonRoomDetector.roomMinX + DungeonRoomDetector.roomMaxX) / 2.0 + 0.5;
                     entranceCenterZ = (DungeonRoomDetector.roomMinZ + DungeonRoomDetector.roomMaxZ) / 2.0 + 0.5;
-                    cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) entranceCenterX;
-                    cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) entranceCenterZ;
-                    spawnRecorded = true;
+                    calibOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) entranceCenterX;
+                    calibOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) entranceCenterZ;
+                    calibBtp = cachedGrid.blockToPixel;
+                    mapCalibrated = true;
                 }
-                if (spawnRecorded) {
-                    cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) entranceCenterX;
-                    cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) entranceCenterZ;
+                if (mapCalibrated) {
+                    cachedGrid.worldOriginX = calibOriginX;
+                    cachedGrid.worldOriginZ = calibOriginZ;
+                    cachedGrid.blockToPixel = calibBtp;
                 } else {
+                    // Uncalibrated fallback keeps worldToPixel total for non-self
+                    // consumers; entity-based self tracking is gated off until
+                    // calibrated (renderer falls back to self's decoration).
                     cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) player.posX;
                     cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) player.posZ;
                 }

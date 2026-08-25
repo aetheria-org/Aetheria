@@ -248,10 +248,10 @@ public final class FarmingApi {
     public static double bonusTotal(VisitorBonus.Type type) {
         double total = 0;
         for (Map.Entry<String, List<VisitorBonus>> entry : VISITOR_BONUSES.entrySet()) {
-            int mult = effectiveVisitorCount(entry.getKey());
-            if (mult <= 0) continue;
+            int multiplier = effectiveVisitorCount(entry.getKey());
+            if (multiplier <= 0) continue;
             for (VisitorBonus bonus : entry.getValue()) {
-                if (bonus.type == type) total += bonus.amount * mult;
+                if (bonus.type == type) total += bonus.amount * multiplier;
             }
         }
         return total;

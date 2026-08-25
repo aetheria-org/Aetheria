@@ -150,7 +150,9 @@ public class DungeonPlayerTracker {
 
             float x = (float) deco.func_176112_b() / 2.0F + 64.0F;
             float z = (float) deco.func_176113_c() / 2.0F + 64.0F;
-            float yaw = (float) (deco.func_176111_d() * 360) / 16.0F;
+            // Vanilla rotates decorations at rot*360/16 + 180; store the
+            // render-ready angle so consumers can pass it straight through.
+            float yaw = (float) (deco.func_176111_d() * 360) / 16.0F + 180F;
 
             currentPositions.put(playerName, new float[]{x, z, yaw});
         }

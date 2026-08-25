@@ -114,13 +114,9 @@ public final class VisitorShoppingList {
     }
 
     public static boolean isOrderFlowActive() {
-        return isOrderFlowActive(0L);
-    }
-
-    private static boolean isOrderFlowActive(long maxAgeMs) {
         String signature = FarmingApi.getLastChestSignature();
         return !signature.isEmpty() && nameMatchesFlow(signature)
-                && FarmingApi.isSearchFresh(maxAgeMs > 0 ? maxAgeMs : SEARCH_TTL_MS);
+                && FarmingApi.isSearchFresh(SEARCH_TTL_MS);
     }
 
     @SubscribeEvent
@@ -304,24 +300,24 @@ public final class VisitorShoppingList {
                 ChatUtils.sendMessage("§c[ASM] §7Good deal, paying §6" + fmt
                         + "§7/c. Click Refuse again to confirm.");
             } else {
-                ChatUtils.sendMessage("§e[ASM] §7Expensive deal, §cpaying " + fmt + "§7/c above your §6"
+                ChatUtils.sendMessage("§e[ASM] §7Expensive deal, §c" + "paying " + fmt + "§7/c above your §6"
                         + formatPrice(cfg.copperThreshold) + "§7 limit. Click Accept again to confirm.");
             }
             return;
         }
 
         FarmingApi.markVisitorCompleted(visitor);
-        postDealMessage(visitor, accept, per, cfg);
+        postDealMessage(accept, per, cfg);
     }
 
-    private static void postDealMessage(String visitor, boolean accepted, Double per, VisitorsConfig cfg) {
+    private static void postDealMessage(boolean accepted, Double per, VisitorsConfig cfg) {
         if (per == null || cfg == null || !cfg.copperPriceDisplay) return;
         String fmt = formatPrice(per);
         boolean goodDeal = per <= cfg.copperThreshold;
         if (!accepted && goodDeal) {
             ChatUtils.sendMessage("§a[ASM] §7Refused a good copper deal, paying §6" + fmt + "§7/c.");
         } else if (accepted && !goodDeal) {
-            ChatUtils.sendMessage("§e[ASM] §7Accepted an expensive deal, §cpaid " + fmt
+            ChatUtils.sendMessage("§e[ASM] §7Accepted an expensive deal, §c" + "paid " + fmt
                     + "§7/c above your §6" + formatPrice(cfg.copperThreshold) + "§7 limit.");
         }
     }
@@ -525,10 +521,10 @@ public final class VisitorShoppingList {
     public static LinkedHashMap<String, Integer> getMergedNeeds() {
         LinkedHashMap<String, Integer> merged = new LinkedHashMap<>();
         for (Map.Entry<String, LinkedHashMap<String, Integer>> visitor : FarmingApi.getVisitorNeeds().entrySet()) {
-            int mult = FarmingApi.effectiveVisitorCount(visitor.getKey());
-            if (mult <= 0) continue;
+            int multiplier = FarmingApi.effectiveVisitorCount(visitor.getKey());
+            if (multiplier <= 0) continue;
             for (Map.Entry<String, Integer> entry : visitor.getValue().entrySet()) {
-                merged.merge(entry.getKey(), entry.getValue() * mult, Integer::sum);
+                merged.merge(entry.getKey(), entry.getValue() * multiplier, Integer::sum);
             }
         }
         return merged;
@@ -550,10 +546,10 @@ public final class VisitorShoppingList {
     public static double totalRewardValue() {
         double total = 0;
         for (Map.Entry<String, LinkedHashMap<String, Integer>> visitor : FarmingApi.getVisitorRewards().entrySet()) {
-            int mult = FarmingApi.effectiveVisitorCount(visitor.getKey());
-            if (mult <= 0) continue;
+            int multiplier = FarmingApi.effectiveVisitorCount(visitor.getKey());
+            if (multiplier <= 0) continue;
             for (Map.Entry<String, Integer> entry : visitor.getValue().entrySet()) {
-                total += unitPrice(entry.getKey()) * entry.getValue() * mult;
+                total += unitPrice(entry.getKey()) * entry.getValue() * multiplier;
             }
         }
         return total;
@@ -627,7 +623,7 @@ public final class VisitorShoppingList {
         LinkedHashMap<String, Integer> needs = preview ? previewNeeds() : getMergedNeeds();
         if (needs.isEmpty()) {
             lines.add(VisitorLine.text("§eVisitor Shopping List"));
-            lines.add(VisitorLine.text("§7No visitor items yet — open a visitor"));
+            lines.add(VisitorLine.text("§7No visitor items yet. Open a visitor"));
             return lines;
         }
         double total = cfg.panel.showPrices ? totalCost(needs) : 0;
@@ -721,7 +717,7 @@ public final class VisitorShoppingList {
         if (cfg != null && cfg.checkPurseCoins) {
             double cost = unitPrice(itemId) * missing;
             double purse = getPurseCoins();
-            if (cost > 0 && purse >= 0 && purse < cost) {
+            if (purse >= 0 && purse < cost) {
                 SoundUtils.playSound("note.pling");
                 ChatUtils.sendMessage("§c[ASM] §7Not enough coins! Need §6" + formatPrice(cost)
                         + "§7, purse has §6" + formatPrice(purse) + "§7.");
@@ -765,16 +761,16 @@ public final class VisitorShoppingList {
         if (raw == null) return -1;
         String s = ColorUtils.stripColor(raw).trim().replace(",", "");
         if (s.isEmpty()) return -1;
-        double mult = 1;
+        double multiplier = 1;
         switch (Character.toLowerCase(s.charAt(s.length() - 1))) {
-            case 'k': mult = 1_000; break;
-            case 'm': mult = 1_000_000; break;
-            case 'b': mult = 1_000_000_000; break;
+            case 'k': multiplier = 1_000; break;
+            case 'm': multiplier = 1_000_000; break;
+            case 'b': multiplier = 1_000_000_000; break;
             default:
                 if (!Character.isDigit(s.charAt(s.length() - 1))) return -1;
         }
         try {
-            return Double.parseDouble(mult == 1 ? s : s.substring(0, s.length() - 1)) * mult;
+            return Double.parseDouble(multiplier == 1 ? s : s.substring(0, s.length() - 1)) * multiplier;
         } catch (NumberFormatException e) {
             return -1;
         }
