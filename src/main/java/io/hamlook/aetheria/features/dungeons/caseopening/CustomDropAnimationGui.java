@@ -1,16 +1,8 @@
-package io.hamlook.aetheria.features.chestanimations.caseopening;
+package io.hamlook.aetheria.features.dungeons.caseopening;
 
-import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.DebugLogger;
-import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.features.chestanimations.ChestAnimations;
-import io.hamlook.aetheria.features.chestanimations.ChestListener;
-import io.hamlook.aetheria.features.chestanimations.CitManager;
-import io.hamlook.aetheria.features.chestanimations.TextureData;
-import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.item.ItemUtils;
-import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import io.hamlook.aetheria.Resources;
 import io.netty.util.internal.ThreadLocalRandom;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
@@ -21,10 +13,6 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.shader.ShaderGroup;
-import net.minecraft.init.Items;
-import net.minecraft.inventory.ContainerChest;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
@@ -32,9 +20,7 @@ import org.lwjgl.opengl.GL11;
 import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class CustomDropAnimationGui extends GuiScreen {
 
@@ -43,8 +29,8 @@ public class CustomDropAnimationGui extends GuiScreen {
     private static final ResourceLocation AUDIO = new ResourceLocation("gui.button.press");
 
     private final Minecraft mc = Minecraft.getMinecraft();
+    private final FloatFontRenderer floatFont;
     private final DungeonDropData.Rule rewardItem;
-    private final ItemStack rewardStack;
     private final DungeonDropData.Floor floor;
     private final DungeonDropData.CaseMaterial material;
 
@@ -70,23 +56,16 @@ public class CustomDropAnimationGui extends GuiScreen {
     private int lastBoxDistance = 0;
     private boolean hasShownResult = false;
 
-    public CustomDropAnimationGui(ContainerChest container, DungeonDropData.Floor floor, DungeonDropData.CaseMaterial material) {
+    public CustomDropAnimationGui(DungeonDropData.Rule rewardItem, DungeonDropData.Floor floor, DungeonDropData.CaseMaterial material) {
         this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(AUDIO, 1.0F));
+        this.floatFont = new FloatFontRenderer(mc.fontRendererObj);
+        this.rewardItem = rewardItem;
         this.floor = floor;
         this.material = material;
-        this.rewardItem = ChestAnimations.findBestReward(container, floor, material);
-        this.rewardStack = findRewardStack(container, rewardItem);
         this.randstop = (float) randStopPoint();
         this.randslow = (float) ThreadLocalRandom.current().nextDouble(-2, 2);
         this.guiOpenStartTime = System.nanoTime();
         this.lastFrameTime = System.nanoTime();
-
-        if (this.rewardItem == null) {
-            Aetheria.logger.warning("[CustomDropAnimationGui] No matching reward found (floor=" + floor + ", material=" + material + ") — returning to chest GUI");
-            Minecraft.getMinecraft().displayGuiScreen(ChestListener.originalGui);
-            return;
-        }
-        Aetheria.logger.info("[CustomDropAnimationGui] Animation started — reward=" + rewardItem.item.name() + " (rarity " + rewardItem.rarity + "), floor=" + floor + ", material=" + material);
         buildCarousel(rewardItem);
     }
 
@@ -97,75 +76,59 @@ public class CustomDropAnimationGui extends GuiScreen {
         return ThreadLocalRandom.current().nextDouble(0.8, 1.0);
     }
 
-    private static ItemStack findRewardStack(ContainerChest container, DungeonDropData.Rule reward) {
-        if (container == null || reward == null) return null;
-        IInventory lower = ContainerUtils.getLowerInventory(container);
-        if (lower == null) return null;
-        for (int i = 0; i < lower.getSizeInventory(); i++) {
-            ItemStack s = lower.getStackInSlot(i);
-            if (s == null || s.getItem() == null) continue;
-            if (reward.item.getId().equals(ItemUtils.getEffectiveItemId(s))) return s;
-        }
-        return null;
-    }
-
     private void buildCarousel(DungeonDropData.Rule rewardItem) {
         List<DungeonDropData.Rule> allDrops = DungeonDropData.getDrops(material, floor);
-        List<DungeonDropData.Rule> books = new ArrayList<>();
-        List<DungeonDropData.Rule> nonBooks = new ArrayList<>();
-        for (DungeonDropData.Rule r : allDrops) {
-            if (r.item.isBook()) books.add(r);
-            else nonBooks.add(r);
-        }
+        List<List<DungeonDropData.Rule>> buckets = new ArrayList<>();
+        for (int i = 0; i < 7; i++) buckets.add(new ArrayList<>());
+        for (DungeonDropData.Rule r : allDrops) buckets.get(r.rarity - 1).add(r);
+
+        int rollsize = 1000;
+        List<Integer> weight = new ArrayList<>(java.util.Arrays.asList(2, 4, 10, 20, 100, 100));
+        List<Integer> amount = new ArrayList<>();
+        List<Boolean> checkRepeat = new ArrayList<>(java.util.Arrays.asList(false, false, false));
+        if (rewardItem.rarity <= 3) checkRepeat.set(rewardItem.rarity - 1, true);
 
         int rolls = itemCount - 1;
-        int bookCap = Math.min(books.size(), Math.max(rolls / 4, 1));
-
-        List<DungeonDropData.Rule> pool = new ArrayList<>();
-        int[] tierWeight = {2, 5, 12, 25, 60, 100, 140};
-        for (DungeonDropData.Rule r : nonBooks) {
-            if (r.rarity <= 3 && r.item.equals(rewardItem.item)) continue;
-            int w = tierWeight[Math.max(0, Math.min(6, r.rarity - 1))];
-            for (int k = 0; k < w; k++) pool.add(r);
+        for (int i = 0; i < 6; i++) {
+            if (buckets.get(i).isEmpty()) {
+                amount.add(0);
+                continue;
+            }
+            int count = 0;
+            if (i < 3 && checkRepeat.get(i)) {
+                amount.add(0);
+                continue;
+            }
+            for (int j = 0; j < rolls; j++) {
+                if (Math.random() < (float) weight.get(i) / rollsize) {
+                    count++;
+                    if (i < 3) break;
+                    if (count == buckets.get(i).size()) break;
+                }
+            }
+            amount.add(count);
+            rolls -= count;
         }
 
-        Map<DungeonDropData.Rule, Integer> picks = new HashMap<>();
-        int nonBookSlots = pool.isEmpty() ? 0 : rolls - bookCap;
-        int filled = 0;
-        for (int j = 0; j < nonBookSlots; j++) {
-            DungeonDropData.Rule picked = pickWeighted(pool, picks);
-            if (picked == null) break;
-            carouselItems.add(picked);
-            picks.merge(picked, 1, Integer::sum);
-            filled++;
-        }
-
-        int bookSlots = pool.isEmpty() ? rolls : bookCap + (nonBookSlots - filled);
-        if (books.isEmpty()) {
-            for (int j = 0; j < bookSlots; j++)
-                carouselItems.add(allDrops.get(ThreadLocalRandom.current().nextInt(allDrops.size())));
-        } else {
-            for (int j = 0; j < bookSlots; j++)
-                carouselItems.add(books.get(ThreadLocalRandom.current().nextInt(books.size())));
+        for (int i = 6; i >= 0; i--) {
+            if (buckets.get(i).isEmpty()) continue;
+            if (i == 6) {
+                for (int j = 0; j < rolls; j++)
+                    carouselItems.add(buckets.get(i).get(ThreadLocalRandom.current().nextInt(buckets.get(i).size())));
+            } else if (i < 3 && amount.get(i) > 0) {
+                int x = ThreadLocalRandom.current().nextInt(0, 90);
+                int slot = (int) ((Math.exp(0.04605 * x) * (-1) + 100) / 100 * carouselItems.size() - 1);
+                carouselItems.add(slot, buckets.get(i).get(ThreadLocalRandom.current().nextInt(buckets.get(i).size())));
+            } else {
+                for (int j = 0; j < amount.get(i); j++) {
+                    int slot = ThreadLocalRandom.current().nextInt(carouselItems.size() - 1);
+                    int idx = ThreadLocalRandom.current().nextInt(buckets.get(i).size());
+                    carouselItems.add(slot, buckets.get(i).get(idx));
+                    buckets.get(i).remove(idx);
+                }
+            }
         }
         carouselItems.add(rewardSlot, rewardItem);
-    }
-
-    private DungeonDropData.Rule pickWeighted(List<DungeonDropData.Rule> pool, Map<DungeonDropData.Rule, Integer> picks) {
-        double total = 0;
-        List<Double> cum = new ArrayList<>();
-        for (DungeonDropData.Rule r : pool) {
-            int p = picks.getOrDefault(r, 0);
-            double mult = p == 0 ? 1.0 : p == 1 ? 0.5 : 0.0;
-            total += mult;
-            cum.add(total);
-        }
-        if (total <= 0) return null;
-        double roll = ThreadLocalRandom.current().nextDouble(total);
-        for (int i = 0; i < pool.size(); i++) {
-            if (roll < cum.get(i)) return pool.get(i);
-        }
-        return pool.get(pool.size() - 1);
     }
 
     private double velocityFromX(double distanceToStop) {
@@ -238,15 +201,6 @@ public class CustomDropAnimationGui extends GuiScreen {
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        if (rewardItem == null) {
-            Aetheria.logger.warning("[CustomDropAnimationGui] drawScreen skipped: rewardItem is null");
-            return;
-        }
-        if (lastFrameTime == 0L) {
-            Aetheria.logger.info("[CustomDropAnimationGui] First drawScreen — reward=" + rewardItem.item.name()
-                    + " blurShader=" + (blurShader == null ? "null" : "ok")
-                    + " fb1=" + (frameBufferLayer1 == null ? "null" : "ok"));
-        }
         // Clear the screen to prevent black background with OptiFine
         drawDefaultBackground();
 
@@ -317,7 +271,6 @@ public class CustomDropAnimationGui extends GuiScreen {
         if (blurShader != null) blurShader.loadShaderGroup(partialTicks);
         renderLayer(frameBufferLayer2, progress, true);
         renderJudgementLine();
-        renderItemNames(progress);
         GL11.glPopMatrix();
 
         super.drawScreen(mouseX, mouseY, partialTicks);
@@ -378,70 +331,20 @@ public class CustomDropAnimationGui extends GuiScreen {
             GlStateManager.disableBlend();
 
             renderItemImage(i, x, y, size);
-        }
-    }
 
-    private void renderItemNames(float size) {
-        if (!ATHRConfig.feature.dungeons.caseOpening.caseOpeningAllowText) return;
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableBlend();
-        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        float textScale = ATHRConfig.feature.dungeons.caseOpening.caseOpeningTextScale;
-        float maxRadius = centerY * 2f / 3f;
-        for (int i = 0; i < carouselItems.size(); i++) {
-            float x = centerX - (offsetX - (i - 3) * spacing) * size;
-            float y = centerY - itemBoxHeight / 2 * size;
-            if (x + itemBoxWidth < 0 || x > screenWidth || y + itemBoxHeight < 0 || y > screenHeight) continue;
-
-            float boxCx = x + itemBoxWidth * size / 2;
-            float boxCy = y + itemBoxHeight * size / 2;
-            float dx = boxCx - centerX, dy = boxCy - centerY;
-            if (dx * dx + dy * dy > maxRadius * maxRadius) continue;
-
-            DropRarity rarity = DropRarity.fromIndex(carouselItems.get(i).rarity);
-            if (rarity == null) continue;
-            int boxColor = getBoxColor(rarity);
-
-            float textX = x + itemBoxWidth * size / 2;
-            float textY = y + itemBoxHeight * size + 8;
-            float factor = textScale * 3f;
-            String text = normalizeString(carouselItems.get(i).item.name());
-            float textWidth = mc.fontRendererObj.getStringWidth(text);
-            TextRenderUtils.drawStringScaled(text, mc.fontRendererObj, textX - textWidth * factor / 2f, textY, true, boxColor, factor);
+            if (ATHRConfig.feature.dungeons.caseOpening.caseOpeningAllowText) {
+                float textScale = ATHRConfig.feature.dungeons.caseOpening.caseOpeningTextScale;
+                float textX = x + itemBoxWidth * size / 2;
+                float textY = y + itemBoxHeight * size * 3 / 4;
+                GL11.glPushMatrix();
+                GL11.glScalef(textScale, textScale, 1f);
+                floatFont.drawCenteredString(normalizeString(carouselItems.get(i).item.name()), textX / textScale, textY / textScale, boxColor, true);
+                GL11.glPopMatrix();
+            }
         }
     }
 
     private void renderItemImage(int slot, float x, float y, float size) {
-        float imageSize = 0.8f * itemBoxHeight * size;
-        float imageX = x + (itemBoxWidth * size) / 2 - imageSize / 2;
-        float imageY = y + (itemBoxHeight * size) / 2 - imageSize / 2;
-
-        ItemStack renderStack = null;
-        if (slot == rewardSlot && rewardStack != null) {
-            renderStack = rewardStack;
-        } else if (carouselItems.get(slot).item.isBook()) {
-            renderStack = new ItemStack(Items.enchanted_book);
-        }
-
-        if (renderStack != null) {
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(imageX, imageY, 0.0f);
-            GlStateManager.scale(imageSize / 16f, imageSize / 16f, 1.0f);
-            try {
-                mc.getRenderItem().renderItemAndEffectIntoGUI(renderStack, 0, 0);
-            } finally {
-                // Enchanted stacks leave a multiplicative glint blend function
-                // set; restore standard alpha blending for the text drawn after
-                // us (carousel item names).
-                GlStateManager.tryBlendFuncSeparate(
-                        GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
-                GlStateManager.enableBlend();
-                GlStateManager.color(1f, 1f, 1f, 1f);
-                GlStateManager.popMatrix();
-            }
-            return;
-        }
-
         String name = carouselItems.get(slot).item.name();
         TextureData tex = CitManager.getTextureData(name);
         if (tex.getRl() == null) return;
@@ -450,6 +353,9 @@ public class CustomDropAnimationGui extends GuiScreen {
         float frameDuration = tex.getFrameTime() * 50f;
         int frameIndex = (int) ((System.currentTimeMillis() % 10000L / frameDuration) % tex.getFrames());
         float v = frameIndex * frameHeight;
+        float imageSize = 0.8f * itemBoxHeight * size;
+        float imageX = x + (itemBoxWidth * size) / 2 - imageSize / 2;
+        float imageY = y + (itemBoxHeight * size) / 2 - imageSize / 2;
 
         try {
             mc.getTextureManager().bindTexture(tex.getRl());
@@ -531,7 +437,6 @@ public class CustomDropAnimationGui extends GuiScreen {
     @Override
     protected void keyTyped(char typedChar, int keyCode) throws IOException {
         if (keyCode == Keyboard.KEY_ESCAPE) {
-            Aetheria.logger.info("[CustomDropAnimationGui] ESC pressed — returning to chest GUI. originalGui=" + (ChestListener.originalGui == null ? "NULL" : ChestListener.originalGui.getClass().getSimpleName()));
             mc.displayGuiScreen(ChestListener.originalGui);
             return;
         }

@@ -1,0 +1,11 @@
+package io.hamlook.aetheria.features.dungeons.caseopening;
+
+import net.minecraft.util.ResourceLocation;
+
+public enum ItemEnum {
+    NECRON_HANDLE, IMPLOSION_SCROLL, SHADOW_WARP_SCROLL, WITHER_SHIELD_SCROLL, AUTO_RECOMBOBULATOR, RECOMBOBULATOR_3000, WITHER_CHESTPLATE, WITHER_LEGGINGS, WITHER_CLOAK, WITHER_HELMET, WITHER_BLOOD, FUMING_POTATO_BOOK, WITHER_BOOTS, WITHER_CATALYST, HOT_POTATO_BOOK, PRECURSOR_GEAR, STORM_THE_FISH, MAXOR_THE_FISH, GOLDOR_THE_FISH, ultimate_soul_eater_1, ultimate_one_for_all_1, ultimate_wisdom_2, ultimate_last_stand_2, ultimate_wise_2, ultimate_combo_2, ultimate_jerry_3, ultimate_bank_3, ultimate_no_pain_no_gain_2, infinite_quiver_7, feather_falling_7, rejuvenate_3, ultimate_no_pain_no_gain_1, ultimate_combo_1, ultimate_bank_2, rejuvenate_2, ultimate_wisdom_1, ultimate_last_stand_1, ultimate_wise_1, ultimate_jerry_2, thunderlord_7, ultimate_swarm_1, DARK_CLAYMORE, FIFTH_MASTER_STAR, MASTER_SKULL_TIER_5, MASTER_SKULL_TIER_4, PRECURSOR_EYE, GIANTS_SWORD, NECROMANCER_LORD_CHESTPLATE, SUMMONING_RING, FEL_SKULL, NECROMANCER_SWORD, NECROMANCER_LORD_LEGGINGS, SOULWEAVER_GLOVES, NECROMANCER_LORD_HELMET, SADAN_BROOCH, NECROMANCER_LORD_BOOTS, FOURTH_MASTER_STAR, GIANT_TOOTH, SHADOW_FURY, LAST_BREATH, SHADOW_ASSASSIN_CHESTPLATE, SHADOW_ASSASSIN_LEGGINGS, SHADOW_ASSASSIN_HELMET, SHADOW_ASSASSIN_BOOTS, LIVID_DAGGER, SHADOW_ASSASSIN_CLOAK, WARPED_STONE, DARK_ORB, THIRD_MASTER_STAR, SECOND_MASTER_STAR, FIRST_MASTER_STAR, MASTER_SKULL_TIER_3, MASTER_SKULL_TIER_2, MASTER_SKULL_TIER_1, SPIRIT_SWORD, SPIRIT_SHORTBOW, SPIRIT_BOOTS, SPIRIT_WING, SPIRIT_BONE, SPIRIT, SPIRIT_STONE, ADAPTIVE_CHESTPLATE, ADAPTIVE_LEGGINGS, ADAPTIVE_HELMET, ADAPTIVE_BOOTS, SUSPICIOUS_VIAL, NECROMANCER_BROOCH, ADAPTIVE_BLADE, ADAPTIVE_BELT, RED_SCARF, SCARF_STUDIES, BONZO_STAFF, BONZO_MASK, RED_NOSE, BALLOON_SNAKE, overload_1, ultimate_legion_1, lethality_6, ultimate_rend_2, ultimate_bank_1, rejuvenate_1, ultimate_jerry_1, infinite_quiver_6, feather_falling_6;
+
+    public ResourceLocation getDefaultRl() {
+        return new ResourceLocation("aetheria", "textures/dungeons/caseopening/" + this.name().toLowerCase() + ".png");
+    }
+}

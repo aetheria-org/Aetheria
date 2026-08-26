@@ -37,7 +37,7 @@ public class Dungeons {
 
     @Expose
     @Category(name = "D.Chest Animation", desc = "Animations played when opening dungeon chests")
-    public DungeonChestAnimationConfig caseOpening = new DungeonChestAnimationConfig();
+    public CaseOpeningConfig caseOpening = new CaseOpeningConfig();
 
     @Expose
     @Category(name = "Secret Finder", desc = "Secret finder with  secret ESP, and display options")

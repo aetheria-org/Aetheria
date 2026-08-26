@@ -10,7 +10,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.data.ApiHandler;
 import io.hamlook.aetheria.features.capes.CapeManager;
-import io.hamlook.aetheria.features.chestanimations.CitManager;
+import io.hamlook.aetheria.features.dungeons.caseopening.CitManager;
 import io.hamlook.aetheria.features.farming.visitors.VisitorShoppingList;
 import io.hamlook.aetheria.features.misc.pet.PetCache;
 import io.hamlook.aetheria.features.profile.GuiWaiter;

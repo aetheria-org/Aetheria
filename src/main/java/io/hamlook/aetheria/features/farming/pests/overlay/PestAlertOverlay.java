@@ -124,7 +124,7 @@ public class PestAlertOverlay extends SimpleOverlay {
         float subScale = Math.max(0.75f, scale * 0.5f);
 
         float elapsed = DISPLAY_MS - remainWindowMs;
-        float envelope = Math.min(1f, elapsed / FADE_IN_MS) * Math.min(1f, remainWindowMs / FADE_OUT_MS);
+        float envelope = Math.min(1f, elapsed / FADE_IN_MS) * Math.min(1f, (float) remainWindowMs / FADE_OUT_MS);
         double phase = (elapsed % PULSE_PERIOD_MS) / (double) PULSE_PERIOD_MS;
         float pulse = 0.4f + 0.6f * (float) Math.abs(Math.sin(phase * Math.PI));
         float mainAlpha = animate ? clamp(envelope * pulse) : 1f;
