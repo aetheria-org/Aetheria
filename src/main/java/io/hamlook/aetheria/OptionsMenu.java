@@ -1,6 +1,7 @@
 package io.hamlook.aetheria;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.features.chat.globalchat.ui.ChatUI;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.features.capes.ui.CapeSelectorGUI;
 import io.hamlook.aetheria.repo.ATHRRepo;
@@ -29,7 +30,7 @@ public class OptionsMenu extends GuiScreen {
     private static final int BTN_W = 180;
     private static final int BTN_H = 22;
     private static final int BTN_GAP = 6;
-    private static final String[] BTN_LABELS = {"⚙ Config", "Waypoints", "Cape Selector", "Chat Filters"};
+    private static final String[] BTN_LABELS = {"⚙ Config", "Waypoints", "Cape Selector", "Chat Filters", "Global Chat"};
 
     // Social icon strip
     private static final int ICON_SIZE = 24;
@@ -148,7 +149,7 @@ public class OptionsMenu extends GuiScreen {
 
         int btnX = width / 2 - BTN_W / 2;
         int btnBaseY = height / 2 + 10;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < BTN_LABELS.length; i++) {
             int by = btnBaseY + i * (BTN_H + BTN_GAP);
             boolean hov = mouseX >= btnX && mouseX <= btnX + BTN_W && mouseY >= by && mouseY <= by + BTN_H;
 
@@ -190,7 +191,7 @@ public class OptionsMenu extends GuiScreen {
         // Main buttons
         int btnX = width / 2 - BTN_W / 2;
         int btnBaseY = height / 2 + 10;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < BTN_LABELS.length; i++) {
             int by = btnBaseY + i * (BTN_H + BTN_GAP);
             if (mouseX >= btnX && mouseX <= btnX + BTN_W && mouseY >= by && mouseY <= by + BTN_H) {
                 switch (i) {
@@ -205,6 +206,9 @@ public class OptionsMenu extends GuiScreen {
                         break;
                     case 3:
                         ATHRConfig.openChatFilterUI();
+                        break;
+                    case 4:
+                        ATHRConfig.screenToOpen = new ChatUI();
                         break;
                 }
                 return;

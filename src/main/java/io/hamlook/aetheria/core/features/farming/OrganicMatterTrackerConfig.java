@@ -13,7 +13,7 @@ public class OrganicMatterTrackerConfig {
     @Expose
     @ConfigOption(name = "Enable", desc = "Track Organic Matter and show the organic matter overlay")
     @ConfigEditorBoolean
-    public boolean enabled = false;
+    public boolean enabled = true;
 
     @Expose
     @ConfigOption(name = "Require Farming Location", desc = "Only track Organic Matter while in farming locations (Barn, Private Island, Garden)")
@@ -24,6 +24,11 @@ public class OrganicMatterTrackerConfig {
     @ConfigOption(name = "Keep Tracker Across Sessions", desc = "Persist item counts and Organic Matter across world unloads / game restarts instead of resetting")
     @ConfigEditorBoolean
     public boolean persistAcrossSessions = true;
+
+    @Expose
+    @ConfigOption(name = "Pause on Chat", desc = "Pause the playtime timer while the chat GUI is open")
+    @ConfigEditorBoolean
+    public boolean pauseOnChat = true;
 
     @Expose
     @ConfigOption(name = "Hide in Chat", desc = "Hide the overlay when the chat GUI is open")
@@ -41,13 +46,28 @@ public class OrganicMatterTrackerConfig {
     public boolean hideOnDebug = true;
 
     @Expose
+    @ConfigOption(name = "Hide When Paused", desc = "Hide the overlay while the playtime timer is paused")
+    @ConfigEditorBoolean
+    public boolean hideWhenPaused = true;
+
+    @Expose
+    @ConfigOption(name = "Show Only While Farming", desc = "Only show the overlay while actively farming (holding a farming tool and breaking crops)")
+    @ConfigEditorBoolean
+    public boolean showOnlyWhileFarming = true;
+
+    @Expose
+    @ConfigOption(name = "Show Only While Holding Farming Tool", desc = "Only show the overlay while holding a farming tool")
+    @ConfigEditorBoolean
+    public boolean showOnlyWhileHoldingFarmingTool = true;
+
+    @Expose
     @ConfigOption(name = "Tracked Crops", desc = "Choose which crops (including Seeds) count toward Organic Matter")
     @ConfigEditorDraggableList(exampleText = {
             "Wheat", "Carrot", "Potato", "Pumpkin", "Melon", "Sugar Cane", "Cocoa Beans",
             "Cactus", "Red Mushroom", "Brown Mushroom", "Nether Wart", "Seeds",
             "Squash", "Cropie", "Fermento"
     })
-    public List<Integer> trackedCrops = new ArrayList<>(Arrays.asList(12, 13, 14));
+    public List<Integer> trackedCrops = new ArrayList<>(Arrays.asList(11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 12, 13, 14));
 
     @Expose
     @ConfigOption(name = "Display Lines", desc = "Choose which lines to show and drag to reorder")
@@ -86,6 +106,6 @@ public class OrganicMatterTrackerConfig {
     public int organicMatterTrackerCornerRadius = 4;
 
     @Expose
-    public Position organicMatterTrackerPosition = new Position(10, 200, false, false);
+    public Position organicMatterTrackerPosition = new Position(-242, -80, false, false);
 }
 

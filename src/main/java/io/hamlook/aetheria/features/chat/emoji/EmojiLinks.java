@@ -20,6 +20,10 @@ public class EmojiLinks {
 
     private static final File BASE_DIR = new File(ATHRConfig.configDirectory, "emojis");
 
+    static {
+        BASE_DIR.mkdirs();
+    }
+
     public static final String GOOGLE_SHEET = "google.png";
     public static final String IOS_SHEET = "ios.png";
     public static final String DISCORD_SHEET = "discord.png";
@@ -47,10 +51,6 @@ public class EmojiLinks {
 
     public static ResourceLocation getSpriteResource(String sprite){
         return new ResourceLocation(BASE_RESOURCE, "emojis/" + sprite);
-    }
-
-    public static String getEmojiJSON() {
-        return "https://raw.githubusercontent.com/iamcal/emoji-data/master/emoji.json";
     }
 
     public static String getCustomEmojiJSON() {

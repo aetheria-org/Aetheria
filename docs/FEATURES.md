@@ -64,6 +64,7 @@
 - **Hide Blessing Messages** — Suppresses the chat spam when dungeon blessings are found.
 - **Secret Finder** — Highlights dungeon secrets (chests, levers, superboom, essences, fairy souls, wither essence) with labels, waypoints, tracers, and bounding boxes. Configurable colors and range detection.
 - **Dungeon Map** — Custom overlay showing dungeon rooms, player heads with names/ranks, and visited room labels.
+- **Dungeon Leap Menu** — Replaces the Spirit Leap/InfiniLeap chest with a full dungeon map. Click player heads or grid buttons to leap to them. Optional player list, arrow icons, and self-exclusion from the map.
 - **Dungeon Chest Price Estimator** — Estimates profit or loss on dungeon reward chests using the community price API, with an analyzer overlay that highlights the best-value chest.
 - **Secret Reports** — `/report-secret` — Report a wrong secret location from the current dungeon room.
 
@@ -73,6 +74,7 @@
 - **Fetchur Overlay** — Shows today's Fetchur item.
 - **Powder Tracker** — Tracks gemstone powder, chest drops, and goblin eggs in Crystal Hollows. Excludes PRISTINE drops.
 - **Pristine Tracker** — Dedicated tracker for PRISTINE gemstone drops with rates/hour.
+- **Gold Tracker** — Tracks gold ingot and enchanted gold pickups in Dwarven Mines and Crystal Hollows. Configurable display unit (ingots or enchanted), profit unit (ingots, enchanted, or blocks), and mining stats from tablist (speed, fortune, spread). Compact drop tracking via chat.
 - **HOTM Powder Display** — Adds powder spent vs. max cost to HOTM perk tooltips; hold Shift to see the cost for the next 10 levels.
 - **Commission Highlight** — Highlights completed commissions in green inside the Commissions menu.
 - **Pickobulus Preview** — Shows a wireframe cube previewing the blast radius before activating Pickobulus.
@@ -125,6 +127,14 @@
   - Configurable display lines and overlay scale/colors
 - **Sensitivity Reducer** — Reduces your mouse sensitivity while holding a crop farming tool (Melon Dicer, Pumpkin Dicer, etc.); configurable percentage and optional farming-island requirement.
 - **Precise Yaw/Pitch Overlay** — Live pitch/yaw HUD; configurable label color, position, and scale.
+- **Visitor Shopping List** — Tracks what each Garden visitor wants and gives. Panel and overlay show prices, profit, have/need counts, and farming time estimates. Sign fill for Bazaar amount signs. Configurable copper deal quality display with confirm-click protection. Custom tooltips replace vanilla Accept Offer lore with prices and profit. Panel shown on visitor menus, Bazaar, inventory, and signs.
+- **Garden Plot Numbers** — Shows plot numbers on Configure Plots chest slots. Color-coded by state (unlocked, buyable, no materials, locked). Optional slot highlights for unlocked and buyable plots.
+
+### Pests
+
+- **Pest Finder** — Overlay showing tablist pest data (total pests, plots, spray, repellent, bonus, cooldown, bonus pest chance). Configurable warp keybind to teleport to infested plots with Closest or Most Pests target selection. Requires holding a vacuum to show.
+- **Pest Tracker** — `/pesttracker` — Tracks pest kills and crop drops with profit estimate in the Garden. Configurable lines: Total Pests, Total Drops, Session Time, Total Time, Pests (per-type), Drops (per-crop), Profit Estimate. Rate basis: All Time or Session.
+- **Pest Cooldown Alert** — `/asmpest` — Warns when pest cooldown drops below a configurable threshold (5-300s). Sound, chat, and on-screen banner with flash/fade animation. Off by default.
 
 
 ## Scoreboard
@@ -176,10 +186,12 @@
   - Reduced animations (only animate on hover)
   - Max image/GIF quality (240p–4K)
   - Mention notifications: toast on `@username` / `@everyone`
+  - Smart Connection: only connect while in use, disconnect after 10 minutes of inactivity (off by default)
 - **Network Controls** — Manage how much internet access the mod gets.
   - Offline Mode: disable all internet access (most features stop working)
   - Disable API Calls: turn off features that use the mod API (capes, profile viewer, profile parser, /sync)
   - Disable GitHub Calls: stop updating from GitHub (overlays, timers, version checks)
+- **Network Status Screen** — Shows which network features are disabled and what they break. Appears when blocked gates change. Buttons to enable features or dismiss.
 - **Telemetry** — Controls what the mod shares on server join (used for player counts and bug reports).
   - Disable Telemetry: don't share your username, mod list, or version
   - Hide Mod List in Telemetry: only keep your username and version
@@ -213,6 +225,10 @@
 - `/globalchat` — Open the Global Chat window.
 - `/athrignoreincompat <ignore|reset|list> [modId]` — Manage hidden incompatible-mod warnings.
 - `/lockmouse` — Toggle mouse lock for farming.
+- `/pesttracker` (`pest`, `pt`) — Pest Tracker controls: reset, show, hide, toggle.
+- `/asmpest` (`pestcd`) — Pest Cooldown Alert: set threshold with `/asmpest <time>`, or off, status, test.
+- `/visitortip` (`asmvisitortip`) — Toggle visitor tip visibility.
+- `/athrnet enable|hide|unhide|reset|list` — Network status commands.
 - `/athrw guide` — Ordered waypoint commands.
 - `/waypoint` — Open the waypoint group manager.
 - `/asmbuttons` — Open the inventory button editor.

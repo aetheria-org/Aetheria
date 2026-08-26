@@ -9,7 +9,7 @@ public class BPSConfig {
     @Expose
     @ConfigOption(name = "Enable BPS Calculator", desc = "Shows blocks broken per second while farming")
     @ConfigEditorBoolean
-    public boolean bpsCalculator = false;
+    public boolean bpsCalculator = true;
 
     @Expose
     @ConfigOption(name = "Hide in Chat", desc = "Hide the overlay when the chat GUI is open")
@@ -37,12 +37,17 @@ public class BPSConfig {
     public boolean bpsRequireFarmingIsland = true;
 
     @Expose
+    @ConfigOption(name = "Show Only While Farming", desc = "Only show the overlay while actively farming (holding a farming tool and breaking crops)")
+    @ConfigEditorBoolean
+    public boolean showOnlyWhileFarming = true;
+
+    @Expose
     @ConfigOption(name = "Reset Timeout", desc = "Seconds of inactivity before resetting BPS counter")
     @ConfigEditorSliderAnnotation(minValue = 1, maxValue = 30, minStep = 1)
     public int bpsResetTimeout = 5;
 
     @Expose
-    public Position bpsPosition = new Position(10, 100, false, false);
+    public Position bpsPosition = new Position(-289, 43, false, false);
 
     @Expose
     @ConfigOption(name = "Scale", desc = "Scale of the BPS overlay")

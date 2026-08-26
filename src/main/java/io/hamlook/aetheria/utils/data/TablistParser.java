@@ -2,6 +2,7 @@ package io.hamlook.aetheria.utils.data;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.features.scoreboard.BankParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
@@ -17,8 +18,13 @@ import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @RegisterEvents
@@ -29,6 +35,7 @@ public class TablistParser {
     private static final long FAST_PARSE_WINDOW_MS = 3000;
     private static final Ordering<NetworkPlayerInfo> PLAYER_ORDERING = Ordering.from(new PlayerComparator());
     private static final Pattern SB_LEVEL = Pattern.compile("SB Level: \\[(\\d+)\\] (\\d+)/(\\d+) XP");
+    private static final Pattern PEST_PLOT_ENTRY = Pattern.compile("^(\\d+)(?:\\s*[xX]\\s*(\\d+))?$");
     @Getter
     private static SkyblockData.Location currentLocation = SkyblockData.Location.NONE;
     @Getter
@@ -48,6 +55,16 @@ public class TablistParser {
     @Getter
     private static int sbMaxXp = 0;
     @Getter
+    private static String miningSpeed = "";
+    @Getter
+    private static String miningFortune = "";
+    @Getter
+    private static String miningSpread = "";
+    @Getter
+    private static String gemstoneFortune = "";
+    @Getter
+    private static String pristine = "";
+    @Getter
     private static String serverPrefix = "";
     @Getter
     private static SkyblockData.Environment scoreboardEnvironment = SkyblockData.Environment.UNKNOWN;
@@ -58,6 +75,14 @@ public class TablistParser {
 
     public static boolean isEventActive(String eventName) {
         return activeEvent != null && activeEvent.contains(eventName);
+    }
+
+    /**
+     * Tab entries in the exact order parseTablist iterates them (team-then-name
+     * alphabetical). Debug dumps must use this, not raw getPlayerInfoMap() order.
+     */
+    public static List<NetworkPlayerInfo> getParserOrderedInfos(Minecraft mc) {
+        return PLAYER_ORDERING.sortedCopy(mc.thePlayer.sendQueue.getPlayerInfoMap());
     }
 
     private static net.minecraft.util.IChatComponent getTabFooter() {
@@ -117,11 +142,15 @@ public class TablistParser {
     private static void parseTablist(Minecraft mc) {
         scoreboardEnvironment = SkyblockData.detectEnvironmentFromScoreboard();
         GuiPlayerTabOverlay tab = mc.ingameGUI.getTabList();
-        List<NetworkPlayerInfo> infos = PLAYER_ORDERING.sortedCopy(mc.thePlayer.sendQueue.getPlayerInfoMap());
+        List<NetworkPlayerInfo> infos = getParserOrderedInfos(mc);
 
         boolean inServerSection = false;
         boolean inAccountSection = false;
         boolean expectEventTime = false;
+        boolean readingVisitors = false;
+        boolean visitorsSectionSeen = false;
+        boolean inStatsSection = false;
+        List<String> parsedVisitors = new ArrayList<>();
 
         String pendingEvent = null;
 
@@ -160,6 +189,54 @@ public class TablistParser {
                 continue;
             }
 
+            if (line.startsWith("Alive: ")) {
+                String alive = line.substring("Alive: ".length()).trim();
+                FarmingApi.setGardenAlive(alive);
+                if ("0".equals(alive)) {
+                    FarmingApi.setActivePests(Collections.emptyMap());
+                }
+                continue;
+            }
+            if (line.startsWith("Plots: ")) {
+                FarmingApi.setActivePests(parsePestPlots(line.substring("Plots: ".length())));
+                continue;
+            }
+            if (line.startsWith("Spray: ")) {
+                FarmingApi.setGardenSpray(valueAfter(raw));
+                continue;
+            }
+            if (line.startsWith("Repellent: ")) {
+                FarmingApi.setGardenRepellent(valueAfter(raw));
+                continue;
+            }
+            if (line.startsWith("Bonus: ")) {
+                FarmingApi.setGardenBonus(valueAfter(raw));
+                continue;
+            }
+            if (line.startsWith("Cooldown: ")) {
+                FarmingApi.setGardenCooldown(valueAfter(raw));
+                continue;
+            }
+            if (line.startsWith("Bonus Pest Chance: ")) {
+                FarmingApi.setGardenBonusPestChance(valueAfter(raw));
+                continue;
+            }
+
+            if (line.startsWith("Visitors")) {
+                readingVisitors = true;
+                visitorsSectionSeen = true;
+                continue;
+            }
+            if (readingVisitors) {
+                if (line.startsWith("Next Visitor")) {
+                    readingVisitors = false;
+                } else {
+                    String name = ColorUtils.stripColor(raw).trim();
+                    if (!name.isEmpty()) parsedVisitors.add(name);
+                }
+                continue;
+            }
+
             if (inServerSection) {
                 if (line.startsWith("Dungeon: ")) {
                     currentLocation = SkyblockData.Location.DUNGEON;
@@ -171,6 +248,9 @@ public class TablistParser {
                     if (dash >= 0) s = s.substring(0, dash + 1);
                     serverPrefix = s;
                     currentLocation = matchLocation(s);
+                    if (currentLocation != SkyblockData.Location.GARDEN) {
+                        FarmingApi.clearGardenPestData();
+                    }
                     SkyblockData.Environment env = SkyblockData.detectEnvironment(s);
                     if (env != SkyblockData.getEnvironment()) {
                         ProfileDetector.onEnvironmentChanged(SkyblockData.getEnvironment(), env);
@@ -209,6 +289,37 @@ public class TablistParser {
             }
 
             if (inAccountSection) {
+                if (raw.contains("§e§lStats:")) {
+                    inStatsSection = true;
+                    continue;
+                }
+                if (raw.contains("§l")) {
+                    inStatsSection = false;
+                }
+
+                if (inStatsSection) {
+                    if (line.startsWith("Mining Speed: ")) {
+                        miningSpeed = valueAfter(raw);
+                        continue;
+                    }
+                    if (line.startsWith("Mining Fortune: ")) {
+                        miningFortune = valueAfter(raw);
+                        continue;
+                    }
+                    if (line.startsWith("Mining Spread: ")) {
+                        miningSpread = valueAfter(raw);
+                        continue;
+                    }
+                    if (line.startsWith("Gemstone Fortune: ")) {
+                        gemstoneFortune = valueAfter(raw);
+                        continue;
+                    }
+                    if (line.startsWith("Pristine: ")) {
+                        pristine = valueAfter(raw);
+                        continue;
+                    }
+                }
+
                 if (expectEventTime) {
                     if (line.startsWith("Ends in: ")) {
                         activeEventTimeLeft = line.substring("Ends in: ".length()).trim();
@@ -269,6 +380,8 @@ public class TablistParser {
             activeEventTimeLeft = null;
         }
 
+        FarmingApi.setActiveVisitors(parsedVisitors, visitorsSectionSeen);
+
         if (serverPrefix.isEmpty()) {
             SkyblockData.Environment env = scoreboardEnvironment;
             if (env != SkyblockData.Environment.UNKNOWN && env != SkyblockData.getEnvironment()) {
@@ -277,14 +390,36 @@ public class TablistParser {
         }
     }
 
-    private static String parseAmount(String raw, String fallback) {
-        String afterColon = raw.substring(raw.indexOf(": ") + 2);
+    private static String parseAmount(String raw, String fallback) {        String afterColon = raw.substring(raw.indexOf(": ") + 2);
         String clean = ColorUtils.stripColor(afterColon).trim();
         if (clean.contains(" / ")) {
             String[] parts = clean.split(" / ", 2);
             return parts[0].trim() + " §7/ §6" + parts[1].trim();
         }
         return clean.isEmpty() ? fallback : clean;
+    }
+
+    private static String valueAfter(String raw) {
+        int idx = raw.indexOf(": ");
+        return idx < 0 ? "" : raw.substring(idx + 2).trim();
+    }
+
+    private static Map<Integer, Integer> parsePestPlots(String plotsText) {
+        Map<Integer, Integer> out = new HashMap<>();
+        for (String entry : plotsText.split(",")) {
+            Matcher m = PEST_PLOT_ENTRY.matcher(entry.trim());
+            if (!m.matches()) continue;
+            int plot;
+            int count;
+            try {
+                plot = Integer.parseInt(m.group(1));
+                count = m.group(2) == null ? 1 : Integer.parseInt(m.group(2));
+            } catch (NumberFormatException ignored) {
+                continue;
+            }
+            if (plot >= 1 && plot <= 24 && count > 0) out.put(plot, count);
+        }
+        return out;
     }
 
     private static SkyblockData.Location matchLocation(String s) {
@@ -307,7 +442,8 @@ public class TablistParser {
     public void onTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         int interval = worldJoinTime > 0 && System.currentTimeMillis() - worldJoinTime < FAST_PARSE_WINDOW_MS
-                ? FAST_PARSE_INTERVAL : TICK_INTERVAL;
+                ? FAST_PARSE_INTERVAL
+                : TICK_INTERVAL;
         if ((tickCounter = (tickCounter + 1) % interval) != 0) return;
 
         Minecraft mc = Minecraft.getMinecraft();
@@ -332,10 +468,17 @@ public class TablistParser {
         sbLevel = 0;
         sbCurrentXp = 0;
         sbMaxXp = 0;
+        miningSpeed = "";
+        miningFortune = "";
+        miningSpread = "";
+        gemstoneFortune = "";
+        pristine = "";
+        FarmingApi.clearActiveVisitors();
         ElectionUtils.clearTablistMayor();
         serverPrefix = "";
         scoreboardEnvironment = SkyblockData.Environment.UNKNOWN;
         BankParser.clear();
+        FarmingApi.clearGardenPestData();
     }
 
     private static class PlayerComparator implements Comparator<NetworkPlayerInfo> {

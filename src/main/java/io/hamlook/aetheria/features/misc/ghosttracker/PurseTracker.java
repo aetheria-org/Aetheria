@@ -16,7 +16,7 @@ public class PurseTracker {
     public static void tick() {
         if (SkyblockData.getScoreboardLines().isEmpty() || !SkyblockData.isInMist()) return;
 
-        String purseLine = getPurseLine();
+        String purseLine = SkyblockData.getPurseLine();
         if (purseLine == null) return;
 
         int scavengerGain = parseScavengerGain(purseLine);
@@ -31,10 +31,6 @@ public class PurseTracker {
     public static void recordKill() {
         lastKillTime = System.currentTimeMillis();
         lastRecordedGain = 0;
-    }
-
-    private static String getPurseLine() {
-        return SkyblockData.getCleanScoreboardLines().stream().filter(l -> l.contains("Purse") || l.contains("Piggy")).findFirst().orElse(null);
     }
 
     private static boolean isValidGain(int scavengerGain) {

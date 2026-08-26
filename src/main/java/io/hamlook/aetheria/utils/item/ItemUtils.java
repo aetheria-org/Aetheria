@@ -94,6 +94,15 @@ public class ItemUtils {
         if (item == null || !item.hasTagCompound()) return "";
         NBTTagCompound extra = item.getTagCompound().getCompoundTag("ExtraAttributes");
         String baseId = extra.hasKey("id") ? extra.getString("id") : "";
+        if ("PET".equals(baseId)) {
+            NBTTagCompound petInfo = extra.getCompoundTag("petInfo");
+            String type = petInfo.getString("type");
+            String tier = petInfo.getString("tier");
+            if (!type.isEmpty() && !tier.isEmpty()) {
+                return type + ";" + rarityToInt(tier);
+            }
+            return baseId;
+        }
         if (!"ENCHANTED_BOOK".equals(baseId)){
             if(!"POTION".equals(baseId)) return baseId;
             NBTTagList potionEffects = extra.getTagList("effects", 10);
@@ -117,6 +126,18 @@ public class ItemUtils {
             return key + "_" + level;
         }
         return baseId;
+    }
+
+    private static int rarityToInt(String tier) {
+        switch (tier) {
+            case "COMMON": return 0;
+            case "UNCOMMON": return 1;
+            case "RARE": return 2;
+            case "EPIC": return 3;
+            case "LEGENDARY": return 4;
+            case "MYTHIC": return 5;
+            default: return -1;
+        }
     }
 
     public static boolean isSkyblockItem(@Nullable ItemStack item) {

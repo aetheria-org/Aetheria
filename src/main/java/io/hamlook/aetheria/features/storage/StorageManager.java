@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.storage;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.farming.mouse.LockMouse;
 import io.hamlook.aetheria.features.storage.data.StorageData;
@@ -18,6 +19,7 @@ import net.minecraft.inventory.ContainerChest;
 import java.util.LinkedHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 
@@ -39,6 +41,7 @@ public class StorageManager {
     private static boolean switchInitiatedFromOverlay = false;
     private static long lastValidChestTime = 0;
     private static final ScheduledExecutorService COMMAND_EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Storage-Cmd"));
+    private static ScheduledFuture<?> pendingSwitchCommand = null;
 
     public static void setActiveContainer(String containerId) {
         // If this was an overlay-initiated switch, record successful open time
@@ -109,7 +112,7 @@ public class StorageManager {
         if (ContainerUtils.isChestOpen()) {
             lastValidChestTime = System.currentTimeMillis();
         }
-        if (renderer == null && !StorageData.containers.isEmpty()) {
+        if (renderer == null && !StorageData.containers.isEmpty() && isStorageChest()) {
             renderer = new StorageRenderer(StorageData.containers);
             overlayActive = true;
             lastValidChestTime = System.currentTimeMillis();
@@ -122,7 +125,7 @@ public class StorageManager {
             long elapsed = System.currentTimeMillis() - lastValidChestTime;
 
             if (elapsed > TRANSITION_TIMEOUT) {
-                System.out.println("[ATHR DEBUG] No valid chest GUI for " + TRANSITION_TIMEOUT / 1000 + "s - closing overlay");
+                Aetheria.logger.warning("[ATHR] No valid chest GUI for " + TRANSITION_TIMEOUT / 1000 + "s - closing overlay");
                 closeOverlay();
                 return;
             }
@@ -131,7 +134,7 @@ public class StorageManager {
         if (isTransitioning) {
             long elapsed = System.currentTimeMillis() - transitionStartTime;
             if (elapsed > TRANSITION_TIMEOUT) {
-                System.out.println("[ATHR DEBUG] Transition timeout - closing overlay");
+                Aetheria.logger.warning("[ATHR] Transition timeout - closing overlay");
                 closeOverlay();
                 return;
             }
@@ -213,9 +216,18 @@ public class StorageManager {
     }
 
     private static void executeCommandDelayed(String command) {
-        COMMAND_EXECUTOR.schedule(() -> {
+        cancelPendingSwitchCommand();
+        pendingSwitchCommand = COMMAND_EXECUTOR.schedule(() -> {
+            pendingSwitchCommand = null;
             Minecraft.getMinecraft().addScheduledTask(() -> Minecraft.getMinecraft().thePlayer.sendChatMessage(command));
         }, 100, TimeUnit.MILLISECONDS);
+    }
+
+    private static void cancelPendingSwitchCommand() {
+        if (pendingSwitchCommand != null) {
+            pendingSwitchCommand.cancel(false);
+            pendingSwitchCommand = null;
+        }
     }
 
     public static boolean isClickingPlayerInventory(int mouseX, int mouseY) {
@@ -228,7 +240,8 @@ public class StorageManager {
     }
 
     public static void closeOverlay() {
-        StorageData.saveContainers();
+        StorageData.saveDirtyContainers();
+        cancelPendingSwitchCommand();
         activeContainerId = null;
         renderer = null;
         overlayActive = false;
@@ -246,9 +259,16 @@ public class StorageManager {
         }
     }
 
+    public static boolean isStorageChest() {
+        net.minecraft.client.gui.GuiScreen screen = Minecraft.getMinecraft().currentScreen;
+        if (!(screen instanceof net.minecraft.client.gui.inventory.GuiChest)) return false;
+        String title = ContainerUtils.getContainerName(screen);
+        return title != null && ("Storage".equals(title) || StorageParser.isStorageContainer(title));
+    }
+
     public static void overrideIsMouseOverSlot(net.minecraft.inventory.Slot slotIn, int mouseX, int mouseY, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
         if (!isOverlayActive() || renderer == null) return;
-        if (!ContainerUtils.isChestOpen()) return;
+        if (!isStorageChest()) return;
 
         boolean isPlayerSlot = slotIn.inventory == Minecraft.getMinecraft().thePlayer.inventory;
 

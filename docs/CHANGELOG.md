@@ -1,71 +1,49 @@
-# Aetheria 1.1.0 - 1.2.0
+# Aetheria 1.2.0 - 1.3.0
 
-Aetheria's Skyblock Mod 1.2.0: major performance improvements, farming features, and a reworked Dungeon Map.
+Aetheria's Skyblock Mod 1.3.0: major performance improvements, farming features, and a reworked Dungeon Map.
 
 ### New Features
 
-- Added Diana Party Finder (/dparty)
-- Added Donate Chat Detection
-- Added emojis in chat and an emoji suggestion bar
-- Added Farming Tracker (/asmfarming)
-- Added Global Chat (/globalchat)
-- Added Incompatible Mods Warning (/asmignoreincompat)
-- Added Kill Combo Tracker (/killcombo)
-- Added Organic Matter Tracker (/asmorganicmatter)
-- Added Pelt Tracker
-- Added Powder Mining Chat Filter
-- Added Precise Yaw/Pitch Overlay
-- Added profile, IGN, and server specific data storage for all trackers and the storage overlay (in alpha too, I hope)
-- Added Rare Drop Tracker (/rdt)
-- Added Secret Reports to flag wrong secret locations (/report-secret)
-- Added Sensitivity Reducer
-- Added Trevor Solver
-- Reworked the Dungeon Map
+- Added Pest Finder
+- Added Gold Tracker
+- Added Pest Cooldown Alert (`/asmpest`)
+- Added Pest Tracker (`/pesttracker`)
+- Added Visitor Shopping list
+- Added Custom Visitor tooltips
+- Added Coins Per Copper
+- Added Pest Plot Warp
+- Added Dungeon Leap Menu with Dungeon Map
+- Added Network Notice Screen which shows you what network I/O you've disabled and what it breaks
+- Added Garden Plot numbers in Configure Plots chest
+
+
 
 ### Internal Changes
 
-- Added a fallback for API errors and removed fetching during price upload
-- Added more debug commands (/asmdebug) to help.. debug?
-- Added potion type and level parsing for profile viewing and uploading
-- Centralized async execution with ThreadUtils
-- Fixed ChatUtils leaking executors
-- Switched SkyAtlas links to https://skyatlas.lol
-- Improved config saving to be better
-- Added Aetheria logs in config/aetheria/logs which give details abiut storage crashes
+- Improved data saving to prevent config resets from corruption, with better performance
+- Added Aetheria custom Crash logging (config/Aetheria/logs) for data saving crashes
+- Repo Data now caches in config to speed up launch times
+
 
 ### Bug Fixes & Improvements
 
-- Added Ghost Tracker reset and toggle (/ghosttracker)
-- Added mouse-locked indication and unlock hint
-- Added Pause On Chat to all trackers.
-- Added options to hide overlays on scoreboard, tab, chat for each individually
-- Fixed convert-to-item items being recognized as pets
-- Fixed Diana Tracker not filtering messages (/diana)
-- Fixed Dungeon Profit Estimate chest title check
-- Fixed enchant description hiding
-- Fixed fairy souls being included in secret routes
-- Fixed mayor detection before elections have started
-- Fixed Storage Overlay consuming clicks while the server command cooldown is active
-- Made the search bar render below tooltips
-- Now uses US decimal format and accepts commas
-- Reworked SkyBlock XP in Chat to accurately show SB XP updates
-- Reworked Pristine and Powder Trackers for better performance
-- Added Show Rates as Rough for Pristine Tracker
-- Fixed Anvil Combine Helper highlighting every enchant
-- Fixed Garden not being present as a farming island
-- `/asm <search>` now queries config search
+- Added Global Chat keybind and improved UX (`/globalchat`)
+- Fixed Rare Drop Tracker (`/rdt`) not functioning
+- Fixed lag on GUI open/close with Storage Overlay enabled
+- Storage Overlay fixes and optimization
+- Optimized websocket connection
+- Fixed Profile Viewer crash
+- Fixed Price Tooltip and added Show Price in Short Number Format
+- Fixed Dungeon Reward Estimator
+- Added Global Chat option in Main Menu
+- Fixed and improved Organic Matter Tracker, Farming Tracker and BPS overlay
+- Fixed emoji renderer and emojis being redacted
+- Fixed Dungeon Map showing random players, added new icons and rendering fixes
+- Fixed GL leaks
+- Fixed and improved Sync
+- Fixed and improved Trevor Solver
+- Improved launch times by up to 1 minute
+- Fixed calculator edge cases
 
-### Performance
-
-- Improved all overlay rendering with smart caching
-- Improved Dungeon Room Detector performance with caching
-- Improved loading times with multithreading and fewer unnecessary fetches
-- Improved overall Storage Overlay performance and logic
-- Optimized item list panes
-- Optimized price fetching and upload
-
-Overall code and performance improvements across the mod.
-
-This release also lays the groundwork for the upcoming Aetheria versions on modern Minecraft versions.
 
 The full changelog can be found [here](https://github.com/aetheria-org/Aetheria/commits/main/).

@@ -3,6 +3,9 @@ package io.hamlook.aetheria.core.features.network;
 import com.google.gson.annotations.Expose;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class NetworkConfig {
 
     @Expose
@@ -36,6 +39,20 @@ public class NetworkConfig {
 
     @Expose
     public boolean hasSeenPrivacyNotice = false;
+
+    @Expose
+    @ConfigOption(name = "Smart Connection", desc = "Only connect Global Chat and Diana Party while you're using them, and disconnect after 10 minutes of inactivity. Off by default.")
+    @ConfigEditorBoolean
+    public boolean smartSocketLifecycle = false;
+
+    @Expose
+    public boolean hasSeenSocketLifecycleNotice = false;
+
+    @Expose
+    public int networkStatusAckMask = 0;
+
+    @Expose
+    public Set<String> dismissedFeatureGateMessages = new HashSet<>();
 
     @Expose
     @ConfigOption(name = "Privacy Notice", desc = "Open the privacy notice to review how your data is handled")

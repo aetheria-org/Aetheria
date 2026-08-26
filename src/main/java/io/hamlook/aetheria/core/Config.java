@@ -112,10 +112,18 @@ public class Config {
             case "openPowderEditor": ATHRConfig.openPowderEditor(); break;
             case "openInvButtonEditor": ATHRConfig.openInvButtonEditor(); break;
             case "resetPowderTracker": ATHRConfig.resetPowderTracker(); break;
+            case "openGoldEditor": ATHRConfig.openGoldEditor(); break;
+            case "resetGoldTracker": ATHRConfig.resetGoldTracker(); break;
             case "openFarmingTrackerEditor": ATHRConfig.openFarmingTrackerEditor(); break;
             case "resetFarmingTracker": ATHRConfig.resetFarmingTracker(); break;
             case "openOrganicMatterTrackerEditor": ATHRConfig.openOrganicMatterTrackerEditor(); break;
             case "resetOrganicMatterTracker": ATHRConfig.resetOrganicMatterTracker(); break;
+            case "openPestEditor": ATHRConfig.openPestEditor(); break;
+            case "resetPestTracker": ATHRConfig.resetPestTracker(); break;
+            case "openPestFinderEditor": ATHRConfig.openPestFinderEditor(); break;
+            case "openVisitorOverlayEditor": ATHRConfig.openVisitorOverlayEditor(); break;
+            case "openVisitorPanelEditor": ATHRConfig.openVisitorPanelEditor(); break;
+            case "resetVisitorList": ATHRConfig.resetVisitorList(); break;
             case "openPristineEditor": ATHRConfig.openPristineEditor(); break;
             case "resetPristineTracker": ATHRConfig.resetPristineTracker(); break;
             case "openDungeonBreakerEditor": ATHRConfig.openDungeonBreakerEditor(); break;

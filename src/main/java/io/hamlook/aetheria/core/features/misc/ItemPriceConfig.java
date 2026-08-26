@@ -40,4 +40,9 @@ public class ItemPriceConfig {
     @ConfigAnnotations.ConfigOption(name = "Show Price Key",desc = "The key to hold to see price | Requires Show Price when Holding a Key to be enabled")
     @ConfigAnnotations.ConfigEditorKeybind(defaultKey = Keyboard.KEY_LSHIFT)
     public int showPriceKey = Keyboard.KEY_LSHIFT;
+
+    @Expose
+    @ConfigAnnotations.ConfigOption(name = "Show Price in Short Number Format", desc = "Make it so that item prices are shown in format like 1.5B or 10M etc.")
+    @ConfigAnnotations.ConfigEditorBoolean
+    public boolean priceShortNumberFormat = true;
 }

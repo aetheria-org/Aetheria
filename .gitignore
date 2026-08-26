@@ -11,4 +11,4 @@ bin/
 .factorypath
 gradle.properties
 settings.gradle.kts
-
+AGENTS.md

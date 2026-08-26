@@ -2,7 +2,7 @@ package io.hamlook.aetheria.features.farming.organicmatter;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.OrganicMatterTrackerConfig;
-import io.hamlook.aetheria.features.farming.Crop;
+import io.hamlook.aetheria.features.farming.data.Crop;
 import io.hamlook.aetheria.features.misc.itemlog.ItemPickupLog;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
@@ -52,13 +52,22 @@ public class OrganicMatterTracker {
         lastActivityTime = System.currentTimeMillis();
     }
 
+    private static void flushSegment(long now, OrganicMatterTrackerData data) {
+        long delta = now - timerStartTime;
+        data.setActiveTimeMs(data.getActiveTimeMs() + delta);
+        sessionActiveTimeMs += delta;
+    }
+
     private static void timerTick() {
         if (!timerRunning) return;
         long now = System.currentTimeMillis();
         OrganicMatterTrackerData data = OrganicMatterTrackerData.getInstance();
-        long delta = now - timerStartTime;
-        data.setActiveTimeMs(data.getActiveTimeMs() + delta);
-        sessionActiveTimeMs += delta;
+        if (ATHRConfig.feature != null && config().pauseOnChat && ChatUtils.isChatOpen()) {
+            flushSegment(now, data);
+            timerRunning = false;
+            return;
+        }
+        flushSegment(now, data);
         timerStartTime = now;
         if (now - lastActivityTime > INACTIVITY_LIMIT_MS) {
             timerRunning = false;

@@ -81,6 +81,7 @@ public final class MediaSaver {
      * file. Throws if the URL isn't image/video/gif or the download fails.
      */
     public static String save(String url, String name) throws IOException {
+        if (!io.hamlook.aetheria.network.NetworkGuard.apiAllowed()) throw new IOException("Network disabled.");
         String ext = mediaExtension(url);
         if (ext == null) throw new IOException("Only images, videos and GIFs can be downloaded.");
         if (url == null || url.isEmpty()) throw new IOException("No download URL.");

@@ -2,13 +2,21 @@ package io.hamlook.aetheria.utils;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.entity.player.EntityPlayer;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public final class KeybindHelper {
 
     private static final Minecraft MC = Minecraft.getMinecraft();
+    private static final Map<Integer, Boolean> PREV_DOWN = new ConcurrentHashMap<>();
+    private static final Map<Integer, Boolean> CURR_DOWN = new ConcurrentHashMap<>();
+    private static int cacheTick = -1;
+    private static EntityPlayer cacheAnchor;
 
     private KeybindHelper() {
     }
@@ -16,7 +24,7 @@ public final class KeybindHelper {
     // Key constants
     public static final int KEY_ESCAPE = 1;
     public static final int KEY_RETURN = 28;
-    public static final int KEY_NUMPADENTER = 156;
+    public static final int KEY_NUMPAD_ENTER = 156;
 
     public static String getKeyName(int keyCode) {
         if (keyCode == 0) return "NONE";
@@ -33,17 +41,63 @@ public final class KeybindHelper {
     }
 
     public static boolean isKeyValid(int keyCode) {
-        return keyCode != 0;
+        return !isKeyInvalid(keyCode);
+    }
+
+    private static boolean isKeyInvalid(int keyCode) {
+        return keyCode == 0;
     }
 
     public static boolean isKeyDown(int keyCode) {
-        if (!isKeyValid(keyCode)) return false;
+        if (isKeyInvalid(keyCode)) return false;
         return keyCode < 0 ? Mouse.isButtonDown(keyCode + 100) : Keyboard.isKeyDown(keyCode);
     }
 
+    /**
+     * Event-context read: returns {@code true} when the current keyboard event
+     * (as dispatched by the surrounding {@code InputEvent.KeyInputEvent} handler)
+     * is a press of {@code keyCode}. Only meaningful inside such a callback
+     * polled from elsewhere use {@link #isKeyTapped(int)} instead.
+     */
     public static boolean isKeyPressed(int keyCode) {
-        if (!isKeyValid(keyCode)) return false;
+        if (isKeyInvalid(keyCode)) return false;
         return keyCode < 0 ? Mouse.getEventButtonState() && Mouse.getEventButton() == keyCode + 100 : Keyboard.getEventKeyState() && Keyboard.getEventKey() == keyCode;
+    }
+
+    public static boolean isKeyTapped(int keyCode) {
+        if (isKeyInvalid(keyCode)) return false;
+        rollTickCache();
+        boolean cur = CURR_DOWN.computeIfAbsent(keyCode, KeybindHelper::safeIsKeyDown);
+        Boolean prev = PREV_DOWN.get(keyCode);
+        return cur && !(prev != null && prev);
+    }
+
+    /** Re-seeds the tap state for a key with its current held-state, so the next {@link #isKeyTapped(int)} requires a fresh release+press to fire. */
+    public static void resetKeyTap(int keyCode) {
+        if (isKeyInvalid(keyCode)) return;
+        boolean down = safeIsKeyDown(keyCode);
+        PREV_DOWN.put(keyCode, down);
+        CURR_DOWN.put(keyCode, down);
+    }
+
+    private static void rollTickCache() {
+        EntityPlayer player = MC.thePlayer;
+        int tick = player == null ? -1 : player.ticksExisted;
+        if (player != cacheAnchor || tick != cacheTick) {
+            PREV_DOWN.clear();
+            PREV_DOWN.putAll(CURR_DOWN);
+            CURR_DOWN.clear();
+            cacheTick = tick;
+            cacheAnchor = player;
+        }
+    }
+
+    private static boolean safeIsKeyDown(int keyCode) {
+        try {
+            return isKeyDown(keyCode);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     // Keyboard event accessors

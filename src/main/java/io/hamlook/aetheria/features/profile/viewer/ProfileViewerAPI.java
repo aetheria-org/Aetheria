@@ -11,8 +11,10 @@ import net.minecraft.util.ChatComponentText;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
@@ -56,7 +58,7 @@ public class ProfileViewerAPI {
         if (!NetworkGuard.apiAllowed()) return;
         ThreadUtils.run(() -> {
             try {
-                URL url = new URL("https://capeapi.qzz.io/game/players");
+                URL url = new URL(CapeAPI.getAPIUrl("game/players"));
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
@@ -79,6 +81,7 @@ public class ProfileViewerAPI {
     }
 
     public static PlayerProfile getData(String user){
+        if (!NetworkGuard.requiresApi("Profile Viewer")) return null;
         fetchFromAPI(user);
         return profileHashMap.getOrDefault(user,null);
     }
@@ -106,7 +109,7 @@ public class ProfileViewerAPI {
     }
 
     public static PlayerProfile fetchUser(String username) throws Exception{
-        URL url = new URL("https://capeapi.qzz.io/game/profile/" + username);
+        URL url = new URL(CapeAPI.getAPIUrl("/game/profile/" + username));
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
@@ -122,9 +125,9 @@ public class ProfileViewerAPI {
             if(!file.exists()){
                 file.createNewFile();
             }
-            FileWriter writer = new FileWriter(file);
-            writer.write(json);
-            writer.close();
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
+                writer.write(json);
+            }
             PlayerProfile profile = gson.fromJson(json, PlayerProfile.class);
             if(profile == null) throw new Exception("Null DATA for: " + username);
             return profile;

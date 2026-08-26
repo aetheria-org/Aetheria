@@ -2,7 +2,9 @@ package io.hamlook.aetheria.features.profile.viewer;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -12,9 +14,6 @@ import net.minecraft.util.ResourceLocation;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -44,27 +43,12 @@ public class SkinManager {
         if (!NetworkGuard.networkingEnabled()) return;
         ThreadUtils.run("ATHR-SkinFetcher-" + username, () -> {
             try {
-                if (!SKIN_DIR.exists()) {
-                    SKIN_DIR.mkdirs();
-                }
-
                 File skinFile = new File(SKIN_DIR, username + ".png");
 
                 if (!skinFile.exists() || !sessionUpdated.contains(username)) {
-                    URL url = new URL("https://mc-heads.net/skin/" + username);
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestProperty("User-Agent","Aetheria/" + Aetheria.VERSION);
-                    conn.setConnectTimeout(5000);
-                    conn.setReadTimeout(5000);
-
-                    try (InputStream in = conn.getInputStream()) {
-                        BufferedImage img = ImageIO.read(in);
-                        if (img != null) {
-                            ImageIO.write(img, "png", skinFile);
-                            sessionUpdated.add(username);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    BufferedImage img = HttpClient.fetchImage("https://mc-heads.net/skin/" + username);
+                    if (img != null && StorageManager.saveAtomicImage(skinFile, img)) {
+                        sessionUpdated.add(username);
                     }
                 }
 
@@ -80,7 +64,7 @@ public class SkinManager {
                 }
 
             } catch (Exception e) {
-                e.printStackTrace();
+                Aetheria.logger.warning("[SkinManager] Failed to fetch skin for " + username + ": " + e.getMessage());
             } finally {
                 if (!loadedSkins.containsKey(username)) {
                     fetching.remove(username);

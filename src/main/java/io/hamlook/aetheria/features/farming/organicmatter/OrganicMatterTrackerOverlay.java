@@ -2,17 +2,13 @@ package io.hamlook.aetheria.features.farming.organicmatter;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.OrganicMatterTrackerConfig;
+import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.Utils;
-import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
-import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import lombok.Getter;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.item.ItemStack;
-import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,9 +18,6 @@ public class OrganicMatterTrackerOverlay extends Overlay {
 
     @Getter
     private static OrganicMatterTrackerOverlay instance;
-
-    private static final int ICON_SIZE = 8;
-    private static final int ICON_GAP = 2;
 
     private static final int TITLE_ORDINAL = 0;
     private static final int TOTAL_OM_ORDINAL = 1;
@@ -39,13 +32,6 @@ public class OrganicMatterTrackerOverlay extends Overlay {
 
     private static OrganicMatterTrackerConfig config() {
         return ATHRConfig.feature.farming.organicMatterTracker;
-    }
-
-    private boolean isInFarmingLocation() {
-        SkyblockData.Location location = SkyblockData.getCurrentLocation();
-        return location == SkyblockData.Location.BARN
-                || location == SkyblockData.Location.PRIVATE_ISLAND
-                || location == SkyblockData.Location.GARDEN;
     }
 
     private static final class Entry {
@@ -100,54 +86,12 @@ public class OrganicMatterTrackerOverlay extends Overlay {
     @Override
     public List<String> getLines(boolean preview) {
         List<String> lines = new ArrayList<>();
-        for (Entry entry : buildEntries(preview)) lines.add(entry.text);
+        clearLineIcons();
+        for (Entry entry : buildEntries(preview)) {
+            lines.add(entry.text);
+            putLineIcon(entry.text, entry.icon);
+        }
         return lines;
-    }
-
-    @Override
-    public void render(boolean preview) {
-        List<Entry> entries = buildEntries(preview);
-        if (entries.isEmpty()) return;
-
-        Minecraft mc = Minecraft.getMinecraft();
-        FontRenderer fr = mc.fontRendererObj;
-        float scale = getScale();
-
-        int w = 20;
-        for (Entry entry : entries) {
-            int textWidth = fr.getStringWidth(entry.text);
-            int lineWidth = entry.icon != null ? textWidth + ICON_SIZE + ICON_GAP + 6 : textWidth + 6;
-            w = Math.max(w, lineWidth);
-        }
-        int h = entries.size() * LINE_HEIGHT + PADDING * 2;
-        lastW = w;
-        lastH = h;
-
-        Position pos = getPosition();
-        int x = pos.getAbsX(sr, (int) (w * scale));
-        int y = pos.getAbsY(sr, (int) (h * scale));
-        if (pos.isCenterX()) x -= (int) (w * scale / 2);
-        if (pos.isCenterY()) y -= (int) (h * scale / 2);
-
-        GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0f);
-        GL11.glScalef(scale, scale, 1f);
-
-        int bgColor = getBgColor();
-        if ((bgColor >>> 24) != 0) drawRoundedRect(-PADDING, -PADDING, w, h - PADDING, getCornerRadius(), bgColor);
-
-        int dy = 0;
-        for (Entry entry : entries) {
-            int textX = 0;
-            if (entry.icon != null) {
-                ItemRenderUtils.renderItemIcon(mc, entry.icon, 0, dy - 1, ICON_SIZE);
-                textX = ICON_SIZE + ICON_GAP;
-            }
-            fr.drawStringWithShadow(entry.text, textX, dy, 0xFFFFFF);
-            dy += LINE_HEIGHT;
-        }
-
-        GL11.glPopMatrix();
     }
 
     @Override
@@ -172,7 +116,13 @@ public class OrganicMatterTrackerOverlay extends Overlay {
 
     @Override
     protected boolean isEnabled() {
-        return config().enabled && (!config().requireFarmingIsland || isInFarmingLocation());
+        if (!config().enabled) return false;
+        boolean locationOk = !config().requireFarmingIsland || FarmingApi.isInFarmingLocation();
+        if (!locationOk) return false;
+        if (config().hideWhenPaused && OrganicMatterTracker.isPaused()) return false;
+        if (config().showOnlyWhileFarming && !FarmingApi.isCurrentlyFarming()) return false;
+        if (config().showOnlyWhileHoldingFarmingTool && !FarmingApi.isHoldingFarmingTool()) return false;
+        return true;
     }
 
     @Override

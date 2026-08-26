@@ -31,7 +31,8 @@ public final class SensitivityReducer {
     public static boolean isActive() {
         if (ATHRConfig.feature == null || !config().enabled) return false;
         if (!SkyblockData.isOnSkyblock()) return false;
-        if (config().requireFarmingIsland && !isInFarmingLocation()) return false;
+        boolean locationOk = !config().requireFarmingIsland || isInFarmingLocation();
+        if (!locationOk) return false;
         return isHoldingFarmingTool();
     }
 

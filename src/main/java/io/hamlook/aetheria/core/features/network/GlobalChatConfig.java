@@ -3,8 +3,14 @@ package io.hamlook.aetheria.core.features.network;
 import com.google.gson.annotations.Expose;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations;
 import io.hamlook.aetheria.utils.Position;
+import org.lwjgl.input.Keyboard;
 
 public class GlobalChatConfig {
+
+    @Expose
+    @ConfigAnnotations.ConfigOption(name = "Open Chat Keybind",desc = "Press to open the Global Chat UI (same as /gchat)")
+    @ConfigAnnotations.ConfigEditorKeybind(defaultKey = Keyboard.KEY_NONE)
+    public int openChatKey = Keyboard.KEY_NONE;
 
     @Expose
     @ConfigAnnotations.ConfigOption(name = "Reduced Animations",desc = "Only animated gifs/apngs when you hover over them")

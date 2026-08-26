@@ -6,8 +6,11 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 public class WaiterLogs {
@@ -25,7 +28,7 @@ public class WaiterLogs {
             if (!file.exists()) {
                 file.createNewFile();
             }
-            FileWriter writer = new FileWriter(file,true);
+            Writer writer = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
             writer.write(gson.toJson(logs));
             writer.close();
         } catch (IOException e) {

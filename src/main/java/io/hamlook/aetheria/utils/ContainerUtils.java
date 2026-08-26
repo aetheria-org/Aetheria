@@ -13,6 +13,9 @@ public class ContainerUtils {
 
     private static final Minecraft mc = Minecraft.getMinecraft();
 
+    private static GuiScreen cachedScreen;
+    private static String cachedContainerName;
+
     private ContainerUtils() {
     }
 
@@ -68,8 +71,12 @@ public class ContainerUtils {
 
     @Nullable
     public static String getContainerName() {
-        IInventory inv = getLowerInventory();
-        return inv == null ? null : ColorUtils.stripColor(inv.getDisplayName().getUnformattedText()).trim();
+        GuiScreen screen = mc.currentScreen;
+        if (screen == cachedScreen) return cachedContainerName;
+        cachedScreen = screen;
+        IInventory inv = getLowerInventory(getOpenChest(screen));
+        cachedContainerName = inv == null ? null : ColorUtils.stripColor(inv.getDisplayName().getUnformattedText()).trim();
+        return cachedContainerName;
     }
 
     @Nullable

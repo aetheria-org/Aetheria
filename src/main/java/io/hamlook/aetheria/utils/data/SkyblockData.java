@@ -78,6 +78,29 @@ public final class SkyblockData {
         return getScoreboardLines().stream().map(s -> net.minecraft.util.StringUtils.stripControlCodes(s).trim()).collect(Collectors.toList());
     }
 
+    private static String purseLineCache;
+    private static int purseLineCacheTick = -1;
+
+    /**
+     * Stripped sidebar line containing "Purse"/"Piggy", or null. Memoized per
+     * game tick so multiple consumers share one scoreboard read per tick.
+     */
+    public static String getPurseLine() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null || mc.thePlayer == null) {
+            purseLineCacheTick = -1;
+            purseLineCache = null;
+            return null;
+        }
+        if (purseLineCacheTick != mc.thePlayer.ticksExisted) {
+            purseLineCacheTick = mc.thePlayer.ticksExisted;
+            purseLineCache = getCleanScoreboardLines().stream()
+                    .filter(l -> l.contains("Purse") || l.contains("Piggy"))
+                    .findFirst().orElse(null);
+        }
+        return purseLineCache;
+    }
+
     public static String getCurrentProfile() {
         return currentProfile;
     }
@@ -161,10 +184,8 @@ public final class SkyblockData {
         spots.put("mushroom gorge", Collections.unmodifiableList(Arrays.asList(
                 new BlockPos(220, 41, -578),
                 new BlockPos(234, 54, -500),
-                new BlockPos(265, 55, -436),
                 new BlockPos(187, 42, -520),
                 new BlockPos(303, 51, -409),
-                new BlockPos(172, 48, -459),
                 new BlockPos(189, 43, -443))));
         spots.put("overgrown mushroom cave", Collections.unmodifiableList(Arrays.asList(
                 new BlockPos(247, 57, -421),

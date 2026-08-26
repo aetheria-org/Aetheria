@@ -44,17 +44,19 @@ public class GChatCommand extends ASMCommand {
 
     @Override
     public void execute(ICommandSender sender, String[] args) throws CommandException {
-        if(!NetworkGuard.apiAllowed()){
-            ChatUtils.sendMessage("§cYou cannot use Global Chat without API Access, Enable API Access in Config First.");
-            return;
-        }
+        tryOpen();
+    }
+
+    public static void tryOpen() {
+        if (!NetworkGuard.requiresApi("Global Chat")) return;
         CommunityAccess.runIfAllowed(
                 "§cGlobal Chat requires your account to be Synced (use /sync) or to be on SkyBlock.",
-                this::openChatUi
+                GChatCommand::openChatUi
         );
     }
 
-    private void openChatUi() {
+    private static void openChatUi() {
+        io.hamlook.aetheria.WebSocketClient.markActivity();
         ChatUtils.sendMessage("§7Checking Global Chat access...");
         CompletableFuture.runAsync(() -> {
             CheckResult result = checkAccess();
@@ -86,7 +88,7 @@ public class GChatCommand extends ASMCommand {
         }
     }
 
-    private CheckResult checkAccess() {
+    private static CheckResult checkAccess() {
         try {
             URL url = new URL(CapeAPI.getAPIUrl("chat-access"));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();

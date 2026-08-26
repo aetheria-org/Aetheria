@@ -1,6 +1,5 @@
 package io.hamlook.aetheria.utils;
 
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.network.NetworkGuard;
@@ -9,8 +8,11 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
 
+import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 /**
  * Gates community features (Global Chat, Diana Parties) behind a player being
@@ -24,6 +26,28 @@ public final class CommunityAccess {
     private static final long CACHE_TTL = 300_000;
 
     private CommunityAccess() {
+    }
+
+    private static File getGlobalConfigDir() {
+        String os = System.getProperty("os.name").toLowerCase();
+        String baseDir;
+        if (os.contains("win")) {
+            baseDir = System.getenv("APPDATA");
+        } else {
+            String xdgConfig = System.getenv("XDG_CONFIG_HOME");
+            if (xdgConfig != null && !xdgConfig.isEmpty()) {
+                baseDir = xdgConfig;
+            } else {
+                baseDir = System.getProperty("user.home") + "/.config";
+            }
+        }
+        return new File(baseDir, "Aetheria");
+    }
+
+    private static File getSecretFile() {
+        File dir = getGlobalConfigDir();
+        if (!dir.exists()) dir.mkdirs();
+        return new File(dir, "synccode.secret");
     }
 
     /** True if the player is in Skyblock OR is known to be verified (cached sync status). */
@@ -77,12 +101,22 @@ public final class CommunityAccess {
     private static boolean checkSynced() {
         if (!NetworkGuard.apiAllowed()) return false;
         try {
+            String secretHash = "";
+            File secretFile = getSecretFile();
+            if (secretFile.exists()) {
+                secretHash = new String(Files.readAllBytes(secretFile.toPath()), StandardCharsets.UTF_8);
+            }
+            if (secretHash.isEmpty()) {
+                return false;
+            }
+
             URL url = new URL(CapeAPI.getAPIUrl("is-synced"));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
             connection.setRequestProperty("x-playername",
                     Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
+            connection.setRequestProperty("x-sync-code", secretHash);
             connection.setReadTimeout(10000);
             connection.setConnectTimeout(10000);
             int code = connection.getResponseCode();

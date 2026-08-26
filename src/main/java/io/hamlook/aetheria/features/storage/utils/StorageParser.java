@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.storage.utils;
 
+import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.block.Block;
@@ -86,15 +87,23 @@ public class StorageParser {
         if (loadedContainers.containsKey(id)) {
             SContainer existing = loadedContainers.get(id);
             if (type == Type.ECHEST) {
-                existing.locked = specialFlag;
+                if (existing.locked != specialFlag) {
+                    existing.locked = specialFlag;
+                    StorageData.markDirty(existing);
+                }
             } else {
-                existing.empty = specialFlag;
-                existing.renderH = renderH;
-                existing.slotCount = slotCount;
+                if (existing.empty != specialFlag || existing.renderH != renderH || existing.slotCount != slotCount) {
+                    existing.empty = specialFlag;
+                    existing.renderH = renderH;
+                    existing.slotCount = slotCount;
+                    StorageData.markDirty(existing);
+                }
             }
             return existing;
         } else {
-            return new SContainer(new java.util.HashMap<>(), id, page, type, specialFlag, 307, renderH, slotCount, false);
+            SContainer created = new SContainer(new java.util.HashMap<>(), id, page, type, specialFlag, 307, renderH, slotCount, false);
+            StorageData.markDirty(created);
+            return created;
         }
     }
 

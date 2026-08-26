@@ -26,7 +26,6 @@ public class CustomScoreboard extends Overlay {
     private static final int PAD_X = 4;
     private static final int PAD_Y = 4;
     private static final int LINE_GAP = 1;
-    private static final int SUPERSAMPLE = 2;
 
     private static final int LINE_SERVER       = 0;
     private static final int LINE_TIME         = 1;
@@ -56,6 +55,7 @@ public class CustomScoreboard extends Overlay {
     private static final int LINE_EMPTY2       = 25;
     private static final int LINE_COPPER       = 26;
     private static final int LINE_PLOT_NUMBER  = 27;
+    private static final int LINE_CLEANUP      = 28;
 
     private static final String LOC_SYMBOL_NORMAL = "⏣";
     private static final String LOC_SYMBOL_RIFT   = "ф";
@@ -75,6 +75,7 @@ public class CustomScoreboard extends Overlay {
     private static final Pattern HEAT_PATTERN       = Pattern.compile("Heat: .+");
     private static final Pattern COPPER_PATTERN   = Pattern.compile("Copper: [\\d,.]+");
     private static final Pattern PLOT_NUMBER_PATTERN = Pattern.compile("Plot - \\d+");
+    private static final Pattern CLEANUP_PATTERN  = Pattern.compile("Cleanup: .+");
 
     @Getter
     private static CustomScoreboard instance;
@@ -175,6 +176,7 @@ public class CustomScoreboard extends Overlay {
         String heatRaw        = null;
         String copperRaw      = null;
         String plotnumberRaw  = null;
+        String cleanupRaw     = null;
         List<String> eventLines  = new ArrayList<>();
         List<String> slayerLines = new ArrayList<>();
         Set<String>  claimed     = new LinkedHashSet<>();
@@ -207,6 +209,9 @@ public class CustomScoreboard extends Overlay {
             }
             if (plotnumberRaw == null && PLOT_NUMBER_PATTERN.matcher(c).find()){
                 plotnumberRaw = l; claimed.add(l); continue;
+            }
+            if (cleanupRaw == null && CLEANUP_PATTERN.matcher(c).find()) {
+                cleanupRaw = l; claimed.add(l); continue;
             }
             if (bitsRaw == null && BITS_PATTERN.matcher(c).find()) {
                 bitsRaw = l; claimed.add(l); continue;
@@ -360,6 +365,9 @@ public class CustomScoreboard extends Overlay {
                 case LINE_PLOT_NUMBER:
                     if (plotnumberRaw != null) { lines.add(plotnumberRaw); rawIndex.add(-1); }
                     break;
+                case LINE_CLEANUP:
+                    if (cleanupRaw != null) { lines.add(cleanupRaw); rawIndex.add(-1); }
+                    break;
                 case LINE_SLAYER:
                     if (!inDungeon)
                         for (String sl : slayerLines) { lines.add(sl); rawIndex.add(-1); }
@@ -401,6 +409,7 @@ public class CustomScoreboard extends Overlay {
 
     @Override
     public void render(boolean preview) {
+        if (preview && isLiveActive()) return;
         if (!preview && !extraGuard()) return;
 
         if (!preview && OverlayUtils.isChatOpen()) return;
@@ -420,7 +429,6 @@ public class CustomScoreboard extends Overlay {
 
         float scale    = getScale();
         int lh         = LINE_HEIGHT + LINE_GAP;
-        int ss         = SUPERSAMPLE;
         int alignment  = ATHRConfig.feature.scoreboard.lineAlignment;
         int minWidth   = ATHRConfig.feature.scoreboard.minWidth;
 
@@ -443,16 +451,14 @@ public class CustomScoreboard extends Overlay {
 
         GL11.glPushMatrix();
         GL11.glTranslatef(x, y, 0);
-        GL11.glScalef(scale / ss, scale / ss, 1f);
+        GL11.glScalef(scale, scale, 1f);
 
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0)
-            drawRoundedRect(0, 0, boxW * ss, boxH * ss, getCornerRadius() * ss, bgColor);
-
-        GL11.glScalef(ss, ss, 1f);
+            drawRoundedRect(0, 0, boxW, boxH, getCornerRadius(), bgColor);
 
         int textY = PAD_Y;
         if (SkyblockData.isOnSkyblock()) {

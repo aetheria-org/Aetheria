@@ -20,18 +20,16 @@ public final class DungeonReward {
         singlePrice = price;
         this.item = item;
         price1 = price;
-        if(ItemUtils.getInternalName(item).startsWith("essence")){
+        if(ItemUtils.getInternalName(item).startsWith("ESSENCE")){
             String displayName = ColorUtils.stripColor(item.getDisplayName());
-            Aetheria.logger.info("Checking Amount for " + displayName);
             if(displayName.contains("x")){
                 int index = displayName.lastIndexOf("x");
                 String amount = displayName.substring(index + 1);
-                Aetheria.logger.info("Checking Amount in " + amount);
                 int iA = 0;
                 try{
                     iA = Integer.parseInt(amount);
                 } catch (NumberFormatException e) {
-                    Aetheria.logger.info("ERROR converting " + amount + " to numbers.");
+                    Aetheria.logger.warning("[D.CHEST ESTIMATOR] ERROR converting " + amount + " to numbers.");
                 }
                 if(iA > 0) price1 *= iA;
             }
@@ -46,6 +44,6 @@ public final class DungeonReward {
     private String getPriceText() {
         if(price <= 0) return "§cCould not determine price";
         if(singlePrice == price)  return "§6" + Utils.shortNumberFormat(price,0) + " Coins.";
-        else return "§6" + Utils.shortNumberFormat(price,0) + " Coins." + "§7(§6" + Utils.shortNumberFormat(price,0) + " §7)";
+        else return "§6" + Utils.shortNumberFormat(price,0) + " Coins." + "§7 (§6" + Utils.shortNumberFormat(singlePrice,0) + "§7)";
     }
 }

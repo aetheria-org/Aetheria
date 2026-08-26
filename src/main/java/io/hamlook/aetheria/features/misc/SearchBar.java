@@ -245,7 +245,7 @@ public class SearchBar {
             char typedChar = KeybindHelper.getEventCharacter();
             int keyCode = KeybindHelper.getEventKeyCode();
 
-            if ((keyCode == KeybindHelper.KEY_RETURN || keyCode == KeybindHelper.KEY_NUMPADENTER) && isCalcMode() && lastCalcResult != null) {
+            if ((keyCode == KeybindHelper.KEY_RETURN || keyCode == KeybindHelper.KEY_NUMPAD_ENTER) && isCalcMode() && lastCalcResult != null) {
                 if (ATHRConfig.feature.misc.searchBarConfig.calcEnterCopyResult)
                     GuiScreen.setClipboardString(lastCalcResult);
                 if (ATHRConfig.feature.misc.searchBarConfig.calcEnterClearText) {

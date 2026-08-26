@@ -38,7 +38,6 @@ class BPSOverlay : Overlay(50, 20) {
 
     @SubscribeEvent
     fun onBlockBreak(event: BlockBreakEvent) {
-        if (!config.bpsCalculator) return
         if (config.bpsRequireFarmingIsland && !isInFarmingLocation()) return
 
         if (blocksBroken == 0) startTime = System.currentTimeMillis()
@@ -48,7 +47,7 @@ class BPSOverlay : Overlay(50, 20) {
 
     @SubscribeEvent
     fun onTick(event: TickEvent.ClientTickEvent) {
-        if (event.phase != TickEvent.Phase.START || !config.bpsCalculator) return
+        if (event.phase != TickEvent.Phase.START) return
 
         if (blocksBroken > 0) {
             val timeInSeconds = (System.currentTimeMillis() - startTime) / 1000.0
@@ -83,7 +82,9 @@ class BPSOverlay : Overlay(50, 20) {
     override fun getBgColor(): Int = config.bpsBgColor
     override fun getCornerRadius(): Int = config.bpsCornerRadius
     override fun isEnabled(): Boolean =
-        config.bpsCalculator && (!config.bpsRequireFarmingIsland || isInFarmingLocation())
+        config.bpsCalculator
+                && (!config.bpsRequireFarmingIsland || isInFarmingLocation())
+                && (!config.showOnlyWhileFarming || FarmingApi.isCurrentlyFarming())
 
     override fun hideOnChat() = config.hideOnChat
     override fun hideOnTab() = config.hideOnTab

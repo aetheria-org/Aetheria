@@ -20,6 +20,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -36,10 +37,12 @@ public class GCImage {
 
     public List<BufferedImage> images;
     public List<ResourceLocation> frames = new ArrayList<>();
+    /** Per-frame display delay in ms, one entry per frame (same order as {@link #frames}). */
+    public List<Integer> delays = new ArrayList<>();
     public int frameDelay;
     public String id;
-    public int curFrame = 0;
-    public long lastUpdate = 0;
+    public volatile int curFrame = 0;
+    public volatile long lastUpdate = 0;
     public boolean circularMask = false;
     public String url = "";
 
@@ -47,8 +50,8 @@ public class GCImage {
     public int width = 0;
     public int height = 0;
 
-    public boolean isLoaded = false;
-    public boolean loadFailed = false;
+    public volatile boolean isLoaded = false;
+    public volatile boolean loadFailed = false;
 
     public static final int[] QUALITIES = {240,360,480,720,1080,1440,3,840};
     private static final Pattern META_TAG_PATTERN = Pattern.compile(
@@ -60,12 +63,15 @@ public class GCImage {
     public GCImage(List<BufferedImage> images, int frameDelay) {
         this.images = images;
         this.frameDelay = frameDelay;
+        this.delays = new ArrayList<>();
         id = UUID.randomUUID().toString();
     }
 
     public void updateFrame() {
-        if (!isLoaded || frames.size() <= 1 || frameDelay <= 0) return;
-        if (System.currentTimeMillis() - lastUpdate < frameDelay) return;
+        if (!isLoaded || frames.size() <= 1) return;
+        int delay = currentDelay();
+        if (delay <= 0) return;
+        if (System.currentTimeMillis() - lastUpdate < delay) return;
 
         curFrame++;
         if (curFrame >= frames.size()) {
@@ -74,11 +80,21 @@ public class GCImage {
         lastUpdate = System.currentTimeMillis();
     }
 
+    private int currentDelay() {
+        if (!delays.isEmpty()) {
+            int idx = Math.min(curFrame, delays.size() - 1);
+            int d = delays.get(idx);
+            if (d > 0) return d;
+        }
+        return frameDelay > 0 ? frameDelay : 100;
+    }
+
     public ResourceLocation getTextureToRender(boolean isHovered) {
         if (!isLoaded || frames.isEmpty()) return null;
         if (frames.size() == 1) return frames.get(0);
         if (ATHRConfig.feature != null && ATHRConfig.feature.network.globalChatConfig.reducedAnimations && !isHovered) return frames.get(0);
 
+        updateFrame();
         return frames.get(curFrame);
     }
 
@@ -132,7 +148,8 @@ public class GCImage {
 
             } catch (Exception e) {
                 Aetheria.logger.warning("[GCImage] Failed to load image from " + url + ": " + e);
-                if (url.toLowerCase().endsWith(".gif")) {
+                boolean notFound = e instanceof DownloadException && ((DownloadException) e).code == 404;
+                if (!notFound && url.toLowerCase().endsWith(".gif")) {
                     Aetheria.logger.warning("[GCImage] Trying to fetch animated webp instead.");
                     String webpUrl = url.substring(0, url.length() - 4) + ".webp?animated=true";
                     try {
@@ -149,7 +166,6 @@ public class GCImage {
                     }
                 }
                 gcImage.loadFailed = true;
-                e.printStackTrace();
             }
         });
         return gcImage.id;
@@ -187,7 +203,6 @@ public class GCImage {
             } catch (Exception e) {
                 Aetheria.logger.warning("[GCImage] Failed to load embed from " + pageUrl + ": " + e);
                 gcImage.loadFailed = true;
-                e.printStackTrace();
             }
         });
         return gcImage.id;
@@ -247,6 +262,8 @@ public class GCImage {
                 gcImage.frames.add(resLoc);
             }
             gcImage.images.clear();
+            gcImage.curFrame = 0;
+            gcImage.lastUpdate = System.currentTimeMillis();
             gcImage.isLoaded = true;
         });
     }
@@ -271,6 +288,15 @@ public class GCImage {
         connection.setConnectTimeout(15000);
         connection.setReadTimeout(15000);
 
+        int code = connection.getResponseCode();
+        if (code < 200 || code >= 300) {
+            String hint = code == 404 && url.contains("discordapp.com")
+                    ? " (expired or deleted Discord attachment)" : "";
+            throw new DownloadException(code, "HTTP " + code + hint + ": " + url);
+        }
+
+        int expectedLength = connection.getContentLength();
+
         try (InputStream is = new BufferedInputStream(connection.getInputStream());
              ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[8192];
@@ -278,7 +304,25 @@ public class GCImage {
             while ((read = is.read(buffer)) != -1) {
                 baos.write(buffer, 0, read);
             }
-            return baos.toByteArray();
+            byte[] data = baos.toByteArray();
+            // Servers can close the stream early (proxies, timeouts, flaky CDNs),
+            // silently truncating the media. Truncated GIFs lose their trailing
+            // frames, so treat short reads as failures instead of decoding them.
+            if (expectedLength > 0 && data.length < expectedLength) {
+                throw new IOException("Incomplete download: received " + data.length
+                        + " of " + expectedLength + " bytes from " + url);
+            }
+            return data;
+        }
+    }
+
+    /** Carries the HTTP status so callers can react (e.g. skip retries on a definitive 404). */
+    private static class DownloadException extends IOException {
+        final int code;
+
+        DownloadException(int code, String message) {
+            super(message);
+            this.code = code;
         }
     }
 
@@ -293,6 +337,9 @@ public class GCImage {
             Aetheria.logger.warning("[GCImage] webp4j native support unavailable on this platform for: " + url);
             return;
         }
+        // A retry after a partial decode can land here with garbage in the lists.
+        gcImage.images.clear();
+        gcImage.delays.clear();
         int MAX_STATIC_DIMENSION = QUALITIES[ATHRConfig.feature.network.globalChatConfig.maxImageGifQuality];
         /* Animated images are capped much lower so frame memory stays sane. */
         int MAX_ANIMATED_DIMENSION = MAX_STATIC_DIMENSION/4;
@@ -313,17 +360,14 @@ public class GCImage {
                 List<AnimatedWebPFrame> webpFrames = animated.getFrames();
                 int[] delays = animated.getDelays();
 
-                int totalDelay = 0;
-                int validFrames = 0;
                 for (int i = 0; i < webpFrames.size(); i++) {
                     BufferedImage rawFrame = webpFrames.get(i).getImage();
                     gcImage.images.add(capScale < 1f ? scaleDown(rawFrame, MAX_ANIMATED_DIMENSION) : rawFrame);
-                    if (delays != null && i < delays.length && delays[i] > 0) {
-                        totalDelay += delays[i];
-                        validFrames++;
-                    }
+                    int d = delays != null && i < delays.length ? delays[i] : 0;
+                    gcImage.delays.add(d > 0 ? d : 100);
                 }
-                gcImage.frameDelay = validFrames > 0 ? (totalDelay / validFrames) : 100;
+                // Per-frame delays drive the animation; this is only a fallback.
+                gcImage.frameDelay = 100;
                 return;
             }
         } catch (Exception ignored) {
@@ -386,6 +430,9 @@ public class GCImage {
         ImageReader reader = chosenReader;
         ImageInputStream iis = ImageIO.createImageInputStream(new ByteArrayInputStream(rawBytes));
         reader.setInput(iis);
+        // A retry after a partial decode can land here with garbage in the lists.
+        gcImage.images.clear();
+        gcImage.delays.clear();
         int MAX_STATIC_DIMENSION = QUALITIES[ATHRConfig.feature.network.globalChatConfig.maxImageGifQuality];
         /* Animated images are capped much lower so frame memory stays sane. */
         int MAX_ANIMATED_DIMENSION = MAX_STATIC_DIMENSION/4;
@@ -405,29 +452,58 @@ public class GCImage {
                 gcImage.width = canvasWidth;
                 gcImage.height = canvasHeight;
 
+                // Composite like a normal GIF decoder: frames are raw strips, so
+                // every frame is drawn onto a persistent canvas the size of the
+                // logical screen, honouring the frame's offset and the previous
+                // frame's disposal method, and a snapshot of the canvas becomes
+                // the displayed frame.
+                boolean gifFormat = "gif".equalsIgnoreCase(reader.getFormatName());
                 BufferedImage canvas = new BufferedImage(canvasWidth, canvasHeight, BufferedImage.TYPE_INT_ARGB);
                 java.awt.Graphics2D g = canvas.createGraphics();
                 if (capScale < 1f) {
                     g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
                 }
 
-                int totalDelay = 0;
-                int validFrames = 0;
+                int prevDisposal = 0;
+                int prevX = 0, prevY = 0, prevW = canvasWidth, prevH = canvasHeight;
+                int decodeFailures = 0;
 
                 for (int i = 0; i < numFrames; i++) {
                     BufferedImage frame;
                     try {
                         frame = reader.read(i);
                     } catch (Exception frameEx) {
-                        frameEx.printStackTrace();
+                        decodeFailures++;
+                        continue;
+                    }
+                    if (frame == null) {
+                        decodeFailures++;
                         continue;
                     }
 
-                    if (capScale < 1f) {
-                        g.drawImage(frame, 0, 0, canvasWidth, canvasHeight, null);
-                    } else {
-                        g.drawImage(frame, 0, 0, null);
+                    int fx = 0, fy = 0, fw = frame.getWidth(), fh = frame.getHeight();
+                    int disposal = 0;
+                    if (gifFormat) {
+                        try {
+                            IIOMetadata metadata = reader.getImageMetadata(i);
+                            IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(metadata.getNativeMetadataFormatName());
+                            fx = intAttr(root, "ImageDescriptor", "imageLeftPosition", 0);
+                            fy = intAttr(root, "ImageDescriptor", "imageTopPosition", 0);
+                            fw = intAttr(root, "ImageDescriptor", "imageWidth", fw);
+                            fh = intAttr(root, "ImageDescriptor", "imageHeight", fh);
+                            disposal = disposalOf(getNode(root, "GraphicControlExtension"));
+                        } catch (Exception ignored) {}
                     }
+
+                    if (prevDisposal == 2) {
+                        g.clearRect(prevX, prevY, prevW, prevH);
+                    }
+
+                    g.drawImage(frame,
+                            Math.round(fx * capScale), Math.round(fy * capScale),
+                            Math.round(fw * capScale), Math.round(fh * capScale),
+                            null);
+
                     BufferedImage snapshot = new BufferedImage(canvasWidth, canvasHeight, BufferedImage.TYPE_INT_ARGB);
                     snapshot.getGraphics().drawImage(canvas, 0, 0, null);
                     gcImage.images.add(snapshot);
@@ -435,17 +511,29 @@ public class GCImage {
                     try {
                         IIOMetadata metadata = reader.getImageMetadata(i);
                         int delayMs = extractDelayMs(metadata);
-                        if (delayMs > 0) {
-                            totalDelay += delayMs;
-                            validFrames++;
-                        }
-                    } catch (Exception ignored) {}
+                        gcImage.delays.add(delayMs > 0 ? delayMs : 100);
+                    } catch (Exception ignored) {
+                        gcImage.delays.add(100);
+                    }
+
+                    prevDisposal = disposal;
+                    prevX = Math.round(fx * capScale);
+                    prevY = Math.round(fy * capScale);
+                    prevW = Math.round(fw * capScale);
+                    prevH = Math.round(fh * capScale);
                 }
                 g.dispose();
-                gcImage.frameDelay = validFrames > 0 ? (totalDelay / validFrames) : 100;
+                // Per-frame delays drive the animation; this is only a fallback.
+                gcImage.frameDelay = 100;
 
-                if (gcImage.images.isEmpty()) {
-                    Aetheria.logger.warning("[GCImage] All frames failed to decode for: " + url);
+                if (decodeFailures > 0) {
+                    Aetheria.logger.warning("[GCImage] " + decodeFailures + "/" + numFrames
+                            + " frames failed to decode for: " + url);
+                }
+                if (decodeFailures * 2 >= numFrames || gcImage.images.isEmpty()) {
+                    Aetheria.logger.warning("[GCImage] Too many frames failed to decode for: " + url);
+                    gcImage.images.clear();
+                    gcImage.delays.clear();
                 }
             } else {
                 BufferedImage image = reader.read(0);
@@ -494,6 +582,27 @@ public class GCImage {
         } catch (Exception ignored) {}
 
         return -1;
+    }
+
+    private static int disposalOf(IIOMetadataNode graphicControl) {
+        if (graphicControl == null) return 0;
+        String dm = graphicControl.getAttribute("disposalMethod");
+        if (dm == null || dm.isEmpty()) return 0;
+        if ("restoreToBackground".equalsIgnoreCase(dm)) return 2;
+        if ("restoreToPrevious".equalsIgnoreCase(dm)) return 3;
+        return 0;
+    }
+
+    private static int intAttr(IIOMetadataNode root, String nodeName, String attr, int def) {
+        IIOMetadataNode node = getNode(root, nodeName);
+        if (node == null) return def;
+        String v = node.getAttribute(attr);
+        if (v == null || v.isEmpty()) return def;
+        try {
+            return Integer.parseInt(v);
+        } catch (NumberFormatException e) {
+            return def;
+        }
     }
 
     private static IIOMetadataNode getNode(IIOMetadataNode rootNode, String nodeName) {

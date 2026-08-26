@@ -182,6 +182,22 @@ public class Utils {
         return sb.toString().trim();
     }
 
+    /** Like {@link #formatDuration(long)} but shows "<1m" for sub-minute values. */
+    public static String formatDuration(long ms, boolean underOneMinuteAsLess) {
+        if (underOneMinuteAsLess && ms > 0 && ms < 60_000L) return "<1m";
+        return formatDuration(ms);
+    }
+
+    public static String formatClock(long ms) {
+        long totalSeconds = ms / 1000;
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+        return hours > 0
+                ? String.format("%d:%02d:%02d", hours, minutes, seconds)
+                : String.format("%02d:%02d", minutes, seconds);
+    }
+
     private static final char[] SUFFIXES = {'\0', 'k', 'M', 'B', 'T'};
     public static String shortNumberFormat(double num, int iteration) {
         boolean negative = num < 0;

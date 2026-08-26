@@ -1,7 +1,6 @@
 package io.hamlook.aetheria.mixins;
 
 import io.hamlook.aetheria.features.storage.StorageManager;
-import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Slot;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,7 +19,7 @@ public class MixinGuiContainer_StorageOverlay {
 
     @Inject(method = "drawSlot", at = @At("HEAD"), cancellable = true)
     public void drawSlot(Slot slot, CallbackInfo ci) {
-        if (StorageManager.isOverlayActive() && ContainerUtils.isChestOpen()) {
+        if (StorageManager.isOverlayActive() && StorageManager.isStorageChest()) {
             ci.cancel();
         }
     }

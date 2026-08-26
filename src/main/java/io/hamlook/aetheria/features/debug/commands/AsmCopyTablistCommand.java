@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.debug.commands;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.data.TablistParser;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiPlayerTabOverlay;
 import net.minecraft.client.gui.GuiScreen;
@@ -19,7 +20,8 @@ import java.util.List;
 
 /**
  * /asmcopytablist [-nocolor] — copies every tablist entry (raw + stripped) to the
- * clipboard. If /asmtesttablist has a fake tablist active, copies that instead.
+ * clipboard, in the same order TablistParser iterates them (team-then-name
+ * sorted). If /asmtesttablist has a fake tablist active, copies that instead.
  */
 @RegisterCommand
 public class AsmCopyTablistCommand extends ASMCommand {
@@ -68,7 +70,7 @@ public class AsmCopyTablistCommand extends ASMCommand {
         }
 
         GuiPlayerTabOverlay tab = mc.ingameGUI.getTabList();
-        List<NetworkPlayerInfo> infos = new ArrayList<>(mc.thePlayer.sendQueue.getPlayerInfoMap());
+        List<NetworkPlayerInfo> infos = TablistParser.getParserOrderedInfos(mc);
 
         StringBuilder sb = new StringBuilder();
         sb.append("=== TABLIST (").append(infos.size()).append(" entries) ===\n");

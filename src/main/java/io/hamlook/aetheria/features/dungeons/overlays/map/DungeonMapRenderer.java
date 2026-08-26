@@ -3,34 +3,30 @@ package io.hamlook.aetheria.features.dungeons.overlays.map;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.dungeons.DungeonMapConfig;
-import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoom;
-import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class DungeonMapRenderer {
 
     private static final float NAME_TEXT_SCALE = 0.75f;
-    private static final DungeonMapGrid.RoomState[] ICON_STATES = {
-            DungeonMapGrid.RoomState.GREEN,
-            DungeonMapGrid.RoomState.CLEARED,
-            DungeonMapGrid.RoomState.FAILED,
-            DungeonMapGrid.RoomState.UNOPENED
+    private static final int SELF_ARROW_COLOR = 0xFFFFFFFF;
+    private static final int[] TEAMMATE_ARROW_COLORS = {0xFF5AA5FF, // blue
+            0xFFFFE45A, // yellow
+            0xFFFFA135, // orange
+            0xFFFF5A5A  // red
     };
 
-    public static void render(DungeonMapGrid grid, float centerX, float centerY, float scale, List<String> playerNames, DungeonPlayerTracker tracker, Collection<DungeonRoom> visitedRooms) {
+    private static final DungeonMapGrid.RoomState[] ICON_STATES = {DungeonMapGrid.RoomState.GREEN, DungeonMapGrid.RoomState.CLEARED, DungeonMapGrid.RoomState.FAILED, DungeonMapGrid.RoomState.UNOPENED};
+
+    public static void render(DungeonMapGrid grid, float centerX, float centerY, float scale, List<String> playerNames, DungeonPlayerTracker tracker, Collection<DungeonRoom> visitedRooms, boolean showVisitedRoomNames, boolean colorText, boolean mapCalibrated) {
         if (!grid.isValid()) return;
 
         DungeonMapConfig cfg = ATHRConfig.feature.dungeons.dungeonMapConfig;
@@ -45,7 +41,6 @@ public class DungeonMapRenderer {
         GlStateManager.translate(centerX - gridW * scale / 2f, centerY - gridH * scale / 2f, 0f);
         GlStateManager.scale(scale, scale, 1f);
 
-        // 1. Render Rooms and Connectors
         for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
             DungeonMapGrid.RoomOffset off = entry.getKey();
             DungeonMapGrid.RoomCell cell = entry.getValue();
@@ -73,43 +68,32 @@ public class DungeonMapRenderer {
             Gui.drawRect(j.px, j.py, j.px + connSize, j.py + connSize, j.color | 0xFF000000);
         }
 
-        // 2. Render State Checkmarks (texture-batched by state, ≤4 binds/frame)
         int checkmarkStyle = cfg.rooms.mapCheckmark;
-        int checkmarkSize = checkmarkStyle == 1 ? 8 : 10;
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        int checkmarkSize = checkmarkStyle == 0 ? 8 : 10;
 
-        if (checkmarkStyle != 0) {
-            boolean split = cfg.rooms.splitRoomMarkers;
-            for (DungeonMapGrid.RoomState state : ICON_STATES) {
-                ResourceLocation icon = getCheckmark(state, checkmarkStyle);
-                if (icon == null) continue;
-                mc.getTextureManager().bindTexture(icon);
-                GlStateManager.color(1f, 1f, 1f, 1f);
-                if (split) {
-                    for (DungeonMapGrid.RoomRegion region : grid.getRegions()) {
-                        if (region.state != state) continue;
-                        int rx = (int) grid.gridToPixelX(region.tickCell.x);
-                        int ry = (int) grid.gridToPixelZ(region.tickCell.y);
-                        Utils.drawTexturedRect(rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize, checkmarkSize);
-                    }
-                } else {
-                    for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
-                        DungeonMapGrid.RoomCell cell = entry.getValue();
-                        if (cell.state != state) continue;
-                        int rx = (int) grid.gridToPixelX(entry.getKey().x);
-                        int ry = (int) grid.gridToPixelZ(entry.getKey().y);
-                        Utils.drawTexturedRect(rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize, checkmarkSize);
-                    }
+        for (DungeonMapGrid.RoomState state : ICON_STATES) {
+            ResourceLocation icon = getCheckmark(state, checkmarkStyle);
+            if (icon == null) continue;
+            if (cfg.rooms.splitRoomMarkers) {
+                for (DungeonMapGrid.RoomRegion region : grid.getRegions()) {
+                    if (region.state != state) continue;
+                    int rx = (int) grid.gridToPixelX(region.tickCell.x);
+                    int ry = (int) grid.gridToPixelZ(region.tickCell.y);
+                    RenderUtils.renderMapCheckmark(icon, rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize);
+                }
+            } else {
+                for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
+                    DungeonMapGrid.RoomCell cell = entry.getValue();
+                    if (cell.state != state) continue;
+                    int rx = (int) grid.gridToPixelX(entry.getKey().x);
+                    int ry = (int) grid.gridToPixelZ(entry.getKey().y);
+                    RenderUtils.renderMapCheckmark(icon, rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize);
                 }
             }
         }
 
-        // 3. Visited Room Names (centered, fixed screen scale)
-        if (cfg.rooms.showVisitedRoomNames && visitedRooms != null) {
+        if (showVisitedRoomNames && visitedRooms != null) {
             float invScale = 1f / Math.max(scale, 0.01f);
-            boolean colorText = cfg.rooms.mapColorText;
             boolean split = cfg.rooms.splitRoomMarkers;
             float roomHalf = roomSize / 2f;
             Set<DungeonMapGrid.RoomRegion> renderedRegions = new HashSet<>();
@@ -136,22 +120,27 @@ public class DungeonMapRenderer {
                     state = grid.stateAtWorld(room.center.getX(), room.center.getZ());
                 }
                 int color = colorText ? labelColor(state) : 0xFFFFFFFF;
-                DungeonMapOverlay.renderRoomName(px, py, cfg.rooms.roomnameSize * NAME_TEXT_SCALE * invScale, room.alias, color);
+                RenderUtils.renderRoomName(px, py, cfg.rooms.roomnameSize * NAME_TEXT_SCALE * invScale, room.alias, color);
             }
         }
 
-        if (!cfg.players.showPlayerHead) {
+        if (!cfg.players.showPlayerHead || tracker == null) {
             GlStateManager.popMatrix();
             return;
         }
 
-        // 4. Player Heads & Names (constant screen sizes — decoupled from map scale)
+        // Player Markers & Names
+        // Positions come from each player's map decoration (tracker.getPosition) so
+        // out-of-render-distancestill show. Self can optionally be
+        // overridden with the real entity position (accurateSelfPosition) for smoother
+        // movement; self stays anchored to its own decoration index.
         float invScale = 1f / Math.max(scale, 0.01f);
-        float headScale = cfg.players.headScale * 1.25f * invScale;
-        float headPixelSize = 8f * headScale;
+        DungeonMapConfig.Self selfCfg = cfg.players.self;
+        DungeonMapConfig.Teammates teammatesCfg = cfg.players.teammates;
+        String selfName = mc.thePlayer != null ? mc.thePlayer.getName() : null;
+        int teammateOrdinal = 0;
 
         for (String name : playerNames) {
-            if (tracker == null) continue;
             EntityPlayer entity = tracker.getEntity(name);
             float[] pos = tracker.getPosition(name);
             if (pos == null) {
@@ -161,35 +150,71 @@ public class DungeonMapRenderer {
             float pz = pos[1];
             float yaw = pos[2];
 
-            if (entity != null && !entity.isDead) {
-                yaw = entity.rotationYaw;
+            NetworkPlayerInfo info = tracker.getNetworkPlayerInfo(name, mc);
+
+            boolean isSelf = name.equalsIgnoreCase(selfName);
+            // Entity-based self tracking requires a calibrated map<->world frame:
+            // before the entrance latch the fallback origin would pin the marker
+            // to the entrance pixel, so uncalibrated runs draw self from its
+            // decoration (same as teammates) until calibration completes.
+            if (isSelf && mapCalibrated && cfg.players.accurateSelfPosition && entity != null && !entity.isDead) {
+                px = grid.worldToPixelX(entity.posX);
+                pz = grid.worldToPixelZ(entity.posZ);
+                // Same +180 convention as the decoration decode (vanilla parity).
+                yaw = entity.rotationYaw + 180f;
             }
 
-            NetworkPlayerInfo info = null;
-            if (entity != null) {
-                info = mc.getNetHandler().getPlayerInfo(entity.getUniqueID());
-            }
-            if (info == null) {
-                info = tracker.getNetworkPlayerInfo(name, mc);
-            }
-            ResourceLocation skin = (info != null && info.getLocationSkin() != null)
-                    ? info.getLocationSkin()
-                    : DefaultPlayerSkin.getDefaultSkinLegacy();
+            int style = isSelf ? selfCfg.iconStyle : teammatesCfg.iconStyle;
+            float groupScale = isSelf ? selfCfg.markerScale : teammatesCfg.markerScale;
+            float headScale = groupScale * 1.25f * invScale;
+            float markerSize = 8f * headScale;
 
-            DungeonMapOverlay.renderPlayerHead(px - headPixelSize / 2f, pz - headPixelSize / 2f, -1, headScale, skin, yaw);
+            if (style == 1) {
+                int color = isSelf ? SELF_ARROW_COLOR : TEAMMATE_ARROW_COLORS[teammateOrdinal % TEAMMATE_ARROW_COLORS.length];
+                if (!isSelf) teammateOrdinal++;
+                RenderUtils.renderPlayerArrow(px - markerSize / 2f, pz - markerSize / 2f, headScale, yaw, color, isSelf);
+            } else if (style == 2) {
+                boolean flowChroma = isSelf ? selfCfg.frameFlowChroma : teammatesCfg.frameFlowChroma;
+                String frameColorStr = isSelf ? selfCfg.frameColor : teammatesCfg.frameColor;
+                RenderUtils.renderFramedHead(px, pz, yaw, markerSize, frameColorStr, tracker.resolveSkin(name, mc), flowChroma);
+            } else {
+                RenderUtils.renderPlayerHead(px - markerSize / 2f, pz - markerSize / 2f, -1, headScale, tracker.resolveSkin(name, mc), yaw);
+            }
 
             if (cfg.players.showPlayerUsername) {
                 String displayName = getDisplayName(name, info, entity);
                 if (!cfg.players.showPlayerRank) {
-                    int idx = displayName.lastIndexOf("]");
-                    if (idx >= 0) displayName = displayName.substring(idx + 1).trim();
+                    displayName = stripRankKeepColor(displayName);
                 }
 
-                DungeonMapOverlay.renderName(px - headPixelSize / 2f, pz - headPixelSize / 2f, -1, headScale, cfg.players.nameSize * NAME_TEXT_SCALE * invScale, displayName, false);
+                RenderUtils.renderPlayerName(px - markerSize / 2f, pz - markerSize / 2f, -1, headScale, cfg.players.nameSize * NAME_TEXT_SCALE * invScale, displayName, false);
             }
         }
 
         GlStateManager.popMatrix();
+    }
+
+    /**
+     * Strips the rank prefix (up to the last ']') while preserving the rank's
+     * color: if the name segment carries no color code of its own, the last
+     * color code found inside the prefix is applied to the name.
+     */
+    private static String stripRankKeepColor(String displayName) {
+        int idx = displayName.lastIndexOf(']');
+        if (idx < 0) return displayName;
+        String namePart = displayName.substring(idx + 1).trim();
+        if (namePart.startsWith("§")) return namePart;
+        String color = "";
+        for (int i = idx - 1; i >= 1; i--) {
+            if (displayName.charAt(i) == '§') {
+                char c = Character.toLowerCase(displayName.charAt(i + 1));
+                if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+                    color = "§" + c;
+                    break;
+                }
+            }
+        }
+        return color.isEmpty() ? namePart : color + namePart;
     }
 
     private static String getDisplayName(String name, NetworkPlayerInfo info, EntityPlayer entity) {
@@ -209,13 +234,13 @@ public class DungeonMapRenderer {
     private static ResourceLocation getCheckmark(DungeonMapGrid.RoomState state, int style) {
         switch (state) {
             case GREEN:
-                return style == 2 ? Resources.DUNGEON_MAP_CHECK_NEU_GREEN : Resources.DUNGEON_MAP_CHECK_GREEN;
+                return style == 1 ? Resources.DUNGEON_MAP_CHECK_NEU_GREEN : Resources.DUNGEON_MAP_CHECK_GREEN;
             case CLEARED:
-                return style == 2 ? Resources.DUNGEON_MAP_CHECK_NEU_WHITE : Resources.DUNGEON_MAP_CHECK_WHITE;
+                return style == 1 ? Resources.DUNGEON_MAP_CHECK_NEU_WHITE : Resources.DUNGEON_MAP_CHECK_WHITE;
             case FAILED:
-                return style == 2 ? Resources.DUNGEON_MAP_CHECK_NEU_CROSS : Resources.DUNGEON_MAP_CHECK_CROSS;
+                return style == 1 ? Resources.DUNGEON_MAP_CHECK_NEU_CROSS : Resources.DUNGEON_MAP_CHECK_CROSS;
             case UNOPENED:
-                return style == 2 ? Resources.DUNGEON_MAP_CHECK_NEU_QUESTION : Resources.DUNGEON_MAP_CHECK_QUESTION;
+                return style == 1 ? Resources.DUNGEON_MAP_CHECK_NEU_QUESTION : Resources.DUNGEON_MAP_CHECK_QUESTION;
             default:
                 return null;
         }

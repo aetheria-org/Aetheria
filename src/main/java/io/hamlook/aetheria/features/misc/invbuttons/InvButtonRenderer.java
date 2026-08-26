@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.misc.invbuttons;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
+import io.hamlook.aetheria.features.farming.visitors.VisitorPanelBase;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
@@ -77,6 +78,7 @@ public class InvButtonRenderer {
     }
 
     private static InventoryButton hitTest(int mx, int my, int gl, int gt, int gw, int gh, GuiContainer gui) {
+        if (io.hamlook.aetheria.features.farming.visitors.VisitorPanelBase.isOverPanel(mx, my)) return null;
         for (InventoryButton btn : InventoryButtonStorage.getInstance().getButtons()) {
             if (!isVisible(btn, gui)) continue;
             int bx = btnX(btn, gl, gw);
@@ -102,6 +104,7 @@ public class InvButtonRenderer {
             if (!isVisible(btn, gui)) continue;
             int bx = btnX(btn, gl, gw);
             int by = btnY(btn, gt, gh);
+            if (VisitorPanelBase.isRectOverPanel(bx, by, 18, 18)) continue;
 
             GlStateManager.color(1, 1, 1, 1f);
             GlStateManager.enableDepth();

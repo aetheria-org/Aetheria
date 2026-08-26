@@ -14,17 +14,27 @@ public class SensitivityReducerConfig {
     @Expose
     @ConfigOption(name = "Sensitivity", desc = "Percentage of your normal sensitivity to use while holding a farming tool")
     @ConfigEditorSliderAnnotation(minValue = 5, maxValue = 100, minStep = 5)
-    public float sensitivityPercent = 50f;
+    public float sensitivityPercent = 5f;
 
     @Expose
     @ConfigOption(name = "Require Farming Island", desc = "Only reduce sensitivity while on a farming location (Barn, Private Island, Garden)")
     @ConfigEditorBoolean
-    public boolean requireFarmingIsland = false;
+    public boolean requireFarmingIsland = true;
 
     @Expose
     @ConfigOption(name = "Show Pitch/Yaw Overlay", desc = "Shows a small overlay with your current pitch and yaw")
     @ConfigEditorBoolean
-    public boolean showPitchYawOverlay = false;
+    public boolean showPitchYawOverlay = true;
+
+    @Expose
+    @ConfigOption(name = "Show Only While Farming", desc = "Only show the overlay while actively farming (holding a farming tool and breaking crops)")
+    @ConfigEditorBoolean
+    public boolean showOnlyWhileFarming = true;
+
+    @Expose
+    @ConfigOption(name = "Show Only While Holding Farming Tool", desc = "Only show the overlay while holding a farming tool")
+    @ConfigEditorBoolean
+    public boolean showOnlyWhileHoldingFarmingTool = true;
 
     @Expose
     @ConfigOption(name = "Pitch/Yaw Label Color", desc = "Color of the 'Pitch' and 'Yaw' labels in the overlay (not the numbers)")
@@ -37,7 +47,7 @@ public class SensitivityReducerConfig {
     public boolean pitchYawEditPosDummy = false;
 
     @Expose
-    public Position pitchYawOverlayPos = new Position(2, 90, false, false);
+    public Position pitchYawOverlayPos = new Position(276, -176, false, false);
 
     @Expose
     @ConfigOption(name = "Overlay Scale", desc = "Size of the pitch/yaw overlay")

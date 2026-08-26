@@ -74,28 +74,6 @@ public class PriceMap {
         });
     }
 
-    private static void writeToJson(Object obj,String fileName) {
-        File file = new File(ATHRConfig.configDirectory, fileName);
-        if (!file.exists()) {
-            try { file.createNewFile(); }
-            catch (IOException e) { Aetheria.logger.info("Error creating " + fileName); return; }
-        }
-        if(obj instanceof String){
-            try (FileOutputStream fos = new FileOutputStream(file)) {
-                fos.write(((String)obj).getBytes());
-            } catch (Exception e) {
-                Aetheria.logger.info("Error writing to profile.bin");
-            }
-        }else {
-            try (FileOutputStream fos = new FileOutputStream(file)) {
-                fos.write(new Gson().toJson(obj).getBytes());
-            } catch (Exception e) {
-                Aetheria.logger.info("Error writing to profile.bin");
-            }
-        }
-    }
-
-
     public static class Cached {
 
         private static final Map<String, Double> HARDCODED_PRICES = new HashMap<>();

@@ -16,13 +16,9 @@ import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.storage.MapData;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -35,13 +31,32 @@ public class DungeonMapOverlay extends Overlay {
     public static boolean dungeonRunEnded = false;
     @Getter
     private static DungeonMapOverlay instance;
-    private final DungeonPlayerTracker playerTracker = new DungeonPlayerTracker();
+    public static DungeonPlayerTracker playerTracker = new DungeonPlayerTracker();
     private DungeonMapGrid cachedGrid = null;
     private byte[] lastMapColors = null;
-    private boolean spawnRecorded = false;
+    /**
+     * Frozen map<->world calibration, captured once the entrance room's world
+     * position is known (detector latch) and never re-derived afterwards: the
+     * server's dungeon map keeps a fixed pixel<->world mapping for the whole
+     * run, so recalculating from freshly parsed geometry (whose raster-first
+     * anchor can relocate as rooms are drawn) would offset entity-based self
+     * tracking. Kept separate from {@link DungeonMapGrid} fields so live parse
+     * values remain untouched for other consumers.
+     */
+    private boolean mapCalibrated = false;
+    private float calibOriginX = 0f;
+    private float calibOriginZ = 0f;
+    private float calibBtp = 0f;
+    /** Entrance-corner pixel anchor from this run's first valid parse; -1 until captured. */
+    private int anchorStartX = -1;
+    private int anchorStartY = -1;
     private double entranceCenterX = 0;
     private double entranceCenterZ = 0;
     private int lastPopulateTick = -40;
+
+    public static boolean isMapCalibrated() {
+        return instance != null && instance.mapCalibrated;
+    }
 
     public DungeonMapOverlay() {
         super(128, 128);
@@ -49,7 +64,7 @@ public class DungeonMapOverlay extends Overlay {
     }
 
     public static void clearPlayers() {
-        if (instance != null) instance.playerTracker.clear();
+        if (instance != null) playerTracker.clear();
     }
 
     public static MapData getDungeonMap(EntityPlayerSP player) {
@@ -61,103 +76,6 @@ public class DungeonMapOverlay extends Overlay {
         return Items.filled_map.getMapData(stack, Minecraft.getMinecraft().theWorld);
     }
 
-    public static void renderName(float pixelX, float pixelZ, int color, float headScale, float scale, String name, boolean centered) {
-        if (name == null || name.isEmpty()) return;
-
-        Minecraft mc = Minecraft.getMinecraft();
-        float stringWidth = mc.fontRendererObj.getStringWidth(name);
-
-        GlStateManager.pushMatrix();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
-        GlStateManager.enableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-
-        int alpha = (color >> 24) & 0xFF;
-        float nameAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
-        GlStateManager.color(1.0f, 1.0f, 1.0f, nameAlpha);
-
-        if (centered) {
-            GlStateManager.translate(pixelX, pixelZ, 0f);
-            GlStateManager.scale(scale, scale, 1.0f);
-
-            float paddingX = 3f;
-            float paddingY = 2f;
-            float x1 = -stringWidth / 2f - paddingX;
-            float y1 = -mc.fontRendererObj.FONT_HEIGHT / 2f - paddingY;
-            float x2 = stringWidth / 2f + paddingX;
-            float y2 = mc.fontRendererObj.FONT_HEIGHT / 2f + paddingY;
-
-            Gui.drawRect((int) x1, (int) y1, (int) x2, (int) y2, 0x60000000);
-            GlStateManager.enableTexture2D();
-            mc.fontRendererObj.drawString(name, (int) (-stringWidth / 2f), (int) (-mc.fontRendererObj.FONT_HEIGHT / 2f), 0xFFFFFFFF);
-        } else {
-            float headSize = headScale * 8f;
-            float half = headSize / 2f;
-            float cx = pixelX + half;
-            float mapScale = Math.max(ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.scale, 0.01f);
-            float cy = (pixelZ - headSize) + ATHRConfig.feature.dungeons.dungeonMapConfig.players.nameOffset / mapScale;
-
-            float nameWidth = stringWidth * scale;
-            float nameX = cx - nameWidth / 2f;
-
-            GlStateManager.translate(nameX, cy, 0f);
-            GlStateManager.scale(scale, scale, scale);
-            mc.fontRendererObj.drawString(name, 0, 0, 0xFFFFFFFF);
-        }
-
-        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
-        GlStateManager.popMatrix();
-    }
-
-    public static void renderRoomName(float pixelX, float pixelZ, float scale, String name, int color) {
-        if (name == null || name.isEmpty()) return;
-        Minecraft mc = Minecraft.getMinecraft();
-        String[] words = name.split(" ");
-        if (words.length == 0) return;
-        int fontHeight = mc.fontRendererObj.FONT_HEIGHT + 1;
-
-        GlStateManager.pushMatrix();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
-        GlStateManager.enableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.translate(pixelX, pixelZ, 0f);
-        GlStateManager.scale(scale, scale, 1.0f);
-        float yTextOffset = words.length * fontHeight / -2f;
-        for (int i = 0; i < words.length; i++) {
-            String word = words[i];
-            mc.fontRendererObj.drawString(word, (int) (-mc.fontRendererObj.getStringWidth(word) / 2f), (int) (yTextOffset + i * fontHeight), color, true);
-        }
-        GlStateManager.popMatrix();
-    }
-
-    public static void renderPlayerHead(float x, float y, int color, float scale, ResourceLocation skin, float rotation) {
-        if (skin == null) {
-            skin = DefaultPlayerSkin.getDefaultSkinLegacy();
-        }
-        int alpha = (color >> 24) & 0xFF;
-        float headAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
-        Minecraft mc = Minecraft.getMinecraft();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
-        GlStateManager.enableTexture2D();
-        GlStateManager.pushMatrix();
-        float half = (scale * 8f) / 2f;
-        float cx = x + half;
-        float cy = (y - 1f) + half;
-        GlStateManager.translate(cx, cy, 0f);
-        GlStateManager.rotate(rotation, 0f, 0f, 1f);
-        GlStateManager.translate(-cx, -cy, 0f);
-        mc.getTextureManager().bindTexture(skin);
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.color(1.0f, 1.0f, 1.0f, headAlpha);
-        Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 8f, 8f, 8, 8, (int) (scale * 8), (int) (scale * 8), 64f, 64f);
-        Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 40f, 8f, 8, 8, (int) (scale * 8), (int) (scale * 8), 64f, 64f);
-        GlStateManager.popMatrix();
-        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
-    }
-
     @SubscribeEvent
     public void onUnload(WorldEvent.Unload e) {
         cachedGrid = null;
@@ -165,7 +83,12 @@ public class DungeonMapOverlay extends Overlay {
         playerTracker.clear();
         DungeonRoomDetector.getVisitedRooms().clear();
         dungeonRunEnded = false;
-        spawnRecorded = false;
+        mapCalibrated = false;
+        calibOriginX = 0f;
+        calibOriginZ = 0f;
+        calibBtp = 0f;
+        anchorStartX = -1;
+        anchorStartY = -1;
         lastPopulateTick = -40;
     }
 
@@ -186,36 +109,7 @@ public class DungeonMapOverlay extends Overlay {
 
         MapData info = getDungeonMap(player);
         if (info != null) {
-            if (!Arrays.equals(info.colors, lastMapColors)) {
-                lastMapColors = Arrays.copyOf(info.colors, info.colors.length);
-                cachedGrid = DungeonMapGrid.parse(info, cfg.appearance.cellSizeBlocks);
-                if (cachedGrid.isValid()) {
-                    if (!spawnRecorded && DungeonRoomDetector.roomBoundsValid && DungeonRoomDetector.originBlock != null) {
-                        entranceCenterX = (DungeonRoomDetector.roomMinX + DungeonRoomDetector.roomMaxX) / 2.0 + 0.5;
-                        entranceCenterZ = (DungeonRoomDetector.roomMinZ + DungeonRoomDetector.roomMaxZ) / 2.0 + 0.5;
-                        cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) entranceCenterX;
-                        cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) entranceCenterZ;
-                        spawnRecorded = true;
-                    }
-                    if (spawnRecorded) {
-                        cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) entranceCenterX;
-                        cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) entranceCenterZ;
-                    } else {
-                        cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) player.posX;
-                        cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) player.posZ;
-                    }
-                    int maxPixelX = 128;
-                    int maxPixelY = 128;
-                    for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : cachedGrid.getRooms().entrySet()) {
-                        int rx = (int) cachedGrid.gridToPixelX(entry.getKey().x) + cachedGrid.getRoomPixelSize() + cachedGrid.getConnectorPixelSize();
-                        int ry = (int) cachedGrid.gridToPixelZ(entry.getKey().y) + cachedGrid.getRoomPixelSize() + cachedGrid.getConnectorPixelSize();
-                        if (rx > maxPixelX) maxPixelX = rx;
-                        if (ry > maxPixelY) maxPixelY = ry;
-                    }
-                    lastW = maxPixelX;
-                    lastH = maxPixelY;
-                }
-            }
+            updateCachedGrid(player);
         }
 
         if (info == null && !preview) return;
@@ -229,15 +123,15 @@ public class DungeonMapOverlay extends Overlay {
         float scaledW = gridW * scale;
         float scaledH = gridH * scale;
 
-        int cx = pos.getAbsX(sr, (int) scaledW);
-        int cy = pos.getAbsY(sr, (int) scaledH);
-        if (pos.isCenterX()) cx += (int) scaledW / 2;
-        if (pos.isCenterY()) cy += (int) scaledH / 2;
+        int bx = pos.getAbsX(sr, (int) scaledW);
+        int by = pos.getAbsY(sr, (int) scaledH);
+        if (pos.isCenterX()) bx -= (int) scaledW / 2;
+        if (pos.isCenterY()) by -= (int) scaledH / 2;
 
-        int bx = (int) (cx - scaledW / 2f) - 4;
-        int by = (int) (cy - scaledH / 2f) - 4;
-        int bw = (int) (cx + scaledW / 2f) + 4;
-        int bh = (int) (cy + scaledH / 2f) + 4;
+        int cx = bx + (int) scaledW / 2;
+        int cy = by + (int) scaledH / 2;
+        int bw = bx + (int) scaledW + 4;
+        int bh = by + (int) scaledH + 4;
         int radius = getCornerRadius();
 
         int bgColor = getBgColor();
@@ -265,8 +159,77 @@ public class DungeonMapOverlay extends Overlay {
             int tw = Minecraft.getMinecraft().fontRendererObj.getStringWidth(txt);
             Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(txt, cx - tw / 2f, cy - 4f, 0xFFFFFFFF);
         } else if (cachedGrid != null && cachedGrid.isValid()) {
-            playerTracker.matchDecorations(info.mapDecorations);
-            DungeonMapRenderer.render(cachedGrid, cx, cy, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms());
+            renderDungeonMap(cx, cy, scale, cfg.rooms.showVisitedRoomNames, cfg.rooms.mapColorText);
+        }
+    }
+
+    public void renderDungeonMap(float centerX, float centerY, float scale, boolean showRoomNames, boolean colorRoomNames) {
+        if (cachedGrid == null || !cachedGrid.isValid()) return;
+        EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
+        MapData info = player != null ? getDungeonMap(player) : null;
+        if (info != null) playerTracker.matchDecorations(info.mapDecorations);
+        DungeonMapRenderer.render(cachedGrid, centerX, centerY, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms(), showRoomNames, colorRoomNames, mapCalibrated);
+    }
+
+    /**
+     * Exposes the currently-cached dungeon map grid so other UI (e.g. the Leap
+     * menu overlay) can compute marker positions in the same local pixel space
+     * that renderDungeonMap() actually draws into. Returns null if no valid map
+     * has been parsed yet.
+     */
+    public DungeonMapGrid getCachedGrid() {
+        return (cachedGrid != null && cachedGrid.isValid()) ? cachedGrid : null;
+    }
+
+    private void updateCachedGrid(EntityPlayerSP player) {
+        MapData info = getDungeonMap(player);
+        if (info == null) return;
+        if (!Arrays.equals(info.colors, lastMapColors)) {
+            lastMapColors = Arrays.copyOf(info.colors, info.colors.length);
+            // Reparses seed this run's captured entrance-corner anchor so the grid
+            // coordinate frame is identical every parse; only the very first valid
+            // parse (entrance-only map) locates the anchor by raster scan.
+            cachedGrid = anchorStartX >= 0
+                    ? DungeonMapGrid.parse(info, ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.cellSizeBlocks, anchorStartX, anchorStartY)
+                    : DungeonMapGrid.parse(info, ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.cellSizeBlocks);
+            if (cachedGrid.isValid()) {
+                if (anchorStartX < 0) {
+                    anchorStartX = cachedGrid.getStartPixelX();
+                    anchorStartY = cachedGrid.getStartPixelY();
+                }
+                // Calibration latch: pair the entrance's world position (block
+                // scanner) with its pixel position (this parse — anchored to the
+                // same corner the calibration freezes). One-shot per run.
+                if (!mapCalibrated && DungeonRoomDetector.roomBoundsValid && DungeonRoomDetector.originBlock != null) {
+                    entranceCenterX = (DungeonRoomDetector.roomMinX + DungeonRoomDetector.roomMaxX) / 2.0 + 0.5;
+                    entranceCenterZ = (DungeonRoomDetector.roomMinZ + DungeonRoomDetector.roomMaxZ) / 2.0 + 0.5;
+                    calibOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) entranceCenterX;
+                    calibOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) entranceCenterZ;
+                    calibBtp = cachedGrid.blockToPixel;
+                    mapCalibrated = true;
+                }
+                if (mapCalibrated) {
+                    cachedGrid.worldOriginX = calibOriginX;
+                    cachedGrid.worldOriginZ = calibOriginZ;
+                    cachedGrid.blockToPixel = calibBtp;
+                } else {
+                    // Uncalibrated fallback keeps worldToPixel total for non-self
+                    // consumers; entity-based self tracking is gated off until
+                    // calibrated (renderer falls back to self's decoration).
+                    cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) player.posX;
+                    cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) player.posZ;
+                }
+                int maxPixelX = 128;
+                int maxPixelY = 128;
+                for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : cachedGrid.getRooms().entrySet()) {
+                    int rx = (int) cachedGrid.gridToPixelX(entry.getKey().x) + cachedGrid.getRoomPixelSize() + cachedGrid.getConnectorPixelSize();
+                    int ry = (int) cachedGrid.gridToPixelZ(entry.getKey().y) + cachedGrid.getRoomPixelSize() + cachedGrid.getConnectorPixelSize();
+                    if (rx > maxPixelX) maxPixelX = rx;
+                    if (ry > maxPixelY) maxPixelY = ry;
+                }
+                lastW = maxPixelX;
+                lastH = maxPixelY;
+            }
         }
     }
 

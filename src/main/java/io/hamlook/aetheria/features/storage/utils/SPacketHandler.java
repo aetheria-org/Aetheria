@@ -3,7 +3,6 @@ package io.hamlook.aetheria.features.storage.utils;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.features.storage.data.StorageData;
-import io.hamlook.aetheria.features.storage.data.StorageSaving;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.inventory.IInventory;
@@ -91,12 +90,16 @@ public class SPacketHandler {
             SContainer container = new SContainer(new java.util.HashMap<>(), info.page, info.type, renderH, false);
             container.slotCount = slotCount;
             StorageData.containers.put(currentContainerId, container);
+            StorageData.markDirty(container);
         } else {
             SContainer existing = StorageData.containers.get(currentContainerId);
             if (info.type == Type.BAG && info.sizeType != null) {
                 int renderH = StorageParser.getBackpackRenderHeight(info.sizeType);
-                existing.slotCount = StorageUtils.getSlotCountFromRenderHeight(renderH);
-                existing.renderH = renderH;
+                if (existing.renderH != renderH) {
+                    existing.slotCount = StorageUtils.getSlotCountFromRenderHeight(renderH);
+                    existing.renderH = renderH;
+                    StorageData.markDirty(existing);
+                }
             }
         }
     }
@@ -131,6 +134,7 @@ public class SPacketHandler {
         }
 
         StorageManager.markContainersDirty();
+        StorageData.markDirty(container);
     }
 
     public void handleSetSlot(S2FPacketSetSlot packet) {
@@ -155,7 +159,7 @@ public class SPacketHandler {
                 container.setStack(storageSlot, stack.copy());
             }
 
-            StorageSaving.saveContainer(container);
+            StorageData.markDirty(container);
         }
     }
 
@@ -183,7 +187,7 @@ public class SPacketHandler {
             }
         }
 
-        StorageSaving.saveContainer(container);
+        StorageData.markDirty(container);
     }
 
     public void reset() {

@@ -1,8 +1,9 @@
 package io.hamlook.aetheria.features.dungeons.puzzles;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.repo.ATHRRepo;
+import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.block.*;
@@ -19,9 +20,6 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Deprecated
@@ -310,14 +308,8 @@ public class WaterSolver {
 
     private void loadSolutions() {
         if (solutionsJson == null) {
-            try {
-                InputStream is = WaterSolver.class.getResourceAsStream("/assets/aetheria/dungeonrooms/waterSolutions.json");
-                if (is == null) return;
-                solutionsJson = new JsonParser().parse(new InputStreamReader(is, StandardCharsets.UTF_8)).getAsJsonObject();
-            } catch (Exception e) {
-                e.printStackTrace();
-                return;
-            }
+            solutionsJson = RepoHandler.get(ATHRRepo.KEY_WATERSOLUTIONS, JsonObject.class, null);
+            if (solutionsJson == null) return;
         }
 
         try {

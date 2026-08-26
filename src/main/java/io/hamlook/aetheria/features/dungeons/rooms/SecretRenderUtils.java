@@ -17,6 +17,8 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.item.EntityTNTPrimed;
 import net.minecraft.entity.passive.EntityBat;
 import net.minecraft.init.Blocks;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
@@ -295,29 +297,41 @@ public class SecretRenderUtils {
         if (periodicTickCounter >= intervalTicks) {
             periodicTickCounter = 0;
             double itemRange = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.itemRemovalRange;
-for (SecretWaypoint sw : currentSecrets) {
-                    if (sw.collected) continue;
-                    sw.ticksExisted++;
-                    if (!sw.everSeen) {
-                        if (mc.theWorld.getBlockState(sw.pos).getBlock() != Blocks.air) {
-                            sw.everSeen = true;
-                        }
-                    }
-                    if ("wither".equals(sw.category) || sw.secretName.contains("Essence")) {
-                        if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && mc.theWorld.getBlockState(sw.pos).getBlock() == Blocks.air) {
-                            sw.collected = true;
-                        }
-                    } else if ("item".equals(sw.category)) {
-                        double dist = mc.thePlayer.getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
-                        if (dist <= itemRange) {
-                            sw.collected = true;
-                        }
-                    } else if ("superboom".equals(sw.category) || "chest".equals(sw.category)) {
-                        if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && mc.theWorld.getBlockState(sw.pos).getBlock() == Blocks.air) {
-                            sw.collected = true;
-                        }
+            for (SecretWaypoint sw : currentSecrets) {
+                if (sw.collected) continue;
+                sw.ticksExisted++;
+                if (!sw.everSeen) {
+                    if (mc.theWorld.getBlockState(sw.pos).getBlock() != Blocks.air) {
+                        sw.everSeen = true;
                     }
                 }
+                if("chest".equals(sw.category)){
+                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && mc.theWorld.getBlockState(sw.pos).getBlock() == Blocks.air) {
+                        sw.collected = true;
+                    }
+                    TileEntity tile = mc.theWorld.getTileEntity(sw.pos);
+                    if(!(tile instanceof TileEntityChest)) continue;
+                    TileEntityChest teChest = (TileEntityChest)tile;
+                    if(teChest.numPlayersUsing > 0){
+                        sw.collected = true;
+                    }
+
+                }
+                if ("wither".equals(sw.category) || sw.secretName.contains("Essence")) {
+                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && mc.theWorld.getBlockState(sw.pos).getBlock() == Blocks.air) {
+                        sw.collected = true;
+                    }
+                } else if ("item".equals(sw.category)) {
+                    double dist = mc.thePlayer.getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
+                    if (dist <= itemRange) {
+                        sw.collected = true;
+                    }
+                } else if ("superboom".equals(sw.category)) {
+                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && mc.theWorld.getBlockState(sw.pos).getBlock() == Blocks.air) {
+                        sw.collected = true;
+                    }
+                }
+            }
         }
     }
 

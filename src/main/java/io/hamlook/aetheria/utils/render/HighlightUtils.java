@@ -10,6 +10,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
+import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,13 +69,19 @@ public class HighlightUtils {
     }
 
     public static void renderButtonHighlight(int x, int y) {
+        boolean depthWasOn = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+        boolean lightingWasOn = GL11.glIsEnabled(GL11.GL_LIGHTING);
+
         GlStateManager.disableLighting();
         GlStateManager.disableDepth();
         GlStateManager.colorMask(true, true, true, false);
         Gui.drawRect(x, y, x + 18, y + 18, 0x80ffffff);
         GlStateManager.colorMask(true, true, true, true);
-        GlStateManager.enableDepth();
-        GlStateManager.enableLighting();
+
+        if (depthWasOn) GlStateManager.enableDepth();
+        else GlStateManager.disableDepth();
+        if (lightingWasOn) GlStateManager.enableLighting();
+        else GlStateManager.disableLighting();
     }
 
     private static boolean matches(ItemStack stack, String query) {

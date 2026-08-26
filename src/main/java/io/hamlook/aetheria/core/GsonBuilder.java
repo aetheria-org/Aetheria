@@ -5,10 +5,8 @@ import com.google.gson.Gson;
 /**
  * Single source of truth for every Gson instance in ATHR.
  * Mirrors SkyHanni's BaseGsonBuilder.
- *
  * Previously every storage class had its own:
  *   private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
- *
  * Now they all reference ATHRGsonBuilder.GSON. To add a new type adapter for
  * the whole mod, add it to build() once — every storage benefits automatically.
  */
@@ -27,7 +25,8 @@ public final class GsonBuilder {
      */
     public static final Gson GSON_STRICT = buildStrict().create();
 
-    private GsonBuilder() {}
+    private GsonBuilder() {
+    }
 
     /**
      * Returns a pre-configured GsonBuilder.
@@ -36,10 +35,9 @@ public final class GsonBuilder {
      *   Map<String, Foo> data = ATHRGsonBuilder.build().create().fromJson(reader, t);
      */
     public static com.google.gson.GsonBuilder build() {
-        return new com.google.gson.GsonBuilder()
-                .setPrettyPrinting();
-                // Add shared type adapters here when needed, e.g.:
-                // .registerTypeAdapter(Position.class, new PositionAdapter())
+        return new com.google.gson.GsonBuilder().setPrettyPrinting();
+        // Add shared type adapters here when needed, e.g.:
+        // .registerTypeAdapter(Position.class, new PositionAdapter())
     }
 
     public static com.google.gson.GsonBuilder buildStrict() {

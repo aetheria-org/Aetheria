@@ -36,7 +36,7 @@ public class Dungeons {
     public DungeonRoomOverlayConfig dungeonRoomOverlayConfig = new DungeonRoomOverlayConfig();
 
     @Expose
-    @Category(name = "Chest Case Opening", desc = "CS:GO style animation when opening dungeon chests")
+    @Category(name = "D.Chest Animation", desc = "Animations played when opening dungeon chests")
     public CaseOpeningConfig caseOpening = new CaseOpeningConfig();
 
     @Expose
@@ -50,6 +50,10 @@ public class Dungeons {
     @Expose
     @Category(name = "D.Chest Price Estimator",desc = "Custom estimator, that estimates a profit or loss on dungeon chests")
     public PriceEstimatorConfig priceEstimator = new PriceEstimatorConfig();
+
+    @Expose
+    @Category(name = "D.Leap Overlay",desc = "Custom Overlay for Spirit Leap/Infinileap with a Dungeon Map Preview.")
+    public DungeonLeapConfig leapConfig = new DungeonLeapConfig();
 
     @Expose
     @ConfigOption(name = "Hide Blessing Messages", desc = "Hides the 'DUNGEON BUFF! ... found a Blessing of ...' chat spam in dungeons")

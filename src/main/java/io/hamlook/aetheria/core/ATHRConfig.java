@@ -14,12 +14,17 @@ import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
 import io.hamlook.aetheria.features.dungeons.reward.RewardAnalyzerOverlay;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomOverlay;
 import io.hamlook.aetheria.features.farming.BPSOverlay;
-import io.hamlook.aetheria.features.farming.FarmingTracker;
-import io.hamlook.aetheria.features.farming.FarmingTrackerOverlay;
+import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTracker;
+import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerOverlay;
 import io.hamlook.aetheria.features.farming.organicmatter.OrganicMatterTracker;
 import io.hamlook.aetheria.features.farming.organicmatter.OrganicMatterTrackerOverlay;
+import io.hamlook.aetheria.features.farming.pests.PestStats;
+import io.hamlook.aetheria.features.farming.pests.overlay.PestFinderOverlay;
+import io.hamlook.aetheria.features.farming.pests.overlay.PestTrackerOverlay;
 import io.hamlook.aetheria.features.fishing.trophy.TrophyFishOverlay;
 import io.hamlook.aetheria.features.mining.fetchur.FetchurOverlay;
+import io.hamlook.aetheria.features.mining.gold.GoldStats;
+import io.hamlook.aetheria.features.mining.gold.GoldTrackerOverlay;
 import io.hamlook.aetheria.features.mining.powder.PowderOverlay;
 import io.hamlook.aetheria.features.mining.powder.PowderStats;
 import io.hamlook.aetheria.features.misc.itemlog.ItemPickupLog;
@@ -83,6 +88,7 @@ public class ATHRConfig {
     private static boolean pristineToggleKeyWasDown = false;
     private static boolean ghostToggleKeyWasDown = false;
     private static boolean ghostResetKeyWasDown = false;
+    private static boolean globalChatOpenKeyWasDown = false;
     private static boolean registered = false;
     private static boolean configLoaded = false;
     private static boolean configDirty = false;
@@ -402,6 +408,18 @@ public class ATHRConfig {
         PowderStats.getInstance().reset();
     }
 
+    public static void openGoldEditor() {
+        if (feature == null) return;
+        GoldTrackerOverlay overlay = GoldTrackerOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.mining.goldTracker.goldOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.mining.goldTracker.scale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void resetGoldTracker() {
+        GoldStats.getInstance().reset();
+        GoldStats.getInstance().save();
+    }
+
     public static void openFarmingTrackerEditor() {
         if (feature == null) return;
         FarmingTrackerOverlay overlay = FarmingTrackerOverlay.getInstance();
@@ -422,6 +440,44 @@ public class ATHRConfig {
 
     public static void resetOrganicMatterTracker() {
         OrganicMatterTracker.reset();
+    }
+
+    public static void openPestEditor() {
+        if (feature == null) return;
+        PestTrackerOverlay overlay = PestTrackerOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.farming.pests.pestTracker.pestOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.pests.pestTracker.scale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void openPestFinderEditor() {
+        if (feature == null) return;
+        PestFinderOverlay overlay = PestFinderOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.farming.pests.pestFinder.pestFinderPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.pests.pestFinder.scale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void resetPestTracker() {
+        PestStats.getInstance().reset();
+    }
+
+    public static void openVisitorOverlayEditor() {
+        if (feature == null) return;
+        io.hamlook.aetheria.features.farming.visitors.VisitorShoppingListOverlay overlay =
+                io.hamlook.aetheria.features.farming.visitors.VisitorShoppingListOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.farming.visitors.overlay.overlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.visitors.overlay.scale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void openVisitorPanelEditor() {
+        if (feature == null) return;
+        io.hamlook.aetheria.features.farming.visitors.VisitorPanel panel =
+                io.hamlook.aetheria.features.farming.visitors.VisitorPanel.getInstance();
+        if (panel == null) return;
+        screenToOpen = new GuiPositionEditor(feature.farming.visitors.panel.panelPos, panel::getLastWidth, panel::getLastHeight, panel::renderPreview, ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.visitors.panel.scale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void resetVisitorList() {
+        io.hamlook.aetheria.features.farming.FarmingApi.clearVisitorData();
     }
 
     public static void openPristineEditor() {
@@ -504,9 +560,14 @@ public class ATHRConfig {
     public void onGuiOpen(GuiOpenEvent event) {
         if (!(event.gui instanceof GuiMainMenu)) return;
 
-        if (ATHRConfig.feature.network.hasSeenPrivacyNotice) return;
+        if (!ATHRConfig.feature.network.hasSeenPrivacyNotice) {
+            event.gui = new PrivacyNoticeScreen(event.gui);
+            return;
+        }
 
-        event.gui = new PrivacyNoticeScreen(event.gui);
+        if (!ATHRConfig.feature.network.hasSeenSocketLifecycleNotice) {
+            event.gui = new PrivacyNoticeScreen(event.gui, true);
+        }
     }
 
     @SubscribeEvent
@@ -557,5 +618,11 @@ public class ATHRConfig {
             resetGhostTracker();
         }
         ghostResetKeyWasDown = feature != null && isKeyOrMouseDown(feature.misc.ghostTrackerConfig.ghostResetKey);
+
+        boolean globalChatOpenKeyDown = feature != null && isKeyOrMouseDown(feature.network.globalChatConfig.openChatKey);
+        if (globalChatOpenKeyDown && !globalChatOpenKeyWasDown && Minecraft.getMinecraft().currentScreen == null) {
+            io.hamlook.aetheria.features.chat.globalchat.GChatCommand.tryOpen();
+        }
+        globalChatOpenKeyWasDown = globalChatOpenKeyDown;
     }
 }

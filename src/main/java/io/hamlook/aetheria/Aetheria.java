@@ -11,6 +11,7 @@ import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.data.ApiHandler;
 import io.hamlook.aetheria.features.capes.CapeManager;
 import io.hamlook.aetheria.features.dungeons.caseopening.CitManager;
+import io.hamlook.aetheria.features.farming.visitors.VisitorShoppingList;
 import io.hamlook.aetheria.features.misc.pet.PetCache;
 import io.hamlook.aetheria.features.profile.GuiWaiter;
 import io.hamlook.aetheria.init.EventRegistrar;
@@ -31,7 +32,7 @@ public class Aetheria {
 
     public static final String MODID = "aetheria";
     public static final String NAME = "Aetheria";
-    public static final String VERSION = "1.2.1-alpha";
+    public static final String VERSION = "1.2.2-alpha";
 
     public static ATHRConfig config;
     public static Logger logger;
@@ -39,15 +40,17 @@ public class Aetheria {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
+        logger = Logger.getLogger("[ATHR] ");
         ATHRConfig.init();
         ATHRRepo.init();
         EmojiManager.init();
-        logger = Logger.getLogger("[ATHR] ");
         StorageManager.initAll(ATHRConfig.configDirectory);
         CapeManager.initialise(false);
         TesterWhitelist.init(VERSION);
         webSocketClient = new WebSocketClient();
-        webSocketClient.connect();
+        if (ATHRConfig.feature == null || !ATHRConfig.feature.network.smartSocketLifecycle) {
+            webSocketClient.connect();
+        }
     }
 
     @Mod.EventHandler
@@ -74,5 +77,6 @@ public class Aetheria {
         RepoHandler.refresh(ATHRRepo.KEY_TIMERS);
         RepoHandler.refresh(ATHRRepo.KEY_UPDATE);
         ApiHandler.onServerJoin();
+        VisitorShoppingList.onServerJoined(e);
     }
 }

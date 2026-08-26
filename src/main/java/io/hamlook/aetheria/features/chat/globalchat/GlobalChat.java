@@ -9,6 +9,7 @@ import io.hamlook.aetheria.features.chat.globalchat.vars.*;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.EmojiParser;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.chat.ExpiringArrayList;
 import net.minecraft.client.Minecraft;
@@ -27,6 +28,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -64,20 +66,30 @@ public class GlobalChat {
     }
 
     public static void initialise(){
-        try{
-            usableEmojis.clear();
-            for (IEmoji emoji : EmojiParser.loadDefaults()) {
-                registerIEmoji(emoji);
-            }
-            Aetheria.logger.info("[GlobalChat]: " + usableEmojis.size() + " default emojis usable.");
+        ThreadUtils.run("GlobalChat-Init", () -> {
+            try{
+                usableEmojis.clear();
+                List<IEmoji> defaults = EmojiParser.loadDefaults();
+                for (IEmoji emoji : defaults) {
+                    registerIEmoji(emoji);
+                }
+                Aetheria.logger.info("[GlobalChat]: " + usableEmojis.size() + " default emojis usable.");
+                if (defaults.isEmpty()) {
+                    EmojiParser.onDefaultsLoaded(() -> {
+                        for (IEmoji emoji : EmojiParser.loadDefaults()) {
+                            registerIEmoji(emoji);
+                        }
+                        Aetheria.logger.info("[GlobalChat]: " + usableEmojis.size() + " default emojis usable.");
+                    });
+                }
 
-            URL url = new URL(CapeAPI.getAPIUrl("channels"));
-            loadChannels(url);
-            onSocketConnected();
-        }catch(Exception e){
-            Aetheria.logger.warning("[GlobalChat]: Failed to load channels: " + Arrays.toString(e.getStackTrace()));
-            e.printStackTrace();
-        }
+                URL url = new URL(CapeAPI.getAPIUrl("channels"));
+                loadChannels(url);
+                onSocketConnected();
+            }catch(Exception e){
+                Aetheria.logger.log(Level.SEVERE, "[GlobalChat] Failed to initialise", e);
+            }
+        });
     }
 
     /** Called whenever the websocket (re)connects: deferred resource loads + missed-mention catch-up. */

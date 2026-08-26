@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.WebSocketClient;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
@@ -44,11 +45,15 @@ public class DianaPartyConnector {
         scheduler.schedule(() -> {
             try {
                 if (!WebSocketClient.isConnected) {
+                    if (ATHRConfig.feature != null && ATHRConfig.feature.network.smartSocketLifecycle &&
+                            System.currentTimeMillis() - WebSocketClient.lastActivityMs >= WebSocketClient.IDLE_TIMEOUT_MS) {
+                        return;
+                    }
                     Aetheria.logger.severe("[D-Party] API disconnected. Attempting reconnection...");
                     connectToAPI();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Aetheria.logger.warning("[D-Party] Watchdog error: " + e.getMessage());
             }
         },intervalSeconds,TimeUnit.SECONDS);
     }

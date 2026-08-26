@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.utils.chat;
 
+import io.hamlook.aetheria.utils.ColorUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.util.ChatComponentText;
@@ -52,7 +53,12 @@ public class ChatUtils {
     }
 
     public static boolean isPlayerMessage(String msg) {
+        if (isNpcDialogue(msg)) return false;
         return PLAYER_MSG_STRIPPED.matcher(msg).matches();
+    }
+
+    public static boolean isPlayerChat(String msg) {
+        return isPartyMessage(msg) || isPlayerMessage(msg) || isMsgReceived(msg) || isMsgSent(msg) || isDonateMessage(msg);
     }
 
     public static boolean isMsgReceived(String msg) {
@@ -74,13 +80,24 @@ public class ChatUtils {
     }
 
     public static String getPlayerMessageSender(String msg) {
+        if (isNpcDialogue(msg)) return null;
         Matcher m = PLAYER_MSG_STRIPPED.matcher(msg);
         return m.matches() ? m.group(1) : null;
     }
 
     public static String getPlayerMessageBody(String msg) {
+        if (isNpcDialogue(msg)) return null;
         Matcher m = PLAYER_MSG_STRIPPED.matcher(msg);
         return m.matches() ? m.group(2).trim() : null;
+    }
+
+    /**
+     * SkyBlock NPC dialogue ("[NPC] Trevor: ...") otherwise matches
+     * {@link #PLAYER_MSG_STRIPPED}, which made every player-chat filter swallow
+     * NPC lines and forced NPC-sensitive features to check above the filters.
+     */
+    private static boolean isNpcDialogue(String msg) {
+        return msg != null && ColorUtils.stripColor(msg).trim().startsWith("[NPC] ");
     }
 
     public static String getGuildSender(String msg) {

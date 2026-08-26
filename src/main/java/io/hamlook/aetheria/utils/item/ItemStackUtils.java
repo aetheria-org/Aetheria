@@ -14,10 +14,14 @@ public class ItemStackUtils {
     }
 
     public static void drawTip(String tip, int x, int y) {
+        drawTip(tip, x, y, 0xFFFFFF);
+    }
+
+    public static void drawTip(String tip, int x, int y, int color) {
         FontRenderer fr = mc.fontRendererObj;
         GlStateManager.disableDepth();
         GlStateManager.disableBlend();
-        fr.drawStringWithShadow(tip, x + 17 - fr.getStringWidth(tip), y + 9, 0xFFFFFF);
+        fr.drawStringWithShadow(tip, x + 17 - fr.getStringWidth(tip), y + 9, color);
         GlStateManager.enableDepth();
     }
 }

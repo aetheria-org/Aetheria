@@ -39,10 +39,6 @@ public final class Resources {
     public static final ResourceLocation INVENTORY_TEX = new ResourceLocation("minecraft:textures/gui/container/inventory.png");
     public static final ResourceLocation BEACON_BEAM = new ResourceLocation("textures/entity/beacon_beam.png");
     public static final ResourceLocation INV_EDITOR_TEX = new ResourceLocation("aetheria", "invbuttons/editor.png");
-    public static final ResourceLocation INV_PRESETS_JSON = new ResourceLocation("aetheria", "invbuttons/presets.json");
-    public static final ResourceLocation INV_EXTRA_ICONS_JSON = new ResourceLocation("aetheria", "invbuttons/extraicons.json");
-    public static final ResourceLocation DUNGEON_ROOMS_JSON = new ResourceLocation("aetheria", "dungeonrooms/dungeonrooms.json");
-    public static final ResourceLocation SECRET_LOCATIONS_JSON = new ResourceLocation("aetheria", "dungeonrooms/secretlocations.json");
     public static final ResourceLocation CASE_FADE_SIDE = new ResourceLocation("aetheria", "textures/dungeons/caseopening/gui/fade_side.png");
     public static final ResourceLocation CASE_BLUR_SHADER = new ResourceLocation("aetheria", "shaders/post/blur.json");
     public static final ResourceLocation PROTECT_ITEM_STAR = new ResourceLocation("aetheria", "textures/gui/protect_star.png");

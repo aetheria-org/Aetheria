@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
 import io.hamlook.aetheria.features.diana.party.DianaPartyConnector;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.TimeUtils;
 import net.minecraft.client.Minecraft;
@@ -20,6 +21,8 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
     public static boolean isConnected = false;
     private static boolean connecting = false;
+    public static final long IDLE_TIMEOUT_MS = 600_000L;
+    public static long lastActivityMs = 0L;
     private final Map<String, CompletableFuture<String>> pendingRequests = new ConcurrentHashMap<>();
 
     public WebSocketClient() {
@@ -39,15 +42,21 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
         }
     }
 
+    public static void markActivity() {
+        lastActivityMs = System.currentTimeMillis();
+    }
+
     @Override
     public void onOpen(ServerHandshake handshakedata) {
         isConnected = true;
         connecting = false;
+        markActivity();
         GlobalChat.onSocketConnected();
     }
 
     @Override
     public void onMessage(String message) {
+        markActivity();
         String requestId = extractID(message);
         if(requestId != null) {
             CompletableFuture<String> future = pendingRequests.remove(requestId);
@@ -55,7 +64,6 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
                 future.complete(message);
             }
         }
-        Aetheria.logger.info("[Websocket] Test Log: " + message);
         DianaPartyConnector.process(message);
         GlobalChat.receive(message);
     }
@@ -77,6 +85,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
             Aetheria.logger.warning("[Websocket] Not connected, dropping send.");
             return null;
         }
+        markActivity();
         String id = UUID.randomUUID().toString();
         CompletableFuture<String> future = new CompletableFuture<>();
         pendingRequests.put(id, future);
@@ -94,6 +103,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
     /** Recreates and reconnects the socket if it is closed or never connected. Safe to call repeatedly. */
     public static void reconnectIfNeeded() {
+        if (!NetworkGuard.apiAllowed()) return;
         try {
             if (Aetheria.webSocketClient != null && (WebSocketClient.isConnected || connecting)) {
                 return;
