@@ -186,9 +186,12 @@ public class TrevorSolver {
         // and without input-replacement mods: vanilla Forge never dispatches key
         // events while a screen is open, rawinput-style mods do. No menu open =
         // no text field to hijack, so the typing concern is structurally gone.
-        if (mc.currentScreen != null || !onFarmingIsland) {
+        if (mc.currentScreen != null) {
             KeybindHelper.resetKeyTap(config.hotkeys.warpKey);
             KeybindHelper.resetKeyTap(config.hotkeys.desertWarpKey);
+            return;
+        }
+        if (!onFarmingIsland) {
             return;
         }
 
