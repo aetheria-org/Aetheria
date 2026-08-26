@@ -55,6 +55,16 @@ public class TablistParser {
     @Getter
     private static int sbMaxXp = 0;
     @Getter
+    private static String miningSpeed = "";
+    @Getter
+    private static String miningFortune = "";
+    @Getter
+    private static String miningSpread = "";
+    @Getter
+    private static String gemstoneFortune = "";
+    @Getter
+    private static String pristine = "";
+    @Getter
     private static String serverPrefix = "";
     @Getter
     private static SkyblockData.Environment scoreboardEnvironment = SkyblockData.Environment.UNKNOWN;
@@ -139,6 +149,7 @@ public class TablistParser {
         boolean expectEventTime = false;
         boolean readingVisitors = false;
         boolean visitorsSectionSeen = false;
+        boolean inStatsSection = false;
         List<String> parsedVisitors = new ArrayList<>();
 
         String pendingEvent = null;
@@ -278,6 +289,37 @@ public class TablistParser {
             }
 
             if (inAccountSection) {
+                if (raw.contains("§e§lStats:")) {
+                    inStatsSection = true;
+                    continue;
+                }
+                if (raw.contains("§l")) {
+                    inStatsSection = false;
+                }
+
+                if (inStatsSection) {
+                    if (line.startsWith("Mining Speed: ")) {
+                        miningSpeed = valueAfter(raw);
+                        continue;
+                    }
+                    if (line.startsWith("Mining Fortune: ")) {
+                        miningFortune = valueAfter(raw);
+                        continue;
+                    }
+                    if (line.startsWith("Mining Spread: ")) {
+                        miningSpread = valueAfter(raw);
+                        continue;
+                    }
+                    if (line.startsWith("Gemstone Fortune: ")) {
+                        gemstoneFortune = valueAfter(raw);
+                        continue;
+                    }
+                    if (line.startsWith("Pristine: ")) {
+                        pristine = valueAfter(raw);
+                        continue;
+                    }
+                }
+
                 if (expectEventTime) {
                     if (line.startsWith("Ends in: ")) {
                         activeEventTimeLeft = line.substring("Ends in: ".length()).trim();
@@ -426,6 +468,11 @@ public class TablistParser {
         sbLevel = 0;
         sbCurrentXp = 0;
         sbMaxXp = 0;
+        miningSpeed = "";
+        miningFortune = "";
+        miningSpread = "";
+        gemstoneFortune = "";
+        pristine = "";
         FarmingApi.clearActiveVisitors();
         ElectionUtils.clearTablistMayor();
         serverPrefix = "";

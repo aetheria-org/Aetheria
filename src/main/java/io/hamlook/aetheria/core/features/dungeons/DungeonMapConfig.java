@@ -119,7 +119,7 @@ public class DungeonMapConfig {
         @Expose
         @ConfigOption(name = "Use Entity Position for Self", desc = "Use your real entity position for your own marker so it updates every frame (smoother) instead of waiting for map decoration updates")
         @ConfigEditorBoolean
-        public boolean accurateSelfPosition = true;
+        public boolean accurateSelfPosition = false;
 
         @Expose
         @ConfigOption(name = "Name Font Size", desc = "Control how big the name display is")

@@ -12,6 +12,10 @@ public class Mining {
     public boolean commissionHighlight = true;
 
     @Expose
+    @Category(name = "Gold Tracker", desc = "Tracks gold ingot and enchanted gold drops")
+    public GoldTrackerConfig goldTracker = new GoldTrackerConfig();
+
+    @Expose
     @Category(name = "Fetchur Overlay", desc = "Settings for the Fetchur item overlay")
     public FetchurConfig fetchur = new FetchurConfig();
 

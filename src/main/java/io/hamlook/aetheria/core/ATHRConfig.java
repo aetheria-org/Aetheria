@@ -23,6 +23,8 @@ import io.hamlook.aetheria.features.farming.pests.overlay.PestFinderOverlay;
 import io.hamlook.aetheria.features.farming.pests.overlay.PestTrackerOverlay;
 import io.hamlook.aetheria.features.fishing.trophy.TrophyFishOverlay;
 import io.hamlook.aetheria.features.mining.fetchur.FetchurOverlay;
+import io.hamlook.aetheria.features.mining.gold.GoldStats;
+import io.hamlook.aetheria.features.mining.gold.GoldTrackerOverlay;
 import io.hamlook.aetheria.features.mining.powder.PowderOverlay;
 import io.hamlook.aetheria.features.mining.powder.PowderStats;
 import io.hamlook.aetheria.features.misc.itemlog.ItemPickupLog;
@@ -404,6 +406,18 @@ public class ATHRConfig {
 
     public static void resetPowderTracker() {
         PowderStats.getInstance().reset();
+    }
+
+    public static void openGoldEditor() {
+        if (feature == null) return;
+        GoldTrackerOverlay overlay = GoldTrackerOverlay.getInstance();
+        if (overlay == null) return;
+        screenToOpen = new GuiPositionEditor(feature.mining.goldTracker.goldOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.mining.goldTracker.scale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void resetGoldTracker() {
+        GoldStats.getInstance().reset();
+        GoldStats.getInstance().save();
     }
 
     public static void openFarmingTrackerEditor() {

@@ -112,6 +112,8 @@ public class Config {
             case "openPowderEditor": ATHRConfig.openPowderEditor(); break;
             case "openInvButtonEditor": ATHRConfig.openInvButtonEditor(); break;
             case "resetPowderTracker": ATHRConfig.resetPowderTracker(); break;
+            case "openGoldEditor": ATHRConfig.openGoldEditor(); break;
+            case "resetGoldTracker": ATHRConfig.resetGoldTracker(); break;
             case "openFarmingTrackerEditor": ATHRConfig.openFarmingTrackerEditor(); break;
             case "resetFarmingTracker": ATHRConfig.resetFarmingTracker(); break;
             case "openOrganicMatterTrackerEditor": ATHRConfig.openOrganicMatterTrackerEditor(); break;
