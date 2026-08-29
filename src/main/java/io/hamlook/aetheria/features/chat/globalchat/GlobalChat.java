@@ -18,7 +18,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,7 +45,7 @@ public class GlobalChat {
     public static ConcurrentHashMap<String, IEmoji> usableEmojis = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, Sticker> usableStickers = new ConcurrentHashMap<>();
 
-    public static ExpiringArrayList<Notification> notifications = new ExpiringArrayList<>();
+    public static final ExpiringArrayList<Notification> notifications = new ExpiringArrayList<>();
     /** True once the missed-mentions fetch ran this session (prevents duplicate toasts on reconnect). */
     private static volatile boolean missedMentionsFetched = false;
     /** True while a fetch is in flight; blocks a second concurrent request (e.g. onOpen + channel refresh racing). */
@@ -518,6 +517,8 @@ public class GlobalChat {
                 Channel channel = channels.get(message.channelId);
                 if(channel == null) return;
                 channel.receiveMessage(message);
+                String msg = message.getMCChatMessage();
+                ChatUtils.sendMessage(msg);
                 // The server sometimes echoes a sent message back with content populated (rather
                 // than as a bare MessageLink); clear the pending entry here too, or it's only ever
                 // removed on the MessageLink path below and pendingMessages leaks forever.
@@ -559,25 +560,32 @@ public class GlobalChat {
                         : msg.has("discordID") ? "discordID" : null;
                 if(idField == null) continue;
                 deleted++;
-                removed += removeFromChannel(msg, idField);
+                removed += removeFromChannel(msg);
             }
         }else if(json.has("messageID") && json.has("channelId")){
             deleted = 1;
-            removed = removeFromChannel(json, "messageID");
+            removed = removeFromChannel(json);
         }else if(json.has("discordID") && json.has("channelId")){
             deleted = 1;
-            removed = removeFromChannel(json, "discordID");
+            removed = removeFromChannel(json);
         }
         Aetheria.logger.info("[GlobalChat]: Removed " + removed + " line(s) for " + deleted + " deleted message(s).");
     }
 
     /** Assumes the caller already verified {@code msg.has("channelId")}. */
-    private static int removeFromChannel(JsonObject msg, String idField) {
+    private static int removeFromChannel(JsonObject msg) {
         if(!msg.has("channelId") || msg.get("channelId").isJsonNull()) return 0;
         Channel channel = channels.get(msg.get("channelId").getAsString());
         if(channel == null) return 0;
         String messageID = msg.has("messageID") && !msg.get("messageID").isJsonNull() ? msg.get("messageID").getAsString() : null;
         String discordID = msg.has("discordID") && !msg.get("discordID").isJsonNull() ? msg.get("discordID").getAsString() : null;
         return channel.removeMessage(messageID, discordID);
+    }
+
+    public static Channel getChannelByName(String channel) {
+        for(Channel channel1 : channels.values()){
+            if(channel1.channelName.equalsIgnoreCase(channel)) return channel1;
+        }
+        return null;
     }
 }

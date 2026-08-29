@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.chat.globalchat.vars;
 
 import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
+import io.hamlook.aetheria.features.chat.globalchat.util.MCChatFormatter;
 import io.hamlook.aetheria.repo.CapeAPI;
 import net.minecraft.client.Minecraft;
 
@@ -159,5 +160,9 @@ public class ChatMessage {
             if (own.matcher(content).find()) return true;
         }
         return isReplyTo(ownName, channel);
+    }
+
+    public String getMCChatMessage() {
+        return MCChatFormatter.format(this);
     }
 }

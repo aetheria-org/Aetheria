@@ -2,8 +2,6 @@ package io.hamlook.aetheria.features.chat.globalchat;
 
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
-import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.features.chat.globalchat.ui.ChatUI;
 import io.hamlook.aetheria.features.chat.globalchat.vars.*;
 import io.hamlook.aetheria.init.RegisterCommand;
@@ -19,8 +17,6 @@ import net.minecraft.command.ICommandSender;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -34,7 +30,7 @@ public class GChatCommand extends ASMCommand {
 
     @Override
     public String getUsage() {
-        return "/" + getName();
+        return "/" + getName() + " [ |channel] < |msg>";
     }
 
     @Override
@@ -44,7 +40,32 @@ public class GChatCommand extends ASMCommand {
 
     @Override
     public void execute(ICommandSender sender, String[] args) throws CommandException {
+        if(args.length > 0){
+            if(trySend(args)) return;
+            ChatUtils.sendMessage("§c[G-CHAT] Could not Send Message. Please Try Again.");
+            return;
+        }
         tryOpen();
+    }
+
+    public static boolean trySend(String[] args){
+        if (!NetworkGuard.requiresApi("Global Chat")) return false;
+        if(!CommunityAccess.isAllowedNow()) {
+            ChatUtils.sendMessage("§cGlobal Chat requires your account to be Synced (use /sync) or to be on SkyBlock.");
+            return false;
+        }
+        if(args.length < 2) return false;
+        String channel = args[0];
+        Channel chnl = GlobalChat.getChannelByName(channel);
+        if(chnl == null){
+            ChatUtils.sendMessage("§cCould not Find the channel of name: " + channel);
+            return true;
+        }
+        StringBuilder builder = new StringBuilder();
+        for(String s : Arrays.asList(args).subList(1, args.length)){
+            builder.append(s).append(" ");
+        }
+        return GlobalChat.sendMessage(new ChatMessage(builder.toString(),chnl.channelID,null));
     }
 
     public static void tryOpen() {
@@ -101,7 +122,7 @@ public class GChatCommand extends ASMCommand {
             int code = connection.getResponseCode();
             String body = ElectionUtils.readResponse(connection);
             String message = null;
-            if (body != null && !body.trim().isEmpty() && (body.contains("error") || body.contains("message"))) {
+            if (!body.trim().isEmpty() && (body.contains("error") || body.contains("message"))) {
                 try {
                     com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(body).getAsJsonObject();
                     if (obj.has("error")) message = obj.get("error").getAsString();
