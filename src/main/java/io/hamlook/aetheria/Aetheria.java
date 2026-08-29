@@ -14,6 +14,7 @@ import io.hamlook.aetheria.features.dungeons.caseopening.CitManager;
 import io.hamlook.aetheria.features.farming.visitors.VisitorShoppingList;
 import io.hamlook.aetheria.features.misc.pet.PetCache;
 import io.hamlook.aetheria.features.profile.GuiWaiter;
+import io.hamlook.aetheria.features.trackers.TrackerManager;
 import io.hamlook.aetheria.init.EventRegistrar;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
@@ -64,6 +65,7 @@ public class Aetheria {
         DianaPartyConnector.initialise();
         GlobalChat.initialise();
         ImageManager.initialise();
+        TrackerManager.initialise();
         new CitManager();
         if (ATHRConfig.feature.misc.currentPet.showCurrentPet) PetCache.getInstance().warmupTextures();
         MinecraftForge.EVENT_BUS.register(GuiWaiter.INSTANCE);
