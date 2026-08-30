@@ -21,11 +21,11 @@ val transformerFile = file("src/main/resources/accesstransformer.cfg")
 // Toolchains:
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(8))
+    toolchain.vendor.set(org.gradle.jvm.toolchain.JvmVendorSpec.ADOPTIUM)
 }
 
 // Minecraft configuration:
 loom {
-    log4jConfigs.from(file("log4j2.xml"))
     launchConfigs {
         "client" {
             property("mixin.debug", "true")
@@ -67,6 +67,7 @@ repositories {
     maven("https://files.minecraftforge.net/maven/")
     maven("https://repo.essential.gg/repository/maven-public/")
     maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1")
+    maven("https://repo.nea.moe/releases")
 }
 
 val shadowImpl: Configuration by configurations.creating {
@@ -94,6 +95,7 @@ dependencies {
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
     shadowImpl("com.google.code.gson:gson:2.10.1") { isTransitive = false }
     shadowImpl("com.fifesoft:rsyntaxtextarea:3.3.3") { isTransitive = false }
+    implementation("moe.nea:hotswapagent-forge:1.0.1")
 }
 
 // Tasks:

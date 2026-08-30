@@ -9,6 +9,7 @@ import io.hamlook.aetheria.features.chat.emoji.EmojiManager;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.StorageManager;
+import io.hamlook.aetheria.core.hotswap.HotswapSupport;
 import io.hamlook.aetheria.data.ApiHandler;
 import io.hamlook.aetheria.features.capes.CapeManager;
 import io.hamlook.aetheria.features.dungeons.caseopening.CitManager;
@@ -45,6 +46,7 @@ public class Aetheria {
     public void preInit(FMLPreInitializationEvent event) {
         logger = Logger.getLogger("[ATHR] ");
         ATHRConfig.init();
+        HotswapSupport.load();
         ATHRRepo.init();
         EmojiManager.init();
         StorageManager.initAll(ATHRConfig.configDirectory);

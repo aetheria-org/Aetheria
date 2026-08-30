@@ -38,6 +38,14 @@ public class EventRegistrar {
         return Collections.unmodifiableList(REGISTERED_EVENT_INSTANCES);
     }
 
+    public static void removeRegisteredInstance(Object instance) {
+        REGISTERED_EVENT_INSTANCES.remove(instance);
+    }
+
+    public static void addRegisteredInstance(Object instance) {
+        REGISTERED_EVENT_INSTANCES.add(instance);
+    }
+
     public static void stopAllListeners() {
         for (Object instance : REGISTERED_EVENT_INSTANCES) {
             MinecraftForge.EVENT_BUS.unregister(instance);
