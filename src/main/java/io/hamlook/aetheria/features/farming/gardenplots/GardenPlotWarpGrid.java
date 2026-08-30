@@ -116,11 +116,11 @@ public class GardenPlotWarpGrid {
     private static void drawCell(int x, int y, int plot, boolean hasPest, boolean visitorAtSpawn) {
         boolean hidden = isPlotHidden(plot);
 
-        if (plot != 0 && FarmingApi.isPlayerInPlot(plot)) {
-            Gui.drawRect(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x5500FF00);
-        }
-
         RenderUtils.drawButton(x, y, CELL_SIZE, CELL_SIZE, null, () -> {
+            if (plot != 0 && FarmingApi.isPlayerInPlot(plot)) {
+                Gui.drawRect(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x5500FF00);
+            }
+
             if (plot == 0) {
                 GlStateManager.color(1f, 1f, 1f, 1f);
                 ItemRenderUtils.renderItemIcon(MC, new ItemStack(Blocks.hay_block), x + 2, y + 2, CELL_SIZE - 4);
