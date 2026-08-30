@@ -54,7 +54,8 @@ public class GhostOverlay extends Overlay {
 
     @Override
     protected boolean isEnabled() {
-        return ATHRConfig.feature != null && ATHRConfig.feature.misc.ghostTrackerConfig.ghostTrackerEnabled && SkyblockData.isOnSkyblock() && SkyblockData.getCurrentLocation() == SkyblockData.Location.DWARVEN;
+        return ATHRConfig.feature != null && ATHRConfig.feature.misc.ghostTrackerConfig.ghostTrackerEnabled && SkyblockData.isOnSkyblock() && SkyblockData.getCurrentLocation() == SkyblockData.Location.DWARVEN
+                && SkyblockData.isInMist();
     }
 
     @Override
