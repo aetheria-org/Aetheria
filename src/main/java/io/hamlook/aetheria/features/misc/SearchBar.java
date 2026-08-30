@@ -10,9 +10,7 @@ import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
-import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
@@ -26,7 +24,6 @@ import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import org.lwjgl.input.Keyboard;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,9 +46,6 @@ public class SearchBar {
     private static final int TOGGLE_BTN_GAP = 3;
     private static final int CLEAR_BTN_W = BAR_HEIGHT;
     private static final float CLEAR_ICON_SCALE = 1.5f;
-    // Hand-tuned against a screenshot: getStringWidth()/FONT_HEIGHT overestimate this glyph's
-    // real rendered size, so the formula-centered position sits too far up-left. These nudge it
-    // back toward true center; adjust and re-screenshot to refine.
     private static final float CLEAR_ICON_OFFSET_X = 3f;
     private static final float CLEAR_ICON_OFFSET_Y = 1f;
 
@@ -63,21 +57,15 @@ public class SearchBar {
     private static String searchText = "";
     private static String lastCalcInput = "";
     private static String lastCalcResult = null;
-    /** Same value as {@link #lastCalcResult} but without the thousands separator, so applying it
-     *  on Enter can't have its "," re-read as digit-grouping by the calculator. */
     private static String lastCalcResultPlain = null;
 
     private static int clearBtnX, clearBtnY;
 
-    /** Session-only search/calculation history, most-recently-used first internally (so capacity
-     *  eviction drops the oldest one) — never persisted across restarts. Displayed filtered by the
-     *  current search text and alphabetically sorted; see {@link #filteredSortedRecent()}. */
     private static final List<String> recentSearches = new ArrayList<>();
     private static int recentScrollOffset = 0;
     private static String lastRecentFilterText = null;
     private static int recentPanelX, recentPanelY, recentPanelW, recentPanelH;
 
-    /** Stripped display name of whatever item tooltip was drawn last frame, or null if none. */
     private static String hoveredItemName = null;
 
     private static GuiTextField storageSearchBar;
@@ -103,9 +91,6 @@ public class SearchBar {
         return searchText;
     }
 
-    /** A leading "/" means this is a chat command, not a search — checked ahead of
-     *  {@link #isCalcMode()} since "/" is also a calculator operator (division), and a command
-     *  like "/warp home" would otherwise be misread as a broken calc expression. */
     public static boolean isCommandMode() {
         return !sendToItemList && !searchText.isEmpty() && searchText.charAt(0) == '/';
     }
@@ -211,55 +196,37 @@ public class SearchBar {
         toggleBtnX = barX + BAR_WIDTH + TOGGLE_BTN_GAP;
         toggleBtnY = barY;
 
-        NineSliceUtils.draw(Resources.storageBackground(1), toggleBtnX, toggleBtnY, TOGGLE_BTN_W, BAR_HEIGHT, 6, 18);
-
-        int[] mouse = getMouseCoords();
-        boolean hovered = mouse[0] >= toggleBtnX && mouse[0] < toggleBtnX + TOGGLE_BTN_W && mouse[1] >= toggleBtnY && mouse[1] < toggleBtnY + BAR_HEIGHT;
-
-        if (hovered) {
-            Gui.drawRect(toggleBtnX, toggleBtnY, toggleBtnX + TOGGLE_BTN_W, toggleBtnY + BAR_HEIGHT, 0x33FFFFFF);
+        String tooltip = sendToItemList ? "§aSearch Item List" : "§aSearch Inventory & Calculator";
+        RenderUtils.drawButton(toggleBtnX, toggleBtnY, TOGGLE_BTN_W, BAR_HEIGHT, tooltip, () -> {
             if (sendToItemList) {
-                TextRenderUtils.drawHoveringText("§aSearch Item List", mouse[0], mouse[1], MC.fontRendererObj);
+                MC.getTextureManager().bindTexture(Resources.SEARCH_ICON);
+                GlStateManager.color(1f, 1f, 1f, 1f);
+                int size = 12;
+                Gui.drawModalRectWithCustomSizedTexture(toggleBtnX + (TOGGLE_BTN_W - size) / 2, toggleBtnY + (BAR_HEIGHT - size) / 2, 0, 0, size, size, size, size);
             } else {
-                TextRenderUtils.drawHoveringText("§aSearch Inventory & Calculator", mouse[0], mouse[1], MC.fontRendererObj);
+                String icon = "≡";
+                MC.fontRendererObj.drawStringWithShadow(icon, toggleBtnX + TOGGLE_BTN_W / 2f - MC.fontRendererObj.getStringWidth(icon) / 2f + 0.5f, toggleBtnY + BAR_HEIGHT / 2f - 4, 0xFFFFFF);
             }
-        }
-        if (sendToItemList) {
-            MC.getTextureManager().bindTexture(Resources.SEARCH_ICON);
-            GlStateManager.color(1f, 1f, 1f, 1f);
-            int size = 12;
-            Gui.drawModalRectWithCustomSizedTexture(toggleBtnX + (TOGGLE_BTN_W - size) / 2, toggleBtnY + (BAR_HEIGHT - size) / 2, 0, 0, size, size, size, size);
-        } else {
-            String icon = "≡";
-            MC.fontRendererObj.drawStringWithShadow(icon, toggleBtnX + TOGGLE_BTN_W / 2f - MC.fontRendererObj.getStringWidth(icon) / 2f + 0.5f, toggleBtnY + BAR_HEIGHT / 2f - 4, 0xFFFFFF);
-        }
+        });
     }
 
     private static void drawClearButton(int barX, int barY) {
         clearBtnX = barX - CLEAR_BTN_W - TOGGLE_BTN_GAP;
         clearBtnY = barY;
 
-        NineSliceUtils.draw(Resources.storageBackground(1), clearBtnX, clearBtnY, CLEAR_BTN_W, BAR_HEIGHT, 6, 18);
+        RenderUtils.drawButton(clearBtnX, clearBtnY, CLEAR_BTN_W, BAR_HEIGHT, "§cClear Search", () -> {
+            String icon = "✕";
+            float iconW = MC.fontRendererObj.getStringWidth(icon) * CLEAR_ICON_SCALE;
+            float iconH = MC.fontRendererObj.FONT_HEIGHT * CLEAR_ICON_SCALE;
+            float px = clearBtnX + CLEAR_BTN_W / 2f - iconW / 2f + CLEAR_ICON_OFFSET_X;
+            float py = clearBtnY + BAR_HEIGHT / 2f - iconH / 2f + CLEAR_ICON_OFFSET_Y;
 
-        int[] mouse = getMouseCoords();
-        boolean hovered = mouse[0] >= clearBtnX && mouse[0] < clearBtnX + CLEAR_BTN_W && mouse[1] >= clearBtnY && mouse[1] < clearBtnY + BAR_HEIGHT;
-
-        if (hovered) {
-            Gui.drawRect(clearBtnX, clearBtnY, clearBtnX + CLEAR_BTN_W, clearBtnY + BAR_HEIGHT, 0x33FFFFFF);
-            TextRenderUtils.drawHoveringText("§cClear Search", mouse[0], mouse[1], MC.fontRendererObj);
-        }
-
-        String icon = "✕";
-        float iconW = MC.fontRendererObj.getStringWidth(icon) * CLEAR_ICON_SCALE;
-        float iconH = MC.fontRendererObj.FONT_HEIGHT * CLEAR_ICON_SCALE;
-        float px = clearBtnX + CLEAR_BTN_W / 2f - iconW / 2f + CLEAR_ICON_OFFSET_X;
-        float py = clearBtnY + BAR_HEIGHT / 2f - iconH / 2f + CLEAR_ICON_OFFSET_Y;
-
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(px, py, 0);
-        GlStateManager.scale(CLEAR_ICON_SCALE, CLEAR_ICON_SCALE, 1f);
-        MC.fontRendererObj.drawStringWithShadow(icon, 0, 0, 0xFF5555);
-        GlStateManager.popMatrix();
+            GlStateManager.pushMatrix();
+            GlStateManager.translate(px, py, 0);
+            GlStateManager.scale(CLEAR_ICON_SCALE, CLEAR_ICON_SCALE, 1f);
+            MC.fontRendererObj.drawStringWithShadow(icon, 0, 0, 0xFF5555);
+            GlStateManager.popMatrix();
+        });
     }
 
     private static boolean isInsideClearButton(int mouseX, int mouseY) {
@@ -270,8 +237,6 @@ public class SearchBar {
         return ATHRConfig.feature != null && ATHRConfig.feature.misc.searchBarConfig.recentSearchesEnabled;
     }
 
-    /** Records a completed search/calc-result, bumping an existing identical entry to the top
-     *  instead of duplicating it, and capping the stored history so it can't grow unbounded. */
     private static void recordRecentSearch(String value) {
         if (!isRecentSearchesEnabled() || value == null || value.isEmpty()) return;
         recentSearches.remove(value);
@@ -280,8 +245,6 @@ public class SearchBar {
         recentScrollOffset = 0;
     }
 
-    /** History entries whose start matches the current search text (case-insensitive), alphabetically
-     *  sorted — typing "k" shows every entry starting with "k", "ka" narrows that down further. */
     private static List<String> filteredSortedRecent() {
         String filter = searchText == null ? "" : searchText.toLowerCase(Locale.ROOT);
         List<String> matches = new ArrayList<>();
@@ -319,13 +282,13 @@ public class SearchBar {
         Gui.drawRect(recentPanelX + 1, recentPanelY + 1, recentPanelX + recentPanelW - 1, recentPanelY + recentPanelH - 1, 0xFF111111);
 
         int[] mouse = getMouseCoords();
+        int hoveredRow = hoveredRecentRow(mouse[0], mouse[1]);
         for (int row = 0; row < visibleCount; row++) {
             int index = recentScrollOffset + row;
             if (index >= matches.size()) break;
 
             int rowY = recentPanelY + row * RECENT_ROW_HEIGHT;
-            boolean hovered = mouse[0] >= recentPanelX && mouse[0] < recentPanelX + recentPanelW && mouse[1] >= rowY && mouse[1] < rowY + RECENT_ROW_HEIGHT;
-            if (hovered) {
+            if (row == hoveredRow) {
                 Gui.drawRect(recentPanelX + 1, rowY, recentPanelX + recentPanelW - 1, rowY + RECENT_ROW_HEIGHT, 0x33FFFFFF);
             }
 
@@ -336,6 +299,11 @@ public class SearchBar {
 
     private static boolean isInsideRecentPanel(int mouseX, int mouseY) {
         return recentPanelH > 0 && mouseX >= recentPanelX && mouseX < recentPanelX + recentPanelW && mouseY >= recentPanelY && mouseY < recentPanelY + recentPanelH;
+    }
+
+    private static int hoveredRecentRow(int mouseX, int mouseY) {
+        if (!isInsideRecentPanel(mouseX, mouseY)) return -1;
+        return (mouseY - recentPanelY) / RECENT_ROW_HEIGHT;
     }
 
     private static int[] calculateBarPosition(ScaledResolution sr) {
@@ -392,7 +360,7 @@ public class SearchBar {
 
         if (!searchBar.isFocused()) {
             int hoverKey = ATHRConfig.feature.misc.searchBarConfig.hoverPasteKey;
-            if (hoverKey != Keyboard.KEY_NONE && keyCode == hoverKey && hoveredItemName != null) {
+            if (KeybindHelper.isKeyValid(hoverKey) && keyCode == hoverKey && hoveredItemName != null) {
                 searchText = hoveredItemName;
                 searchBar.setText(hoveredItemName);
                 searchBar.setFocused(true);
@@ -445,8 +413,11 @@ public class SearchBar {
         int mouseY = KeybindHelper.getScaledEventY(event.gui.height);
 
         int wheel = KeybindHelper.getEventDWheel();
-        if (wheel != 0 && isInsideRecentPanel(mouseX, mouseY)) {
-            int maxOffset = Math.max(0, filteredSortedRecent().size() - RECENT_MAX_VISIBLE);
+        boolean insideRecentPanel = isInsideRecentPanel(mouseX, mouseY);
+        List<String> recentMatches = insideRecentPanel ? filteredSortedRecent() : null;
+
+        if (wheel != 0 && insideRecentPanel) {
+            int maxOffset = Math.max(0, recentMatches.size() - RECENT_MAX_VISIBLE);
             recentScrollOffset = Math.max(0, Math.min(recentScrollOffset - Integer.signum(wheel), maxOffset));
             event.setCanceled(true);
             return;
@@ -461,11 +432,10 @@ public class SearchBar {
             return;
         }
 
-        if (KeybindHelper.getEventButton() == 0 && isInsideRecentPanel(mouseX, mouseY)) {
-            List<String> matches = filteredSortedRecent();
-            int index = recentScrollOffset + (mouseY - recentPanelY) / RECENT_ROW_HEIGHT;
-            if (index >= 0 && index < matches.size()) {
-                String entry = matches.get(index);
+        if (KeybindHelper.getEventButton() == 0 && insideRecentPanel) {
+            int index = recentScrollOffset + hoveredRecentRow(mouseX, mouseY);
+            if (index >= 0 && index < recentMatches.size()) {
+                String entry = recentMatches.get(index);
                 searchText = entry;
                 searchBar.setText(entry);
                 searchBar.setCursorPositionEnd();
