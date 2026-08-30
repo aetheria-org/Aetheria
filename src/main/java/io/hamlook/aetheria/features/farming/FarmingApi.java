@@ -7,6 +7,7 @@ import io.hamlook.aetheria.features.farming.sensitivityreducer.FarmingToolIds;
 import io.hamlook.aetheria.features.farming.visitors.VisitorBonus;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import lombok.Getter;
@@ -233,10 +234,7 @@ public final class FarmingApi {
 
     public static void warpToPlot(Integer plot) {
         if (plot == null) return;
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc != null && mc.thePlayer != null) {
-            mc.thePlayer.sendChatMessage("/tptoplot " + correctPlotWarpSwap(plot));
-        }
+        ChatUtils.sendChatCommand("/tptoplot " + correctPlotWarpSwap(plot));
     }
 
     public static java.util.List<Integer> getSortedInfestedPlotIds() {

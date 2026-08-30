@@ -1,6 +1,5 @@
 package io.hamlook.aetheria.features.farming.gardenplots;
 
-import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.features.farming.FarmingApi;
@@ -10,7 +9,7 @@ import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
-import io.hamlook.aetheria.utils.render.NineSliceUtils;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
@@ -70,10 +69,6 @@ public class GardenPlotWarpGrid {
         return gui instanceof GuiInventory;
     }
 
-    private static int[] getMouseCoords() {
-        return KeybindHelper.getMouseCoords(new ScaledResolution(MC));
-    }
-
     private static int[] calculatePosition(ScaledResolution sr) {
         Position pos = ATHRConfig.feature.farming.gardenPlotWarpGrid.pos;
         int w = GRID_SIZE;
@@ -104,62 +99,49 @@ public class GardenPlotWarpGrid {
         gridY = y;
         homeY = y + GRID_SIZE + HOME_GAP;
 
-        int[] mouse = getMouseCoords();
-
         for (int row = 0; row < GRID_DIM; row++) {
             for (int col = 0; col < GRID_DIM; col++) {
                 int plot = LAYOUT[row][col];
                 int cx = x + col * (CELL_SIZE + CELL_GAP);
                 int cy = y + row * (CELL_SIZE + CELL_GAP);
-                drawCell(cx, cy, plot, mouse);
+                drawCell(cx, cy, plot);
             }
         }
 
-        drawHomeButton(x, homeY, GRID_SIZE, mouse);
+        drawHomeButton(x, homeY, GRID_SIZE);
     }
 
-    private static void drawCell(int x, int y, int plot, int[] mouse) {
-        NineSliceUtils.draw(Resources.storageBackground(1), x, y, CELL_SIZE, CELL_SIZE, 6, 18);
-
+    private static void drawCell(int x, int y, int plot) {
         if (plot != 0 && FarmingApi.isPlayerInPlot(plot)) {
             Gui.drawRect(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x5500FF00);
         }
 
-        boolean hovered = mouse[0] >= x && mouse[0] < x + CELL_SIZE && mouse[1] >= y && mouse[1] < y + CELL_SIZE;
-        if (hovered) {
-            Gui.drawRect(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x33FFFFFF);
-        }
+        RenderUtils.drawButton(x, y, CELL_SIZE, CELL_SIZE, null, () -> {
+            if (plot == 0) {
+                GlStateManager.color(1f, 1f, 1f, 1f);
+                ItemRenderUtils.renderItemIcon(MC, CENTER_ICON, x + 2, y + 2, CELL_SIZE - 4);
+            } else {
+                String text = String.valueOf(plot);
+                int tw = MC.fontRendererObj.getStringWidth(text);
+                MC.fontRendererObj.drawStringWithShadow(text, x + (CELL_SIZE - tw) / 2f, y + (CELL_SIZE - 8) / 2f, 0xFFFFFF);
+            }
+        });
 
         if (plot != 0 && FarmingApi.getActivePests().containsKey(plot)) {
-            drawBorder(x, y, CELL_SIZE, BORDER_THICKNESS, flashingRed());
+            drawBorder(x, y, CELL_SIZE, BORDER_THICKNESS, flashingColor(0xFF0000));
         }
 
         if (plot == 0 && !FarmingApi.getActiveVisitors().isEmpty()) {
-            drawBorder(x, y, CELL_SIZE, BORDER_THICKNESS, flashingGold());
+            drawBorder(x, y, CELL_SIZE, BORDER_THICKNESS, flashingColor(0xFFD700));
         }
-
-        if (plot == 0) {
-            GlStateManager.color(1f, 1f, 1f, 1f);
-            ItemRenderUtils.renderItemIcon(MC, CENTER_ICON, x + 2, y + 2, CELL_SIZE - 4);
-            return;
-        }
-
-        String text = String.valueOf(plot);
-        int tw = MC.fontRendererObj.getStringWidth(text);
-        MC.fontRendererObj.drawStringWithShadow(text, x + (CELL_SIZE - tw) / 2f, y + (CELL_SIZE - 8) / 2f, 0xFFFFFF);
     }
 
-    private static void drawHomeButton(int x, int y, int w, int[] mouse) {
-        NineSliceUtils.draw(Resources.storageBackground(1), x, y, w, HOME_HEIGHT, 6, 18);
-
-        boolean hovered = mouse[0] >= x && mouse[0] < x + w && mouse[1] >= y && mouse[1] < y + HOME_HEIGHT;
-        if (hovered) {
-            Gui.drawRect(x, y, x + w, y + HOME_HEIGHT, 0x33FFFFFF);
-        }
-
-        String text = "Home";
-        int tw = MC.fontRendererObj.getStringWidth(text);
-        MC.fontRendererObj.drawStringWithShadow(text, x + (w - tw) / 2f, y + (HOME_HEIGHT - 8) / 2f, 0xFFFFFF);
+    private static void drawHomeButton(int x, int y, int w) {
+        RenderUtils.drawButton(x, y, w, HOME_HEIGHT, null, () -> {
+            String text = "Home";
+            int tw = MC.fontRendererObj.getStringWidth(text);
+            MC.fontRendererObj.drawStringWithShadow(text, x + (w - tw) / 2f, y + (HOME_HEIGHT - 8) / 2f, 0xFFFFFF);
+        });
     }
 
     private static void drawBorder(int x, int y, int size, int thickness, int color) {
@@ -169,16 +151,14 @@ public class GardenPlotWarpGrid {
         Gui.drawRect(x + size - thickness, y, x + size, y + size, color);
     }
 
-    private static int flashingRed() {
+    private static int flashingColor(int rgb) {
         float pulse = 0.4f + 0.6f * (float) (0.5 + 0.5 * Math.sin(System.currentTimeMillis() / 200.0));
         int alpha = ((int) (pulse * 255)) & 0xFF;
-        return (alpha << 24) | 0xFF0000;
+        return (alpha << 24) | rgb;
     }
 
-    private static int flashingGold() {
-        float pulse = 0.4f + 0.6f * (float) (0.5 + 0.5 * Math.sin(System.currentTimeMillis() / 200.0));
-        int alpha = ((int) (pulse * 255)) & 0xFF;
-        return (alpha << 24) | 0xFFD700;
+    private static boolean isInside(int mouseX, int mouseY, int x, int y, int w, int h) {
+        return mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
     }
 
     @SubscribeEvent
@@ -203,7 +183,7 @@ public class GardenPlotWarpGrid {
             for (int col = 0; col < GRID_DIM; col++) {
                 int cx = gridX + col * (CELL_SIZE + CELL_GAP);
                 int cy = gridY + row * (CELL_SIZE + CELL_GAP);
-                if (mouseX >= cx && mouseX < cx + CELL_SIZE && mouseY >= cy && mouseY < cy + CELL_SIZE) {
+                if (isInside(mouseX, mouseY, cx, cy, CELL_SIZE, CELL_SIZE)) {
                     FarmingApi.warpToPlot(LAYOUT[row][col]);
                     event.setCanceled(true);
                     return;
@@ -211,7 +191,7 @@ public class GardenPlotWarpGrid {
             }
         }
 
-        if (mouseX >= gridX && mouseX < gridX + GRID_SIZE && mouseY >= homeY && mouseY < homeY + HOME_HEIGHT) {
+        if (isInside(mouseX, mouseY, gridX, homeY, GRID_SIZE, HOME_HEIGHT)) {
             ChatUtils.sendChatCommand("/warp garden");
             event.setCanceled(true);
         }
