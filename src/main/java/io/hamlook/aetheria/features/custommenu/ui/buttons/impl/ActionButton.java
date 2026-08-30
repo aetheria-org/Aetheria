@@ -13,11 +13,18 @@ public class ActionButton extends CMMButton {
             case EXIT:
                 Minecraft.getMinecraft().shutdown();
                 break;
+            case CLOSE_MENU:
+                Minecraft.getMinecraft().displayGuiScreen(null);
+                break;
+            case OPEN_MAIN_MENU:
+                Minecraft.getMinecraft().displayGuiScreen(new io.hamlook.aetheria.features.custommenu.CustomMainMenu(
+                        io.hamlook.aetheria.features.custommenu.util.CMMHelper.getCMMConfig()));
+                break;
         }
     }
 
     public enum Action {
-        EXIT
+        EXIT, CLOSE_MENU, OPEN_MAIN_MENU
     }
 
     public Action action;

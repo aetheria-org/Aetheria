@@ -1,8 +1,11 @@
 package io.hamlook.aetheria.features.custommenu.util;
 
+import lombok.Getter;
+
 public class ScreenHelper {
     private static int screenWidth;
     private static int screenHeight;
+    @Getter
     private static float scaleFactor;
 
     public static void updateScreenDimensions(int width, int height) {
@@ -27,24 +30,20 @@ public class ScreenHelper {
         return screenHeight / 2;
     }
 
-    public static float getScaleFactor() {
-        return scaleFactor;
-    }
-
     public static int getScaledWidth() {
-        return (int)(screenWidth / scaleFactor);
+        return (int) (screenWidth / scaleFactor);
     }
 
     public static int getScaledHeight() {
-        return (int)(screenHeight / scaleFactor);
+        return (int) (screenHeight / scaleFactor);
     }
 
     public static int getRelativeX(float percentage) {
-        return (int)(screenWidth * percentage);
+        return (int) (screenWidth * percentage);
     }
 
     public static int getRelativeY(float percentage) {
-        return (int)(screenHeight * percentage);
+        return (int) (screenHeight * percentage);
     }
 
     // Cartesian: origin = anchor point, +X = right, +Y = up
@@ -52,19 +51,27 @@ public class ScreenHelper {
     // Convert: screenX = anchorScreenX + offsetX, screenY = anchorScreenY - offsetY
     public static int getAnchorScreenX(Anchor anchor) {
         switch (anchor) {
-            case LEFT: return 0;
-            case CENTER: return getCenterX();
-            case RIGHT: return getWidth();
-            default: return getCenterX();
+            case LEFT:
+                return 0;
+            case CENTER:
+                return getCenterX();
+            case RIGHT:
+                return getWidth();
+            default:
+                return getCenterX();
         }
     }
 
     public static int getAnchorScreenY(Anchor anchor) {
         switch (anchor) {
-            case TOP: return 0;
-            case CENTER: return getCenterY();
-            case BOTTOM: return getHeight();
-            default: return getCenterY();
+            case TOP:
+                return 0;
+            case CENTER:
+                return getCenterY();
+            case BOTTOM:
+                return getHeight();
+            default:
+                return getCenterY();
         }
     }
 

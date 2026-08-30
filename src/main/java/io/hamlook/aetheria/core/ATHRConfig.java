@@ -574,7 +574,6 @@ public class ATHRConfig {
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         flushConfigIfDirty();
-        if (Minecraft.getMinecraft().thePlayer == null) return;
 
         if (screenToOpen != null) {
             screenTicks++;
@@ -585,6 +584,7 @@ public class ATHRConfig {
             }
         }
 
+        if (Minecraft.getMinecraft().thePlayer == null) return;
         if (openGuiKey.isPressed() && Minecraft.getMinecraft().currentScreen == null) openOptionsGui();
 
         boolean managerKeyDown = feature != null && isKeyOrMouseDown(feature.waypoints.waypointManagerKey);

@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -161,6 +162,27 @@ public class GCImage {
                     }
                 }
                 gcImage.loadFailed = true;
+            }
+        });
+        return gcImage.id;
+    }
+
+    /** Loads a user-selected local image into the same dynamic texture pipeline as remote images. */
+    public static String createGCImageFromFile(String filePath) {
+        GCImage gcImage = new GCImage(new ArrayList<>(), -1);
+        gcImage.url = filePath == null ? "" : filePath;
+        ImageManager.images.put(gcImage.id, gcImage);
+        ThreadUtils.run("GCImage-FileLoader-" + gcImage.id, () -> {
+            try {
+                BufferedImage image = ImageIO.read(new File(filePath));
+                if (image == null) throw new IOException("Unsupported image format");
+                gcImage.images.add(image);
+                gcImage.width = image.getWidth();
+                gcImage.height = image.getHeight();
+                finalizeLoad(gcImage);
+            } catch (Exception e) {
+                gcImage.loadFailed = true;
+                Aetheria.logger.warning("[GCImage] Failed to load local image: " + e.getMessage());
             }
         });
         return gcImage.id;
