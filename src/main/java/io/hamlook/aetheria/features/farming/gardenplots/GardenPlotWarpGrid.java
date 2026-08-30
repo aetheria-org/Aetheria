@@ -46,10 +46,10 @@ public class GardenPlotWarpGrid {
     /** Row-major 5x5 layout matching the in-game plot grid; 0 marks the center spawn/barn cell. */
     private static final int[][] LAYOUT = {
             {21, 13, 9, 14, 22},
-            {6, 5, 12, 3, 16},
+            {15, 5, 1, 6, 16},
             {10, 2, 0, 4, 11},
-            {17, 7, 1, 8, 18},
-            {23, 19, 15, 20, 24},
+            {17, 7, 3, 8, 18},
+            {23, 19, 12, 20, 24},
     };
 
     private static final ItemStack CENTER_ICON = new ItemStack(Item.getItemFromBlock(Blocks.chest));
