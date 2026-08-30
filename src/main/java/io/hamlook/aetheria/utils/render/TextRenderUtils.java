@@ -3,8 +3,10 @@ package io.hamlook.aetheria.utils.render;
 import io.hamlook.aetheria.features.misc.ScrollableTooltips;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
+import io.hamlook.aetheria.utils.render.ResolutionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +34,7 @@ public final class TextRenderUtils {
         drawStringScaled(str, fr, x - newLen / 2f, y - 8 * factor / 2f, shadow, colour, factor);
     }
 
-    public static void drawStringScaleAware(String text, float xPos, float yPos, float uiScale, boolean displayScale) {
+    public static void drawStringScaleAware(String text, float xPos, float yPos,int color, float uiScale, boolean displayScale) {
         GlStateManager.pushMatrix();
         GlStateManager.disableBlend();
         GlStateManager.enableAlpha();
@@ -42,15 +44,19 @@ public final class TextRenderUtils {
 
         GlStateManager.translate(xPos, yPos, 0);
         GlStateManager.scale(finalScale, finalScale, 1f);
-        Minecraft.getMinecraft().fontRendererObj.drawString(text, 0, 0, -1);
+        Minecraft.getMinecraft().fontRendererObj.drawString(text, 0, 0, color);
         GlStateManager.popMatrix();
+    }
+
+    public static void drawStringScaleAware(String text, float xPos, float yPos, float uiScale, boolean displayScale) {
+        drawStringScaleAware(text,xPos,yPos,-1,uiScale,displayScale);
     }
 
     public static void drawStringScaleAware(String text, float xPos, float yPos, float uiScale) {
         drawStringScaleAware(text, xPos, yPos, uiScale, true);
     }
 
-    public static void drawCenteredStringScaleAware(String text, float xPos, float yPos, float uiScale, boolean displayScale) {
+    public static void drawCenteredStringScaleAware(String text, float xPos, float yPos,int color, float uiScale, boolean displayScale) {
         GlStateManager.pushMatrix();
         GlStateManager.disableBlend();
         GlStateManager.enableAlpha();
@@ -62,8 +68,12 @@ public final class TextRenderUtils {
         GlStateManager.scale(finalScale, finalScale, 1f);
 
         FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
-        fr.drawString(text, -fr.getStringWidth(text) / 2f, -fr.FONT_HEIGHT / 2f, -1, false);
+        fr.drawString(text, -fr.getStringWidth(text) / 2f, -fr.FONT_HEIGHT / 2f, color, false);
         GlStateManager.popMatrix();
+    }
+
+    public static void drawCenteredStringScaleAware(String text, float xPos, float yPos, float uiScale, boolean displayScale) {
+        drawCenteredStringScaleAware(text, xPos, yPos, -1,uiScale, displayScale);
     }
 
     public static void drawCenteredStringScaleAware(String text, float xPos, float yPos, float uiScale) {
@@ -165,5 +175,63 @@ public final class TextRenderUtils {
         Minecraft mc = Minecraft.getMinecraft();
         List<String> tooltip = stack.getTooltip(mc.thePlayer, mc.gameSettings.advancedItemTooltips);
         drawHoveringText(tooltip, mouseX, mouseY, font);
+    }
+
+    // --- Gradient rendering ---
+    public static void drawStringGradientScaleAware(String text, float xPos, float yPos,
+                                                    int startColor, int endColor,
+                                                    float uiScale, boolean displayScale) {
+        GlStateManager.pushMatrix();
+        GlStateManager.disableBlend();
+        GlStateManager.enableAlpha();
+
+        float scaleDisplay = displayScale ? ResolutionUtils.getXStatic(1) : 1f;
+        float finalScale = Math.max(0.25f, uiScale * scaleDisplay);
+
+        GlStateManager.translate(xPos, yPos, 0);
+        GlStateManager.scale(finalScale, finalScale, 1f);
+
+        FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+        float currentX = 0;
+        int len = text.length();
+        for (int i = 0; i < len; i++) {
+            String ch = String.valueOf(text.charAt(i));
+            float progress = len == 1 ? 0f : (float) i / (len - 1);
+            int color = interpolateColor(startColor, endColor, progress);
+            fr.drawString(ch, currentX, 0, color, false);
+            currentX += fr.getStringWidth(ch);
+        }
+
+        GlStateManager.popMatrix();
+    }
+
+    public static void drawCenteredStringGradientScaleAware(String text, float xPos, float yPos,
+                                                            int startColor, int endColor,
+                                                            float uiScale, boolean displayScale) {
+        FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+        // compute total width at scale 1
+        int totalWidth = fr.getStringWidth(text);
+        float halfWidth = totalWidth / 2f;
+        drawStringGradientScaleAware(text, xPos - halfWidth, yPos - fr.FONT_HEIGHT / 2f,
+                startColor, endColor, uiScale, displayScale);
+    }
+
+    private static int interpolateColor(int start, int end, float factor) {
+        int a1 = (start >> 24) & 0xFF;
+        int r1 = (start >> 16) & 0xFF;
+        int g1 = (start >> 8) & 0xFF;
+        int b1 = start & 0xFF;
+
+        int a2 = (end >> 24) & 0xFF;
+        int r2 = (end >> 16) & 0xFF;
+        int g2 = (end >> 8) & 0xFF;
+        int b2 = end & 0xFF;
+
+        int a = (int) (a1 + (a2 - a1) * factor);
+        int r = (int) (r1 + (r2 - r1) * factor);
+        int g = (int) (g1 + (g2 - g1) * factor);
+        int b = (int) (b1 + (b2 - b1) * factor);
+
+        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 }

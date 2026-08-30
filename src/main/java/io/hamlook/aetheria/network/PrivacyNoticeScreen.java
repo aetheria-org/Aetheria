@@ -11,7 +11,25 @@ public class PrivacyNoticeScreen extends NetworkNoticeScreen {
     private static final int TOG_W = 160;
     private static final int TOG_H = 28;
 
-    private static final Page[] PAGES = {new Page("Telemetry", "Sends your username and mod version when joining a server.", "Used for player counts and crash reports.\nNo gameplay data is collected.", "disableTelemetry"), new Page("Mod List in Telemetry", "Also includes your installed mod list alongside telemetry.", "Only sent when Telemetry is enabled above.\nUseful for crash triage and compatibility reports.", "disableModListInTelemetry"), new Page("API Calls", "Communicates with the mod API for capes, profile viewer,\nprofile parser, and the sync command.", "Disabling this will break those features entirely.", "disableApiCalls"), new Page("GitHub Calls", "Fetches repo data from GitHub used by overlays, timers,\nversion checks, and most other features.", "Disabling this will break the majority of the mod.", "disableGithubCalls"), new Page("Smart Connection", "Global Chat and Diana Party only connect while you're using them, and disconnect after 10 minutes of inactivity.", "Reduces background connections and network usage when you're not chatting. Off by default.", "smartSocketLifecycle", true),};
+    private static final Page[] PAGES = {
+            new Page("Telemetry", "Sends your username and mod version when joining a server.",
+                    "Used for player counts and crash reports.\nNo gameplay data is collected.", "disableTelemetry"),
+
+            new Page("Mod List in Telemetry", "Also includes your installed mod list alongside telemetry.",
+                    "Only sent when Telemetry is enabled above.\nUseful for crash triage and compatibility reports.", "disableModListInTelemetry"),
+
+            new Page("API Calls", "Communicates with the mod API for capes, profile viewer,\nprofile parser, and the sync command.",
+                    "Disabling this will break those features entirely.", "disableApiCalls"),
+
+            new Page("GitHub Calls", "Fetches repo data from GitHub used by overlays, timers,\nversion checks, and most other features.",
+                    "Disabling this will break the majority of the mod.", "disableGithubCalls"),
+
+            new Page("Smart Connection", "Global Chat and Diana Party only connect while you're using them, and disconnect after 10 minutes of inactivity.",
+                    "Reduces background connections and network usage when you're not chatting. Off by default.", "smartSocketLifecycle", true),
+
+            new Page("Custom Main Menu", "Replace the existing Main Menu with a Custom One, You can use pre-made presets OR make your own.\n(Doesn't work with Essentials or LabyMod)",
+                    "Gives a unique look to the main menu, instead of the stale minecraft menu.","customMainMenu",true)
+    };
 
     private static final Page[] SOCKET_ONLY_PAGES = {PAGES[PAGES.length - 1]};
     private final GuiScreen parent;
@@ -42,6 +60,8 @@ public class PrivacyNoticeScreen extends NetworkNoticeScreen {
                 return ATHRConfig.feature.network.disableGithubCalls;
             case "smartSocketLifecycle":
                 return ATHRConfig.feature.network.smartSocketLifecycle;
+            case "customMainMenu":
+                return ATHRConfig.feature.cosmetics.customMenu.enabled;
             default:
                 return false;
         }

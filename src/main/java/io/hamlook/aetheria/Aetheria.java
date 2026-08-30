@@ -3,6 +3,7 @@ package io.hamlook.aetheria;
 import io.hamlook.aetheria.features.chat.chatfilters.ChatFilterManager;
 import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
+import io.hamlook.aetheria.features.custommenu.util.CMMHelper;
 import io.hamlook.aetheria.features.diana.party.DianaPartyConnector;
 import io.hamlook.aetheria.features.chat.emoji.EmojiManager;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
@@ -19,6 +20,7 @@ import io.hamlook.aetheria.init.EventRegistrar;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ElectionUtils;
+import io.hamlook.aetheria.utils.placeholders.PlaceholderManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -48,6 +50,7 @@ public class Aetheria {
         StorageManager.initAll(ATHRConfig.configDirectory);
         CapeManager.initialise(false);
         TesterWhitelist.init(VERSION);
+        PlaceholderManager.initialise();
         webSocketClient = new WebSocketClient();
         if (ATHRConfig.feature == null || !ATHRConfig.feature.network.smartSocketLifecycle) {
             webSocketClient.connect();
@@ -71,6 +74,7 @@ public class Aetheria {
         MinecraftForge.EVENT_BUS.register(GuiWaiter.INSTANCE);
         MinecraftForge.EVENT_BUS.register(this);
         EventRegistrar.registerAll();
+        CMMHelper.initialise();
     }
 
     @SubscribeEvent
