@@ -10,6 +10,10 @@ import java.util.*;
 public class CalculatorUtils {
 
     public static final DecimalFormat FORMAT = new DecimalFormat("#,##0.##########", new DecimalFormatSymbols(Locale.US));
+    /** Same precision as {@link #FORMAT} but without the thousands separator — for feeding a
+     *  result back in as further calculator input, where a "," would otherwise be re-parsed as
+     *  digit-grouping and silently change the value. */
+    public static final DecimalFormat FORMAT_PLAIN = new DecimalFormat("0.##########", new DecimalFormatSymbols(Locale.US));
     private static final String BINOPS = "+-*/x^%";
     private static final String POSTOPS = "mkbts!";
     private static final String DIGITS = "0123456789";
@@ -48,10 +52,20 @@ public class CalculatorUtils {
 
     // Calculate and format result
     public static String calculateAndFormat(String expression) {
+        BigDecimal result = calculateOrNull(expression);
+        return result == null ? null : FORMAT.format(result);
+    }
+
+    /** Same result as {@link #calculateAndFormat}, formatted without a thousands separator. */
+    public static String calculateAndFormatPlain(String expression) {
+        BigDecimal result = calculateOrNull(expression);
+        return result == null ? null : FORMAT_PLAIN.format(result);
+    }
+
+    private static BigDecimal calculateOrNull(String expression) {
         if (expression == null || expression.isEmpty()) return null;
         try {
-            BigDecimal result = calculate(expression);
-            return FORMAT.format(result);
+            return calculate(expression);
         } catch (CalculatorException e) {
             return null;
         }
