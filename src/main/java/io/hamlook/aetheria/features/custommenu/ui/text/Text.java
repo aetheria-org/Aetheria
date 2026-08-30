@@ -17,6 +17,7 @@ public class Text extends CMMElement {
     public String text;
     public float scale;
     public int color;
+    public boolean placeholders = true;
 
     public Text(Position pos,boolean centered,String text,int color){
         this(pos,centered,text,color,1f);
@@ -31,7 +32,7 @@ public class Text extends CMMElement {
 
     @Override
     public void draw(int mouseX,int mouseY,float partialTicks) {
-        String toDraw = PlaceholderManager.replace(this.text);
+        String toDraw = placeholders ? PlaceholderManager.replace(this.text) : this.text;
         List<MiniMessageDetector.Segment> segments = MiniMessageDetector.parse(toDraw);
 
         FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
@@ -71,7 +72,7 @@ public class Text extends CMMElement {
     public int[] getCorners() {
         FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
         int[] corners =  new int[4];
-        int width = fr.getStringWidth(PlaceholderManager.replace(this.text));
+        int width = fr.getStringWidth(placeholders ? PlaceholderManager.replace(this.text) : this.text);
         int height = (int)(fr.FONT_HEIGHT * scale);
         corners[0] = centered ? (this.xPos - width/2) : this.xPos;
         corners[1] = centered ? (this.yPos - height/2) : this.yPos;

@@ -12,7 +12,7 @@ import net.minecraft.client.renderer.GlStateManager;
 public abstract class CMMButton extends CMMElement {
 
     public String displayString;
-    public int style = 0;
+    public ButtonStyle style = ButtonStyle.ROUNDED;
 
     public CMMButton(int xPos, int yPos, String displayString) {
         this(xPos, yPos, 200, 20, displayString);
@@ -35,9 +35,10 @@ public abstract class CMMButton extends CMMElement {
         boolean hovered = checkHover(mouseX, mouseY);
         int textColor = hovered ? 0xFFFFFFFF : 0xFFAAAAAA;
 
-        GlStateManager.color(1f,1f,1f,1f);
+        GlStateManager.color(1f, 1f, 1f, 1f);
         GlStateManager.pushMatrix();
-        NineSliceUtils.draw(Resources.betterContainerNineSlice(style), xPos, yPos, width, height, 6, 18);
+        if (style.rounded) ButtonRenderer.drawRounded(xPos, yPos, width, height, style, hovered);
+        else NineSliceUtils.draw(Resources.betterContainerNineSlice(style.index), xPos, yPos, width, height, 6, 18);
         GlStateManager.popMatrix();
 
         drawCenteredString(displayString, this.xPos, this.yPos, this.width, this.height, textColor, true);

@@ -27,6 +27,14 @@ public class Position {
         this.useRelativePositioning = true;
     }
 
+    public static Position absolute(int x, int y) {
+        Position position = new Position();
+        position.xOffset = x;
+        position.yOffset = y;
+        position.useRelativePositioning = false;
+        return position;
+    }
+
     public int getX() {
         if (!useRelativePositioning) return xOffset;
         if (relativeX >= 0 && relativeY >= 0) {

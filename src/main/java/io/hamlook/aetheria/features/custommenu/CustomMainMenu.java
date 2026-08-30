@@ -65,7 +65,7 @@ public class CustomMainMenu extends GuiScreen {
     }
 
     public void drawBackground() {
-        GCImage image = configuration.background;
+        GCImage image = configuration.getBackground();
         if(image == null || image.getTextureToRender(true) == null) {
             Aetheria.logger.info("[CMM] CustomMainMenu image is null");
             return;

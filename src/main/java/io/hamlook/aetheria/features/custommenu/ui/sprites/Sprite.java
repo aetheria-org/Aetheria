@@ -9,11 +9,13 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 
 import javax.annotation.Nullable;
+import java.io.File;
 
 public class Sprite extends CMMElement {
 
     public GCImage image;
     public ResourceLocation imageLocal;
+    private transient String loadingImageUrl;
 
     public Sprite(Position position, int width, int height, @Nullable GCImage image, @Nullable ResourceLocation imageLocal) {
         super(position,width,height);
@@ -32,6 +34,13 @@ public class Sprite extends CMMElement {
             return null;
         }
         if (image == null) return imageLocal;
+        if (!image.isLoaded && image.url != null && !image.url.isEmpty() && !image.url.equals(loadingImageUrl)) {
+            String path = image.url;
+            loadingImageUrl = path;
+            image = new File(path).isFile()
+                    ? io.hamlook.aetheria.features.chat.globalchat.image.ImageManager.images.get(GCImage.createGCImageFromFile(path))
+                    : io.hamlook.aetheria.features.chat.globalchat.image.ImageManager.images.get(GCImage.createGCImage(path));
+        }
         return image.getTextureToRender(true);
     }
 
