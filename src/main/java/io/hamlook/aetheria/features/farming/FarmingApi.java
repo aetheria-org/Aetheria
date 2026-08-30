@@ -224,11 +224,18 @@ public final class FarmingApi {
         }
     }
 
-    private static void warpToPlot(Integer plot) {
+    /** /tptoplot 19 and /tptoplot 20 are swapped in-game, so correct for it here before sending. */
+    private static int correctPlotWarpSwap(int plot) {
+        if (plot == 19) return 20;
+        if (plot == 20) return 19;
+        return plot;
+    }
+
+    public static void warpToPlot(Integer plot) {
         if (plot == null) return;
         Minecraft mc = Minecraft.getMinecraft();
         if (mc != null && mc.thePlayer != null) {
-            mc.thePlayer.sendChatMessage("/tptoplot " + plot);
+            mc.thePlayer.sendChatMessage("/tptoplot " + correctPlotWarpSwap(plot));
         }
     }
 

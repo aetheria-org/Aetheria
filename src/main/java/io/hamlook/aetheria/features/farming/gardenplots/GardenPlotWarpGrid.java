@@ -26,8 +26,9 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
  * Clickable 5x5 Garden plot grid drawn over the player's own inventory: each
  * cell warps to that plot (/tptoplot N), the center cell (no number) warps to
  * the Garden's spawn/barn (/tptoplot 0), and a "Home" button below the grid
- * runs /warp garden. The current plot lights up green, and plots with an
- * active pest get a flashing red border.
+ * runs /warp garden. The current plot lights up green, plots with an active
+ * pest get a flashing red border, and the center cell flashes gold while a
+ * visitor is waiting at spawn.
  */
 @RegisterEvents
 public class GardenPlotWarpGrid {
@@ -52,7 +53,7 @@ public class GardenPlotWarpGrid {
             {23, 19, 12, 20, 24},
     };
 
-    private static final ItemStack CENTER_ICON = new ItemStack(Item.getItemFromBlock(Blocks.chest));
+    private static final ItemStack CENTER_ICON = new ItemStack(Item.getItemFromBlock(Blocks.hay_block));
 
     private static int gridX, gridY, homeY;
 
@@ -133,6 +134,10 @@ public class GardenPlotWarpGrid {
             drawBorder(x, y, CELL_SIZE, BORDER_THICKNESS, flashingRed());
         }
 
+        if (plot == 0 && !FarmingApi.getActiveVisitors().isEmpty()) {
+            drawBorder(x, y, CELL_SIZE, BORDER_THICKNESS, flashingGold());
+        }
+
         if (plot == 0) {
             GlStateManager.color(1f, 1f, 1f, 1f);
             ItemRenderUtils.renderItemIcon(MC, CENTER_ICON, x + 2, y + 2, CELL_SIZE - 4);
@@ -170,6 +175,12 @@ public class GardenPlotWarpGrid {
         return (alpha << 24) | 0xFF0000;
     }
 
+    private static int flashingGold() {
+        float pulse = 0.4f + 0.6f * (float) (0.5 + 0.5 * Math.sin(System.currentTimeMillis() / 200.0));
+        int alpha = ((int) (pulse * 255)) & 0xFF;
+        return (alpha << 24) | 0xFFD700;
+    }
+
     @SubscribeEvent
     public void onDrawGui(GuiContainerRenderBeforeTooltipEvent event) {
         if (!isEnabled() || !isSupportedGui(event.gui)) return;
@@ -193,7 +204,7 @@ public class GardenPlotWarpGrid {
                 int cx = gridX + col * (CELL_SIZE + CELL_GAP);
                 int cy = gridY + row * (CELL_SIZE + CELL_GAP);
                 if (mouseX >= cx && mouseX < cx + CELL_SIZE && mouseY >= cy && mouseY < cy + CELL_SIZE) {
-                    ChatUtils.sendChatCommand("/tptoplot " + LAYOUT[row][col]);
+                    FarmingApi.warpToPlot(LAYOUT[row][col]);
                     event.setCanceled(true);
                     return;
                 }
