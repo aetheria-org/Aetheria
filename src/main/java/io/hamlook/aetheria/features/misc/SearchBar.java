@@ -404,7 +404,7 @@ public class SearchBar {
 
         char typedChar = KeybindHelper.getEventCharacter();
 
-        if (keyCode == KeybindHelper.KEY_RETURN || keyCode == KeybindHelper.KEY_NUMPAD_ENTER) {
+        if (keyCode == ATHRConfig.feature.misc.searchBarConfig.submitKey) {
             if (isCommandMode()) {
                 ChatUtils.sendChatCommand(searchText);
                 recordRecentSearch(searchText);

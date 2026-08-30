@@ -41,12 +41,12 @@ public class SearchBarConfig {
     public boolean persistStorageSearch = false;
 
     @Expose
-    @ConfigOption(name = "Enter Clears Expression", desc = "In calculator mode, pressing Enter will remove the expression and leave only the result in the search bar")
+    @ConfigOption(name = "Enter Clears Expression", desc = "In calculator mode, pressing the search submit key will remove the expression and leave only the result in the search bar")
     @ConfigEditorBoolean
     public boolean calcEnterClearText = true;
 
     @Expose
-    @ConfigOption(name = "Result on Enter", desc = "In calculator mode, pressing Enter will copy the result to your clipboard")
+    @ConfigOption(name = "Result on Enter", desc = "In calculator mode, pressing the search submit key will copy the result to your clipboard")
     @ConfigEditorBoolean
     public boolean calcEnterCopyResult = true;
 
@@ -56,7 +56,12 @@ public class SearchBarConfig {
     public int hoverPasteKey = Keyboard.KEY_NONE;
 
     @Expose
-    @ConfigOption(name = "Recent Searches", desc = "Shows a scrollable dropdown of recently searched/calculated entries below the search bar while it's focused. Press Enter to add the current search to this list; it's session-only and clears on restart.")
+    @ConfigOption(name = "Search Submit Key", desc = "Key that applies a calculator result into the search bar, sends a typed command, and records the current search/result into the recent list. Defaults to Enter.")
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_RETURN)
+    public int submitKey = Keyboard.KEY_RETURN;
+
+    @Expose
+    @ConfigOption(name = "Recent Searches", desc = "Shows a scrollable dropdown of recently searched/calculated entries below the search bar while it's focused. Press the search submit key to add the current search to this list; it's session-only and clears on restart.")
     @ConfigEditorBoolean
     public boolean recentSearchesEnabled = true;
 }
