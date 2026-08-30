@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.farming;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.BlockBreakEvent;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerData;
+import io.hamlook.aetheria.features.farming.gardenplots.GardenPlotData;
 import io.hamlook.aetheria.features.farming.sensitivityreducer.FarmingToolIds;
 import io.hamlook.aetheria.features.farming.visitors.VisitorBonus;
 import io.hamlook.aetheria.init.RegisterEvents;
@@ -235,6 +236,10 @@ public final class FarmingApi {
     public static void warpToPlot(Integer plot) {
         if (plot == null) return;
         ChatUtils.sendChatCommand("/tptoplot " + correctPlotWarpSwap(plot));
+    }
+
+    public static boolean isPlotUnlocked(int plotId) {
+        return GardenPlotData.getInstance().isUnlocked(plotId);
     }
 
     public static java.util.List<Integer> getSortedInfestedPlotIds() {

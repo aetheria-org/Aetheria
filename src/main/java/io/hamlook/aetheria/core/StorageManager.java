@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.features.diana.DianaStats;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerData;
+import io.hamlook.aetheria.features.farming.gardenplots.GardenPlotData;
 import io.hamlook.aetheria.features.farming.organicmatter.OrganicMatterTrackerData;
 import io.hamlook.aetheria.features.farming.pests.PestStats;
 import io.hamlook.aetheria.features.fishing.trophy.TrophyFishStorage;
@@ -55,7 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public enum StorageManager {
 
-    WAYPOINTS(WaypointStorage.getInstance()), INV_BUTTONS(InventoryButtonStorage.getInstance()), DIANA_STATS(DianaStats.getInstance()), POWDER_STATS(PowderStats.getInstance()), PRISTINE_STATS(PristineStats.getInstance()), MAXWELL_POWER(MaxwellPowerSync.getInstance()), PET_CACHE(PetCache.getInstance()), CURRENT_PET(CurrentPetTracker.getInstance()), TROPHY_FISH(TrophyFishStorage.getInstance()), FARMING_TRACKER(FarmingTrackerData.getInstance()), ORGANIC_MATTER_TRACKER(OrganicMatterTrackerData.getInstance()), GHOST_STATS(GhostStats.getInstance()), PEST_STATS(PestStats.getInstance()), GOLD_STATS(GoldStats.getInstance());
+    WAYPOINTS(WaypointStorage.getInstance()), INV_BUTTONS(InventoryButtonStorage.getInstance()), DIANA_STATS(DianaStats.getInstance()), POWDER_STATS(PowderStats.getInstance()), PRISTINE_STATS(PristineStats.getInstance()), MAXWELL_POWER(MaxwellPowerSync.getInstance()), PET_CACHE(PetCache.getInstance()), CURRENT_PET(CurrentPetTracker.getInstance()), TROPHY_FISH(TrophyFishStorage.getInstance()), FARMING_TRACKER(FarmingTrackerData.getInstance()), ORGANIC_MATTER_TRACKER(OrganicMatterTrackerData.getInstance()), GHOST_STATS(GhostStats.getInstance()), PEST_STATS(PestStats.getInstance()), GOLD_STATS(GoldStats.getInstance()), GARDEN_PLOT_DATA(GardenPlotData.getInstance());
 
     private static final ConcurrentHashMap<String, Object> FILE_LOCKS = new ConcurrentHashMap<>();
     private static final Charset WINDOWS_1252 = Charset.forName("windows-1252");

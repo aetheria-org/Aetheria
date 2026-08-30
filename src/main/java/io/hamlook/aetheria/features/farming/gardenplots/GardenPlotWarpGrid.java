@@ -16,19 +16,12 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-/**
- * Clickable 5x5 Garden plot grid drawn over the player's own inventory: each
- * cell warps to that plot (/tptoplot N), the center cell (no number) warps to
- * the Garden's spawn/barn (/tptoplot 0), and a "Home" button below the grid
- * runs /warp garden. The current plot lights up green, plots with an active
- * pest get a flashing red border, and the center cell flashes gold while a
- * visitor is waiting at spawn.
- */
+import java.util.Map;
+
 @RegisterEvents
 public class GardenPlotWarpGrid {
 
@@ -43,7 +36,6 @@ public class GardenPlotWarpGrid {
     private static final int HOME_HEIGHT = 20;
     private static final int BORDER_THICKNESS = 2;
 
-    /** Row-major 5x5 layout matching the in-game plot grid; 0 marks the center spawn/barn cell. */
     private static final int[][] LAYOUT = {
             {21, 13, 9, 14, 22},
             {15, 5, 1, 6, 16},
@@ -51,8 +43,6 @@ public class GardenPlotWarpGrid {
             {17, 7, 3, 8, 18},
             {23, 19, 12, 20, 24},
     };
-
-    private static final ItemStack CENTER_ICON = new ItemStack(Item.getItemFromBlock(Blocks.hay_block));
 
     private static int gridX, gridY, homeY;
 
@@ -70,6 +60,7 @@ public class GardenPlotWarpGrid {
     }
 
     private static int[] calculatePosition(ScaledResolution sr) {
+        if (ATHRConfig.feature == null) return new int[]{0, 0};
         Position pos = ATHRConfig.feature.farming.gardenPlotWarpGrid.pos;
         int w = GRID_SIZE;
         int h = GRID_SIZE + HOME_GAP + HOME_HEIGHT;
@@ -94,24 +85,37 @@ public class GardenPlotWarpGrid {
         draw(pos[0], pos[1]);
     }
 
+    private static boolean showLockedPlots() {
+        return ATHRConfig.feature == null || ATHRConfig.feature.farming.gardenPlotWarpGrid.showLockedPlots;
+    }
+
+    private static boolean isPlotHidden(int plot) {
+        return plot != 0 && !showLockedPlots() && !FarmingApi.isPlotUnlocked(plot);
+    }
+
     private static void draw(int x, int y) {
         gridX = x;
         gridY = y;
         homeY = y + GRID_SIZE + HOME_GAP;
+
+        Map<Integer, Integer> activePests = FarmingApi.getActivePests();
+        boolean visitorAtSpawn = !FarmingApi.getActiveVisitors().isEmpty();
 
         for (int row = 0; row < GRID_DIM; row++) {
             for (int col = 0; col < GRID_DIM; col++) {
                 int plot = LAYOUT[row][col];
                 int cx = x + col * (CELL_SIZE + CELL_GAP);
                 int cy = y + row * (CELL_SIZE + CELL_GAP);
-                drawCell(cx, cy, plot);
+                drawCell(cx, cy, plot, activePests.containsKey(plot), visitorAtSpawn);
             }
         }
 
         drawHomeButton(x, homeY, GRID_SIZE);
     }
 
-    private static void drawCell(int x, int y, int plot) {
+    private static void drawCell(int x, int y, int plot, boolean hasPest, boolean visitorAtSpawn) {
+        boolean hidden = isPlotHidden(plot);
+
         if (plot != 0 && FarmingApi.isPlayerInPlot(plot)) {
             Gui.drawRect(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x5500FF00);
         }
@@ -119,19 +123,24 @@ public class GardenPlotWarpGrid {
         RenderUtils.drawButton(x, y, CELL_SIZE, CELL_SIZE, null, () -> {
             if (plot == 0) {
                 GlStateManager.color(1f, 1f, 1f, 1f);
-                ItemRenderUtils.renderItemIcon(MC, CENTER_ICON, x + 2, y + 2, CELL_SIZE - 4);
+                ItemRenderUtils.renderItemIcon(MC, new ItemStack(Blocks.hay_block), x + 2, y + 2, CELL_SIZE - 4);
             } else {
                 String text = String.valueOf(plot);
                 int tw = MC.fontRendererObj.getStringWidth(text);
-                MC.fontRendererObj.drawStringWithShadow(text, x + (CELL_SIZE - tw) / 2f, y + (CELL_SIZE - 8) / 2f, 0xFFFFFF);
+                int color = hidden ? 0x777777 : 0xFFFFFF;
+                MC.fontRendererObj.drawStringWithShadow(text, x + (CELL_SIZE - tw) / 2f, y + (CELL_SIZE - 8) / 2f, color);
             }
         });
 
-        if (plot != 0 && FarmingApi.getActivePests().containsKey(plot)) {
+        if (hidden) {
+            Gui.drawRect(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x99000000);
+        }
+
+        if (!hidden && plot != 0 && hasPest) {
             drawBorder(x, y, CELL_SIZE, BORDER_THICKNESS, flashingColor(0xFF0000));
         }
 
-        if (plot == 0 && !FarmingApi.getActiveVisitors().isEmpty()) {
+        if (plot == 0 && visitorAtSpawn) {
             drawBorder(x, y, CELL_SIZE, BORDER_THICKNESS, flashingColor(0xFFD700));
         }
     }
@@ -184,7 +193,9 @@ public class GardenPlotWarpGrid {
                 int cx = gridX + col * (CELL_SIZE + CELL_GAP);
                 int cy = gridY + row * (CELL_SIZE + CELL_GAP);
                 if (isInside(mouseX, mouseY, cx, cy, CELL_SIZE, CELL_SIZE)) {
-                    FarmingApi.warpToPlot(LAYOUT[row][col]);
+                    if (!isPlotHidden(LAYOUT[row][col])) {
+                        FarmingApi.warpToPlot(LAYOUT[row][col]);
+                    }
                     event.setCanceled(true);
                     return;
                 }
