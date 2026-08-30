@@ -17,5 +17,5 @@ public class GardenPlotWarpGridConfig {
     public boolean editPosDummy = false;
 
     @Expose
-    public Position pos = new Position(4, 4, false, false);
+    public Position pos = new Position(-258, 186, false, false);
 }
