@@ -212,7 +212,16 @@ public final class FarmingApi {
     }
 
     public static void warpToTargetPlot() {
-        warpToPlot(getTargetInfestedPlot());
+        Integer plot = getTargetInfestedPlot();
+        if (plot != null) {
+            warpToPlot(plot);
+            return;
+        }
+        if (ATHRConfig.feature != null && ATHRConfig.feature.farming.pests != null
+                && ATHRConfig.feature.farming.pests.pestFinder != null
+                && ATHRConfig.feature.farming.pests.pestFinder.warpToGardenWhenNoPests) {
+            warpToPlot(0);
+        }
     }
 
     private static void warpToPlot(Integer plot) {

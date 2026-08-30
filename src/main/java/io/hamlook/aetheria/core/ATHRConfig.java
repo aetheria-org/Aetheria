@@ -16,6 +16,7 @@ import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomOverlay;
 import io.hamlook.aetheria.features.farming.BPSOverlay;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTracker;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerOverlay;
+import io.hamlook.aetheria.features.farming.gardenplots.GardenPlotWarpGrid;
 import io.hamlook.aetheria.features.farming.organicmatter.OrganicMatterTracker;
 import io.hamlook.aetheria.features.farming.organicmatter.OrganicMatterTrackerOverlay;
 import io.hamlook.aetheria.features.farming.pests.PestStats;
@@ -454,6 +455,12 @@ public class ATHRConfig {
         PestFinderOverlay overlay = PestFinderOverlay.getInstance();
         if (overlay == null) return;
         screenToOpen = new GuiPositionEditor(feature.farming.pests.pestFinder.pestFinderPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.pests.pestFinder.scale).withParent(Minecraft.getMinecraft().currentScreen);
+    }
+
+    public static void openGardenPlotWarpGridEditor() {
+        if (feature == null) return;
+        GardenPlotWarpGrid grid = GardenPlotWarpGrid.getInstance();
+        screenToOpen = new GuiPositionEditor(feature.farming.gardenPlotWarpGrid.pos, grid::getOverlayWidth, grid::getOverlayHeight, () -> grid.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withParent(Minecraft.getMinecraft().currentScreen);
     }
 
     public static void resetPestTracker() {
