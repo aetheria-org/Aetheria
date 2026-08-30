@@ -15,13 +15,10 @@ import io.hamlook.aetheria.features.chestanimations.CitManager;
 import io.hamlook.aetheria.features.misc.pet.PetCache;
 import io.hamlook.aetheria.features.profile.GuiWaiter;
 import io.hamlook.aetheria.init.EventRegistrar;
-import io.hamlook.aetheria.mixins.MixinMinecraft;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.placeholders.PlaceholderManager;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.Session;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -38,10 +35,6 @@ public class Aetheria {
     public static final String NAME = "Aetheria";
     public static final String VERSION = "1.2.1-alpha";
 
-    public static String getApiVersion() {
-        return VERSION.split("-")[0];
-    }
-
     public static ATHRConfig config;
     public static Logger logger;
     public static WebSocketClient webSocketClient;
@@ -55,9 +48,6 @@ public class Aetheria {
         StorageManager.initAll(ATHRConfig.configDirectory);
         CapeManager.initialise(false);
         TesterWhitelist.init(VERSION);
-        ((MixinMinecraft) Minecraft.getMinecraft()).setSession(
-                new Session("Diyansh","Diyansh","legacy","0")
-        );
         PlaceholderManager.initialise();
         webSocketClient = new WebSocketClient();
         if (ATHRConfig.feature == null || !ATHRConfig.feature.network.smartSocketLifecycle) {
