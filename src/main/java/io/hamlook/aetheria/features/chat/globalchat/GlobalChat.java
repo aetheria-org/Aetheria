@@ -18,7 +18,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -507,7 +506,9 @@ public class GlobalChat {
                 String message = responseJson.has("message") ? responseJson.get("message").getAsString() : "Your Global Chat punishment has been lifted.";
                 pushSystemNotice(message);
                 synchronized (notifications) { notifications.add(Notification.createPunishmentNotif(message)); }
-                ChatUtils.sendMessage("§a[G-Chat] " + message);
+                if(ATHRConfig.feature.network.globalChatConfig.mcChatIntegration){
+                    ChatUtils.sendMessage("§a[G-Chat] " + message);
+                }
                 return;
             }
         }

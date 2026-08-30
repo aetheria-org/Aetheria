@@ -17,6 +17,12 @@ public class GlobalChatConfig {
     @ConfigAnnotations.ConfigEditorBoolean
     public boolean reducedAnimations = false;
 
+
+    @Expose
+    @ConfigAnnotations.ConfigOption(name = "MC Chat Integration",desc = "Send Limited Version(due to mc limitations) of the text in mc chat on gchat message")
+    @ConfigAnnotations.ConfigEditorBoolean
+    public boolean mcChatIntegration = true;
+
     @Expose
     @ConfigAnnotations.ConfigOption(name = "Max Image/GIF Quality",desc = "Control the max quality a image or gif can have.")
     @ConfigAnnotations.ConfigEditorDropdown(values = {"Lowest(240p)","Low(360p)","Medium(480p)","High(720p)","Higher(1080p)","Ultra(1440p)","Overkill(4k)"},initialIndex = 4)
