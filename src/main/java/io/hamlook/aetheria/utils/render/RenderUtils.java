@@ -9,10 +9,12 @@ import io.hamlook.aetheria.features.chat.emoji.CustomEmoji;
 import io.hamlook.aetheria.features.chat.emoji.EmojiLinks;
 import io.hamlook.aetheria.features.chat.emoji.EmojiManager;
 import io.hamlook.aetheria.features.chat.emoji.SpritePos;
+import io.hamlook.aetheria.utils.KeybindHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
@@ -143,6 +145,21 @@ public final class RenderUtils {
                 return false;
             }
         });
+    }
+
+    public static boolean drawButton(int x, int y, int w, int h, String tooltip, Runnable drawIcon) {
+        NineSliceUtils.draw(Resources.storageBackground(1), x, y, w, h, 6, 18);
+
+        int[] mouse = KeybindHelper.getMouseCoords(new ScaledResolution(Minecraft.getMinecraft()));
+        boolean hovered = mouse[0] >= x && mouse[0] < x + w && mouse[1] >= y && mouse[1] < y + h;
+        if (hovered) {
+            Gui.drawRect(x, y, x + w, y + h, 0x33FFFFFF);
+            if (tooltip != null && !tooltip.isEmpty()) {
+                TextRenderUtils.drawHoveringText(tooltip, mouse[0], mouse[1], Minecraft.getMinecraft().fontRendererObj);
+            }
+        }
+        if (drawIcon != null) drawIcon.run();
+        return hovered;
     }
 
     public static void drawWorldCircle(double radius, int steps, float lineWidth, float r, float g, float b, float a) {
