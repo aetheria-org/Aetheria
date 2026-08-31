@@ -80,7 +80,10 @@ public class PestFinderOverlay extends Overlay {
             int key = cfg.warpKey;
             if (key == Keyboard.KEY_NONE) return "§7Warp key: §8Not set";
             Integer plot = targetPlot(preview);
-            if (plot == null) return null;
+            if (plot == null) {
+                if (cfg.warpToGardenWhenNoPests) return "§7Press §e" + KeybindHelper.getKeyName(key) + " §7to warp to §bGarden Spawn";
+                return null;
+            }
             if (!preview && cfg.hideWarpHintInPlot && FarmingApi.isPlayerInPlot(plot)) return null;
             return "§7Press §e" + KeybindHelper.getKeyName(key) + " §7to warp to §bPlot " + plot;
         } catch (Exception e) {

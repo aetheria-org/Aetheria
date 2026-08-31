@@ -36,6 +36,11 @@ public class PestFinderConfig {
     public boolean hideWarpHintInPlot = true;
 
     @Expose
+    @ConfigOption(name = "Warp To Garden Spawn When No Pests", desc = "When there's no infested plot to warp to, the warp key instead runs /warp garden")
+    @ConfigEditorBoolean
+    public boolean warpToGardenWhenNoPests = false;
+
+    @Expose
     @ConfigOption(name = "Show While Holding Vacuum Only", desc = "Only show the overlay while holding a vacuum")
     @ConfigEditorBoolean
     public boolean showOnlyWhileHoldingVacuum = true;
