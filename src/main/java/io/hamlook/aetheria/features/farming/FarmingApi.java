@@ -3,10 +3,12 @@ package io.hamlook.aetheria.features.farming;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.BlockBreakEvent;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerData;
+import io.hamlook.aetheria.features.farming.gardenplots.GardenPlotData;
 import io.hamlook.aetheria.features.farming.sensitivityreducer.FarmingToolIds;
 import io.hamlook.aetheria.features.farming.visitors.VisitorBonus;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import lombok.Getter;
@@ -212,15 +214,32 @@ public final class FarmingApi {
     }
 
     public static void warpToTargetPlot() {
-        warpToPlot(getTargetInfestedPlot());
+        Integer plot = getTargetInfestedPlot();
+        if (plot != null) {
+            warpToPlot(plot);
+            return;
+        }
+        if (ATHRConfig.feature != null && ATHRConfig.feature.farming.pests != null
+                && ATHRConfig.feature.farming.pests.pestFinder != null
+                && ATHRConfig.feature.farming.pests.pestFinder.warpToGardenWhenNoPests) {
+            warpToPlot(0);
+        }
     }
 
-    private static void warpToPlot(Integer plot) {
+    /** /tptoplot 19 and /tptoplot 20 are swapped in-game, so correct for it here before sending. */
+    private static int correctPlotWarpSwap(int plot) {
+        if (plot == 19) return 20;
+        if (plot == 20) return 19;
+        return plot;
+    }
+
+    public static void warpToPlot(Integer plot) {
         if (plot == null) return;
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc != null && mc.thePlayer != null) {
-            mc.thePlayer.sendChatMessage("/tptoplot " + plot);
-        }
+        ChatUtils.sendChatCommand("/tptoplot " + correctPlotWarpSwap(plot));
+    }
+
+    public static boolean isPlotUnlocked(int plotId) {
+        return GardenPlotData.getInstance().isUnlocked(plotId);
     }
 
     public static java.util.List<Integer> getSortedInfestedPlotIds() {

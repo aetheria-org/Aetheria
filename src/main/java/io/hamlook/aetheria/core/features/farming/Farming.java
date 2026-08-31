@@ -35,6 +35,10 @@ public class Farming {
     public GardenPlotsConfig gardenPlots = new GardenPlotsConfig();
 
     @Expose
+    @Category(name = "Garden Plot Warp Grid", desc = "Clickable plot grid over your inventory for quick /tptoplot warps")
+    public GardenPlotWarpGridConfig gardenPlotWarpGrid = new GardenPlotWarpGridConfig();
+
+    @Expose
     @Category(name = "Sensitivity Reducer", desc = "Reduce mouse sensitivity while holding a crop farming tool")
     public SensitivityReducerConfig sensitivityReducer = new SensitivityReducerConfig();
 

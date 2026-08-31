@@ -4,6 +4,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.GardenPlotsConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
+import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.events.RenderItemOverlayEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
@@ -17,9 +18,11 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,6 +42,8 @@ public class GardenPlotNumber {
 
     private static final Map<ItemStack, PlotInfo> PLOT_CACHE = new IdentityHashMap<>();
     private static GuiScreen cacheScreen;
+
+    private static final Set<Integer> frameUnlockedPlots = new HashSet<>();
 
     static {
         HighlightUtils.registerHighlighter((gui, slot) -> {
@@ -70,9 +75,19 @@ public class GardenPlotNumber {
         if (stack == null || stack.getItem() == null) return;
         PlotInfo info = info(stack);
         if (info.number < 0) return;
+        if (info.type == UNLOCKED) frameUnlockedPlots.add(info.number);
         String color = tipColor(config, info.type);
         if (color == null) return;
         ItemStackUtils.drawTip(String.valueOf(info.number), event.x, event.y, color(color, event.x, event.y));
+    }
+
+    @SubscribeEvent
+    public void onFrameEnd(GuiContainerRenderBeforeTooltipEvent event) {
+        if (notInGardenConfigurePlots()) return;
+        GardenPlotsConfig config = config();
+        if (config == null || !config.enabled) return;
+        GardenPlotData.getInstance().updateFromChest(frameUnlockedPlots);
+        frameUnlockedPlots.clear();
     }
 
     private static GardenPlotsConfig config() {

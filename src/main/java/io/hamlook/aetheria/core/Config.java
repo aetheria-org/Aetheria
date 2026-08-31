@@ -121,6 +121,7 @@ public class Config {
             case "openPestEditor": ATHRConfig.openPestEditor(); break;
             case "resetPestTracker": ATHRConfig.resetPestTracker(); break;
             case "openPestFinderEditor": ATHRConfig.openPestFinderEditor(); break;
+            case "openGardenPlotWarpGridEditor": ATHRConfig.openGardenPlotWarpGridEditor(); break;
             case "openVisitorOverlayEditor": ATHRConfig.openVisitorOverlayEditor(); break;
             case "openVisitorPanelEditor": ATHRConfig.openVisitorPanelEditor(); break;
             case "resetVisitorList": ATHRConfig.resetVisitorList(); break;
