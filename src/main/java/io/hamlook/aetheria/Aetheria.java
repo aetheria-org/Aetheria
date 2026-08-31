@@ -17,13 +17,10 @@ import io.hamlook.aetheria.features.misc.pet.PetCache;
 import io.hamlook.aetheria.features.profile.GuiWaiter;
 import io.hamlook.aetheria.features.trackers.TrackerManager;
 import io.hamlook.aetheria.init.EventRegistrar;
-import io.hamlook.aetheria.mixins.MixinMinecraft;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.placeholders.PlaceholderManager;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.Session;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -54,9 +51,6 @@ public class Aetheria {
         CapeManager.initialise(false);
         TesterWhitelist.init(VERSION);
         PlaceholderManager.initialise();
-        ((MixinMinecraft) Minecraft.getMinecraft()).setSession(
-                new Session("Diyansh","Diyansh","0","legacy")
-        );
         webSocketClient = new WebSocketClient();
         if (ATHRConfig.feature == null || !ATHRConfig.feature.network.smartSocketLifecycle) {
             webSocketClient.connect();
