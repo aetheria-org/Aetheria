@@ -14,7 +14,7 @@ public class GardenPlotWarpGridConfig {
     @Expose
     @ConfigOption(name = "Show Locked Plots", desc = "When off, plots you haven't unlocked yet render dimmed and can't be clicked. Requires opening Configure Plots at least once to know which plots are unlocked")
     @ConfigEditorBoolean
-    public boolean showLockedPlots = true;
+    public boolean showLockedPlots = false;
 
     @Expose
     @ConfigOption(name = "Edit Position", desc = "Drag to reposition the plot warp grid")
