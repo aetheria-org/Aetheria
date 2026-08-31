@@ -616,4 +616,94 @@ public final class RenderUtils {
         GlStateManager.color(1f, 1f, 1f, 1f);
         drawTexturedRect(x, y, size, size, GL11.GL_NEAREST);
     }
+
+    public static void drawRoundedButton(ResourceLocation texture, int x, int y, int w, int h, int r, int cornerSize, int texSize,boolean hovered) {
+        if (texture == null) return;
+        r = Math.min(r, Math.min(w, h) / 2);
+
+        if (r <= 0) {
+            NineSliceUtils.draw(texture, x, y, w, h, cornerSize, texSize,hovered);
+            return;
+        }
+
+        GL11.glEnable(GL11.GL_STENCIL_TEST);
+        GL11.glClear(GL11.GL_STENCIL_BUFFER_BIT);
+        GL11.glStencilMask(0xFF);
+
+        GL11.glStencilFunc(GL11.GL_ALWAYS, 1, 0xFF);
+        GL11.glStencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_REPLACE);
+
+        GlStateManager.colorMask(false, false, false, false);
+        GlStateManager.depthMask(false);
+
+        drawRoundedRect(x, y, w, h, r, 0xFFFFFFFF);
+
+        GlStateManager.colorMask(true, true, true, true);
+        GlStateManager.depthMask(true);
+        GL11.glStencilMask(0x00);
+
+        GL11.glStencilFunc(GL11.GL_EQUAL, 1, 0xFF);
+
+        NineSliceUtils.draw(texture, x, y, w, h, cornerSize, texSize,hovered);
+
+        GL11.glDisable(GL11.GL_STENCIL_TEST);
+    }
+
+    public static void drawRoundedRect(int x,int y, int w, int h, int r , int color){
+        int x1 = x + w;
+        int y1 = y + h;
+        r = Math.min(r,Math.min(x1-x,y1-y)/2);
+        if (r <= 0) {
+            Gui.drawRect(x,y,x1,y1,color);
+            return;
+        }
+        Gui.drawRect(x + r, y, x1 - r, y1, color);
+        Gui.drawRect(x, y + r, x + r, y1 - r, color);
+        Gui.drawRect(x1 - r, y + r, x1, y1 - r, color);
+
+        drawCornerArc(x, y, r, color, false, false);
+        drawCornerArc(x1 - r, y, r, color, true, false);
+        drawCornerArc(x, y1 - r, r, color, false, true);
+        drawCornerArc(x1 - r, y1 - r, r, color, true, true);
+    }
+    public static void drawRoundedBorder(int x, int y, int x2, int y2, int r, int color) {
+        r = Math.min(r, Math.min(x2 - x, y2 - y) / 2);
+        if (r <= 0) {
+            Gui.drawRect(x, y, x2, y + 1, color);
+            Gui.drawRect(x, y2 - 1, x2, y2, color);
+            Gui.drawRect(x, y + 1, x + 1, y2 - 1, color);
+            Gui.drawRect(x2 - 1, y + 1, x2, y2 - 1, color);
+            return;
+        }
+        Gui.drawRect(x + r, y, x2 - r, y + 1, color);
+        Gui.drawRect(x + r, y2 - 1, x2 - r, y2, color);
+        Gui.drawRect(x, y + r, x + 1, y2 - r, color);
+        Gui.drawRect(x2 - 1, y + r, x2, y2 - r, color);
+
+        drawCornerArc(x, y, r, color, false, false);
+        drawCornerArc(x2 - r, y, r, color, true, false);
+        drawCornerArc(x, y2 - r, r, color, false, true);
+        drawCornerArc(x2 - r, y2 - r, r, color, true, true);
+    }
+
+    private static int cornerCut(int i, int r) {
+        return (int) Math.round(r - Math.sqrt(Math.max(0.0, (double) r * r - (double) (r - i - 1) * (r - i - 1))));
+    }
+
+    private static void drawCornerArc(int cx, int cy, int r, int color, boolean flipX, boolean flipY) {
+        for (int i = 0; i < r; i++) {
+            drawArcPixel(cx, cy, r, color, flipX, flipY, i, cornerCut(i, r));
+        }
+        for (int j = 0; j < r; j++) {
+            int left = 0;
+            while (left < r && cornerCut(left, r) > j) left++;
+            if (left < r) drawArcPixel(cx, cy, r, color, flipX, flipY, left, j);
+        }
+    }
+
+    private static void drawArcPixel(int cx, int cy, int r, int color, boolean flipX, boolean flipY, int u, int v) {
+        int px = flipX ? cx + (r - 1 - u) : cx + u;
+        int py = flipY ? cy + (r - 1 - v) : cy + v;
+        Gui.drawRect(px, py, px + 1, py + 1, color);
+    }
 }

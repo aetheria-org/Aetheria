@@ -8,12 +8,7 @@ public enum ButtonStyle {
     GREEN(3, "Green", false, 0xff234d3c, 0xff8fffc0),
     PURPLE(4, "Purple", false, 0xff44305e, 0xffd0a6ff),
     RED(5, "Red", false, 0xff5e3036, 0xffff9c9c),
-    GOLD(6, "Gold", false, 0xff604b24, 0xffffd27d),
-    ROUNDED(0, "Rounded", true, 0xff263b4d, 0xff8fd7ff),
-    ROUNDED_BLUE(0, "Rounded Blue", true, 0xff1d4160, 0xff8fd7ff),
-    ROUNDED_GREEN(0, "Rounded Green", true, 0xff234d3c, 0xff8fffc0),
-    ROUNDED_PURPLE(0, "Rounded Purple", true, 0xff44305e, 0xffd0a6ff),
-    ROUNDED_OUTLINE(0, "Rounded Outline", true, 0x00101820, 0xff8fd7ff);
+    GOLD(6, "Gold", false, 0xff604b24, 0xffffd27d);
 
     public final int index;
     public final String label;

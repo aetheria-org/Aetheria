@@ -4,6 +4,7 @@ import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.features.custommenu.ui.CMMElement;
 import io.hamlook.aetheria.features.custommenu.ui.buttons.CMMButton;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.io.File;
 public class CustomMMConfig {
 
     public String configName;
+    @Setter
     public GCImage background;
     private transient String loadingBackgroundUrl;
     public List<CMMElement> elements;
@@ -25,10 +27,9 @@ public class CustomMMConfig {
         if (!background.isLoaded && background.url != null && !background.url.isEmpty() && !background.url.equals(loadingBackgroundUrl)) {
             String url = background.url;
             loadingBackgroundUrl = url;
-            GCImage loaded = new File(url).isFile()
+            background = new File(url).isFile()
                     ? ImageManager.images.get(GCImage.createGCImageFromFile(url))
                     : ImageManager.images.get(GCImage.createGCImage(url));
-            background = loaded;
         }
         return background;
     }
@@ -52,7 +53,4 @@ public class CustomMMConfig {
         elements.remove(element);
     }
 
-    public void setBackground(GCImage background) {
-        this.background = background;
-    }
 }

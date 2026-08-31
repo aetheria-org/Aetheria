@@ -9,7 +9,6 @@ import io.hamlook.aetheria.features.chat.emoji.EmojiManager;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.StorageManager;
-import io.hamlook.aetheria.core.hotswap.HotswapSupport;
 import io.hamlook.aetheria.data.ApiHandler;
 import io.hamlook.aetheria.features.capes.CapeManager;
 import io.hamlook.aetheria.features.dungeons.caseopening.CitManager;
@@ -18,10 +17,13 @@ import io.hamlook.aetheria.features.misc.pet.PetCache;
 import io.hamlook.aetheria.features.profile.GuiWaiter;
 import io.hamlook.aetheria.features.trackers.TrackerManager;
 import io.hamlook.aetheria.init.EventRegistrar;
+import io.hamlook.aetheria.mixins.MixinMinecraft;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.placeholders.PlaceholderManager;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.Session;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -46,13 +48,15 @@ public class Aetheria {
     public void preInit(FMLPreInitializationEvent event) {
         logger = Logger.getLogger("[ATHR] ");
         ATHRConfig.init();
-        HotswapSupport.load();
         ATHRRepo.init();
         EmojiManager.init();
         StorageManager.initAll(ATHRConfig.configDirectory);
         CapeManager.initialise(false);
         TesterWhitelist.init(VERSION);
         PlaceholderManager.initialise();
+        ((MixinMinecraft) Minecraft.getMinecraft()).setSession(
+                new Session("Diyansh","Diyansh","0","legacy")
+        );
         webSocketClient = new WebSocketClient();
         if (ATHRConfig.feature == null || !ATHRConfig.feature.network.smartSocketLifecycle) {
             webSocketClient.connect();

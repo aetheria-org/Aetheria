@@ -1,14 +1,11 @@
 package io.hamlook.aetheria.features.custommenu.util;
 
-
 import io.hamlook.aetheria.OptionsMenu;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
-import io.hamlook.aetheria.features.custommenu.editor.CustomMainMenuEditor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.*;
-import net.minecraft.client.settings.GameSettings;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,9 +35,6 @@ public class GuiHelper {
                     return new GuiScreenElementWrapper(new ConfigEditor(ATHRConfig.feature));
                 case "ASM Options Menu":
                     return new OptionsMenu();
-                case "CMM Editor":
-                case "Custom Main Menu Editor":
-                    return new CustomMainMenuEditor();
                 default:
                     return null;
             }

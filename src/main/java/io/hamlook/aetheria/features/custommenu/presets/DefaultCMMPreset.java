@@ -30,10 +30,6 @@ public class DefaultCMMPreset extends CustomMMConfig {
                         new Position("CENTER", "CENTER", 2, -50),
                         98, 20, "Aetheria Mod","ASM Options Menu"));
 
-        addElement(new GuiButton(
-                        new Position("CENTER", "CENTER", -100, -75),
-                        200, 20, "Menu Editor", "CMM Editor"));
-
         addElement(new ActionButton(
                         new Position("RIGHT", "TOP", -18, -2),
                         16, 16, "✕", ActionButton.Action.EXIT));
