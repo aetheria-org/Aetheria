@@ -17,7 +17,6 @@ public class EventHandler {
 
     private final String name;
     private final List<Listener> listeners;
-    private final boolean canReceiveCancelled;
     @Getter
     private int invokeCount;
 
@@ -29,7 +28,6 @@ public class EventHandler {
         List<Listener> sorted = new ArrayList<>(listeners);
         sorted.sort(Comparator.comparingInt(l -> l.priority));
         this.listeners = sorted;
-        this.canReceiveCancelled = sorted.stream().anyMatch(l -> l.receiveCancelled);
     }
 
     public boolean post(AetheriaEvent event) {
@@ -37,7 +35,7 @@ public class EventHandler {
         if (disabledHandlers.contains(name)) return false;
         int errors = 0;
         for (Listener listener : listeners) {
-            if (event.isCancelled() && !canReceiveCancelled) break;
+            if (event.isCancelled() && !listener.receiveCancelled) continue;
             if (disabledInvokers.contains(listener.name)) continue;
             try {
                 listener.method.invoke(listener.instance, event);
