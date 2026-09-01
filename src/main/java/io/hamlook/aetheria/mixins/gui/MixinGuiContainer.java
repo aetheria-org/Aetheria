@@ -5,6 +5,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.events.SlotClickEvent;
 import io.hamlook.aetheria.features.misc.protect.ProtectItemFeature;
+import io.hamlook.aetheria.utils.compat.NefSlotClickCompat;
 import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.features.qol.BetterContainers;
 import io.hamlook.aetheria.features.storage.StorageManager;
@@ -147,7 +148,9 @@ public abstract class MixinGuiContainer extends GuiScreen {
         event.post();
         if (event.isCancelled()) {
             ci.cancel();
+            return;
         }
+        NefSlotClickCompat.recordGuiPosted(slotId, clickedButton, clickType);
     }
 
     @Inject(method = "keyTyped", at = @At("HEAD"), cancellable = true)

@@ -30,6 +30,7 @@ public class MixinNetHandlerPlayClient {
 
     @Inject(method = "addToSendQueue", at = @At("HEAD"))
     public void ATHR$addToSendQueue(Packet<?> packet, CallbackInfo ci) {
+        new PacketEvent.Send(packet).post();
         if (packet instanceof C0EPacketClickWindow) {
             ATHR$storageHandler.handleClickWindow((C0EPacketClickWindow) packet);
         }
