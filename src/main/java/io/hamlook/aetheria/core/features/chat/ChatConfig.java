@@ -86,4 +86,8 @@ public class ChatConfig {
     @Expose
     @Category(name = "Chat Ping", desc = "Play sounds and highlight messages when your name is mentioned in chat")
     public final ChatPingConfig chatPingConfig = new ChatPingConfig();
+
+    @Expose
+    @Category(name = "Player Buttons", desc = "Clickable player-name menu in chat: whisper, profile, AH, party invite, friend, ignore and visit shortcuts")
+    public final PlayerButtonsConfig playerButtons = new PlayerButtonsConfig();
 }

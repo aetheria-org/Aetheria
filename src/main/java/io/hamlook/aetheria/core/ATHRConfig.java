@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.core;
 
 import io.hamlook.aetheria.command.Command;
+import io.hamlook.aetheria.core.features.chat.PlayerButtonsConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.GuiPositionEditor;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
@@ -634,5 +635,18 @@ public class ATHRConfig {
             io.hamlook.aetheria.features.chat.globalchat.GChatCommand.tryOpen();
         }
         globalChatOpenKeyWasDown = globalChatOpenKeyDown;
+    }
+
+    public static void resetPlayerButtonsColors() {
+        if (feature == null) return;
+        feature.chat.playerButtons.backgroundColor = PlayerButtonsConfig.DEFAULT_BACKGROUND_COLOR;
+        feature.chat.playerButtons.accentColor = PlayerButtonsConfig.DEFAULT_ACCENT_COLOR;
+        markConfigDirty();
+    }
+
+    public static void openSubcategory(String categoryName, String subcategoryFieldName) {
+        ConfigEditor editor = new ConfigEditor(feature);
+        editor.openSubcategory(categoryName, subcategoryFieldName);
+        screenToOpen = new GuiScreenElementWrapper(editor);
     }
 }

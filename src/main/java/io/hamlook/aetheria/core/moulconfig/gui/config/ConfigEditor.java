@@ -134,6 +134,20 @@ public class ConfigEditor extends GuiElement {
         }
     }
 
+    /**
+     * Selects a specific nested {@code @Category} (identified by its field
+     * name, e.g. "playerButtons") within a top-level category (identified by
+     * its display name, e.g. "Chat Utils"), expanding the tree to reveal it.
+     */
+    public void openSubcategory(String categoryName, String... subcategoryFieldPath) {
+        for (Map.Entry<String, ConfigProcessor.ProcessedCategory> entry : processedConfig.entrySet()) {
+            if (entry.getValue().name.equalsIgnoreCase(categoryName)) {
+                toggleTreePath(entry.getKey(), Arrays.asList(subcategoryFieldPath));
+                return;
+            }
+        }
+    }
+
     private void indexSubcategoryOptions(ConfigProcessor.ProcessedCategory category, LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subcategories, List<String> parentPath) {
         for (Map.Entry<String, ConfigProcessor.ProcessedSubcategory> subEntry : subcategories.entrySet()) {
             ConfigProcessor.ProcessedSubcategory sub = subEntry.getValue();
