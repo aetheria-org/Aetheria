@@ -138,15 +138,12 @@ public abstract class MixinGuiContainer extends GuiScreen {
 
     @Inject(
             method = "handleMouseClick",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/multiplayer/PlayerControllerMP;windowClick(IIIILnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;"
-            ),
+            at = @At("HEAD"),
             cancellable = true
     )
     private void ATHR$protectItemClick(Slot slot, int slotId, int clickedButton, int clickType, CallbackInfo ci) {
         GuiContainer gui = (GuiContainer) (Object) this;
-        SlotClickEvent event = new SlotClickEvent(gui, slot, slotId, clickedButton, clickType);
+        SlotClickEvent event = new SlotClickEvent(gui, slot, slotId, clickedButton, SlotClickEvent.ClickType.fromId(clickType));
         event.post();
         if (event.isCancelled()) {
             ci.cancel();

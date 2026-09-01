@@ -48,9 +48,6 @@ public class SearchBar {
     private static final int TOGGLE_BTN_W = BAR_HEIGHT;
     private static final int TOGGLE_BTN_GAP = 3;
     private static final int CLEAR_BTN_W = BAR_HEIGHT;
-    private static final float CLEAR_ICON_SCALE = 1.5f;
-    private static final float CLEAR_ICON_OFFSET_X = 3f;
-    private static final float CLEAR_ICON_OFFSET_Y = 1f;
 
     private static final int RECENT_MAX_VISIBLE = 3;
     private static final int RECENT_MAX_STORED = 20;
@@ -208,7 +205,7 @@ public class SearchBar {
                 Gui.drawModalRectWithCustomSizedTexture(toggleBtnX + (TOGGLE_BTN_W - size) / 2, toggleBtnY + (BAR_HEIGHT - size) / 2, 0, 0, size, size, size, size);
             } else {
                 String icon = "≡";
-                MC.fontRendererObj.drawStringWithShadow(icon, toggleBtnX + TOGGLE_BTN_W / 2f - MC.fontRendererObj.getStringWidth(icon) / 2f + 0.5f, toggleBtnY + BAR_HEIGHT / 2f - 4, 0xFFFFFF);
+                MC.fontRendererObj.drawStringWithShadow(icon, toggleBtnX + TOGGLE_BTN_W / 2f - MC.fontRendererObj.getStringWidth(icon) / 2f, toggleBtnY + BAR_HEIGHT / 2f - 4, 0xFFFFFF);
             }
         });
     }
@@ -218,17 +215,7 @@ public class SearchBar {
         clearBtnY = barY;
 
         RenderUtils.drawButton(clearBtnX, clearBtnY, CLEAR_BTN_W, BAR_HEIGHT, "§cClear Search", () -> {
-            String icon = "✕";
-            float iconW = MC.fontRendererObj.getStringWidth(icon) * CLEAR_ICON_SCALE;
-            float iconH = MC.fontRendererObj.FONT_HEIGHT * CLEAR_ICON_SCALE;
-            float px = clearBtnX + CLEAR_BTN_W / 2f - iconW / 2f + CLEAR_ICON_OFFSET_X;
-            float py = clearBtnY + BAR_HEIGHT / 2f - iconH / 2f + CLEAR_ICON_OFFSET_Y;
-
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(px, py, 0);
-            GlStateManager.scale(CLEAR_ICON_SCALE, CLEAR_ICON_SCALE, 1f);
-            MC.fontRendererObj.drawStringWithShadow(icon, 0, 0, 0xFF5555);
-            GlStateManager.popMatrix();
+            MC.fontRendererObj.drawStringWithShadow("✕", clearBtnX + CLEAR_BTN_W / 2f - MC.fontRendererObj.getStringWidth("✕") / 2f, clearBtnY + BAR_HEIGHT / 2f - 4, 0xFF5555);
         });
     }
 

@@ -6,6 +6,7 @@ import io.hamlook.aetheria.Resources
 import io.hamlook.aetheria.events.ItemTossEvent
 import io.hamlook.aetheria.events.RenderItemOverlayEvent
 import io.hamlook.aetheria.events.SlotClickEvent
+import io.hamlook.aetheria.events.SlotClickEvent.ClickType
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.ContainerUtils
 import io.hamlook.aetheria.utils.item.ItemUtils
@@ -26,8 +27,6 @@ class ProtectItemFeature {
         private val mc = Minecraft.getMinecraft()
         private const val STAR_SIZE = 16
         private const val CLICK_OUTSIDE_WINDOW = -999
-        private const val DROP_KEY_CLICK_TYPE = 4
-        private const val SWAP_OFFHAND_CLICK_TYPE = 5
 
         @JvmStatic
         fun toggleProtection(stack: ItemStack) {
@@ -106,7 +105,7 @@ class ProtectItemFeature {
 
 
     private fun isClickOutsideWindow(event: SlotClickEvent): Boolean {
-        return event.slotId == CLICK_OUTSIDE_WINDOW && event.clickType != SWAP_OFFHAND_CLICK_TYPE
+        return event.slotId == CLICK_OUTSIDE_WINDOW && event.clickType != ClickType.DRAW
     }
 
     private fun handleClickOutsideWindow(event: SlotClickEvent) {
@@ -119,7 +118,7 @@ class ProtectItemFeature {
 
 
     private fun isDropKeyPress(event: SlotClickEvent): Boolean {
-        return event.clickType == DROP_KEY_CLICK_TYPE && event.slotId != CLICK_OUTSIDE_WINDOW
+        return event.clickType == ClickType.DROP && event.slotId != CLICK_OUTSIDE_WINDOW
     }
 
     private fun handleDropKeyPress(event: SlotClickEvent) {

@@ -152,13 +152,13 @@ public final class RenderUtils {
 
         int[] mouse = KeybindHelper.getMouseCoords(new ScaledResolution(Minecraft.getMinecraft()));
         boolean hovered = mouse[0] >= x && mouse[0] < x + w && mouse[1] >= y && mouse[1] < y + h;
+        if (drawIcon != null) drawIcon.run();
         if (hovered) {
-            Gui.drawRect(x, y, x + w, y + h, 0x33FFFFFF);
+            Gui.drawRect(x + 1, y + 1, x + w - 2, y + h - 1, 0x33FFFFFF);
             if (tooltip != null && !tooltip.isEmpty()) {
                 TextRenderUtils.drawHoveringText(tooltip, mouse[0], mouse[1], Minecraft.getMinecraft().fontRendererObj);
             }
         }
-        if (drawIcon != null) drawIcon.run();
         return hovered;
     }
 

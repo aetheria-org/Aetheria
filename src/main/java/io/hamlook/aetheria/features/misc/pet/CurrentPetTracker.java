@@ -1,8 +1,10 @@
 package io.hamlook.aetheria.features.misc.pet;
 
 import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.ProfileManagedStorage;
 import io.hamlook.aetheria.events.SlotClickEvent;
+import io.hamlook.aetheria.events.SlotClickEvent.ClickType;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
@@ -110,7 +112,8 @@ public class CurrentPetTracker extends ProfileManagedStorage {
 
             if (slot.slotNumber == CONVERT_SLOT_INDEX) {
                 ItemStack s = slot.getStack();
-                convertToItemEnabled = s != null && s.getItem() != null && CONVERT_ITEM_NAME.equals(s.getDisplayName()) && ItemUtils.getLoreLine(s, "§aEnabled") != null;
+                boolean hasEnabled = s != null && s.getItem() != null && CONVERT_ITEM_NAME.equals(s.getDisplayName()) && ItemUtils.getLoreLine(s, "§aEnabled") != null;
+                convertToItemEnabled = hasEnabled;
                 continue;
             }
 
@@ -142,38 +145,55 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     public void onSlotClick(SlotClickEvent event) {
         ContainerChest container = ContainerUtils.getOpenChest(event.getGui());
         if (container == null) return;
-        if (event.getClickType() != 0 || event.getSlot() == null) return;
+        if (event.getClickType() != ClickType.NORMAL || event.getSlot() == null) {
+            return;
+        }
 
         String title = ContainerUtils.getTitle(container);
-        if (title == null || !title.startsWith(PETS_CONTAINER)) return;
+        if (title == null || !title.startsWith(PETS_CONTAINER)) {
+            return;
+        }
 
         if (event.getSlot().slotNumber == CONVERT_SLOT_INDEX) {
             scanContainer(container);
             return;
         }
 
-        if (convertToItemEnabled) return;
+        if (convertToItemEnabled) {
+            return;
+        }
 
-        if (event.getSlot().inventory == Minecraft.getMinecraft().thePlayer.inventory) return;
+        if (event.getSlot().inventory == Minecraft.getMinecraft().thePlayer.inventory) {
+            return;
+        }
 
         ItemStack item = event.getSlot().getStack();
-        if (item == null || item.getItem() == null) return;
+        if (item == null || item.getItem() == null) {
+            return;
+        }
 
         String texture = ItemUtils.getSkullTexture(item);
-        if (texture == null || texture.isEmpty()) return;
+        if (texture == null || texture.isEmpty()) {
+            return;
+        }
 
         PetItemData data = parsePetItem(item);
-        if (data == null) return;
+        if (data == null) {
+            return;
+        }
 
-        // Ignore skulls like Autopet
-        if (data.level <= 0) return;
+        if (data.level <= 0) {
+            return;
+        }
 
         PetCache.getInstance().update(data.base, data.level, data.rarityColor, data.skinTag, texture);
 
-        if (ItemUtils.getLoreLine(item, ACTIVE_LORE) != null) {
+        String key = data.key();
+        boolean hasActiveLore = ItemUtils.getLoreLine(item, ACTIVE_LORE) != null;
+        if (hasActiveLore) {
             currentBaseName = "";
         } else {
-            currentBaseName = data.key();
+            currentBaseName = key;
         }
         ignoreContainerUpdatesUntil = System.currentTimeMillis() + 1500L;
         save();
