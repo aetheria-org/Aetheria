@@ -10,10 +10,12 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.inventory.GuiInventory
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.inventory.Container
-import net.minecraftforge.client.event.GuiScreenEvent
-import net.minecraftforge.fml.common.eventhandler.EventPriority
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
+import io.hamlook.aetheria.api.event.HandleEvent
 import org.lwjgl.input.Keyboard
+import io.hamlook.aetheria.events.ASMMouseEvent
+import io.hamlook.aetheria.events.ASMKeyEvent
+import io.hamlook.aetheria.events.ASMGuiDrawEvent
+import io.hamlook.aetheria.events.ASMGuiInitPreEvent
 
 @RegisterEvents
 class SlotBinds {
@@ -54,8 +56,8 @@ class SlotBinds {
         this[b] = a
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    fun onMouseClick(event: GuiScreenEvent.MouseInputEvent.Pre) {
+    @HandleEvent(priority = HandleEvent.HIGHEST)
+    fun onMouseClick(event: ASMMouseEvent) {
         if (!isEnabled() || !isShiftDown()) return
         val gui = event.gui as? GuiInventory ?: return
         if (!org.lwjgl.input.Mouse.getEventButtonState() || org.lwjgl.input.Mouse.getEventButton() != 0) return
@@ -68,18 +70,18 @@ class SlotBinds {
         Minecraft.getMinecraft().playerController.windowClick(
             gui.inventorySlots.windowId, from, to - 36, 2, Minecraft.getMinecraft().thePlayer
         )
-        event.isCanceled = true
+        event.cancel()
     }
 
-    @SubscribeEvent
-    fun onKeyPress(event: GuiScreenEvent.KeyboardInputEvent.Pre) {
+    @HandleEvent
+    fun onKeyPress(event: ASMKeyEvent) {
         if (!isEnabled()) return
         val gui = event.gui as? GuiInventory ?: return
         val c = cfg() ?: return
         if (c.bindKey == Keyboard.KEY_NONE || Keyboard.getEventKey() != c.bindKey || !Keyboard.getEventKeyState()) return
 
         val clicked = gui.slotUnderMouse?.slotNumber?.takeIf { it.isValidSlot() } ?: return
-        event.isCanceled = true
+        event.cancel()
 
         val pending = pendingSlot
         if (pending != null) {
@@ -103,8 +105,8 @@ class SlotBinds {
         }
     }
 
-    @SubscribeEvent
-    fun onDraw(event: GuiScreenEvent.DrawScreenEvent.Post) {
+    @HandleEvent
+    fun onDraw(event: ASMGuiDrawEvent) {
         if (!isEnabled()) return
         val gui = event.gui as? GuiInventory ?: return
         val c = cfg() ?: return
@@ -146,8 +148,8 @@ class SlotBinds {
         }
     }
 
-    @SubscribeEvent
-    fun onGuiClose(event: GuiScreenEvent.InitGuiEvent.Pre) {
+    @HandleEvent
+    fun onGuiClose(event: ASMGuiInitPreEvent) {
         if (event.gui == null) pendingSlot = null
     }
 }

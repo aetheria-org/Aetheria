@@ -9,10 +9,11 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.entity.boss.EntityWither
 import net.minecraft.util.EnumChatFormatting
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
-import net.minecraftforge.fml.common.gameevent.TickEvent
+import io.hamlook.aetheria.api.event.HandleEvent
 import org.lwjgl.opengl.GL11
 import kotlin.math.sqrt
+import io.hamlook.aetheria.events.ASMTickEvent
+import net.minecraftforge.fml.common.gameevent.TickEvent
 
 @RegisterEvents
 class CrushAlert : SimpleOverlay() {
@@ -29,8 +30,8 @@ class CrushAlert : SimpleOverlay() {
     private var activePillar: Pillar? = null
     private val config get() = ATHRConfig.feature?.dungeons?.crushAlert
 
-    @SubscribeEvent
-    fun onTick(event: TickEvent.ClientTickEvent) {
+    @HandleEvent
+    fun onTick(event: ASMTickEvent) {
         if (event.phase != TickEvent.Phase.END) return
         val cfg = config ?: return
         if (!cfg.enabled) {

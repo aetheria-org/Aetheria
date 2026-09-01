@@ -9,14 +9,15 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class FarmingTracker {
@@ -144,8 +145,8 @@ public class FarmingTracker {
         return FarmingApi.heldFarmingToolRecently();
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (!isEnabled()) return;
         if (!SkyblockData.isOnSkyblock()) return;
         if (!locationOk()) return;
@@ -177,16 +178,16 @@ public class FarmingTracker {
         updateActivity();
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (!SkyblockData.isOnSkyblock()) return;
         ensureListenerRegistered();
         timerTick();
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         if (ATHRConfig.feature == null) return;
         if (!ATHRConfig.feature.farming.farmingTracker.persistAcrossSessions) {
             reset();

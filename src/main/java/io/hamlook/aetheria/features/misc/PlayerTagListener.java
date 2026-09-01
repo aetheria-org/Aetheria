@@ -8,17 +8,16 @@ import net.minecraft.event.HoverEvent;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.List;
+import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class PlayerTagListener {
 
-    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent(priority = HandleEvent.LOWEST, receiveCancelled = true)
+    public void onChat(ASMChatEvent event) {
         String plain = StringUtils.stripControlCodes(event.message.getFormattedText());
 
         String ign = ChatUtils.getPlayerMessageSender(plain);

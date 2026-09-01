@@ -22,15 +22,17 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.input.Mouse;
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
+import io.hamlook.aetheria.events.ASMMouseEvent;
+import io.hamlook.aetheria.events.ASMGuiDrawPreEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 
 @RegisterEvents
 public class DungeonLeapOverlay {
@@ -59,13 +61,13 @@ public class DungeonLeapOverlay {
         }
     }
 
-    @SubscribeEvent
-    public void onClose(GuiOpenEvent e){
+    @HandleEvent
+    public void onClose(ASMGuiOpenEvent e){
         if(e.gui == null) isLeapGUI = false;
     }
 
-    @SubscribeEvent
-    public void onGui(GuiScreenEvent.BackgroundDrawnEvent event) {
+    @HandleEvent
+    public void onGui(ASMGuiBackgroundDrawEvent event) {
         if (isLeapGUI) return;
         if (!(event.gui instanceof GuiContainer)) return;
         GuiContainer gui = (GuiContainer) event.gui;
@@ -79,11 +81,11 @@ public class DungeonLeapOverlay {
         if (isLeapGUI) leapChest = chest;
     }
 
-    @SubscribeEvent
-    public void onDraw(GuiScreenEvent.DrawScreenEvent.Pre e){
+    @HandleEvent
+    public void onDraw(ASMGuiDrawPreEvent e){
         if(isLeapGUI && e.gui != null && tracker != null){
             Aetheria.logger.fine("[DungeonLeap] Drawing leap overlay");
-            e.setCanceled(true);
+            e.cancel();
             drawLeapGUI(e.mouseX,e.mouseY,e.gui);
         }
     }
@@ -167,8 +169,8 @@ public class DungeonLeapOverlay {
     }
 
 
-    @SubscribeEvent
-    public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
+    @HandleEvent
+    public void onMouseInput(ASMMouseEvent event) {
         if (!isLeapGUI || tracker == null) return;
         if (Mouse.getEventButton() == 0 && Mouse.getEventButtonState()) {
 
@@ -185,7 +187,7 @@ public class DungeonLeapOverlay {
                     Rectangle bounds = grid.getButtonBounds(i);
                     if (bounds.contains(mouseX, mouseY)) {
                         leapToPlayer(players.get(i));
-                        event.setCanceled(true);
+                        event.cancel();
                         return;
                     }
                 }
@@ -205,7 +207,7 @@ public class DungeonLeapOverlay {
 
                     if (checkIfClickedOptimized(posX, posY, yaw, mapLayout.halfHeadPixelSize, mouseX, mouseY)) {
                         leapToPlayer(player);
-                        event.setCanceled(true);
+                        event.cancel();
                         break;
                     }
                 }

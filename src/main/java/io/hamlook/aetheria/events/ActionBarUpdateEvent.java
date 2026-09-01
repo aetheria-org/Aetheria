@@ -1,8 +1,8 @@
 package io.hamlook.aetheria.events;
 
-import net.minecraftforge.fml.common.eventhandler.Event;
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 
-public class ActionBarUpdateEvent extends Event {
+public class ActionBarUpdateEvent extends AetheriaEvent {
 
     private final String text;
 

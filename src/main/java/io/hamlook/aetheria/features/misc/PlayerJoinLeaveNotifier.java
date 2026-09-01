@@ -5,15 +5,16 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class PlayerJoinLeaveNotifier {
@@ -37,8 +38,8 @@ public class PlayerJoinLeaveNotifier {
         return Arrays.stream(raw.split(",")).map(String::trim).filter(s -> !s.isEmpty()).map(String::toLowerCase).collect(Collectors.toSet());
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if ((tickCounter = (tickCounter + 1) % TICK_INTERVAL) != 0) return;
         if (!isEnabled()) return;
@@ -72,8 +73,8 @@ public class PlayerJoinLeaveNotifier {
         }
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         notified.clear();
     }
 }

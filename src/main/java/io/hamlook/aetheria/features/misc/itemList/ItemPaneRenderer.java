@@ -16,8 +16,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
@@ -27,6 +26,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import io.hamlook.aetheria.events.ASMMouseEvent;
+import io.hamlook.aetheria.events.ASMKeyEvent;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiInitEvent;
 
 @RegisterEvents
 public class ItemPaneRenderer {
@@ -182,8 +185,8 @@ private boolean shouldntShow() {
         GlStateManager.popMatrix();
     }
 
-    @SubscribeEvent
-    public void onDraw(GuiScreenEvent.DrawScreenEvent.Post event) {
+    @HandleEvent
+    public void onDraw(ASMGuiDrawEvent event) {
         if (!(event.gui instanceof GuiContainer)) return;
         drawPane(event.gui.width, event.gui.height, event.mouseX, event.mouseY);
     }
@@ -408,8 +411,8 @@ private boolean shouldntShow() {
         mc.fontRendererObj.drawStringWithShadow(text, x - mc.fontRendererObj.getStringWidth(text) / 2f, y, color);
     }
 
-    @SubscribeEvent
-    public void onMouse(GuiScreenEvent.MouseInputEvent.Pre event) {
+    @HandleEvent
+    public void onMouse(ASMMouseEvent event) {
         if (!(event.gui instanceof GuiContainer)) return;
         if (shouldntShow()) return;
 
@@ -418,7 +421,7 @@ private boolean shouldntShow() {
         handleMouseInput(event.gui.width, event.gui.height, mouseX, mouseY, event);
     }
 
-    public void handleMouseInput(int screenW, int screenH, int mouseX, int mouseY, GuiScreenEvent.MouseInputEvent.Pre event) {
+    public void handleMouseInput(int screenW, int screenH, int mouseX, int mouseY, ASMMouseEvent event) {
         if (shouldntShow()) return;
 
         int dw = Mouse.getEventDWheel();
@@ -426,7 +429,7 @@ private boolean shouldntShow() {
             computeGeometry(screenW, screenH);
             if (isInBounds(mouseX, mouseY, paneX, paneY, paneW, paneH)) {
                 currentPage = dw > 0 ? Math.max(0, currentPage - 1) : Math.min(cachedTotalPages - 1, currentPage + 1);
-                if (event != null) event.setCanceled(true);
+                if (event != null) event.cancel();
             }
             return;
         }
@@ -438,7 +441,7 @@ private boolean shouldntShow() {
         handleClick(mouseX, mouseY, Mouse.getEventButton(), event);
     }
 
-    public void handleClick(int mouseX, int mouseY, int btn, GuiScreenEvent.MouseInputEvent.Pre event) {
+    public void handleClick(int mouseX, int mouseY, int btn, ASMMouseEvent event) {
         if (shouldntShow()) return;
 
         if (mouseX < paneX || mouseX >= paneX + paneW || mouseY < paneY || mouseY >= paneY + paneH) return;
@@ -449,12 +452,12 @@ private boolean shouldntShow() {
         int prevX = paneX + PAD, nextX = paneX + paneW - PAD - navBtnW;
         if (isInBounds(mouseX, mouseY, prevX, navY, navBtnW, NAV_H)) {
             currentPage = Math.max(0, currentPage - 1);
-            if (event != null) event.setCanceled(true);
+            if (event != null) event.cancel();
             return;
         }
         if (isInBounds(mouseX, mouseY, nextX, navY, navBtnW, NAV_H)) {
             currentPage = Math.min(cachedTotalPages - 1, currentPage + 1);
-            if (event != null) event.setCanceled(true);
+            if (event != null) event.cancel();
             return;
         }
 
@@ -470,19 +473,19 @@ private boolean shouldntShow() {
             if (mouseX >= rarityX && mouseX < rarityX + btnWidth) {
                 rarityFilterIdx = (rarityFilterIdx + 1) % RARITIES.length;
                 updateSearch(currentSearchQuery());
-                if (event != null) event.setCanceled(true);
+                if (event != null) event.cancel();
                 return;
             }
             if (mouseX >= typeX && mouseX < typeX + btnWidth) {
                 typeFilterIdx = (typeFilterIdx + 1) % TYPES.length;
                 updateSearch(currentSearchQuery());
-                if (event != null) event.setCanceled(true);
+                if (event != null) event.cancel();
                 return;
             }
         }
 
         if (!globalSearch && SearchBar.handleStorageMouseClick(searchField, mouseX, mouseY)) {
-            if (event != null) event.setCanceled(true);
+            if (event != null) event.cancel();
             return;
         }
 
@@ -497,7 +500,7 @@ private boolean shouldntShow() {
                     if (isInBounds(mouseX, mouseY, sx, sy, S(), S())) {
                         if (btn == 1) WikiPane.open(fam.members.get(i));
                         else mc.displayGuiScreen(new RecipeViewerGUI(fam.members.get(i), mc.currentScreen));
-                        if (event != null) event.setCanceled(true);
+                        if (event != null) event.cancel();
                         return;
                     }
                 }
@@ -514,7 +517,7 @@ private boolean shouldntShow() {
                 if (btn == 1) WikiPane.open(fam.representative());
                 else if (!fam.hasDropdown() && fam.representative() != null)
                     mc.displayGuiScreen(new RecipeViewerGUI(fam.representative(), mc.currentScreen));
-                if (event != null) event.setCanceled(true);
+                if (event != null) event.cancel();
                 return;
             }
         }
@@ -530,11 +533,11 @@ private boolean shouldntShow() {
         return false;
     }
 
-    @SubscribeEvent
-    public void onKey(GuiScreenEvent.KeyboardInputEvent.Pre event) {
+    @HandleEvent
+    public void onKey(ASMKeyEvent event) {
         if (!(event.gui instanceof GuiContainer)) return;
         if (shouldntShow()) return;
-        if (processKeyInput()) event.setCanceled(true);
+        if (processKeyInput()) event.cancel();
     }
 
     public void handleKeyInput() {
@@ -542,8 +545,8 @@ private boolean shouldntShow() {
         processKeyInput();
     }
 
-    @SubscribeEvent
-    public void onGuiInit(GuiScreenEvent.InitGuiEvent.Post event) {
+    @HandleEvent
+    public void onGuiInit(ASMGuiInitEvent event) {
         if (!(event.gui instanceof GuiContainer)) return;
         if (ATHRConfig.feature == null) return;
         if (StorageManager.isOverlayActive()) return;

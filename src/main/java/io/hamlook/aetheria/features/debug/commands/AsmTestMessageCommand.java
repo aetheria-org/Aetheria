@@ -9,8 +9,8 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.client.event.ClientChatReceivedEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +18,7 @@ import java.util.List;
 
 /**
  * /asmtestmessage <text> [flags] — posts a fake chat message through the real
- * ClientChatReceivedEvent pipeline, so every @SubscribeEvent chat listener in
+ * ClientChatReceivedEvent pipeline, so every @HandleEvent chat listener in
  * the mod fires exactly like it would for a real server message. Lets you test
  * chat-parsing features without needing the real trigger to happen in-game.
  *

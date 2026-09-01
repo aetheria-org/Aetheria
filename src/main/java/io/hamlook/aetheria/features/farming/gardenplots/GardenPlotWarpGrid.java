@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.farming.gardenplots;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
@@ -17,10 +18,10 @@ import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.Map;
+import io.hamlook.aetheria.events.ASMMouseEvent;
 
 @RegisterEvents
 public class GardenPlotWarpGrid {
@@ -170,7 +171,7 @@ public class GardenPlotWarpGrid {
         return mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onDrawGui(GuiContainerRenderBeforeTooltipEvent event) {
         if (!isEnabled() || !isSupportedGui(event.gui)) return;
         GlStateManager.pushMatrix();
@@ -181,8 +182,8 @@ public class GardenPlotWarpGrid {
         GlStateManager.popMatrix();
     }
 
-    @SubscribeEvent
-    public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
+    @HandleEvent
+    public void onMouseInput(ASMMouseEvent event) {
         if (!isEnabled() || !isSupportedGui(event.gui) || !KeybindHelper.getEventButtonState() || KeybindHelper.getEventButton() != 0) return;
 
         int mouseX = KeybindHelper.getScaledEventX(event.gui.width);
@@ -196,7 +197,7 @@ public class GardenPlotWarpGrid {
                     if (!isPlotHidden(LAYOUT[row][col])) {
                         FarmingApi.warpToPlot(LAYOUT[row][col]);
                     }
-                    event.setCanceled(true);
+                    event.cancel();
                     return;
                 }
             }
@@ -204,7 +205,7 @@ public class GardenPlotWarpGrid {
 
         if (isInside(mouseX, mouseY, gridX, homeY, GRID_SIZE, HOME_HEIGHT)) {
             ChatUtils.sendChatCommand("/warp garden");
-            event.setCanceled(true);
+            event.cancel();
         }
     }
 }

@@ -14,9 +14,7 @@ import net.minecraft.client.gui.GuiPlayerTabOverlay;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.world.WorldSettings;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,6 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMWorldLoadEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class TablistParser {
@@ -438,8 +440,8 @@ public class TablistParser {
         return -1;
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         int interval = worldJoinTime > 0 && System.currentTimeMillis() - worldJoinTime < FAST_PARSE_WINDOW_MS
                 ? FAST_PARSE_INTERVAL
@@ -452,13 +454,13 @@ public class TablistParser {
         parseTablist(mc);
     }
 
-    @SubscribeEvent
-    public void onWorldLoad(WorldEvent.Load event) {
+    @HandleEvent
+    public void onWorldLoad(ASMWorldLoadEvent event) {
         worldJoinTime = System.currentTimeMillis();
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         currentLocation = SkyblockData.Location.NONE;
         activeEvent = null;
         activeEventTimeLeft = null;

@@ -10,7 +10,8 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @RegisterEvents
@@ -32,8 +33,8 @@ public class LockMouse extends SimpleOverlay {
         ChatUtils.sendMessage(PREFIX + (locked ? EnumChatFormatting.GREEN + "Mouse locked." : EnumChatFormatting.RED + "Mouse unlocked."));
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (ATHRConfig.feature == null || mc.thePlayer == null || mc.currentScreen != null) return;
 

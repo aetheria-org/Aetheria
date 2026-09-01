@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.misc
 
+import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.events.SignSubmitEvent
 import io.hamlook.aetheria.init.RegisterEvents
@@ -9,9 +10,8 @@ import io.hamlook.aetheria.utils.Utils
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.inventory.GuiEditSign
 import net.minecraft.util.EnumChatFormatting.*
-import net.minecraftforge.client.event.GuiScreenEvent
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import java.math.BigDecimal
+import io.hamlook.aetheria.events.ASMGuiDrawEvent
 
 @RegisterEvents
 class SignCalculator {
@@ -20,8 +20,8 @@ class SignCalculator {
     private var lastResult: BigDecimal? = null
     private var lastError: String? = null
 
-    @SubscribeEvent
-    fun onSignDrawn(event: GuiScreenEvent.DrawScreenEvent.Post) {
+    @HandleEvent
+    fun onSignDrawn(event: ASMGuiDrawEvent) {
         if (!ATHRConfig.feature.misc.signCalculator) return
 
         val gui = event.gui as? GuiEditSign ?: return
@@ -52,7 +52,7 @@ class SignCalculator {
         Utils.drawStringCentered(rendered, mc.fontRendererObj, gui.width / 2f, 58f, false, 0x808080FF.toInt())
     }
 
-    @SubscribeEvent
+    @HandleEvent
     fun onSignSubmit(event: SignSubmitEvent) {
         if (!ATHRConfig.feature.misc.signCalculator) return
 

@@ -12,8 +12,7 @@ import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -24,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @RegisterEvents
 public class ApiHandler {
@@ -113,8 +114,8 @@ public class ApiHandler {
         return GSON.toJson(new Payload(username, mods, Aetheria.VERSION));
     }
 
-    @SubscribeEvent
-    public void onFirstTick(TickEvent.ClientTickEvent e) {
+    @HandleEvent
+    public void onFirstTick(ASMTickEvent e) {
         if (e.phase != TickEvent.Phase.START) return;
         if (noPriceFetched) return;
         noPriceFetched = true;

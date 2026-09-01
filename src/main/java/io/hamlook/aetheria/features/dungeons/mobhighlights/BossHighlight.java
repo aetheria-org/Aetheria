@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.dungeons.mobhighlights;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
@@ -15,10 +16,7 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.StringUtils;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -26,6 +24,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 @RegisterEvents
 public class BossHighlight {
@@ -34,8 +35,8 @@ public class BossHighlight {
     private volatile Map<EntityLivingBase, BossType> bossMobs = new HashMap<>();
     private int tickCounter = 0;
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (ATHRConfig.feature == null) return;
 
@@ -83,7 +84,7 @@ public class BossHighlight {
         bossMobs = found;
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGH)
+    @HandleEvent(priority = HandleEvent.HIGH)
     public void onRenderEntityModel(RenderEntityModelEvent event) {
         if (ATHRConfig.feature == null) return;
         EntityLivingBase entity = event.getEntity();
@@ -93,8 +94,8 @@ public class BossHighlight {
         renderCleanOutline(event, colorFor(type));
     }
 
-    @SubscribeEvent
-    public void onRenderWorldLast(RenderWorldLastEvent event) {
+    @HandleEvent
+    public void onRenderWorldLast(ASMRenderWorldEvent event) {
         if (ATHRConfig.feature == null) return;
         Map<EntityLivingBase, BossType> snapshot = bossMobs;
         if (snapshot.isEmpty() || mc.thePlayer == null) return;

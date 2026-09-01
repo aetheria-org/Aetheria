@@ -3,14 +3,14 @@ package io.hamlook.aetheria.features.misc.party;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 /**
  * Tracks who is currently in the player's party by parsing Hypixel's party chat
@@ -55,8 +55,8 @@ public class PartyMemberTracker {
         return name != null && partyMembers.contains(name.toLowerCase());
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         String msg = ChatUtils.clean(event);
         Matcher m;
 
@@ -97,8 +97,8 @@ public class PartyMemberTracker {
         }
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         partyLeft();
     }
 

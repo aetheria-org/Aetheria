@@ -1,9 +1,9 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
-public class RenderItemOverlayEvent extends Event {
+public class RenderItemOverlayEvent extends AetheriaEvent {
     public final ItemStack stack;
     public final int x;
     public final int y;

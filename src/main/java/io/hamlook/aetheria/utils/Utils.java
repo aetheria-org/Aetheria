@@ -7,7 +7,6 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.Loader;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -26,11 +25,11 @@ public class Utils {
     private static final FloatBuffer modelviewMatrixOld = BufferUtils.createFloatBuffer(16);
     private static ScaledResolution lastScale = new ScaledResolution(Minecraft.getMinecraft());
 
-    public static boolean overlayShouldRender(RenderGameOverlayEvent.ElementType type, boolean... booleans) {
-        return overlayShouldRender(false, type, RenderGameOverlayEvent.ElementType.HOTBAR, booleans);
+    public static boolean overlayShouldRender(Integer type, boolean... booleans) {
+        return overlayShouldRender(false, type, 9, booleans);
     }
 
-    public static boolean overlayShouldRender(boolean hideOnf3, RenderGameOverlayEvent.ElementType type, RenderGameOverlayEvent.ElementType checkType, boolean... booleans) {
+    public static boolean overlayShouldRender(boolean hideOnf3, Integer type, Integer checkType, boolean... booleans) {
         Minecraft mc = Minecraft.getMinecraft();
         for (boolean aBoolean : booleans) if (!aBoolean) return false;
         if (hideOnf3) {

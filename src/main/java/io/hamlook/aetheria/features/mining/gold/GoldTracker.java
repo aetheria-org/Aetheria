@@ -1,17 +1,19 @@
 package io.hamlook.aetheria.features.mining.gold;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.OreMinedEvent;
 import io.hamlook.aetheria.features.mining.OreBlock;
 import io.hamlook.aetheria.features.misc.itemlog.ItemPickupLog;
 import io.hamlook.aetheria.init.RegisterEvents;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class GoldTracker {
@@ -63,7 +65,7 @@ public class GoldTracker {
         return System.currentTimeMillis() - lastGoldMinedMs < MINING_ACTIVITY_WINDOW_MS;
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onOreMined(OreMinedEvent event) {
         if (!isActive()) return;
         if (event.originalOre == OreBlock.GOLD_ORE || event.originalOre == OreBlock.PURE_GOLD) {
@@ -71,8 +73,8 @@ public class GoldTracker {
         }
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (!isActive()) return;
 
         String raw = event.message.getFormattedText();
@@ -88,8 +90,8 @@ public class GoldTracker {
         }
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (!isActive()) return;
 
@@ -97,8 +99,8 @@ public class GoldTracker {
         GoldStats.getInstance().timerTick();
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         lastGoldMinedMs = 0;
         GoldStats.getInstance().pauseTimer();
     }

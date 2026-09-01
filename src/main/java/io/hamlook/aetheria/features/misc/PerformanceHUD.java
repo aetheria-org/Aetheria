@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.misc;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.utils.Position;
@@ -13,13 +14,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.network.play.client.C16PacketClientStatus;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.List;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class PerformanceHUD extends Overlay {
@@ -74,7 +76,8 @@ public class PerformanceHUD extends Overlay {
 
     @Override
     public Position getPosition() {
-        return ATHRConfig.feature.misc.performanceHudConfig.hudPos;
+        Position pos = ATHRConfig.feature.misc.performanceHudConfig.hudPos;
+        return pos != null ? pos : new Position(2, 2);
     }
 
     @Override
@@ -104,7 +107,7 @@ public class PerformanceHUD extends Overlay {
     @Override
     protected boolean hideOnDebug()  { return ATHRConfig.feature.misc.performanceHudConfig.hideOnDebug; }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onTimeUpdate(PacketReceiveTimeUpdateEvent event) {
         long now = System.currentTimeMillis();
         if (tpsCount > 0) {
@@ -117,15 +120,15 @@ public class PerformanceHUD extends Overlay {
         if (tpsCount < TPS_SAMPLES) tpsCount++;
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onStats(PacketReceiveStatsEvent event) {
         if (pingSentAt < 0) return;
         pingMs = Math.abs(System.nanoTime() - pingSentAt) / 1_000_000.0;
         pingSentAt = -1L;
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.thePlayer == null || mc.thePlayer.sendQueue == null) return;
@@ -142,8 +145,8 @@ public class PerformanceHUD extends Overlay {
         mc.thePlayer.sendQueue.getNetworkManager().sendPacket(new C16PacketClientStatus(C16PacketClientStatus.EnumState.REQUEST_STATS));
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         tpsCount = 0;
         tpsHead = 0;
         currentTps = 20f;
@@ -202,8 +205,9 @@ public class PerformanceHUD extends Overlay {
         lastH = h;
 
         Position pos = getPosition();
-        int x = pos.getAbsX(sr, (int) (w * scale));
-        int y = pos.getAbsY(sr, (int) (h * scale));
+        ScaledResolution resolution = currentSr();
+        int x = pos.getAbsX(resolution, (int) (w * scale));
+        int y = pos.getAbsY(resolution, (int) (h * scale));
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 

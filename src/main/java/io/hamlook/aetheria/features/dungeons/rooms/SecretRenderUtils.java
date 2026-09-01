@@ -4,6 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.ActionBarUpdateEvent;
 import io.hamlook.aetheria.events.BlockBreakEvent;
 import io.hamlook.aetheria.features.waypoints.WaypointRenderer;
@@ -13,6 +15,7 @@ import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import io.netty.util.internal.ConcurrentSet;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.World;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.item.EntityTNTPrimed;
 import net.minecraft.entity.passive.EntityBat;
@@ -22,19 +25,20 @@ import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMPlayerInteractEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
 import java.awt.Color;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import java.util.Map;
 import java.util.HashMap;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMEntityJoinWorldEvent;
+import io.hamlook.aetheria.events.ASMLivingDeathEvent;
 
 @RegisterEvents
 public class SecretRenderUtils {
@@ -259,8 +263,8 @@ public class SecretRenderUtils {
             && !currentSecrets.isEmpty();
     }
 
-    @SubscribeEvent
-    public void onPlayerTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onPlayerTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
         if (mc.thePlayer == null || !isInDungeonContext()) return;
 
@@ -335,7 +339,7 @@ public class SecretRenderUtils {
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onActionBar(ActionBarUpdateEvent event) {
         if (mc.thePlayer == null || currentSecrets.isEmpty()) return;
 
@@ -361,8 +365,8 @@ public class SecretRenderUtils {
         }
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (!ChatUtils.isFromServer(event)) return;
         String clean = ChatUtils.clean(event);
         if (clean.equalsIgnoreCase("This chest is locked")) {
@@ -375,12 +379,14 @@ public class SecretRenderUtils {
         }
     }
 
-    @SubscribeEvent
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        if (event.world == null || event.action != PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK) return;
+    @HandleEvent
+    public void onPlayerInteract(ASMPlayerInteractEvent event) {
+        if (event.action != 1) return;
         if (event.pos == null || currentSecrets.isEmpty()) return;
 
         BlockPos clickedPos = event.pos;
+        World world = Minecraft.getMinecraft().theWorld;
+        if (world == null) return;
 
         double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.interactRemovalRange;
 
@@ -391,20 +397,20 @@ public class SecretRenderUtils {
             if (dist > range) continue;
 
             if ("chest".equals(sw.category)) {
-                    Block b = event.world.getBlockState(clickedPos).getBlock();
+                    Block b = world.getBlockState(clickedPos).getBlock();
                     if (b == Blocks.chest || b == Blocks.trapped_chest || b == Blocks.ender_chest) {
                         sw.collected = true;
                         chestPendingRestore.put(sw, 2);
                     }
             } else if ("lever".equals(sw.category)) {
-                if (event.world.getBlockState(clickedPos).getBlock() == Blocks.lever) {
+                if (world.getBlockState(clickedPos).getBlock() == Blocks.lever) {
                     sw.collected = true;
                 }
             }
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onBlockBreak(BlockBreakEvent event) {
         if (mc.theWorld == null || currentSecrets.isEmpty()) return;
 
@@ -416,8 +422,8 @@ public class SecretRenderUtils {
         }
     }
 
-    @SubscribeEvent
-    public void onEntityJoinWorld(EntityJoinWorldEvent event) {
+    @HandleEvent
+    public void onEntityJoinWorld(ASMEntityJoinWorldEvent event) {
         if (mc.theWorld == null || currentSecrets.isEmpty()) return;
         if (!(event.entity instanceof EntityTNTPrimed)) return;
 
@@ -434,8 +440,8 @@ public class SecretRenderUtils {
         }
     }
 
-    @SubscribeEvent
-    public void onLivingDeath(LivingDeathEvent event) {
+    @HandleEvent
+    public void onLivingDeath(ASMLivingDeathEvent event) {
         if (mc.theWorld == null || currentSecrets.isEmpty()) return;
         if (!(event.entity instanceof EntityBat)) return;
         if (!DungeonRoomDetector.roomBoundsValid) return;

@@ -10,14 +10,14 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntUnaryOperator;
+import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
 
 public abstract class Overlay {
 
@@ -28,6 +28,10 @@ public abstract class Overlay {
 
     protected static final Minecraft mc = Minecraft.getMinecraft();
     protected static ScaledResolution sr;
+
+    protected static ScaledResolution currentSr() {
+        return sr != null ? sr : new ScaledResolution(mc);
+    }
 
     protected int lastW;
     protected int lastH;
@@ -259,9 +263,9 @@ public abstract class Overlay {
         mc.fontRendererObj.drawStringWithShadow(line, x, y, 0xFFFFFF);
     }
 
-    @SubscribeEvent
-    public final void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
+    @HandleEvent
+    public final void onRenderOverlay(ASMRenderOverlayEvent event) {
+        if (event.type != 0) return;
         sr = event.resolution;
         if (!isLiveActive()) return;
         render(false);
@@ -320,8 +324,9 @@ public abstract class Overlay {
         lastH = h;
 
         Position pos = getPosition();
-        int x = pos.getAbsX(sr, (int) (w * scale));
-        int y = pos.getAbsY(sr, (int) (h * scale));
+        ScaledResolution resolution = currentSr();
+        int x = pos.getAbsX(resolution, (int) (w * scale));
+        int y = pos.getAbsY(resolution, (int) (h * scale));
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 

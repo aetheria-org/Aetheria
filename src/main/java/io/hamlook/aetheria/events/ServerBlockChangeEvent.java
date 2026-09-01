@@ -1,11 +1,11 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockPos;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
-public class ServerBlockChangeEvent extends Event {
+public class ServerBlockChangeEvent extends AetheriaEvent {
 
     public final BlockPos pos;
     public final IBlockState newState;

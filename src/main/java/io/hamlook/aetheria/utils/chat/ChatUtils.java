@@ -6,13 +6,13 @@ import net.minecraft.client.gui.GuiChat;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMChatEvent;
 
 
 public class ChatUtils {
@@ -35,7 +35,7 @@ public class ChatUtils {
     private ChatUtils() {
     }
 
-    public static String clean(ClientChatReceivedEvent event) {
+    public static String clean(ASMChatEvent event) {
         return StringUtils.stripControlCodes(event.message.getFormattedText()).trim();
     }
 
@@ -44,7 +44,7 @@ public class ChatUtils {
         return mc != null && mc.currentScreen instanceof GuiChat;
     }
 
-    public static boolean isFromServer(ClientChatReceivedEvent event) {
+    public static boolean isFromServer(ASMChatEvent event) {
         return event.type == 0 || event.type == 1;
     }
 

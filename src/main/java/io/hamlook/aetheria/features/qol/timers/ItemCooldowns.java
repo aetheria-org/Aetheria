@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.qol.timers;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.ActionBarUpdateEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.repo.ATHRRepo;
@@ -9,12 +10,12 @@ import io.hamlook.aetheria.repo.data.TimerData;
 import io.hamlook.aetheria.utils.item.ItemStackFinder;
 import io.hamlook.aetheria.utils.time.TimerManager;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class ItemCooldowns {
@@ -78,8 +79,8 @@ public class ItemCooldowns {
         return ItemStackFinder.findItemStack(itemId);
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (event.type == 2) return;
         String msg = event.message.getFormattedText();
         for (ChatTrigger t : chatTriggers) {
@@ -92,7 +93,7 @@ public class ItemCooldowns {
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onActionBar(ActionBarUpdateEvent event) {
         String msg = event.getText();
         for (ChatTrigger t : actionBarTriggers) {

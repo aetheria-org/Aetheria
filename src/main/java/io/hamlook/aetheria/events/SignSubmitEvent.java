@@ -1,9 +1,9 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import net.minecraft.client.gui.inventory.GuiEditSign;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
-public class SignSubmitEvent extends Event {
+public class SignSubmitEvent extends AetheriaEvent {
     public final GuiEditSign sign;
     public final String[] lines;
 

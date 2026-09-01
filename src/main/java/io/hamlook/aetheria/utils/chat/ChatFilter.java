@@ -1,13 +1,12 @@
 package io.hamlook.aetheria.utils.chat;
 
 import io.hamlook.aetheria.init.RegisterEvents;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMChatEvent;
 
 
 @RegisterEvents
@@ -43,14 +42,14 @@ public class ChatFilter {
     }
 
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent(priority = HandleEvent.LOWEST)
+    public void onChat(ASMChatEvent event) {
         if (FILTERS.isEmpty()) return;
 
         String raw = event.message.getFormattedText();
         for (Predicate<String> filter : FILTERS.values()) {
             if (filter.test(raw)) {
-                event.setCanceled(true);
+                event.cancel();
                 return;
             }
         }

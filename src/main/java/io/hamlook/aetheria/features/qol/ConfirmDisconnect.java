@@ -4,8 +4,10 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.init.RegisterEvents;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiIngameMenu;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiInitEvent;
+import io.hamlook.aetheria.events.ASMActionPerformedEvent;
 
 @RegisterEvents
 public class ConfirmDisconnect {
@@ -14,8 +16,8 @@ public class ConfirmDisconnect {
     private long lastClick = 0L;
     private GuiButton disconnectButton = null;
 
-    @SubscribeEvent
-    public void onGuiInit(GuiScreenEvent.InitGuiEvent.Post event) {
+    @HandleEvent
+    public void onGuiInit(ASMGuiInitEvent event) {
         if (!(event.gui instanceof GuiIngameMenu)) return;
 
         confirm = false;
@@ -31,8 +33,8 @@ public class ConfirmDisconnect {
         }
     }
 
-    @SubscribeEvent
-    public void onAction(GuiScreenEvent.ActionPerformedEvent.Pre event) {
+    @HandleEvent
+    public void onAction(ASMActionPerformedEvent event) {
         if (!(event.gui instanceof GuiIngameMenu)) return;
 
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.confirmDisconnect) return;
@@ -44,7 +46,7 @@ public class ConfirmDisconnect {
         }
 
         if (!confirm) {
-            event.setCanceled(true);
+            event.cancel();
 
             confirm = true;
             lastClick = System.currentTimeMillis();
@@ -55,8 +57,8 @@ public class ConfirmDisconnect {
         }
     }
 
-    @SubscribeEvent
-    public void onDraw(GuiScreenEvent.DrawScreenEvent.Post event) {
+    @HandleEvent
+    public void onDraw(ASMGuiDrawEvent event) {
         if (!(event.gui instanceof GuiIngameMenu)) return;
 
         if (confirm && System.currentTimeMillis() - lastClick > 2000L) {

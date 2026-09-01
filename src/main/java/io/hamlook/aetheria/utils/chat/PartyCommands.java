@@ -5,8 +5,8 @@ import io.hamlook.aetheria.features.diana.DianaTracker;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.init.RegisterEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class PartyCommands {
@@ -19,8 +19,8 @@ public class PartyCommands {
         return "Aetheria v" + Aetheria.VERSION;
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
      //   if (ChatUtils.isFromServer(event)) return;
         String msg = ChatUtils.clean(event);
         if (!ChatUtils.isPartyMessage(msg)) return;

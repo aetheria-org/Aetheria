@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.farming.visitors;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.VisitorsConfig;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
@@ -21,13 +22,14 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.event.ClickEvent;
 import net.minecraft.event.HoverEvent;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import lombok.Getter;
 import org.lwjgl.input.Mouse;
 
 import java.util.ArrayList;
 import java.util.List;
+import io.hamlook.aetheria.events.ASMMouseEvent;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
 
 public abstract class VisitorPanelBase {
 
@@ -73,13 +75,13 @@ public abstract class VisitorPanelBase {
         this.blockReason = "";
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onContainerRender(GuiContainerRenderBeforeTooltipEvent event) {
         render(event.gui, event.mouseX, event.mouseY, true);
     }
 
-    @SubscribeEvent
-    public void onDraw(GuiScreenEvent.DrawScreenEvent.Post event) {
+    @HandleEvent
+    public void onDraw(ASMGuiDrawEvent event) {
         if (!(event.gui instanceof GuiEditSign)) return;
         render(event.gui, event.mouseX, event.mouseY, false);
     }
@@ -273,8 +275,8 @@ public abstract class VisitorPanelBase {
         return ATHRConfig.feature == null ? null : ATHRConfig.feature.farming.visitors.panel;
     }
 
-    @SubscribeEvent
-    public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
+    @HandleEvent
+    public void onMouseInput(ASMMouseEvent event) {
         if (clickTargets.isEmpty()) return;
         boolean visible = panelEnabled();
         if (!visible) return;
@@ -285,7 +287,7 @@ public abstract class VisitorPanelBase {
         int my = mc.currentScreen.height - Mouse.getEventY() * mc.currentScreen.height / mc.displayHeight - 1;
         for (Clickable clickable : clickTargets) {
             if (clickable.contains(mx, my)) {
-                event.setCanceled(true);
+                event.cancel();
                 VisitorShoppingList.onRowClick(clickable.itemId, clickable.amount);
                 return;
             }

@@ -10,13 +10,14 @@ import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.*;
 import java.util.function.BiConsumer;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 
 @RegisterEvents
 public class ItemPickupLog extends Overlay {
@@ -109,8 +110,8 @@ public class ItemPickupLog extends Overlay {
     @Override
     protected boolean hideOnDebug()  { return ATHRConfig.feature.misc.itemPickupLogConfig.hideOnDebug; }
 
-    @SubscribeEvent
-    public void onGuiOpen(GuiOpenEvent event) {
+    @HandleEvent
+    public void onGuiOpen(ASMGuiOpenEvent event) {
         if (!SkyblockData.isOnSkyblock()) return;
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.thePlayer == null) return;
@@ -130,8 +131,8 @@ public class ItemPickupLog extends Overlay {
         }
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
 
         Minecraft mc = Minecraft.getMinecraft();
@@ -155,8 +156,8 @@ public class ItemPickupLog extends Overlay {
         previousInventory = copyInventory(current);
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         resetSnapshot();
     }
 

@@ -11,7 +11,6 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.SoundUtils;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -24,10 +23,8 @@ import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntitySign;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -38,6 +35,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.ASMServerJoinEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 
 @RegisterEvents
 public final class VisitorShoppingList {
@@ -69,7 +71,7 @@ public final class VisitorShoppingList {
         VisitorBazaarHighlight.register();
     }
 
-    public static void onServerJoined(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+    public static void onServerJoined(ASMServerJoinEvent event) {
         String address = event.manager == null ? "" : String.valueOf(event.manager.getRemoteAddress());
         boolean addressChanged = lastRemoteAddress != null && !lastRemoteAddress.equals(address);
         lastRemoteAddress = address;
@@ -80,13 +82,17 @@ public final class VisitorShoppingList {
         }
     }
 
-    @SubscribeEvent
-    public void onUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onUnload(ASMWorldUnloadEvent event) {
         lastParsedScreen = null;
         pendingScreen = null;
         pendingBzsCommand = null;
         signSubmitAtMs = 0L;
         pendingSubmitSign = null;
+        int mode = config() != null ? config().resetMode : 2;
+        if (mode != 1) {
+            FarmingApi.clearVisitorData();
+        }
     }
 
     private static void clearTransientState() {
@@ -99,8 +105,8 @@ public final class VisitorShoppingList {
         pendingSubmitSign = null;
     }
 
-    @SubscribeEvent
-    public void onBackgroundDrawn(GuiScreenEvent.BackgroundDrawnEvent event) {
+    @HandleEvent
+    public void onBackgroundDrawn(ASMGuiBackgroundDrawEvent event) {
         if (!(event.gui instanceof GuiContainer)) return;
         GuiContainer gui = (GuiContainer) event.gui;
         if (!(gui.inventorySlots instanceof ContainerChest)) return;
@@ -126,8 +132,8 @@ public final class VisitorShoppingList {
                 && FarmingApi.isSearchFresh(SEARCH_TTL_MS);
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getMinecraft();
 
@@ -155,7 +161,7 @@ public final class VisitorShoppingList {
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onDebugReport(DebugReportEvent event) {
         event.title("Visitors");
         List<String> lines = new ArrayList<>();
@@ -284,9 +290,9 @@ public final class VisitorShoppingList {
         return wantsCost / copper;
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onSlotClick(io.hamlook.aetheria.events.SlotClickEvent event) {
-        if (event.isCanceled()) return;
+        if (event.isCancelled()) return;
         if (event.getSlot() == null) return;
         ItemStack stack = event.getSlot().getStack();
         if (stack == null) return;
@@ -316,7 +322,7 @@ public final class VisitorShoppingList {
                 FarmingApi.markVisitorCompleted(visitor);
                 return;
             }
-            event.setCanceled(true);
+            event.cancel();
             PENDING_CONFIRMS.put(visitor, new PendingConfirm(confirmType, now));
             SoundUtils.playSound("note.pling");
             String fmt = formatPrice(per);

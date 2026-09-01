@@ -10,11 +10,10 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.List;
+import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class ChatPingListener {
@@ -23,8 +22,8 @@ public class ChatPingListener {
 
     private static final EnumChatFormatting[] COLORS = {null, EnumChatFormatting.YELLOW, EnumChatFormatting.RED, EnumChatFormatting.AQUA, EnumChatFormatting.GREEN, EnumChatFormatting.LIGHT_PURPLE, EnumChatFormatting.GOLD, EnumChatFormatting.WHITE};
 
-    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent(priority = HandleEvent.LOWEST, receiveCancelled = true)
+    public void onChat(ASMChatEvent event) {
         if (ATHRConfig.feature == null) return;
         ChatPingConfig cfg = ATHRConfig.feature.chat.chatPingConfig;
         if (!cfg.chatPing) return;

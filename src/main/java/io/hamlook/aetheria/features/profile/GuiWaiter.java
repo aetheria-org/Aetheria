@@ -7,13 +7,14 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Consumer;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
 
 public class GuiWaiter {
 
@@ -193,8 +194,8 @@ public class GuiWaiter {
 
     // ── Chat Interceptor (For Empty Storage Aborts) ───────────────────────────
 
-    @SubscribeEvent
-    public void onChatReceived(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChatReceived(ASMChatEvent event) {
         if (event.type == 2) return; // Ignore Action bar messages
         if (queue.isEmpty()) return;
 
@@ -221,8 +222,8 @@ public class GuiWaiter {
 
     // ── Tick handler ──────────────────────────────────────────────────────────
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
         if (queue.isEmpty()) return;
 

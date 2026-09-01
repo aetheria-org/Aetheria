@@ -4,12 +4,13 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityArmorStand;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.*;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
+import io.hamlook.aetheria.events.ASMEntityJoinWorldEvent;
 
 @RegisterEvents
 public class LootshareDetect {
@@ -83,8 +84,8 @@ public class LootshareDetect {
         return closest != null ? closest.getCustomNameTag() : null;
     }
 
-    @SubscribeEvent
-    public void onEntityJoin(EntityJoinWorldEvent event) {
+    @HandleEvent
+    public void onEntityJoin(ASMEntityJoinWorldEvent event) {
         if (mc.theWorld == null) return;
         if (!(event.entity instanceof EntityArmorStand)) return;
         // Only bother tracking if spade in hotbar (diana active) or a mob was just dug
@@ -92,8 +93,8 @@ public class LootshareDetect {
             unconfirmed.put(event.entity.getEntityId(), System.currentTimeMillis());
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (mc.theWorld == null || mc.thePlayer == null) return;
         long now = System.currentTimeMillis();
@@ -101,8 +102,8 @@ public class LootshareDetect {
         checkTracked();
     }
 
-    @SubscribeEvent
-    public void onDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+    @HandleEvent
+    public void onDisconnect(ASMServerDisconnectEvent event) {
         unconfirmed.clear();
         tracked.clear();
         trackedInqs.clear();

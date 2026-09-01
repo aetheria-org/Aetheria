@@ -9,10 +9,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.MovingObjectPosition;
-import net.minecraftforge.client.event.DrawBlockHighlightEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.awt.*;
+import io.hamlook.aetheria.events.ASMBlockHighlightEvent;
 
 @RegisterEvents
 public class BlockOverlay {
@@ -28,12 +28,12 @@ public class BlockOverlay {
         return aabb != null ? aabb : new AxisAlignedBB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1);
     }
 
-    @SubscribeEvent
-    public void onDrawBlockHighlight(DrawBlockHighlightEvent event) {
+    @HandleEvent
+    public void onDrawBlockHighlight(ASMBlockHighlightEvent event) {
         if (!ATHRConfig.feature.qol.blockSelection.blockSelectionOverlay) return;
         if (event.target == null || event.target.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) return;
 
-        event.setCanceled(true);
+        event.cancel();
 
         int argb = ChromaColour.specialToChromaRGB(ATHRConfig.feature.qol.blockSelection.blockSelectionColor);
         Color color = new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);

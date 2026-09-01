@@ -15,15 +15,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class SkyblockTooltips {
@@ -35,8 +35,8 @@ public class SkyblockTooltips {
 
     private int tickCounter = 0;
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onTooltip(ItemTooltipEvent e) {
+    @HandleEvent(priority = HandleEvent.HIGHEST)
+    public void onTooltip(ASMTooltipEvent e) {
         if (e.toolTip == null || e.itemStack == null) return;
         if (ATHRConfig.feature == null) return;
 
@@ -127,8 +127,8 @@ public class SkyblockTooltips {
         return null;
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent e) {
+    @HandleEvent
+    public void onTick(ASMTickEvent e) {
         if (e.phase != TickEvent.Phase.START) return;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.romanNumerals) return;
         if (++tickCounter % 20 != 0) return;

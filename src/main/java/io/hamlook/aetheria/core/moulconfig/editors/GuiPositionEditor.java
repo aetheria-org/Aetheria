@@ -11,7 +11,6 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 
 import java.io.IOException;
 import java.util.function.IntSupplier;
@@ -108,7 +107,7 @@ public class GuiPositionEditor extends GuiScreen {
 
         scaledResolution = new ScaledResolution(Minecraft.getMinecraft());
         Utils.drawStringCentered("Position Editor", Minecraft.getMinecraft().fontRendererObj, scaledResolution.getScaledWidth() / 2, 8, true, 0xffffff);
-        Utils.drawStringCentered("R to Reset - Arrow keys/mouse to move", Minecraft.getMinecraft().fontRendererObj, scaledResolution.getScaledWidth() / 2, 18, true, 0xffffff);
+        Utils.drawStringCentered("R to Reset - Arrow keys/mouse to move", Minecraft.getMinecraft().fontRendererObj, (float) scaledResolution.getScaledWidth() / 2, 18, true, 0xffffff);
     }
 
     @Override

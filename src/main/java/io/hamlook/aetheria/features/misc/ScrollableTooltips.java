@@ -3,10 +3,11 @@ package io.hamlook.aetheria.features.misc;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @RegisterEvents
 public class ScrollableTooltips {
@@ -74,8 +75,8 @@ public class ScrollableTooltips {
         }
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
 
         handleScroll();

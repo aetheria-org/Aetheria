@@ -20,28 +20,28 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 
 @RegisterEvents
 public class DungeonRewardProfitEstimator {
 
     public static HashMap<String,RewardEstimate> cache = new HashMap<>();
 
-    @SubscribeEvent
-    public void onUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onUnload(ASMWorldUnloadEvent event) {
         cache.clear();
     }
 
 
-    @SubscribeEvent
-    public void onDraw(GuiScreenEvent.BackgroundDrawnEvent event) {
+    @HandleEvent
+    public void onDraw(ASMGuiBackgroundDrawEvent event) {
         if(!ATHRConfig.feature.dungeons.priceEstimator.rewardProfitEstimator) return;
         if(!(event.gui instanceof GuiContainer)) return;
         GuiContainer container = (GuiContainer) event.gui;

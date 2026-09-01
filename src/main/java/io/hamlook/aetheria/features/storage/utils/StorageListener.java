@@ -14,12 +14,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.inventory.ContainerChest;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.input.Mouse;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
+import io.hamlook.aetheria.events.ASMMouseEvent;
+import io.hamlook.aetheria.events.ASMKeyEvent;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 
 @RegisterEvents
 public class StorageListener {
@@ -29,8 +32,8 @@ public class StorageListener {
     private boolean shouldRenderOverlay = false;
     private boolean overlayInitialized = false;
 
-    @SubscribeEvent
-    public void onChatMessage(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChatMessage(ASMChatEvent event) {
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!shouldRenderOverlay || !overlayInitialized) return;
 
@@ -42,8 +45,8 @@ public class StorageListener {
         }
     }
 
-    @SubscribeEvent
-    public void onGuiOpen(GuiOpenEvent event) {
+    @HandleEvent
+    public void onGuiOpen(ASMGuiOpenEvent event) {
         if (!ATHRConfig.feature.storage.enabled) return;
 
         if (event.gui == null) {
@@ -110,8 +113,8 @@ public class StorageListener {
         return StorageGuiType.OTHER;
     }
 
-    @SubscribeEvent
-    public void onBackgroundDrawn(GuiScreenEvent.BackgroundDrawnEvent event) {
+    @HandleEvent
+    public void onBackgroundDrawn(ASMGuiBackgroundDrawEvent event) {
         if (!shouldRenderOverlay) return;
         if (!ATHRConfig.feature.storage.enabled) return;
 
@@ -128,8 +131,8 @@ public class StorageListener {
         }
     }
 
-    @SubscribeEvent
-    public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
+    @HandleEvent
+    public void onMouseInput(ASMMouseEvent event) {
         if (!shouldRenderOverlay || !overlayInitialized) return;
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!ContainerUtils.isChestOpen(event.gui)) return;
@@ -141,12 +144,12 @@ public class StorageListener {
         int mouseX = mouse[0], mouseY = mouse[1];
   
          if (handleScrollInput()) {
-            event.setCanceled(true);
+            event.cancel();
             return;
         }
 
         if (handleClickInput(mouseX, mouseY, guiChest)) {
-            event.setCanceled(true);
+            event.cancel();
         }
     }
 
@@ -203,8 +206,8 @@ public class StorageListener {
         return false;
     }
 
-    @SubscribeEvent
-    public void onKeyboardInput(GuiScreenEvent.KeyboardInputEvent.Pre event) {
+    @HandleEvent
+    public void onKeyboardInput(ASMKeyEvent event) {
         if (!shouldRenderOverlay || !overlayInitialized) return;
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!ContainerUtils.isChestOpen(event.gui)) return;
@@ -218,12 +221,12 @@ public class StorageListener {
         char typedChar = org.lwjgl.input.Keyboard.getEventCharacter();
 
         if (StorageManager.handleKeyTyped(typedChar, keyCode)) {
-            event.setCanceled(true);
+            event.cancel();
         }
     }
 
-    @SubscribeEvent
-    public void onDrawScreen(GuiScreenEvent.DrawScreenEvent.Post event) {
+    @HandleEvent
+    public void onDrawScreen(ASMGuiDrawEvent event) {
         if (!shouldRenderOverlay || !overlayInitialized) return;
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!ContainerUtils.isChestOpen(event.gui)) return;
@@ -233,9 +236,9 @@ public class StorageListener {
         ItemRenderUtils.renderHeldCursorItem();
     }
 
-    @SubscribeEvent
-    public void onRenderGameOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
+    @HandleEvent
+    public void onRenderGameOverlay(ASMRenderOverlayEvent event) {
+        if (event.type != 0) return;
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!switchingContainer || !overlayInitialized || !StorageManager.isOverlayActive()) return;
         if (Minecraft.getMinecraft().currentScreen != null) return;

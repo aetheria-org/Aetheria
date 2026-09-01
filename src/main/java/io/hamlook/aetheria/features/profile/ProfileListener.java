@@ -2,14 +2,13 @@ package io.hamlook.aetheria.features.profile;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.init.RegisterEvents;
-import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.inventory.ContainerChest;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.Arrays;
 import java.util.List;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 
 @RegisterEvents
 public class ProfileListener {
@@ -22,8 +21,8 @@ public class ProfileListener {
             "View Foraging Collections","View Fishing Collections","View Boss Collections"
     );
 
-    @SubscribeEvent
-    public void onGuiOpen(GuiOpenEvent event) {
+    @HandleEvent
+    public void onGuiOpen(ASMGuiOpenEvent event) {
         if (event.gui == null) {
             if(!ProfileParser.parsing && !ProfileParser.lastCachedProfile.isEmpty()) {
                 Aetheria.logger.info("Refreshing Cache");

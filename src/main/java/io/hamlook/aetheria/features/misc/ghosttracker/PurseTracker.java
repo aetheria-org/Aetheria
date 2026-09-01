@@ -3,7 +3,6 @@ package io.hamlook.aetheria.features.misc.ghosttracker;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.events.ScavengerGainEvent;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import net.minecraftforge.common.MinecraftForge;
 
 public class PurseTracker {
     private static final long KILL_WINDOW_MS = 5000;
@@ -24,7 +23,7 @@ public class PurseTracker {
 
         if (scavengerGain != lastRecordedGain && isValidGain(scavengerGain)) {
             lastRecordedGain = scavengerGain;
-            MinecraftForge.EVENT_BUS.post(new ScavengerGainEvent(scavengerGain));
+            new ScavengerGainEvent(scavengerGain).post();
         }
     }
 

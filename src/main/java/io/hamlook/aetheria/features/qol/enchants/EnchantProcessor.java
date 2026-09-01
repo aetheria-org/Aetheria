@@ -20,13 +20,12 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class EnchantProcessor {
@@ -44,8 +43,8 @@ public class EnchantProcessor {
     private static final Cache LORE_CACHE = new Cache();
     private static String lastLoadedJson = null;
 
-    @SubscribeEvent(priority = EventPriority.LOW)
-    public void onTooltip(ItemTooltipEvent event) {
+    @HandleEvent(priority = HandleEvent.LOW)
+    public void onTooltip(ASMTooltipEvent event) {
         if (event == null || event.itemStack == null || event.toolTip == null || ATHRConfig.feature == null) return;
         if (!ATHRConfig.feature.qol.enchantParser.enchantHighlight) return;
 

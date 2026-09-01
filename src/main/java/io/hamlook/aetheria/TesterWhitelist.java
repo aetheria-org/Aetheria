@@ -1,13 +1,14 @@
 package io.hamlook.aetheria;
 
 import com.google.gson.JsonParser;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMServerJoinEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -69,8 +70,8 @@ public class TesterWhitelist {
         FMLCommonHandler.instance().exitJava(1, true);
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (!isAlpha || event.phase != TickEvent.Phase.START) return;
 
         tickCounter++;
@@ -81,8 +82,8 @@ public class TesterWhitelist {
         }
     }
 
-    @SubscribeEvent
-    public void onServerJoin(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+    @HandleEvent
+    public void onServerJoin(ASMServerJoinEvent event) {
         if (!isAlpha) return;
         checkWhitelist();
     }

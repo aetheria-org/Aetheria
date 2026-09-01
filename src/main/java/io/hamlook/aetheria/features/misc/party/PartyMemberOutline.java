@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.misc.party;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
@@ -9,8 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -29,7 +29,7 @@ public class PartyMemberOutline {
 
     private static final Minecraft mc = Minecraft.getMinecraft();
 
-    @SubscribeEvent(priority = EventPriority.HIGH)
+    @HandleEvent(priority = HandleEvent.HIGH)
     public void onRenderEntityModel(RenderEntityModelEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.misc.partyMemberOutline.enabled) return;
 

@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.init;
 
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.AetheriaEventBus;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.command.ICommand;
 import net.minecraftforge.client.ClientCommandHandler;
@@ -54,7 +55,9 @@ public class EventRegistrar {
     public static void reloadAllListeners() {
         for (Object instance : REGISTERED_EVENT_INSTANCES) {
             MinecraftForge.EVENT_BUS.unregister(instance);
+            AetheriaEventBus.INSTANCE.unregister(instance);
             MinecraftForge.EVENT_BUS.register(instance);
+            AetheriaEventBus.INSTANCE.register(instance);
         }
     }
 
@@ -82,6 +85,7 @@ public class EventRegistrar {
         try {
             Object instance = newInstance(clazz);
             MinecraftForge.EVENT_BUS.register(instance);
+            AetheriaEventBus.INSTANCE.register(instance);
             REGISTERED_EVENT_INSTANCES.add(instance);
         } catch (Throwable t) {
             Aetheria.logger.severe("[ATHR] Failed to register events for " + clazz.getName() + ": " + t.getMessage());
@@ -129,6 +133,7 @@ public class EventRegistrar {
                     ClientCommandHandler.instance.registerCommand((ICommand) instance);
                 } else {
                     MinecraftForge.EVENT_BUS.register(instance);
+                    AetheriaEventBus.INSTANCE.register(instance);
                     REGISTERED_EVENT_INSTANCES.add(instance);
                 }
             } catch (Throwable t) {

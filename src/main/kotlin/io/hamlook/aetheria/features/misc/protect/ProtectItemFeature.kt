@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.misc.protect
 
+import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.Resources
 import io.hamlook.aetheria.events.ItemTossEvent
@@ -14,10 +15,9 @@ import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.item.ItemStack
 import net.minecraft.util.ChatComponentText
 import net.minecraft.util.EnumChatFormatting
-import net.minecraftforge.fml.common.eventhandler.EventPriority
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
-import net.minecraftforge.fml.common.gameevent.TickEvent
 import org.lwjgl.input.Keyboard
+import io.hamlook.aetheria.events.ASMTickEvent
+import net.minecraftforge.fml.common.gameevent.TickEvent
 
 @RegisterEvents
 class ProtectItemFeature {
@@ -53,8 +53,8 @@ class ProtectItemFeature {
 
     private var keyWasDown = false
 
-    @SubscribeEvent
-    fun onClientTick(event: TickEvent.ClientTickEvent) {
+    @HandleEvent
+    fun onClientTick(event: ASMTickEvent) {
         if (event.phase != TickEvent.Phase.END) return
         if (mc.thePlayer == null || mc.currentScreen != null) return
 
@@ -74,17 +74,17 @@ class ProtectItemFeature {
     }
 
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    @HandleEvent(priority = HandleEvent.HIGHEST)
     fun onItemDrop(event: ItemTossEvent) {
         val stack = event.item ?: return
         if (!isProtected(stack)) return
 
-        event.isCanceled = true
+        event.cancel()
         notifyBlocked(stack.displayName, "dropped")
     }
 
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    @HandleEvent(priority = HandleEvent.HIGHEST)
     fun onSlotClick(event: SlotClickEvent) {
         // Case 1: Click outside window (throws cursor item)
         if (isClickOutsideWindow(event)) {
@@ -113,7 +113,7 @@ class ProtectItemFeature {
         val cursorItem = mc.thePlayer?.inventory?.itemStack ?: return
         if (!isProtected(cursorItem)) return
 
-        event.isCanceled = true
+        event.cancel()
         notifyBlocked(cursorItem.displayName, "thrown away")
     }
 
@@ -129,7 +129,7 @@ class ProtectItemFeature {
         val stack = slot.stack ?: return
         if (!isProtected(stack)) return
 
-        event.isCanceled = true
+        event.cancel()
         notifyBlocked(stack.displayName, "dropped")
     }
 
@@ -144,7 +144,7 @@ class ProtectItemFeature {
         if (slot != null && slot.hasStack) {
             val stack = slot.stack
             if (stack != null && isProtected(stack)) {
-                event.isCanceled = true
+                event.cancel()
                 notifyBlocked(stack.displayName, "moved in this menu")
                 return
             }
@@ -153,13 +153,13 @@ class ProtectItemFeature {
         // Check if the cursor has a protected item
         val cursorItem = mc.thePlayer?.inventory?.itemStack
         if (cursorItem != null && isProtected(cursorItem)) {
-            event.isCanceled = true
+            event.cancel()
             notifyBlocked(cursorItem.displayName, "moved in this menu")
         }
     }
 
 
-    @SubscribeEvent
+    @HandleEvent
     fun onItemOverlay(event: RenderItemOverlayEvent) {
         if (!shouldShowStar()) return
 

@@ -1,17 +1,18 @@
 package io.hamlook.aetheria.features.dungeons;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.RenderItemOverlayEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.item.ItemStackUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 @RegisterEvents
 public class DungeonPassFloorTip {
 
-    @SubscribeEvent
+    @HandleEvent
     public void onItemOverlay(RenderItemOverlayEvent event) {
         if (ATHRConfig.feature == null) return;
         if (!ATHRConfig.feature.misc.itemStackTips) return;

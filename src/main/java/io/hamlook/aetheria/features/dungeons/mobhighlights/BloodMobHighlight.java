@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.dungeons.mobhighlights;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
@@ -15,16 +16,16 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.IChatComponent;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 @RegisterEvents
 public class BloodMobHighlight {
@@ -38,8 +39,8 @@ public class BloodMobHighlight {
     private int tickCounter = 0;
 
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (ATHRConfig.feature == null || ATHRConfig.feature.dungeons.bloodMobHighlight == 2) return;
 
@@ -64,7 +65,7 @@ public class BloodMobHighlight {
         bloodMobs = found;
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGH)
+    @HandleEvent(priority = HandleEvent.HIGH)
     public void onRenderEntityModel(RenderEntityModelEvent event) {
         if (ATHRConfig.feature == null || ATHRConfig.feature.dungeons.bloodMobHighlight != 1) return;
         EntityLivingBase entity = event.getEntity();
@@ -72,8 +73,8 @@ public class BloodMobHighlight {
         renderCleanOutline(event, getColor());
     }
 
-    @SubscribeEvent
-    public void onRenderWorldLast(RenderWorldLastEvent event) {
+    @HandleEvent
+    public void onRenderWorldLast(ASMRenderWorldEvent event) {
         if (ATHRConfig.feature == null || ATHRConfig.feature.dungeons.bloodMobHighlight != 0) return;
         Set<EntityLivingBase> snapshot = bloodMobs;
         if (snapshot.isEmpty() || mc.thePlayer == null) return;

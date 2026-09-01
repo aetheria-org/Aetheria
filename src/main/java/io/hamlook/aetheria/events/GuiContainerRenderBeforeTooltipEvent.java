@@ -1,9 +1,9 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
-public class GuiContainerRenderBeforeTooltipEvent extends Event {
+public class GuiContainerRenderBeforeTooltipEvent extends AetheriaEvent {
 
     public final GuiContainer gui;
     public final int mouseX;

@@ -8,13 +8,14 @@ import net.minecraft.event.HoverEvent;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatStyle;
 import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMServerJoinEvent;
 
 @RegisterEvents
 public class IncompatModChecker {
@@ -78,8 +79,8 @@ public class IncompatModChecker {
         return ATHRConfig.feature != null ? ATHRConfig.feature.misc.dismissedIncompatMods : java.util.Collections.emptySet();
     }
 
-    @SubscribeEvent
-    public void onServerJoin(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+    @HandleEvent
+    public void onServerJoin(ASMServerJoinEvent event) {
         if (hasWarnedThisLaunch) return;
         if (ATHRConfig.feature == null) return;
         List<IncompatMod> found = findIncompatible();
@@ -88,8 +89,8 @@ public class IncompatModChecker {
         pending = found;
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (pending == null) return;
         if (Minecraft.getMinecraft().thePlayer == null) return;

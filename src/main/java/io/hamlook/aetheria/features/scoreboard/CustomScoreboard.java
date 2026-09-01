@@ -441,11 +441,11 @@ public class CustomScoreboard extends Overlay {
         lastW = boxW;
         lastH = boxH;
 
-        ScaledResolution sr = Overlay.sr;
+        ScaledResolution resolution = currentSr();
         Position pos = getPosition();
 
-        int x = pos.getAbsX(sr, (int) (boxW * scale));
-        int y = pos.getAbsY(sr, (int) (boxH * scale));
+        int x = pos.getAbsX(resolution, (int) (boxW * scale));
+        int y = pos.getAbsY(resolution, (int) (boxH * scale));
         if (pos.isCenterX()) x -= (int) (boxW * scale / 2);
         if (pos.isCenterY()) y -= (int) (boxH * scale / 2);
 

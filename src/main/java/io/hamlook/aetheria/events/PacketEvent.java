@@ -1,9 +1,9 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import net.minecraft.network.Packet;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
-public class PacketEvent extends Event {
+public class PacketEvent extends AetheriaEvent {
 
     public final Packet<?> packet;
 

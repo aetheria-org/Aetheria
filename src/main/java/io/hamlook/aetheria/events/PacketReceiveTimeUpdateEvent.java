@@ -1,11 +1,11 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import lombok.Getter;
 import net.minecraft.network.play.server.S03PacketTimeUpdate;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
 @Getter
-public class PacketReceiveTimeUpdateEvent extends Event {
+public class PacketReceiveTimeUpdateEvent extends AetheriaEvent {
 
     private final S03PacketTimeUpdate packet;
 

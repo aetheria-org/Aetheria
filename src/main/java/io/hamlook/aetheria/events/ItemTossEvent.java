@@ -1,11 +1,9 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.common.eventhandler.Cancelable;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
-@Cancelable
-public class ItemTossEvent extends Event {
+public class ItemTossEvent extends AetheriaEvent implements AetheriaEvent.Cancellable {
     public final ItemStack item;
     public final boolean dropAll;
 

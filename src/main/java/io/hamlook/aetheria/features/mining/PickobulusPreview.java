@@ -11,11 +11,13 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.awt.*;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 @RegisterEvents
 public class PickobulusPreview {
@@ -65,8 +67,8 @@ public class PickobulusPreview {
         return RaycastUtils.raycastBlock(eyes, look, REACH);
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
 
         tickCounter++;
@@ -93,8 +95,8 @@ public class PickobulusPreview {
     }
 
     // TODO: UNCOMMENT WHEN FAKEPIXEL ADDS Pickobulus is now available MESSAGE
-    // @SubscribeEvent
-    // public void onChat(ClientChatReceivedEvent event) {
+    // @HandleEvent
+    // public void onChat(ASMChatEvent event) {
     //     if (!isEnabled()) return;
     //     String text = StringUtils.stripControlCodes(event.message.getFormattedText()).trim();
     //
@@ -105,8 +107,8 @@ public class PickobulusPreview {
     //     }
     // }
 
-    @SubscribeEvent
-    public void onRenderWorld(RenderWorldLastEvent event) {
+    @HandleEvent
+    public void onRenderWorld(ASMRenderWorldEvent event) {
         if (isEnabled() || previewBox == null) return;
 
         WorldRenderUtils.drawSelectionBox(previewBox, COLOR_READY, 2f);

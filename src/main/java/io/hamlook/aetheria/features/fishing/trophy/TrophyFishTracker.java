@@ -11,14 +11,14 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class TrophyFishTracker {
@@ -64,8 +64,8 @@ public class TrophyFishTracker {
         }
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (ATHRConfig.feature == null) return;
 
         Matcher m = TROPHY_CHAT.matcher(event.message.getFormattedText());
@@ -85,7 +85,7 @@ public class TrophyFishTracker {
         boolean hideBronze = ATHRConfig.feature.fishing.trophyFish.trophyBronzeHider && rarity == TrophyRarity.BRONZE && newCount > 1;
         boolean hideSilver = ATHRConfig.feature.fishing.trophyFish.trophySilverHider && rarity == TrophyRarity.SILVER && newCount > 1;
         if (hideBronze || hideSilver) {
-            event.setCanceled(true);
+            event.cancel();
             return;
         }
 
@@ -99,12 +99,12 @@ public class TrophyFishTracker {
 
         String newMsg = "§6♔ §r§6§lTROPHY FISH! " + countPart + coloredRarity + " " + coloredName + " §7(§e" + String.format("%,d", total) + " total§7)";
 
-        event.setCanceled(true);
+        event.cancel();
         ChatUtils.sendMessage(newMsg);
     }
 
-    @SubscribeEvent
-    public void onGuiDraw(GuiScreenEvent.BackgroundDrawnEvent event) {
+    @HandleEvent
+    public void onGuiDraw(ASMGuiBackgroundDrawEvent event) {
         if (!ContainerUtils.isInContainer(event.gui, ODGER_TITLE)) return;
         ContainerChest container = ContainerUtils.getOpenChest(event.gui);
         if (container == null) return;
@@ -155,8 +155,8 @@ public class TrophyFishTracker {
         if (changed) storage.save();
     }
 
-    @SubscribeEvent
-    public void onTooltip(ItemTooltipEvent event) {
+    @HandleEvent
+    public void onTooltip(ASMTooltipEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.fishing.trophyFish.trophyOdgerTotal) return;
         if (!ODGER_TITLE.equals(getOpenContainerName())) return;
         if (event.toolTip == null || event.itemStack == null) return;

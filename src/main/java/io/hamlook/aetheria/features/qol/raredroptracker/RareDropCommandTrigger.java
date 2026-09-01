@@ -5,9 +5,10 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.input.Mouse;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiMousePostEvent;
 
 /**
  * Handles the "click anywhere within 5 seconds" prompt fired after a tracked
@@ -42,8 +43,8 @@ public class RareDropCommandTrigger {
         return pendingCommand == null || System.currentTimeMillis() - promptStartTime >= WINDOW_MS;
     }
 
-    @SubscribeEvent
-    public void onDraw(GuiScreenEvent.DrawScreenEvent.Post event) {
+    @HandleEvent
+    public void onDraw(ASMGuiDrawEvent event) {
         if (isActive()) {
             pendingCommand = null;
             return;
@@ -64,8 +65,8 @@ public class RareDropCommandTrigger {
         mc.fontRendererObj.drawStringWithShadow(msg, (sr.getScaledWidth() - w) / 2f, sr.getScaledHeight() / 2f, -1);
     }
 
-    @SubscribeEvent
-    public void onMouseInputPost(GuiScreenEvent.MouseInputEvent.Post event) {
+    @HandleEvent
+    public void onMouseInputPost(ASMGuiMousePostEvent event) {
         if (isActive()) return;
         if (!Mouse.getEventButtonState() || Mouse.getEventButton() != 0) return;
 

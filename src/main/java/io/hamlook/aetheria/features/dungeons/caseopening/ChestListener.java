@@ -12,14 +12,15 @@ import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.HashMap;
 import java.util.Map;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
+import io.hamlook.aetheria.events.ASMMouseEvent;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class ChestListener {
@@ -36,8 +37,8 @@ public class ChestListener {
     private boolean openedChestBr = false;
     private DungeonDropData.Floor curFloor;
 
-    @SubscribeEvent
-    public void onGuiOpen(GuiOpenEvent event) {
+    @HandleEvent
+    public void onGuiOpen(ASMGuiOpenEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.dungeons.caseOpening.caseOpeningAnimation) return;
         if (!ContainerUtils.isChestOpen(event.gui)) return;
 
@@ -138,8 +139,8 @@ public class ChestListener {
         event.gui = new GuiInterceptChest(container, curFloor, curMaterial);
     }
 
-    @SubscribeEvent
-    public void onItemTooltip(ItemTooltipEvent event) {
+    @HandleEvent
+    public void onItemTooltip(ASMTooltipEvent event) {
         if (!ContainerUtils.isChestOpen()) return;
         if (!isCatacombsChestList) return;
 
@@ -168,8 +169,8 @@ public class ChestListener {
         }
     }
 
-    @SubscribeEvent
-    public void onMouseClick(GuiScreenEvent.MouseInputEvent.Pre event) {
+    @HandleEvent
+    public void onMouseClick(ASMMouseEvent event) {
         if (!ContainerUtils.isChestOpen(event.gui)) return;
         Slot slot = ((GuiChest) event.gui).getSlotUnderMouse();
         if (slot != null && org.lwjgl.input.Mouse.getEventButtonState() && isCroesus && !isCatacombsChestList) {
@@ -178,8 +179,8 @@ public class ChestListener {
         }
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         WorldClient currentWorld = Minecraft.getMinecraft().theWorld;
         if (currentWorld != null && currentWorld != lastWorld) {

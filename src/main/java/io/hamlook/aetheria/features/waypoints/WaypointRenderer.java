@@ -8,12 +8,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.StringUtils;
 import net.minecraft.util.Vec3;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.List;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 @RegisterEvents
 public class WaypointRenderer {
@@ -30,8 +30,8 @@ public class WaypointRenderer {
         catch (Exception e) { return fallback; }
     }
 
-    @SubscribeEvent
-    public void onRenderWorld(RenderWorldLastEvent event) {
+    @HandleEvent
+    public void onRenderWorld(ASMRenderWorldEvent event) {
         WaypointState state = WaypointState.getInstance();
         if (!state.enabled || !state.hasGroup()) return;
 

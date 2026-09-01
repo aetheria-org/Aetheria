@@ -7,14 +7,16 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.ASMServerJoinEvent;
+import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
 
 @RegisterEvents
 public class PestTrackerListener {
@@ -30,29 +32,29 @@ public class PestTrackerListener {
         }
     }
 
-    @SubscribeEvent
-    public void onClientConnect(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+    @HandleEvent
+    public void onClientConnect(ASMServerJoinEvent event) {
         PestStats.getInstance().onClientLogin();
     }
 
-    @SubscribeEvent
-    public void onClientDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+    @HandleEvent
+    public void onClientDisconnect(ASMServerDisconnectEvent event) {
         PestStats.getInstance().onClientLogout();
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         PestStats.getInstance().timerTick();
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         PestStats.getInstance().onWorldUnload();
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         PestStats stats = PestStats.getInstance();
         if (!stats.isTracking()) return;
         if (!ChatUtils.isFromServer(event)) return;

@@ -6,13 +6,13 @@ import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.input.Keyboard;
 
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class HotmPowderDisplay {
@@ -129,8 +129,8 @@ public class HotmPowderDisplay {
         return String.format("%.2f", d);
     }
 
-    @SubscribeEvent
-    public void onTooltip(ItemTooltipEvent event) {
+    @HandleEvent
+    public void onTooltip(ASMTooltipEvent event) {
         if (ATHRConfig.feature == null) return;
         if (!ATHRConfig.feature.mining.hotmPowder.hotmPowderSpent && !ATHRConfig.feature.mining.hotmPowder.hotmPowderFor10Levels) return;
         if (event.toolTip == null || event.itemStack == null) return;

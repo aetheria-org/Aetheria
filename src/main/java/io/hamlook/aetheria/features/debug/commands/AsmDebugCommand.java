@@ -15,7 +15,6 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.common.MinecraftForge;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,8 +66,7 @@ public class AsmDebugCommand extends ASMCommand {
         skyblockStatus(event);
         networkInfo(event);
 
-        // let any other feature contribute (dungeons, mob detection, etc. can @SubscribeEvent this)
-        MinecraftForge.EVENT_BUS.post(event);
+        event.post();
 
         if (event.isEmpty()) {
             out.add("");

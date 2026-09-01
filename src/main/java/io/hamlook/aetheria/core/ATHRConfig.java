@@ -57,11 +57,10 @@ import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.client.ClientCommandHandler;
-import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.AetheriaEventBus;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
@@ -74,6 +73,9 @@ import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 
 public class ATHRConfig {
 
@@ -112,6 +114,7 @@ public class ATHRConfig {
         if (registered) return;
         init();
         MinecraftForge.EVENT_BUS.register(new ATHRConfig());
+        AetheriaEventBus.INSTANCE.register(new ATHRConfig());
         ClientRegistry.registerKeyBinding(openGuiKey);
         ClientCommandHandler.instance.registerCommand(new Command());
         registered = true;
@@ -563,8 +566,8 @@ public class ATHRConfig {
 
 
 
-    @SubscribeEvent
-    public void onGuiOpen(GuiOpenEvent event) {
+    @HandleEvent
+    public void onGuiOpen(ASMGuiOpenEvent event) {
         if (!(event.gui instanceof GuiMainMenu)) return;
 
         if (!ATHRConfig.feature.network.hasSeenPrivacyNotice) {
@@ -577,8 +580,8 @@ public class ATHRConfig {
         }
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         flushConfigIfDirty();
 

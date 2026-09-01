@@ -4,8 +4,8 @@ import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class ProfileDetector {
@@ -27,8 +27,8 @@ public class ProfileDetector {
         loadAllProfileData();
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         String msg = ChatUtils.clean(event);
         if (ChatUtils.isPartyMessage(msg) || ChatUtils.isPlayerMessage(msg) || ChatUtils.isMsgReceived(msg) || ChatUtils.isMsgSent(msg) || ChatUtils.isDonateMessage(msg))
             return;

@@ -1,12 +1,12 @@
 package io.hamlook.aetheria.events;
 
-import net.minecraftforge.fml.common.eventhandler.Event;
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-public class DebugReportEvent extends Event {
+public class DebugReportEvent extends AetheriaEvent {
 
     private final List<String> lines;
     private final String search;

@@ -5,8 +5,8 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.repo.data.UpdateData;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class VersionChecker {
@@ -37,8 +37,8 @@ public class VersionChecker {
         }
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (notified) return;
         if (!"Welcome to Fakepixel SkyBlock!".equals(event.message.getUnformattedText())) return;
         notified = true;

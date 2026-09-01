@@ -6,13 +6,14 @@ import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.chat.ChatFilter;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import lombok.Getter;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @Getter
 @RegisterEvents
@@ -55,8 +56,14 @@ public class KillComboTracker {
         return "§6";
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
+        currentCombo = 0;
+        active = false;
+    }
+
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (!ATHRConfig.feature.misc.killCombo.enabled) return;
         if (!ChatUtils.isFromServer(event)) return;
         String stripped = ChatUtils.clean(event);

@@ -14,9 +14,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -25,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 
 @RegisterEvents
 public class ElectionUtils {
@@ -140,13 +140,13 @@ public class ElectionUtils {
         }
     }
 
-    @SubscribeEvent
-    public void onGuiOpen(GuiOpenEvent event) {
+    @HandleEvent
+    public void onGuiOpen(ASMGuiOpenEvent event) {
         check = true;
     }
 
-    @SubscribeEvent
-    public void onBackgroundDrawn(GuiScreenEvent.BackgroundDrawnEvent e) {
+    @HandleEvent
+    public void onBackgroundDrawn(ASMGuiBackgroundDrawEvent e) {
         if (!NetworkGuard.apiAllowed()) return;
         if (!check) return;
         GuiScreen screen = e.gui;

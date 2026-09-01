@@ -102,8 +102,9 @@ public class CurrentPetOverlay extends Overlay {
         lastH = h;
 
         Position pos = getPosition();
-        int x = pos.getAbsX(sr, (int) (w * scale));
-        int y = pos.getAbsY(sr, (int) (h * scale));
+        ScaledResolution resolution = currentSr();
+        int x = pos.getAbsX(resolution, (int) (w * scale));
+        int y = pos.getAbsY(resolution, (int) (h * scale));
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 

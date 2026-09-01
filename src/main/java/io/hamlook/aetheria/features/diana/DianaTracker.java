@@ -6,13 +6,15 @@ import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMServerJoinEvent;
+import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
 
 @RegisterEvents
 public class DianaTracker {
@@ -86,26 +88,26 @@ public class DianaTracker {
         return "§6[Diana] §e!burrows !inq !mobs !chim !stick !relic !loot !time\n" + "§7SL=since last ISL=inqs since last MSL=minos since last CSL=champs since last";
     }
 
-    @SubscribeEvent
-    public void onClientConnect(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+    @HandleEvent
+    public void onClientConnect(ASMServerJoinEvent event) {
         DianaStats.getInstance().onClientLogin();
         pendingDouble = false;
     }
 
-    @SubscribeEvent
-    public void onClientDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+    @HandleEvent
+    public void onClientDisconnect(ASMServerDisconnectEvent event) {
         DianaStats.getInstance().onClientLogout();
         pendingDouble = false;
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         DianaStats.getInstance().timerTick();
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (mc.thePlayer == null) return;
 
         String msg = ChatUtils.clean(event);

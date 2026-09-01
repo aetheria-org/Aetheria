@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.misc.invbuttons;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.features.farming.visitors.VisitorPanelBase;
@@ -18,8 +19,7 @@ import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.ClientCommandHandler;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.events.ASMMouseEvent;
 
 @RegisterEvents
 public class InvButtonRenderer {
@@ -88,7 +89,7 @@ public class InvButtonRenderer {
         return null;
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onRenderButtons(GuiContainerRenderBeforeTooltipEvent event) {
         if (!isEnabled() || isGuiEditor()) return;
         if (StorageManager.isOverlayActive()) return;
@@ -150,8 +151,8 @@ public class InvButtonRenderer {
         GlStateManager.disableAlpha();
     }
 
-    @SubscribeEvent
-    public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
+    @HandleEvent
+    public void onMouseInput(ASMMouseEvent event) {
         if (!isEnabled() || isGuiEditor()) return;
         if (StorageManager.isOverlayActive()) return;
         if (Mouse.getEventButton() < 0) return;
@@ -167,7 +168,7 @@ public class InvButtonRenderer {
         if (btn == null) return;
 
         if (Minecraft.getMinecraft().thePlayer.inventory.getItemStack() != null) {
-            event.setCanceled(true);
+            event.cancel();
             return;
         }
 

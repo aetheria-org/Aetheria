@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.farming.gardenplots;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.GardenPlotsConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
@@ -16,7 +17,7 @@ import io.hamlook.aetheria.utils.render.HighlightUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -65,7 +66,7 @@ public class GardenPlotNumber {
         });
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onItemOverlay(RenderItemOverlayEvent event) {
         if (notInGardenConfigurePlots()) return;
         GardenPlotsConfig config = config();
@@ -81,7 +82,7 @@ public class GardenPlotNumber {
         ItemStackUtils.drawTip(String.valueOf(info.number), event.x, event.y, color(color, event.x, event.y));
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onFrameEnd(GuiContainerRenderBeforeTooltipEvent event) {
         if (notInGardenConfigurePlots()) return;
         GardenPlotsConfig config = config();

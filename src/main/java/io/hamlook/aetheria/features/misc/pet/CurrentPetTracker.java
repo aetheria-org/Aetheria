@@ -1,8 +1,9 @@
 package io.hamlook.aetheria.features.misc.pet;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ProfileManagedStorage;
 import io.hamlook.aetheria.events.SlotClickEvent;
-import io.hamlook.aetheria.init.RegisterInstance;
+import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
@@ -12,16 +13,15 @@ import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.StringUtils;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-
 import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.hamlook.aetheria.features.misc.pet.PetCache.normalizePetName;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 
+@RegisterEvents
 public class CurrentPetTracker extends ProfileManagedStorage {
 
     private static final String PETS_CONTAINER = "Pets";
@@ -33,8 +33,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     private static final Pattern LVL_PATTERN = Pattern.compile("^\\[Lvl (\\d+)] (.+)$");
     private static final Pattern SKIN_PATTERN = Pattern.compile("(§. ?✦)");
     private static final Pattern RARITY_PATTERN = Pattern.compile("§7\\[Lvl \\d+] (§.)");
-    @RegisterInstance
-    private static CurrentPetTracker INSTANCE;
+    private static final CurrentPetTracker INSTANCE = new CurrentPetTracker();
     private boolean convertToItemEnabled = false;
     private long ignoreContainerUpdatesUntil = 0L;
     private long lastContainerScan = 0L;
@@ -47,7 +46,6 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     }
 
     public static CurrentPetTracker getInstance() {
-        if (INSTANCE == null) INSTANCE = new CurrentPetTracker();
         return INSTANCE;
     }
 
@@ -92,8 +90,8 @@ public class CurrentPetTracker extends ProfileManagedStorage {
         PetFileValidator.save(f, currentBaseName);
     }
 
-    @SubscribeEvent
-    public void onGuiDraw(GuiScreenEvent.BackgroundDrawnEvent event) {
+    @HandleEvent
+    public void onGuiDraw(ASMGuiBackgroundDrawEvent event) {
         ContainerChest container = ContainerUtils.getOpenChest(event.gui);
         if (container == null) return;
         String title = ContainerUtils.getTitle(container);
@@ -140,7 +138,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onSlotClick(SlotClickEvent event) {
         ContainerChest container = ContainerUtils.getOpenChest(event.getGui());
         if (container == null) return;
@@ -181,8 +179,8 @@ public class CurrentPetTracker extends ProfileManagedStorage {
         save();
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (!ChatUtils.isFromServer(event)) return;
         Matcher am = AUTOPET.matcher(event.message.getFormattedText());
         if (!am.find()) return;

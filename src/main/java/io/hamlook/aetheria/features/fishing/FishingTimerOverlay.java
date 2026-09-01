@@ -8,9 +8,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.projectile.EntityFishHook;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 @RegisterEvents
 public class FishingTimerOverlay {
@@ -21,8 +22,8 @@ public class FishingTimerOverlay {
         return ATHRConfig.feature != null && ATHRConfig.feature.fishing.fishingTimerConfig.fishingTimer;
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (!isEnabled()) return;
 
@@ -50,8 +51,8 @@ public class FishingTimerOverlay {
         SoundUtils.playSound("random.orb", 1f, 2f);
     }
 
-    @SubscribeEvent
-    public void onRenderWorldLast(RenderWorldLastEvent event) {
+    @HandleEvent
+    public void onRenderWorldLast(ASMRenderWorldEvent event) {
         if (!isEnabled()) return;
 
         Minecraft mc = Minecraft.getMinecraft();

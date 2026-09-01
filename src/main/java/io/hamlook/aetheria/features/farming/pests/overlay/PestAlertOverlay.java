@@ -12,7 +12,8 @@ import io.hamlook.aetheria.utils.overlay.SimpleOverlay;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @RegisterEvents
@@ -34,8 +35,8 @@ public class PestAlertOverlay extends SimpleOverlay {
     private static volatile long activeUntilMs = 0L;
     private static volatile long nextSoundAtMs = 0L;
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         PestAlertConfig cfg = config();
         long now = System.currentTimeMillis();

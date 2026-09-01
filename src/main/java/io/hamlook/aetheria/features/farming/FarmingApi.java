@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.farming;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.BlockBreakEvent;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerData;
 import io.hamlook.aetheria.features.farming.gardenplots.GardenPlotData;
@@ -15,14 +16,15 @@ import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.AxisAlignedBB;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @RegisterEvents
 public final class FarmingApi {
@@ -407,13 +409,13 @@ public final class FarmingApi {
         return amount;
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onBlockBreak(BlockBreakEvent event) {
         if (isHoldingFarmingTool()) lastFarmingBreakMs = System.currentTimeMillis();
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getMinecraft();
         if (mc == null || mc.thePlayer == null) return;

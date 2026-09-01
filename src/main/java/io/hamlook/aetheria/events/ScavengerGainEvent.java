@@ -1,10 +1,10 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import lombok.Getter;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
 @Getter
-public class ScavengerGainEvent extends Event {
+public class ScavengerGainEvent extends AetheriaEvent {
 
     private final int amount;
 

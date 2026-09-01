@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.misc;
 
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
@@ -21,9 +22,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +30,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import io.hamlook.aetheria.events.ASMMouseEvent;
+import io.hamlook.aetheria.events.ASMKeyEvent;
+import io.hamlook.aetheria.events.ASMGuiInitEvent;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class SearchBar {
@@ -333,8 +336,8 @@ public class SearchBar {
         MC.fontRendererObj.drawStringWithShadow("Search...", x + 5, y + (float) BAR_HEIGHT / 2 - 4, 0x8F8F8F);
     }
 
-    @SubscribeEvent
-    public void onGuiInit(GuiScreenEvent.InitGuiEvent.Post event) {
+    @HandleEvent
+    public void onGuiInit(ASMGuiInitEvent event) {
         if (!isEnabled() || !isSupportedGui(event.gui)) return;
 
         KeybindHelper.enableRepeatEvents(true);
@@ -352,8 +355,8 @@ public class SearchBar {
         searchBar.setText(searchText);
     }
 
-    @SubscribeEvent
-    public void onKeyboardInput(GuiScreenEvent.KeyboardInputEvent.Pre event) {
+    @HandleEvent
+    public void onKeyboardInput(ASMKeyEvent event) {
         if (!isEnabled() || !(event.gui instanceof GuiContainer) || searchBar == null || !KeybindHelper.getEventKeyState()) return;
 
         int keyCode = KeybindHelper.getEventKeyCode();
@@ -365,7 +368,7 @@ public class SearchBar {
                 searchBar.setText(hoveredItemName);
                 searchBar.setFocused(true);
                 searchBar.setCursorPositionEnd();
-                event.setCanceled(true);
+                event.cancel();
             }
             return;
         }
@@ -378,7 +381,7 @@ public class SearchBar {
                 recordRecentSearch(searchText);
                 searchText = "";
                 searchBar.setText("");
-                event.setCanceled(true);
+                event.cancel();
                 return;
             }
             if (isCalcMode() && lastCalcResult != null) {
@@ -389,24 +392,24 @@ public class SearchBar {
                     searchBar.setText(lastCalcResultPlain);
                 }
                 recordRecentSearch(lastCalcResultPlain);
-                event.setCanceled(true);
+                event.cancel();
                 return;
             }
             if (!isCalcMode() && !searchText.isEmpty()) {
                 recordRecentSearch(searchText);
-                event.setCanceled(true);
+                event.cancel();
                 return;
             }
         }
 
         if (keyCode != KeybindHelper.KEY_ESCAPE && searchBar.textboxKeyTyped(typedChar, keyCode)) {
             searchText = searchBar.getText();
-            event.setCanceled(true);
+            event.cancel();
         }
     }
 
-    @SubscribeEvent
-    public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
+    @HandleEvent
+    public void onMouseInput(ASMMouseEvent event) {
         if (!isEnabled() || !(event.gui instanceof GuiContainer) || searchBar == null) return;
 
         int mouseX = KeybindHelper.getScaledEventX(event.gui.width);
@@ -419,7 +422,7 @@ public class SearchBar {
         if (wheel != 0 && insideRecentPanel) {
             int maxOffset = Math.max(0, recentMatches.size() - RECENT_MAX_VISIBLE);
             recentScrollOffset = Math.max(0, Math.min(recentScrollOffset - Integer.signum(wheel), maxOffset));
-            event.setCanceled(true);
+            event.cancel();
             return;
         }
 
@@ -428,7 +431,7 @@ public class SearchBar {
         if (KeybindHelper.getEventButton() == 0 && isInsideClearButton(mouseX, mouseY)) {
             searchText = "";
             searchBar.setText("");
-            event.setCanceled(true);
+            event.cancel();
             return;
         }
 
@@ -440,7 +443,7 @@ public class SearchBar {
                 searchBar.setText(entry);
                 searchBar.setCursorPositionEnd();
             }
-            event.setCanceled(true);
+            event.cancel();
             return;
         }
 
@@ -451,17 +454,17 @@ public class SearchBar {
             searchBar.mouseClicked(mouseX, mouseY, KeybindHelper.getEventButton());
         } else if (isItemListActive() && KeybindHelper.getEventButton() == 0 && mouseX >= toggleBtnX && mouseX < toggleBtnX + TOGGLE_BTN_W && mouseY >= toggleBtnY && mouseY < toggleBtnY + BAR_HEIGHT) {
             sendToItemList = !sendToItemList;
-            event.setCanceled(true);
+            event.cancel();
         }
     }
 
-    @SubscribeEvent
-    public void onItemTooltip(ItemTooltipEvent event) {
+    @HandleEvent
+    public void onItemTooltip(ASMTooltipEvent event) {
         if (!isEnabled() || event.itemStack == null) return;
         hoveredItemName = ColorUtils.stripColor(event.itemStack.getDisplayName()).trim();
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onDrawGui(GuiContainerRenderBeforeTooltipEvent event) {
         // Re-armed each frame; ItemTooltipEvent (fired later this same frame, per this event's
         // name) repopulates it only while an item is actually being hovered right now.

@@ -25,10 +25,11 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import io.hamlook.aetheria.api.event.AetheriaEventBus;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.logging.Logger;
+import io.hamlook.aetheria.events.ASMServerJoinEvent;
 
 @Mod(modid = Aetheria.MODID, name = Aetheria.NAME, version = Aetheria.VERSION, clientSideOnly = true, guiFactory = "io.hamlook.aetheria.GuiFactory")
 public class Aetheria {
@@ -72,13 +73,15 @@ public class Aetheria {
         new CitManager();
         if (ATHRConfig.feature.misc.currentPet.showCurrentPet) PetCache.getInstance().warmupTextures();
         MinecraftForge.EVENT_BUS.register(GuiWaiter.INSTANCE);
+        AetheriaEventBus.INSTANCE.register(GuiWaiter.INSTANCE);
         MinecraftForge.EVENT_BUS.register(this);
+        AetheriaEventBus.INSTANCE.register(this);
         EventRegistrar.registerAll();
         CMMHelper.initialise();
     }
 
-    @SubscribeEvent
-    public void onServerJoin(FMLNetworkEvent.ClientConnectedToServerEvent e) {
+    @HandleEvent
+    public void onServerJoin(ASMServerJoinEvent e) {
         RepoHandler.refresh(ATHRRepo.KEY_PLAYERSIZES);
         RepoHandler.refresh(ATHRRepo.KEY_TIMERS);
         RepoHandler.refresh(ATHRRepo.KEY_UPDATE);

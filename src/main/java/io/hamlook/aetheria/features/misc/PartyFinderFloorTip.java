@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.misc;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.RenderItemOverlayEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
@@ -10,14 +11,14 @@ import io.hamlook.aetheria.utils.item.ItemStackUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.List;
 
 @RegisterEvents
 public class PartyFinderFloorTip {
 
-    @SubscribeEvent
+    @HandleEvent
     public void onItemOverlay(RenderItemOverlayEvent event) {
         if (ATHRConfig.feature == null) return;
         if (!ATHRConfig.feature.misc.partyFinderFloorTip) return;

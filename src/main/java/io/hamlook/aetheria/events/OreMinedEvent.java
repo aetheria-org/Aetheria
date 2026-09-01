@@ -1,13 +1,13 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import io.hamlook.aetheria.features.mining.OreBlock;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Map;
 
-public class OreMinedEvent extends Event {
+public class OreMinedEvent extends AetheriaEvent {
 
     @Nullable
     public final OreBlock originalOre;

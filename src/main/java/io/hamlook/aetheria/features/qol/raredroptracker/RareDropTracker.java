@@ -10,12 +10,13 @@ import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.HashSet;
 import java.util.Set;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 /**
  * Rare Drop Tracker.
@@ -30,8 +31,8 @@ public class RareDropTracker {
     private final Set<String> firstTimeAlerted = new HashSet<>();
     private boolean registered = false;
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
 
         if (!registered) {
@@ -90,8 +91,8 @@ public class RareDropTracker {
         return item != null && item.displayName != null ? item.displayName : id;
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         firstTimeAlerted.clear();
     }
 }

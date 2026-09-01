@@ -5,13 +5,13 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.LinkedHashSet;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class UnknownLinesHandler {
@@ -25,8 +25,8 @@ public class UnknownLinesHandler {
     private static final List<Entry> allUnknown = new ArrayList<>();
     private static long lastBurstWarnTime = 0L;
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         allUnknown.clear();
         lastBurstWarnTime = 0L;
     }

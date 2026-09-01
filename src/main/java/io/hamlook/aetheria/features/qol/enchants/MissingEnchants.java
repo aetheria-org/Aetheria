@@ -11,12 +11,11 @@ import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.input.Keyboard;
 
 import java.util.*;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class MissingEnchants {
@@ -32,8 +31,8 @@ public class MissingEnchants {
         return sb.toString().trim();
     }
 
-    @SubscribeEvent(priority = EventPriority.LOW)
-    public void onTooltip(ItemTooltipEvent event) {
+    @HandleEvent(priority = HandleEvent.LOW)
+    public void onTooltip(ASMTooltipEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.missingEnchants) return;
         if (!Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) return;
 

@@ -17,11 +17,7 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -33,6 +29,11 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 /**
  * Trevor the Trapper quest helper for the Mushroom Desert: highlights the fixed
@@ -77,8 +78,8 @@ public class TrevorSolver {
         return ATHRConfig.feature == null ? null : ATHRConfig.feature.farming.trevor;
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         TrevorConfig config = config();
         if (config == null || !config.enabled) return;
         if (!ChatUtils.isFromServer(event)) return;
@@ -170,8 +171,8 @@ public class TrevorSolver {
         return null;
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         TrevorConfig config = config();
         if (config == null || !config.enabled || mc.theWorld == null || mc.thePlayer == null) return;
@@ -257,8 +258,8 @@ public class TrevorSolver {
         }
     }
 
-    @SubscribeEvent
-    public void onRenderWorld(RenderWorldLastEvent event) {
+    @HandleEvent
+    public void onRenderWorld(ASMRenderWorldEvent event) {
         TrevorConfig config = config();
         if (config == null || !config.enabled || !onFarmingIsland || mc.thePlayer == null) return;
 
@@ -294,8 +295,8 @@ public class TrevorSolver {
         }
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         reset();
         onFarmingIsland = false;
     }

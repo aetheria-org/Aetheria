@@ -7,9 +7,10 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.data.TablistParser;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class SkyblockXpInChat {
@@ -40,8 +41,8 @@ public class SkyblockXpInChat {
         return "§8[" + getLevelColor(level) + level + "§8]";
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.misc.skyblockXpInChat) return;
         if (Minecraft.getMinecraft().thePlayer == null) return;
@@ -116,8 +117,8 @@ public class SkyblockXpInChat {
         ATHRConfig.markConfigDirty();
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         pendingLevel = -1;
         pendingXp = -1;
         pendingTime = 0L;

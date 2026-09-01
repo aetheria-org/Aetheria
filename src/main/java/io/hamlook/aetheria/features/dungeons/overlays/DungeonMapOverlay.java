@@ -20,10 +20,10 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.storage.MapData;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.*;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class DungeonMapOverlay extends Overlay {
@@ -76,8 +76,8 @@ public class DungeonMapOverlay extends Overlay {
         return Items.filled_map.getMapData(stack, Minecraft.getMinecraft().theWorld);
     }
 
-    @SubscribeEvent
-    public void onUnload(WorldEvent.Unload e) {
+    @HandleEvent
+    public void onUnload(ASMWorldUnloadEvent e) {
         cachedGrid = null;
         lastMapColors = null;
         playerTracker.clear();

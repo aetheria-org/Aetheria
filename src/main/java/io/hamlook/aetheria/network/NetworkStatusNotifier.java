@@ -8,9 +8,10 @@ import io.hamlook.aetheria.features.diana.party.ui.DPartyGUI;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import io.hamlook.aetheria.events.ASMServerJoinEvent;
 
 @RegisterEvents
 public class NetworkStatusNotifier {
@@ -19,15 +20,15 @@ public class NetworkStatusNotifier {
     private static boolean ackedThisLaunch = false;
     private static int tickCounter = 0;
 
-    @SubscribeEvent
-    public void onServerJoin(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+    @HandleEvent
+    public void onServerJoin(ASMServerJoinEvent event) {
         if (ATHRConfig.feature != null && !ackedThisLaunch && NetworkStatusInfo.shouldShow(ATHRConfig.feature.network.networkStatusAckMask)) {
             pendingShow = true;
         }
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.thePlayer == null || ATHRConfig.feature == null) return;

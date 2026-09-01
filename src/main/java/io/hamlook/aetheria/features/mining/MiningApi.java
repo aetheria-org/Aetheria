@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.mining;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.features.misc.PerformanceHUD;
 import io.hamlook.aetheria.events.BlockClickEvent;
 import io.hamlook.aetheria.events.DebugReportEvent;
@@ -17,10 +18,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.BlockPos;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -30,6 +28,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class MiningApi {
@@ -74,7 +75,7 @@ public class MiningApi {
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onBlockClick(BlockClickEvent event) {
         if (!isMiningArea()) { debugLog("BlockClick: not mining area"); return; }
         if (OreBlock.getByStateOrNull(event.getBlockState()) == null) { debugLogRateLimited("bc:" + event.pos, "BlockClick: unknown block at " + event.pos); return; }
@@ -88,7 +89,7 @@ public class MiningApi {
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onPlaySound(PlaySoundEvent event) {
         if (!isMiningArea()) return;
 
@@ -141,7 +142,7 @@ public class MiningApi {
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onBlockChange(ServerBlockChangeEvent event) {
         if (!isMiningArea()) { debugLog("S22: not mining area"); return; }
 
@@ -207,7 +208,7 @@ public class MiningApi {
             }
         }
 
-        MinecraftForge.EVENT_BUS.post(new OreMinedEvent(original.ore, extraBlocks));
+        new OreMinedEvent(original.ore, extraBlocks).post();
         debugLog("OreMinedEvent fired: " + original.ore.name()
             + (extraBlocks.size() > 1 ? " extras=" + extraBlocks : ""));
 
@@ -215,8 +216,8 @@ public class MiningApi {
         lastClickedPos = null;
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (!isMiningArea()) return;
 
@@ -237,8 +238,8 @@ public class MiningApi {
         updateCurrentAreaOreBlocks();
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         recentClickedBlocks.clear();
         surroundingMinedBlocks.clear();
         lastClickedPos = null;
@@ -248,7 +249,7 @@ public class MiningApi {
         debugLog("State reset on world unload");
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onDebugReport(DebugReportEvent event) {
         event.title("MiningApi");
         event.addData("Area: " + (isMiningArea() ? SkyblockData.getCurrentLocation() : "none"));

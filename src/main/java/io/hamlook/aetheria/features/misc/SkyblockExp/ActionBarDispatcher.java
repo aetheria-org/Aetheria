@@ -5,12 +5,11 @@ import io.hamlook.aetheria.events.ActionBarUpdateEvent;
 import io.hamlook.aetheria.events.ActionBarXpGainEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import net.minecraft.util.StringUtils;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.events.ASMChatEvent;
 
 
 @RegisterEvents
@@ -30,8 +29,8 @@ public class ActionBarDispatcher {
     public ActionBarDispatcher() {
     }
 
-    @SubscribeEvent
-    public void onActionBar(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onActionBar(ASMChatEvent event) {
         if (event.type != ACTION_BAR_TYPE) return;
 
         String stripped = StringUtils.stripControlCodes(event.message.getUnformattedText());
@@ -40,7 +39,7 @@ public class ActionBarDispatcher {
         lastActionBarFormatted = formatted;
         lastActionBarStripped = stripped;
 
-        MinecraftForge.EVENT_BUS.post(new ActionBarUpdateEvent(stripped));
+        new ActionBarUpdateEvent(stripped).post();
 
         Matcher strippedMatcher = SB_XP_STRIPPED.matcher(stripped);
         if (!strippedMatcher.find()) {
@@ -55,6 +54,6 @@ public class ActionBarDispatcher {
         Matcher formattedMatcher = SB_XP_FORMATTED.matcher(formatted);
         String xpText = formattedMatcher.find() ? formattedMatcher.group(1) : ("+" + amount + " SkyBlock XP");
 
-        MinecraftForge.EVENT_BUS.post(new ActionBarXpGainEvent(xpText));
+        new ActionBarXpGainEvent(xpText).post();
     }
 }
