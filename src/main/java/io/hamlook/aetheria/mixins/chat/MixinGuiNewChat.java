@@ -146,7 +146,7 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
         drawRect(left, top, newRight, bottom, newColor);
     }
 
-    @ModifyVariable(method = "drawChat", at = @At("STORE"), name = "line")
+    @ModifyVariable(method = "drawChat", at = @At("STORE"))
     private ChatLine athr$captureRenderLine(ChatLine line) {
         athr$renderLine = line;
         return line;

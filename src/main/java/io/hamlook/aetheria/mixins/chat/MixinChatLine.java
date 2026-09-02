@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.mixins.chat;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.ChatLineHook;
 import io.hamlook.aetheria.features.chat.ChatUtilsState;
@@ -17,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.HashMap;
+import java.util.logging.Level;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -44,7 +46,8 @@ public class MixinChatLine implements ChatLineHook {
         NetHandlerPlayClient netHandler = Minecraft.getMinecraft().getNetHandler();
         if (netHandler == null) return;
 
-        String beforeColon = StringUtils.substringBefore(lineString.getFormattedText(), ":");
+        String text = StringUtils.substringAfter(lineString.getFormattedText(), "]");
+        String beforeColon = StringUtils.substringBefore(text, ":");
         Map<String, NetworkPlayerInfo> nicknameCache = new HashMap<>();
 
         try {
@@ -54,6 +57,9 @@ public class MixinChatLine implements ChatLineHook {
                 NetworkPlayerInfo info = netHandler.getPlayerInfo(word);
                 if (info == null) {
                     info = athr$resolveNickname(word, netHandler, nicknameCache);
+                }
+                if (info == null) {
+                    info = athr$resolveUsername(word, netHandler);
                 }
 
                 if (info != null) {
@@ -69,7 +75,7 @@ public class MixinChatLine implements ChatLineHook {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Aetheria.logger.log(Level.WARNING, "Chat head detection failed", e);
         }
     }
 
@@ -91,6 +97,20 @@ public class MixinChatLine implements ChatLineHook {
             return null;
         }
         return cache.get(word);
+    }
+
+    @Unique
+    @Nullable
+    private static NetworkPlayerInfo athr$resolveUsername(
+            String word,
+            NetHandlerPlayClient connection) {
+
+        for (NetworkPlayerInfo p : connection.getPlayerInfoMap()) {
+            if (p.getGameProfile() != null && word.equals(p.getGameProfile().getName())) {
+                return p;
+            }
+        }
+        return null;
     }
 
     @Override public boolean athr$hasDetected()         { return athr$detected; }
