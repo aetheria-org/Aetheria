@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.features.dungeons.rooms.report;
 
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
@@ -71,7 +71,7 @@ public class GuiDropdownTextField extends GuiTextField {
 
             int textColor = isHovered ? 0xFFFFA0 : 0xFFFFFF;
 
-            Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(
+            MinecraftCompat.getMinecraft().fontRendererObj.drawStringWithShadow(
                     filteredOptions.get(i),
                     this.xPosition + 4,
                     itemMinY + 2,

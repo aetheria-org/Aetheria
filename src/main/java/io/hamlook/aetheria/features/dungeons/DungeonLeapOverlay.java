@@ -2,12 +2,21 @@ package io.hamlook.aetheria.features.dungeons;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiDrawPreEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
+import io.hamlook.aetheria.events.ASMMouseEvent;
 import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
 import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonPlayerTracker;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.ColoredBlockCompat;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
@@ -22,17 +31,11 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import org.lwjgl.input.Mouse;
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMGuiOpenEvent;
-import io.hamlook.aetheria.events.ASMMouseEvent;
-import io.hamlook.aetheria.events.ASMGuiDrawPreEvent;
-import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 
 @RegisterEvents
 public class DungeonLeapOverlay {
@@ -71,9 +74,9 @@ public class DungeonLeapOverlay {
         if (isLeapGUI) return;
         if (!(event.gui instanceof GuiContainer)) return;
         GuiContainer gui = (GuiContainer) event.gui;
-        if (!(gui.inventorySlots instanceof ContainerChest)) return;
+        if (!(InventoryCompat.getContainer(gui) instanceof ContainerChest)) return;
 
-        ContainerChest chest = (ContainerChest) gui.inventorySlots;
+        ContainerChest chest = (ContainerChest) InventoryCompat.getContainer(gui);
         String title = ContainerUtils.getTitle(chest);
 
         isLeapGUI = isLeapGUI(title);
@@ -103,7 +106,7 @@ public class DungeonLeapOverlay {
 
         overlay.renderDungeonMap(mapLayout.centerX, mapLayout.centerY, MAP_SCALE, true, true);
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         List<String> players = ATHRConfig.feature.dungeons.leapConfig.excludeSelf ? getFilteredPartyMembers() : tracker.playerNames;
         for (String player : players) {
             float[] pos = tracker.getPosition(player);
@@ -172,10 +175,10 @@ public class DungeonLeapOverlay {
     @HandleEvent
     public void onMouseInput(ASMMouseEvent event) {
         if (!isLeapGUI || tracker == null) return;
-        if (Mouse.getEventButton() == 0 && Mouse.getEventButtonState()) {
+        if (MouseCompat.getEventButton() == 0 && MouseCompat.getEventButtonState()) {
 
-            int mouseX = Mouse.getEventX() * event.gui.width / event.gui.mc.displayWidth;
-            int mouseY = event.gui.height - Mouse.getEventY() * event.gui.height / event.gui.mc.displayHeight - 1;
+            int mouseX = MouseCompat.getEventX() * event.gui.width / event.gui.mc.displayWidth;
+            int mouseY = event.gui.height - MouseCompat.getEventY() * event.gui.height / event.gui.mc.displayHeight - 1;
 
             List<String> players = getFilteredPartyMembers();
 
@@ -217,7 +220,7 @@ public class DungeonLeapOverlay {
 
     private void leapToPlayer(String player) {
         if (!isLeapGUI || leapChest == null) return;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.playerController == null) return;
 
         int upperChestSlots = leapChest.getLowerChestInventory().getSizeInventory();
@@ -230,12 +233,12 @@ public class DungeonLeapOverlay {
             if (slot1 == null || !slot1.getHasStack()) continue;
 
             ItemStack stack = slot1.getStack();
-            if (stack.getItem().getRegistryName().equals(Item.getItemFromBlock(Blocks.stained_glass_pane).getRegistryName())) continue;
+            if (stack.getItem().getRegistryName().equals(ColoredBlockCompat.WHITE.createGlassPaneStack(1).getItem().getRegistryName())) continue;
 
             String displayName = ColorUtils.stripColor(stack.getDisplayName());
 
             if (pattern.matcher(displayName).matches()) {
-                mc.playerController.windowClick(leapChest.windowId, slot, 0, 0, mc.thePlayer);
+                InventoryCompat.windowClick(leapChest.windowId, slot, 0, 0, mc.thePlayer);
                 break;
             }
         }
@@ -243,7 +246,7 @@ public class DungeonLeapOverlay {
 
     private List<String> getFilteredPartyMembers() {
         List<String> players = new ArrayList<>(tracker.playerNames);
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayer player = MinecraftCompat.getMinecraft().thePlayer;
         if (player != null) {
             players.remove(player.getGameProfile().getName());
         }
@@ -306,7 +309,7 @@ public class DungeonLeapOverlay {
 
 
     private boolean isSelf(String player) {
-        return Minecraft.getMinecraft().thePlayer.getGameProfile().getName().equalsIgnoreCase(player);
+        return MinecraftCompat.getMinecraft().thePlayer.getGameProfile().getName().equalsIgnoreCase(player);
     }
 
     private int getArrowColor(String player){

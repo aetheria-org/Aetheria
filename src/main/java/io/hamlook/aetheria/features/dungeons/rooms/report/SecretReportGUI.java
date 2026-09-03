@@ -6,23 +6,23 @@ import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomDetector;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import org.lwjgl.input.Keyboard;
 
 import javax.net.ssl.HttpsURLConnection;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SecretReportGUI extends GuiScreen {
+public class SecretReportGUI extends AetheriaBaseScreen {
 
     public long lastReport = 0;
     public static final long REPORT_INTERVAL = 10000;
@@ -39,24 +39,24 @@ public class SecretReportGUI extends GuiScreen {
     }
 
     @Override
-    public void initGui() {
+    public void onInitGui() {
         if(room == null) {
-            Minecraft.getMinecraft().displayGuiScreen(null);
+            MinecraftCompat.getMinecraft().displayGuiScreen(null);
             return;
         }
         secretNames.clear();
         secretNames.addAll(DungeonRoomDetector.getSecretNamesForRoom(room.name));
-        Keyboard.enableRepeatEvents(true);
+        KeyboardCompat.enableRepeatEvents(true);
     }
 
     @Override
-    public void onGuiClosed() {
-        Keyboard.enableRepeatEvents(false);
+    public void guiClosed() {
+        KeyboardCompat.enableRepeatEvents(false);
     }
 
     @Override
     protected void actionPerformed(GuiButton button) {
-        if(button.id == cancelButton.id) Minecraft.getMinecraft().displayGuiScreen(null);
+        if(button.id == cancelButton.id) MinecraftCompat.getMinecraft().displayGuiScreen(null);
         if(button.id == submitButton.id) errorMessage = submitReport();
     }
 
@@ -122,7 +122,7 @@ public class SecretReportGUI extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         if(this.buttonList.isEmpty()){
             populateButtonList();
         }
@@ -141,7 +141,6 @@ public class SecretReportGUI extends GuiScreen {
         TextRenderUtils.drawCenteredStringScaleAware(errorMessage,
                 width/2f,searchField.yPosition - 22,1f,false);
 
-        super.drawScreen(mouseX, mouseY, partialTicks);
         xField.drawTextBox();
         yField.drawTextBox();
         zField.drawTextBox();
@@ -150,9 +149,8 @@ public class SecretReportGUI extends GuiScreen {
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void onKeyTyped(char typedChar, int keyCode) {
         if (!KeybindHelper.isKeyValid(keyCode)) return;
-        super.keyTyped(typedChar, keyCode);
         searchField.textboxKeyTyped(typedChar, keyCode);
 
         boolean isNumberRow = (keyCode >= Keyboard.KEY_1 && keyCode <= Keyboard.KEY_0);
@@ -166,12 +164,11 @@ public class SecretReportGUI extends GuiScreen {
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (searchField.mouseClickedDropdown(mouseX, mouseY, mouseButton)) {
             return;
         }
 
-        super.mouseClicked(mouseX, mouseY, mouseButton);
         searchField.mouseClicked(mouseX, mouseY, mouseButton);
         xField.mouseClicked(mouseX, mouseY, mouseButton);
         yField.mouseClicked(mouseX, mouseY, mouseButton);

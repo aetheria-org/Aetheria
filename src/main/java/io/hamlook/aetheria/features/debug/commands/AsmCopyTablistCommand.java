@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.debug.commands;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.TablistParser;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiPlayerTabOverlay;
@@ -63,7 +64,7 @@ public class AsmCopyTablistCommand extends ASMCommand {
             return;
         }
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null) {
             ChatUtils.sendMessage(EnumChatFormatting.RED + "Not in a world.");
             return;

@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.utils.compat;
+package io.hamlook.aetheria.utils.compat.modcompat;
 
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;

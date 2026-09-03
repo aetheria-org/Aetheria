@@ -1,8 +1,8 @@
 package io.hamlook.aetheria.network;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 
@@ -228,7 +228,7 @@ public class PrivacyNoticeScreen extends NetworkNoticeScreen {
             ATHRConfig.feature.network.hasSeenSocketLifecycleNotice = true;
             ATHRConfig.saveConfig();
         }
-        Minecraft.getMinecraft().displayGuiScreen(parent);
+        MinecraftCompat.getMinecraft().displayGuiScreen(parent);
     }
 
     private static class Page {

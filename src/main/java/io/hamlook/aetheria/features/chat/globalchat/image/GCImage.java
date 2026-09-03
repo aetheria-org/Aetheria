@@ -6,7 +6,7 @@ import dev.matrixlab.webp4j.model.AnimatedWebPFrame;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
@@ -17,12 +17,7 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.File;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -260,7 +255,7 @@ public class GCImage {
     }
 
     private static void finalizeLoad(GCImage gcImage) {
-        Minecraft.getMinecraft().addScheduledTask(() -> {
+        MinecraftCompat.getMinecraft().addScheduledTask(() -> {
             if (gcImage.images.isEmpty()) {
                 gcImage.loadFailed = true;
                 return;
@@ -271,9 +266,9 @@ public class GCImage {
                     bimg = applyCircularMask(bimg);
                 }
                 DynamicTexture dynamicTexture = new DynamicTexture(bimg);
-                ResourceLocation resLoc = Minecraft.getMinecraft().getTextureManager()
+                ResourceLocation resLoc = MinecraftCompat.getMinecraft().getTextureManager()
                         .getDynamicTextureLocation("gcimage_" + gcImage.id + "_" + i, dynamicTexture);
-                Minecraft.getMinecraft().getTextureManager().bindTexture(resLoc);
+                MinecraftCompat.getMinecraft().getTextureManager().bindTexture(resLoc);
                 GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
                 GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
                 gcImage.frames.add(resLoc);

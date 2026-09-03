@@ -6,7 +6,9 @@ import io.hamlook.aetheria.features.chat.GuiChatHook;
 import io.hamlook.aetheria.features.chat.GuiNewChatHook;
 import io.hamlook.aetheria.features.chat.emoji.EmojiSuggestionBar;
 import io.hamlook.aetheria.features.qol.ChatStateManager;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.ChatLine;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.GuiScreen;
@@ -14,7 +16,6 @@ import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -47,18 +48,18 @@ public abstract class MixinGuiChat implements GuiChatHook {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.chatCopyEnabled) return;
         if (mouseButton != 0) return;
         if (!GuiScreen.isShiftKeyDown() && !GuiScreen.isCtrlKeyDown()) return;
-        GuiNewChatHook chatGUI = (GuiNewChatHook) Minecraft.getMinecraft().ingameGUI.getChatGUI();
+        GuiNewChatHook chatGUI = (GuiNewChatHook) MinecraftCompat.getMinecraft().ingameGUI.getChatGUI();
         ChatLine line = chatGUI.athr$getCurrentHoveredLine();
         if (line == null) return;
         boolean formatted = ATHRConfig.feature.chat.chatCopyFormatted;
         String text;
         if (GuiScreen.isCtrlKeyDown()) {
-            String raw = line.getChatComponent().getFormattedText();
+            String raw = TextCompat.getFormattedText(line.getChatComponent());
             text = formatted ? raw : EnumChatFormatting.getTextWithoutFormattingCodes(raw);
         } else {
             IChatComponent fullMsg = ((ChatLineHook) line).athr$getFullMessage();
             IChatComponent src = (fullMsg != null) ? fullMsg : line.getChatComponent();
-            String raw = src.getFormattedText();
+            String raw = TextCompat.getFormattedText(src);
             text = formatted ? raw : EnumChatFormatting.getTextWithoutFormattingCodes(raw);
         }
         GuiScreen.setClipboardString(text);
@@ -90,7 +91,7 @@ public abstract class MixinGuiChat implements GuiChatHook {
     @Inject(method = "handleMouseInput", at = @At("HEAD"), cancellable = true)
     private void ATHR$onHandleMouseInput(CallbackInfo ci) {
         if (athr$disabled()) return;
-        if (EmojiSuggestionBar.handleMouseWheel(Mouse.getEventDWheel())) {
+        if (EmojiSuggestionBar.handleMouseWheel(MouseCompat.getEventDWheel())) {
             ci.cancel();
         }
     }

@@ -1,7 +1,8 @@
 package io.hamlook.aetheria.features.farming;
 
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.BlockBreakEvent;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerData;
 import io.hamlook.aetheria.features.farming.gardenplots.GardenPlotData;
@@ -10,21 +11,20 @@ import io.hamlook.aetheria.features.farming.visitors.VisitorBonus;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.AxisAlignedBB;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @RegisterEvents
 public final class FarmingApi {
@@ -83,7 +83,7 @@ public final class FarmingApi {
     }
 
     private static int computePlayerPlotId() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc == null || mc.thePlayer == null) return -1;
         double px = mc.thePlayer.posX;
         double pz = mc.thePlayer.posZ;
@@ -101,7 +101,7 @@ public final class FarmingApi {
     }
 
     public static boolean isHoldingFarmingTool() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         return mc != null && mc.thePlayer != null && FarmingToolIds.isFarmingTool(cachedHeldItemId);
     }
 
@@ -116,7 +116,7 @@ public final class FarmingApi {
     }
 
     public static boolean isHoldingVacuum() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         boolean holdingNow = mc != null && mc.thePlayer != null && cachedHeldItemId.contains("VACUUM");
         if (holdingNow) lastVacuumHeldMs = System.currentTimeMillis();
         return holdingNow || System.currentTimeMillis() - lastVacuumHeldMs < VACUUM_WINDOW_MS;
@@ -171,7 +171,7 @@ public final class FarmingApi {
     }
 
     public static Integer getTargetInfestedPlot(int mode) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc == null || mc.thePlayer == null || ACTIVE_PESTS.isEmpty()) return null;
         Integer best = null;
         for (Integer id : ACTIVE_PESTS.keySet()) {
@@ -417,7 +417,7 @@ public final class FarmingApi {
     @HandleEvent
     public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc == null || mc.thePlayer == null) return;
         cachedHeldItemId = ItemUtils.getInternalName(mc.thePlayer.getHeldItem());
         if (cachedHeldItemId.contains("VACUUM")) {

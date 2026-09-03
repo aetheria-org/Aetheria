@@ -1,34 +1,17 @@
 package io.hamlook.aetheria.mixins.chat;
 
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.features.chat.ChatCompactHandler;
-import io.hamlook.aetheria.features.chat.ChatLineHook;
-import io.hamlook.aetheria.features.chat.ChatUtilsState;
-import io.hamlook.aetheria.features.chat.GuiChatHook;
-import io.hamlook.aetheria.features.chat.GuiNewChatHook;
+import io.hamlook.aetheria.features.chat.*;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ChatLine;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiChat;
-import net.minecraft.client.gui.GuiNewChat;
-import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.gui.*;
 import net.minecraft.client.network.NetworkPlayerInfo;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.MathHelper;
-import org.lwjgl.input.Mouse;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
@@ -109,7 +92,7 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
         double shift      = ((double) System.currentTimeMillis()
                 - (double) lineHeight * speed - athr$animationStart) / speed;
         if (shift > 0.0D) shift = 0.0D;
-        GlStateManager.translate(0.0D, -shift, 0.0D);
+        GlStateManagerCompat.translate(0.0D, -shift, 0.0D);
     }
 
     @Inject(method = "drawChat", at = @At("HEAD"))
@@ -119,7 +102,7 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
         if (!(mc.currentScreen instanceof GuiChat)) return;
         if (!((GuiChatHook) mc.currentScreen).athr$isTypingMode()) return;
         athr$hoveredLine = athr$getHoveredChatLine(
-                Mouse.getX(), mc.displayHeight - Mouse.getY() - 1);
+                MouseCompat.getX(), mc.displayHeight - MouseCompat.getY() - 1);
     }
 
     @Redirect(
@@ -170,17 +153,17 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
                 int   alpha     = (color >> 24) & 0xFF;
                 float headAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
 
-                GlStateManager.enableBlend();
-                GlStateManager.enableAlpha();
-                GlStateManager.enableTexture2D();
+                GlStateManagerCompat.enableBlend();
+                GlStateManagerCompat.enableAlpha();
+                GlStateManagerCompat.enableTexture2D();
                 mc.getTextureManager().bindTexture(info.getLocationSkin());
-                GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-                GlStateManager.color(1.0f, 1.0f, 1.0f, headAlpha);
+                GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+                GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, headAlpha);
 
                 Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 8f,  8f, 8, 8, 8, 8, 64f, 64f);
                 Gui.drawScaledCustomSizeModalRect((int) x, (int) (y - 1f), 40f, 8f, 8, 8, 8, 8, 64f, 64f);
 
-                GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+                GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f);
                 drawX += 10f;
 
             } else if (hook.athr$hasDetected() || ATHRConfig.feature.chat.offsetNonPlayerMessages) {
@@ -208,7 +191,7 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
     public ChatLine athr$getHoveredChatLine(int rawMouseX, int rawMouseY) {
         if (!getChatOpen()) return null;
 
-        ScaledResolution sr          = new ScaledResolution(mc);
+        ScaledResolution sr          = GuiScreenUtils.getScaledResolution();
         int              scaleFactor = sr.getScaleFactor();
         float            chatScale   = getChatScale();
 

@@ -3,14 +3,14 @@ package io.hamlook.aetheria.features.misc;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
-import io.hamlook.aetheria.utils.CalculatorUtils;
-import io.hamlook.aetheria.utils.ColorUtils;
-import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.KeybindHelper;
-import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.*;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
@@ -20,25 +20,13 @@ import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
-import net.minecraft.client.renderer.GlStateManager;
-import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import io.hamlook.aetheria.events.ASMMouseEvent;
-import io.hamlook.aetheria.events.ASMKeyEvent;
-import io.hamlook.aetheria.events.ASMGuiInitEvent;
-import io.hamlook.aetheria.events.ASMTooltipEvent;
+import java.util.*;
 
 @RegisterEvents
 public class SearchBar {
 
-    private static final Minecraft MC = Minecraft.getMinecraft();
+    private static final Minecraft MC = MinecraftCompat.getMinecraft();
 
     private static final Set<Character> CALC_SYMBOLS = new HashSet<>(Arrays.asList('+', '-', '*', '/', 'x', '(', ')'));
 
@@ -189,7 +177,7 @@ public class SearchBar {
     }
 
     private static int[] getMouseCoords() {
-        return KeybindHelper.getMouseCoords(new ScaledResolution(MC));
+        return KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledResolution());
     }
 
     private static void drawToggleButton(int barX, int barY) {
@@ -200,7 +188,7 @@ public class SearchBar {
         RenderUtils.drawButton(toggleBtnX, toggleBtnY, TOGGLE_BTN_W, BAR_HEIGHT, tooltip, () -> {
             if (sendToItemList) {
                 MC.getTextureManager().bindTexture(Resources.SEARCH_ICON);
-                GlStateManager.color(1f, 1f, 1f, 1f);
+                GlStateManagerCompat.color(1f, 1f, 1f, 1f);
                 int size = 12;
                 Gui.drawModalRectWithCustomSizedTexture(toggleBtnX + (TOGGLE_BTN_W - size) / 2, toggleBtnY + (BAR_HEIGHT - size) / 2, 0, 0, size, size, size, size);
             } else {
@@ -314,7 +302,7 @@ public class SearchBar {
     }
 
     public void render(boolean preview) {
-        ScaledResolution sr = new ScaledResolution(MC);
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int[] pos = calculateBarPosition(sr);
         int x = pos[0], y = pos[1];
 
@@ -329,7 +317,7 @@ public class SearchBar {
 
         KeybindHelper.enableRepeatEvents(true);
 
-        ScaledResolution sr = new ScaledResolution(MC);
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int[] pos = calculateBarPosition(sr);
 
         searchBar = new GuiTextField(0, MC.fontRendererObj, pos[0], pos[1], BAR_WIDTH, BAR_HEIGHT);
@@ -458,14 +446,14 @@ public class SearchBar {
         hoveredItemName = null;
 
         if (isEnabled() && isSupportedGui(event.gui) && searchBar != null && !StorageManager.isOverlayActive()) {
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(-event.gui.guiLeft, -event.gui.guiTop, 50);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(-event.gui.guiLeft, -event.gui.guiTop, 50);
             searchBar.updateCursorCounter();
             drawSearchBar(searchBar);
             drawClearButton(searchBar.xPosition, searchBar.yPosition);
             if (isItemListActive()) drawToggleButton(searchBar.xPosition, searchBar.yPosition);
             drawRecentSearches(searchBar.xPosition, searchBar.yPosition);
-            GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
         }
     }
 }

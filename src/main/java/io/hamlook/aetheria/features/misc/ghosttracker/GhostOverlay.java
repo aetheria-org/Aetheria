@@ -6,13 +6,13 @@ import io.hamlook.aetheria.core.features.misc.GhostTrackerConfig;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.time.TimeFormatter;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
@@ -88,7 +88,7 @@ public class GhostOverlay extends Overlay {
     public void render(boolean preview) {
         if (!preview && !extraGuard()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         float scale = getScale();
         GhostTrackerConfig cfg = ATHRConfig.feature.misc.ghostTrackerConfig;
 
@@ -161,8 +161,8 @@ public class GhostOverlay extends Overlay {
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0) drawRoundedRect(-3, -3, w, h - 3, getCornerRadius(), bgColor);
 
-        GlStateManager.enableAlpha();
-        GlStateManager.enableBlend();
+        GlStateManagerCompat.enableAlpha();
+        GlStateManagerCompat.enableBlend();
 
         mc.fontRendererObj.drawStringWithShadow(header, 3, 3, 0xFFFFFF);
 

@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
@@ -25,7 +26,7 @@ public class GuiOptionEditorTextDisplay extends GuiOptionEditor {
 
     @Override
     public void render(int x, int y, int width) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
         RenderUtils.drawFloatingRectDark(x, y, width, HEIGHT, true);
 

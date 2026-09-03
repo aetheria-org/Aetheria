@@ -11,21 +11,20 @@ import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.Utils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class GuiInvButtonEditor extends GuiScreen {
+public class GuiInvButtonEditor extends AetheriaBaseScreen {
 
     private static final ResourceLocation INVENTORY_TEX = Resources.INVENTORY_TEX;
     private static final ResourceLocation EDITOR_TEX    = Resources.INV_EDITOR_TEX;
@@ -98,30 +97,29 @@ public class GuiInvButtonEditor extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        super.drawScreen(mouseX, mouseY, partialTicks);
-        super.drawDefaultBackground();
+    protected void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
+        drawDefaultBackground();
 
         guiLeft = width / 2 - xSize / 2;
         guiTop = height / 2 - ySize / 2;
 
-        GlStateManager.enableDepth();
+        GlStateManagerCompat.enableDepth();
 
         mc.getTextureManager().bindTexture(INVENTORY_TEX);
-        GlStateManager.color(1, 1, 1, 1);
+        GlStateManagerCompat.color(1, 1, 1, 1);
         Utils.drawTexturedRect(guiLeft, guiTop, xSize, ySize, 0, xSize / 256f, 0, ySize / 256f, GL11.GL_NEAREST);
 
         for (InventoryButton btn : InventoryButtonStorage.getInstance().getButtons()) {
             int bx = guiLeft + btn.x + (btn.anchorRight ? xSize : 0);
             int by = guiTop + btn.y + (btn.anchorBottom ? ySize : 0);
 
-            GlStateManager.color(1, 1, 1, btn.isActive() ? 1f : 0.5f);
+            GlStateManagerCompat.color(1, 1, 1, btn.isActive() ? 1f : 0.5f);
             mc.getTextureManager().bindTexture(EDITOR_TEX);
             Utils.drawTexturedRect(bx, by, 18, 18, btn.backgroundIndex * 18 / 256f, (btn.backgroundIndex * 18 + 18) / 256f, 18 / 256f, 36 / 256f, GL11.GL_NEAREST);
-            GlStateManager.color(1, 1, 1, 1);
+            GlStateManagerCompat.color(1, 1, 1, 1);
             if (btn.isActive()) {
                 if (btn.icon != null && !btn.icon.trim().isEmpty()) {
-                    GlStateManager.enableDepth();
+                    GlStateManagerCompat.enableDepth();
                     InvButtonIconRenderer.renderIcon(btn.icon, bx + 1, by + 1);
                 }
             } else {
@@ -153,7 +151,7 @@ public class GuiInvButtonEditor extends GuiScreen {
         if (presetNames == null || presetNames.isEmpty()) return;
         int px = guiLeft + xSize + 22, py = guiTop;
         mc.getTextureManager().bindTexture(EDITOR_TEX);
-        GlStateManager.color(1, 1, 1, 1);
+        GlStateManagerCompat.color(1, 1, 1, 1);
         Utils.drawTexturedRect(px, py, 80, ySize, editorXSize / 256f, (editorXSize + 80) / 256f, 41 / 256f, (41 + ySize) / 256f, GL11.GL_NEAREST);
         fontRendererObj.drawString("§nPresets", px + 8, py + 6, 0xffa0a0a0);
         for (int i = 0; i < presetNames.size(); i++)
@@ -180,10 +178,10 @@ public class GuiInvButtonEditor extends GuiScreen {
             showArrow = false;
         }
 
-        GlStateManager.translate(0, 0, 300);
+        GlStateManagerCompat.translate(0, 0, 300);
 
         mc.getTextureManager().bindTexture(EDITOR_TEX);
-        GlStateManager.color(1, 1, 1, 1f);
+        GlStateManagerCompat.color(1, 1, 1, 1f);
         Utils.drawTexturedRect(editorLeft, editorTop, editorXSize, editorYSize, 0, editorXSize / 256f, 41 / 256f, (41 + editorYSize) / 256f, GL11.GL_NEAREST);
 
         if (showArrow)
@@ -200,7 +198,7 @@ public class GuiInvButtonEditor extends GuiScreen {
             if (i == editingButton.backgroundIndex)
                 Gui.drawRect(editorLeft + 7 + 20 * i - 1, editorTop + 50 - 1, editorLeft + 7 + 20 * i + 19, editorTop + 50 + 19, 0xff0000ff);
             mc.getTextureManager().bindTexture(EDITOR_TEX);
-            GlStateManager.color(1, 1, 1, 1);
+            GlStateManagerCompat.color(1, 1, 1, 1);
             Utils.drawTexturedRect(editorLeft + 7 + 20 * i, editorTop + 50, 18, 18, i * 18 / 256f, (i * 18 + 18) / 256f, 0, 18 / 256f, GL11.GL_NEAREST);
         }
 
@@ -215,8 +213,8 @@ public class GuiInvButtonEditor extends GuiScreen {
         fontRendererObj.drawString("Icon Search", editorLeft + 7, editorTop + 100, 0xffa0a0a0);
         iconTextField.render(editorLeft + 7, editorTop + 110);
 
-        GlStateManager.enableDepth();
-        ScaledResolution sr = new ScaledResolution(mc);
+        GlStateManagerCompat.enableDepth();
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         GlScissorStack.push(editorLeft, editorTop + 130, editorLeft + editorXSize, editorTop + editorYSize - 8, sr);
 
         synchronized (searchedIcons) {
@@ -236,19 +234,19 @@ public class GuiInvButtonEditor extends GuiScreen {
                 int ix = editorLeft + 12 + ((i - startIndex) % 6) * 20;
                 int iy = editorTop + 137 + ((i - startIndex) / 6) * 20 - (itemScrollPx % 20);
                 mc.getTextureManager().bindTexture(EDITOR_TEX);
-                GlStateManager.color(1, 1, 1, 1);
+                GlStateManagerCompat.color(1, 1, 1, 1);
                 Utils.drawTexturedRect(ix, iy, 18, 18, 18 / 256f, 36 / 256f, 0, 18 / 256f, GL11.GL_NEAREST);
                 InvButtonIconRenderer.renderIcon(searchedIcons.get(i), ix + 1, iy + 1);
             }
         }
 
         GlScissorStack.pop(sr);
-        GlStateManager.translate(0, 0, -300);
+        GlStateManagerCompat.translate(0, 0, -300);
     }
 
     @Override
-    public void handleMouseInput() throws IOException {
-        int scroll = Mouse.getEventDWheel();
+    protected void onHandleMouseInput() {
+        int scroll = MouseCompat.getEventDWheel();
         if (scroll != 0 && editingButton != null) {
             scroll = -scroll;
             if (scroll > 1) scroll = 8;
@@ -260,12 +258,10 @@ public class GuiInvButtonEditor extends GuiScreen {
                 if (itemScrollPx > max) itemScrollPx = max;
             }
         }
-        super.handleMouseInput();
     }
 
     @Override
-    protected void mouseClicked(int mx, int my, int btn) throws IOException {
-        super.mouseClicked(mx, my, btn);
+    protected void onMouseClicked(int mx, int my, int btn) {
 
         if (editingButton != null && mx >= editorLeft && mx <= editorLeft + editorXSize && my >= editorTop && my <= editorTop + editorYSize) {
 
@@ -370,8 +366,7 @@ public class GuiInvButtonEditor extends GuiScreen {
     }
 
     @Override
-    protected void keyTyped(char c, int key) throws IOException {
-        super.keyTyped(c, key);
+    protected void onKeyTyped(char c, int key) {
         if (editingButton == null) return;
         if (commandTextField.getFocus()) {
             commandTextField.keyTyped(c, key);
@@ -385,7 +380,7 @@ public class GuiInvButtonEditor extends GuiScreen {
     }
 
     @Override
-    public void onGuiClosed() {
+    protected void guiClosed() {
         InventoryButtonStorage.getInstance().save();
     }
 

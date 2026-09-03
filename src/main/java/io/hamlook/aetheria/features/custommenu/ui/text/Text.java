@@ -2,11 +2,11 @@ package io.hamlook.aetheria.features.custommenu.ui.text;
 
 import io.hamlook.aetheria.features.custommenu.Position;
 import io.hamlook.aetheria.features.custommenu.ui.CMMElement;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.placeholders.PlaceholderManager;
 import io.hamlook.aetheria.utils.render.MiniMessageDetector;
-import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 
 import java.util.List;
@@ -35,7 +35,7 @@ public class Text extends CMMElement {
         String toDraw = placeholders ? PlaceholderManager.replace(this.text) : this.text;
         List<MiniMessageDetector.Segment> segments = MiniMessageDetector.parse(toDraw);
 
-        FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
         boolean displayScale = false;
         float scaleDisplay = displayScale ? ResolutionUtils.getXStatic(1) : 1f;
         float finalScale = Math.max(0.25f, this.scale * scaleDisplay);
@@ -70,7 +70,7 @@ public class Text extends CMMElement {
 
     @Override
     public int[] getCorners() {
-        FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
         int[] corners =  new int[4];
         int width = fr.getStringWidth(placeholders ? PlaceholderManager.replace(this.text) : this.text);
         int height = (int)(fr.FONT_HEIGHT * scale);

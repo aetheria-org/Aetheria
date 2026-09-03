@@ -1,13 +1,14 @@
 package io.hamlook.aetheria.features.chat.chatfilters.ui;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 
-abstract class ChatFilterBaseGUI extends GuiScreen {
+abstract class ChatFilterBaseGUI extends AetheriaBaseScreen {
 
     protected static final double BTN_W = 90;
     protected static final double BTN_H = 28;
@@ -27,7 +28,7 @@ abstract class ChatFilterBaseGUI extends GuiScreen {
     }
 
     protected void startScissor(int x, int y, int width, int height) {
-        ScaledResolution res = new ScaledResolution(mc);
+        ScaledResolution res = GuiScreenUtils.getScaledResolution();
         int scale = res.getScaleFactor();
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);

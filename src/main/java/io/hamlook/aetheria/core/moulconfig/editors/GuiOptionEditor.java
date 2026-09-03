@@ -4,11 +4,11 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.GlStateManager;
 
 public abstract class GuiOptionEditor {
 
@@ -22,7 +22,7 @@ public abstract class GuiOptionEditor {
     public void render(int x, int y, int width) {
         int height = getHeight();
 
-        FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
         RenderUtils.drawFloatingRectDark(x, y, width, height, true);
         TextRenderUtils.drawStringCenteredScaledMaxWidth(option.name, fr, x + width / 6, y + 13, true, width / 3 - 10, 0xc0c0c0);
 
@@ -40,13 +40,13 @@ public abstract class GuiOptionEditor {
             paraHeight = (int) (9 * scale * lineCount - 1 * scale);
         }
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(x + 5 + width / 3f, y + HEIGHT / 2f - paraHeight / 2, 0);
-        GlStateManager.scale(scale, scale, 1);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(x + 5 + width / 3f, y + HEIGHT / 2f - paraHeight / 2, 0);
+        GlStateManagerCompat.scale(scale, scale, 1);
 
         fr.drawSplitString(option.desc, 0, 0, (int) (width * 2 / 3 / scale - 10), 0xc0c0c0);
 
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     public int getHeight() {

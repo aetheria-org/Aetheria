@@ -3,15 +3,6 @@ package io.hamlook.aetheria.features.profile;
 import com.google.gson.Gson;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.network.NetworkGuard;
-import io.hamlook.aetheria.utils.data.SkyblockData;
-
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
 import io.hamlook.aetheria.features.profile.data.HOTMData;
 import io.hamlook.aetheria.features.profile.data.ItemData;
 import io.hamlook.aetheria.features.profile.data.ProfileData;
@@ -47,9 +38,14 @@ import io.hamlook.aetheria.features.profile.data.wardrobe.WardrobeSet;
 import io.hamlook.aetheria.features.profile.saving.SupabaseHandler;
 import io.hamlook.aetheria.features.profile.vars.EquipmentSlot;
 import io.hamlook.aetheria.features.profile.vars.ProfileMode;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
+import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.inventory.Container;
@@ -61,8 +57,9 @@ import net.minecraft.nbt.NBTException;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class ProfileParser {
 
@@ -118,12 +115,12 @@ public class ProfileParser {
         base.playerProfile = lastCachedProfile;
         parsing = true;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
         Aetheria.logger.info("[ProfileParser] Pending inventory for: " + base.playerName);
         windowID = container.windowId;
-        mc.playerController.windowClick(
-                windowID, 19, 0, 0, Minecraft.getMinecraft().thePlayer
+        InventoryCompat.windowClick(
+                windowID, 19, 0, 0, MinecraftCompat.getMinecraft().thePlayer
         );
 
         // Inventory
@@ -137,7 +134,7 @@ public class ProfileParser {
             Aetheria.logger.info("[ProfileParser] InventoryData parsed for: " + base.playerName);
         },prof1 -> {
             windowID = prof1.windowId;
-            mc.playerController.windowClick(windowID,21,0,0,mc.thePlayer);
+            InventoryCompat.windowClick(windowID,21,0,0,mc.thePlayer);
 
             // Skills
             GuiWaiter.waitFor("View Skills",2,49,"View Profile",skills -> {
@@ -150,7 +147,7 @@ public class ProfileParser {
                 Aetheria.logger.info("[ProfileParser] SkillData parsed for: " + base.playerName);
             },prof2 -> {
                 windowID = prof2.windowId;
-                mc.playerController.windowClick(windowID,41,0,0,mc.thePlayer);
+                InventoryCompat.windowClick(windowID,41,0,0,mc.thePlayer);
 
                 // HOTM
                 GuiWaiter.waitFor("View HOTM", 2,31,"View Profile",hotm -> {
@@ -163,7 +160,7 @@ public class ProfileParser {
                     Aetheria.logger.info("[ProfileParser] HOTMData parsed for: " + base.playerName);
                 },prof3 -> {
                     windowID = prof3.windowId;
-                    mc.playerController.windowClick(windowID,43,0,0,mc.thePlayer);
+                    InventoryCompat.windowClick(windowID,43,0,0,mc.thePlayer);
 
                     // Dungeon
                     GuiWaiter.waitFor("View Dungeon Stats",2,49,"View Profile",dungeon -> {
@@ -177,7 +174,7 @@ public class ProfileParser {
                     },prof4 -> {
 
                         windowID = prof4.windowId;
-                        mc.playerController.windowClick(windowID,33,0,0,mc.thePlayer);
+                        InventoryCompat.windowClick(windowID,33,0,0,mc.thePlayer);
                         // Slayers
                         GuiWaiter.waitFor("View Slayers",2,31,"View Profile", slayers -> {
                             slayerData[0] = parseSlayer(slayers);
@@ -189,7 +186,7 @@ public class ProfileParser {
                             Aetheria.logger.info("[ProfileParser] SlayersData parsed for: " + base.playerName);
                         },prof5 -> {
                             windowID = prof5.windowId;
-                            mc.playerController.windowClick(windowID,31,0,0,mc.thePlayer);
+                            InventoryCompat.windowClick(windowID,31,0,0,mc.thePlayer);
 
                             // Wardrobe
                             HashMap<Integer,WardrobeSet> wardrobe = new HashMap<>();
@@ -199,7 +196,7 @@ public class ProfileParser {
                                         wardrobeData[0] = new WardrobeData(wardrobe);
 
                                         windowID = prof6.windowId;
-                                        mc.playerController.windowClick(windowID,29,0,0,mc.thePlayer);
+                                        InventoryCompat.windowClick(windowID,29,0,0,mc.thePlayer);
 
                                         // Pets
                                         HashMap<Integer,Pet> pets = new HashMap<>();
@@ -210,7 +207,7 @@ public class ProfileParser {
                                                     petsData[0] = new PetsData(pets);
 
                                                     windowID = prof7.windowId;
-                                                    mc.playerController.windowClick(windowID,23,0,0,mc.thePlayer);
+                                                    InventoryCompat.windowClick(windowID,23,0,0,mc.thePlayer);
 
                                                     // Storage
                                                     GuiWaiter.waitFor("View Storage",2,-1,bags -> {
@@ -259,17 +256,17 @@ public class ProfileParser {
             Aetheria.logger.info("[ProfileParser] StorageData parsed for: " + base.playerName);
             storageData[0] = new StorageData(containers);
 
-            Minecraft mc = Minecraft.getMinecraft();
-            mc.playerController.windowClick(currentWindowId,49,0,0,mc.thePlayer);
+            Minecraft mc = MinecraftCompat.getMinecraft();
+            InventoryCompat.windowClick(currentWindowId,49,0,0,mc.thePlayer);
 
 
             GuiWaiter.waitFor("View Profile",2,-1,prof -> {
                 windowID = prof.windowId;
-                mc.playerController.windowClick(windowID,39,0,0,mc.thePlayer);
+                InventoryCompat.windowClick(windowID,39,0,0,mc.thePlayer);
 
                 GuiWaiter.waitFor("View Bags",2,-1,bags -> {
                     windowID = bags.windowId;
-                    mc.playerController.windowClick(windowID,11,0,0,mc.thePlayer);
+                    InventoryCompat.windowClick(windowID,11,0,0,mc.thePlayer);
                     GuiWaiter.waitFor("Show Contents",2,-6,"View Bags",fishing -> {
                         fishingData[0] = parseFishing(fishing);
                         Aetheria.logger.info("[ProfileParser] FishingData parsed for: " + base.playerName);
@@ -293,7 +290,7 @@ public class ProfileParser {
                         if(mp < 0){
                             return;
                         }
-                        mc.playerController.windowClick(windowID,15,0,0,mc.thePlayer);
+                        InventoryCompat.windowClick(windowID,15,0,0,mc.thePlayer);
                         int finalMp = mp;
                         GuiWaiter.waitForPaged("Show Contents",2,-2,"Next Page",
                                 -6,"View Bags",accessory -> accessories.addAll(parseAccessory(accessory)),
@@ -302,32 +299,32 @@ public class ProfileParser {
                             Aetheria.logger.info("[ProfileParser] AccessorryData parsed for: " + base.playerName);
 
                             windowID = bags2.windowId;
-                            mc.playerController.windowClick(windowID,13,0,0,mc.thePlayer);
+                            InventoryCompat.windowClick(windowID,13,0,0,mc.thePlayer);
                             GuiWaiter.waitFor("Show Contents",2,-6,"View Bags",quiver -> {
                                 QuiverData quiverData = parseQuiver(quiver);
                                 Aetheria.logger.info("[ProfileParser] QuiverData parsed for: " + base.playerName);
                                 bagsData[0] = new BagsData(accessoryData,fishingData[0],quiverData);
                             },bags3 -> {
                                 windowID = bags3.windowId;
-                                mc.playerController.windowClick(windowID,31,0,0,mc.thePlayer);
+                                InventoryCompat.windowClick(windowID,31,0,0,mc.thePlayer);
                                 GuiWaiter.waitFor("View Profile",2,-1,prof2 -> {
                                     windowID = prof2.windowId;
-                                    mc.playerController.windowClick(windowID,25,0,0,mc.thePlayer);
+                                    InventoryCompat.windowClick(windowID,25,0,0,mc.thePlayer);
                                     EnumMap<CollectionType, CollectionData> data = new EnumMap<>(CollectionType.class);
                                     GuiWaiter.waitFor("View Farming Collections",2,2,"View Mining Collections",farming -> data.putAll(parseCollection(CollectionBase.FARMING,farming)), mining -> {
                                         windowID = mining.windowId;
                                         data.putAll(parseCollection(CollectionBase.MINING,mining));
-                                        mc.playerController.windowClick(windowID,3,0,0,mc.thePlayer);
+                                        InventoryCompat.windowClick(windowID,3,0,0,mc.thePlayer);
                                         GuiWaiter.waitFor("View Combat Collections",2,4,"View Foraging Collections", combat -> data.putAll(parseCollection(CollectionBase.COMBAT,combat)), foraging -> {
                                             windowID = foraging.windowId;
                                             data.putAll(parseCollection(CollectionBase.FORAGING,foraging));
-                                            mc.playerController.windowClick(windowID,5,0,0,mc.thePlayer);
+                                            InventoryCompat.windowClick(windowID,5,0,0,mc.thePlayer);
                                             GuiWaiter.waitFor("View Fishing Collections",2,6,"View Boss Collections",fishing -> data.putAll(parseCollection(CollectionBase.FISHING,fishing)), boss -> {
                                                 windowID = boss.windowId;
                                                 data.putAll(parseCollection(CollectionBase.BOSS,boss));
                                                 collectionData[0] = new CollectionsData(data);
                                                 save();
-                                                mc.playerController.windowClick(windowID,48,0,0,mc.thePlayer);
+                                                InventoryCompat.windowClick(windowID,48,0,0,mc.thePlayer);
                                             });
                                         });
                                     });
@@ -341,8 +338,8 @@ public class ProfileParser {
         }
 
         int slotToClick = slotsToCheck.get(index);
-        Minecraft mc = Minecraft.getMinecraft();
-        mc.playerController.windowClick(currentWindowId, slotToClick, 0, 0, mc.thePlayer);
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        InventoryCompat.windowClick(currentWindowId, slotToClick, 0, 0, mc.thePlayer);
 
         String id = slotToClick <= 9 ? "echest-" + slotToClick : "bag-" + (slotToClick - 18);
 
@@ -1038,10 +1035,9 @@ public class ProfileParser {
 
     public static List<String> getLore(ItemStack stack) {
         List<String> lore = new ArrayList<>();
-        if (stack == null || !stack.hasTagCompound()) return lore;
-        NBTTagCompound display = stack.getTagCompound().getCompoundTag("display");
-        if (!display.hasKey("Lore", 9)) return lore;
-        NBTTagList loreList = display.getTagList("Lore", 8);
+        NBTTagCompound display = ItemUtils.getDisplayCompound(stack);
+        if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return lore;
+        NBTTagList loreList = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
         for (int i = 0; i < loreList.tagCount(); i++)
             lore.add(ColorUtils.stripColor(loreList.getStringTagAt(i)).trim());
         return lore;
@@ -1049,10 +1045,9 @@ public class ProfileParser {
 
     public static List<String> getLoreColored(ItemStack stack) {
         List<String> lore = new ArrayList<>();
-        if (stack == null || !stack.hasTagCompound()) return lore;
-        NBTTagCompound display = stack.getTagCompound().getCompoundTag("display");
-        if (!display.hasKey("Lore", 9)) return lore;
-        NBTTagList loreList = display.getTagList("Lore", 8);
+        NBTTagCompound display = ItemUtils.getDisplayCompound(stack);
+        if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return lore;
+        NBTTagList loreList = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
         for (int i = 0; i < loreList.tagCount(); i++)
             lore.add(loreList.getStringTagAt(i));
         return lore;

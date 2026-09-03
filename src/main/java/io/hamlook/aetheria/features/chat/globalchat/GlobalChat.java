@@ -12,21 +12,12 @@ import io.hamlook.aetheria.utils.EmojiParser;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.chat.ExpiringArrayList;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,7 +52,7 @@ public class GlobalChat {
     public static volatile boolean channelsLoadFailed = false;
     /** Lower-cased Minecraft session username (the identity the server enforces against). */
     public static String getUsername() {
-        return Minecraft.getMinecraft().getSession().getUsername().toLowerCase();
+        return MinecraftCompat.getMinecraft().getSession().getUsername().toLowerCase();
     }
 
     public static void initialise(){

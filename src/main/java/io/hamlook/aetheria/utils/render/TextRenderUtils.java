@@ -1,12 +1,12 @@
 package io.hamlook.aetheria.utils.render;
 
 import io.hamlook.aetheria.features.misc.ScrollableTooltips;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
-import io.hamlook.aetheria.utils.render.ResolutionUtils;
+import io.hamlook.aetheria.utils.compat.RenderHelperCompat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,9 +22,9 @@ public final class TextRenderUtils {
     }
 
     public static void drawStringScaled(String str, FontRenderer fr, float x, float y, boolean shadow, int colour, float factor) {
-        GlStateManager.scale(factor, factor, 1);
+        GlStateManagerCompat.scale(factor, factor, 1);
         fr.drawString(str, x / factor, y / factor, colour, shadow);
-        GlStateManager.scale(1 / factor, 1 / factor, 1);
+        GlStateManagerCompat.scale(1 / factor, 1 / factor, 1);
     }
 
     public static void drawStringCenteredScaledMaxWidth(String str, FontRenderer fr, float x, float y, boolean shadow, int len, int colour) {
@@ -35,17 +35,17 @@ public final class TextRenderUtils {
     }
 
     public static void drawStringScaleAware(String text, float xPos, float yPos,int color, float uiScale, boolean displayScale) {
-        GlStateManager.pushMatrix();
-        GlStateManager.disableBlend();
-        GlStateManager.enableAlpha();
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.enableAlpha();
 
         float scaleDisplay = displayScale ? ResolutionUtils.getXStatic(1) : 1f;
         float finalScale = Math.max(0.25f, uiScale * scaleDisplay);
 
-        GlStateManager.translate(xPos, yPos, 0);
-        GlStateManager.scale(finalScale, finalScale, 1f);
-        Minecraft.getMinecraft().fontRendererObj.drawString(text, 0, 0, color);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.translate(xPos, yPos, 0);
+        GlStateManagerCompat.scale(finalScale, finalScale, 1f);
+        MinecraftCompat.getMinecraft().fontRendererObj.drawString(text, 0, 0, color);
+        GlStateManagerCompat.popMatrix();
     }
 
     public static void drawStringScaleAware(String text, float xPos, float yPos, float uiScale, boolean displayScale) {
@@ -57,19 +57,19 @@ public final class TextRenderUtils {
     }
 
     public static void drawCenteredStringScaleAware(String text, float xPos, float yPos,int color, float uiScale, boolean displayScale) {
-        GlStateManager.pushMatrix();
-        GlStateManager.disableBlend();
-        GlStateManager.enableAlpha();
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.enableAlpha();
 
         float scaleDisplay = displayScale ? ResolutionUtils.getXStatic(1) : 1f;
         float finalScale = Math.max(0.25f, uiScale * scaleDisplay);
 
-        GlStateManager.translate(xPos, yPos, 0);
-        GlStateManager.scale(finalScale, finalScale, 1f);
+        GlStateManagerCompat.translate(xPos, yPos, 0);
+        GlStateManagerCompat.scale(finalScale, finalScale, 1f);
 
-        FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
         fr.drawString(text, -fr.getStringWidth(text) / 2f, -fr.FONT_HEIGHT / 2f, color, false);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     public static void drawCenteredStringScaleAware(String text, float xPos, float yPos, float uiScale, boolean displayScale) {
@@ -84,14 +84,14 @@ public final class TextRenderUtils {
         mouseY += ScrollableTooltips.scrollOffset;
 
         if (textLines.isEmpty()) {
-            GlStateManager.disableLighting();
+            GlStateManagerCompat.disableLighting();
             return;
         }
 
-        GlStateManager.disableRescaleNormal();
-        RenderHelper.disableStandardItemLighting();
-        GlStateManager.disableLighting();
-        GlStateManager.disableDepth();
+        GlStateManagerCompat.disableRescaleNormal();
+        RenderHelperCompat.disableStandardItemLighting();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableDepth();
 
         int tooltipTextWidth = 0;
         for (String line : textLines) tooltipTextWidth = Math.max(tooltipTextWidth, font.getStringWidth(line));
@@ -152,15 +152,15 @@ public final class TextRenderUtils {
             tooltipY += 10;
         }
 
-        GlStateManager.enableLighting();
-        GlStateManager.enableDepth();
-        RenderHelper.enableStandardItemLighting();
-        GlStateManager.enableRescaleNormal();
-        GlStateManager.disableLighting();
+        GlStateManagerCompat.enableLighting();
+        GlStateManagerCompat.enableDepth();
+        RenderHelperCompat.enableStandardItemLighting();
+        GlStateManagerCompat.enableRescaleNormal();
+        GlStateManagerCompat.disableLighting();
     }
 
     public static void drawHoveringText(List<String> textLines, int mouseX, int mouseY, FontRenderer font) {
-        net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(Minecraft.getMinecraft());
+        net.minecraft.client.gui.ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         drawHoveringText(textLines, mouseX, mouseY, sr.getScaledWidth(), sr.getScaledHeight(), -1, font);
     }
 
@@ -172,7 +172,7 @@ public final class TextRenderUtils {
 
     public static void drawItemTooltip(net.minecraft.item.ItemStack stack, int mouseX, int mouseY, FontRenderer font) {
         if (stack == null) return;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         List<String> tooltip = stack.getTooltip(mc.thePlayer, mc.gameSettings.advancedItemTooltips);
         drawHoveringText(tooltip, mouseX, mouseY, font);
     }
@@ -181,17 +181,17 @@ public final class TextRenderUtils {
     public static void drawStringGradientScaleAware(String text, float xPos, float yPos,
                                                     int startColor, int endColor,
                                                     float uiScale, boolean displayScale) {
-        GlStateManager.pushMatrix();
-        GlStateManager.disableBlend();
-        GlStateManager.enableAlpha();
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.enableAlpha();
 
         float scaleDisplay = displayScale ? ResolutionUtils.getXStatic(1) : 1f;
         float finalScale = Math.max(0.25f, uiScale * scaleDisplay);
 
-        GlStateManager.translate(xPos, yPos, 0);
-        GlStateManager.scale(finalScale, finalScale, 1f);
+        GlStateManagerCompat.translate(xPos, yPos, 0);
+        GlStateManagerCompat.scale(finalScale, finalScale, 1f);
 
-        FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
         float currentX = 0;
         int len = text.length();
         for (int i = 0; i < len; i++) {
@@ -202,13 +202,13 @@ public final class TextRenderUtils {
             currentX += fr.getStringWidth(ch);
         }
 
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     public static void drawCenteredStringGradientScaleAware(String text, float xPos, float yPos,
                                                             int startColor, int endColor,
                                                             float uiScale, boolean displayScale) {
-        FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
         // compute total width at scale 1
         int totalWidth = fr.getStringWidth(text);
         float halfWidth = totalWidth / 2f;

@@ -1,23 +1,23 @@
 package io.hamlook.aetheria.utils.render;
 
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import net.minecraft.client.gui.ScaledResolution;
 
 public class ResolutionUtils {
     private static ScaledResolution scaledResolution;
 
     public static int getHeight() {
-        scaledResolution = new ScaledResolution(Minecraft.getMinecraft());
+        scaledResolution = GuiScreenUtils.getScaledResolution();
         return scaledResolution.getScaledHeight();
     }
 
     public static int getWidth() {
-        scaledResolution = new ScaledResolution(Minecraft.getMinecraft());
+        scaledResolution = GuiScreenUtils.getScaledResolution();
         return scaledResolution.getScaledWidth();
     }
 
     public static int getFactor() {
-        scaledResolution = new ScaledResolution(Minecraft.getMinecraft());
+        scaledResolution = GuiScreenUtils.getScaledResolution();
         return scaledResolution.getScaleFactor();
     }
 

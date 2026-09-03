@@ -1,27 +1,29 @@
 package io.hamlook.aetheria.features.profile.viewer.ui.tabs;
 
-import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
-import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.features.profile.data.ItemData;
+import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.features.profile.data.bags.AccessoryData;
 import io.hamlook.aetheria.features.profile.data.bags.FishingData;
 import io.hamlook.aetheria.features.profile.data.bags.QuiverData;
-import io.hamlook.aetheria.features.profile.data.bags.vars.Bait;
 import io.hamlook.aetheria.features.profile.data.bags.vars.Arrow;
+import io.hamlook.aetheria.features.profile.data.bags.vars.Bait;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
+import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
+import io.hamlook.aetheria.utils.compat.RenderHelperCompat;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
@@ -53,8 +55,8 @@ public class BagsInfoTab extends Tab {
             TextRenderUtils.drawCenteredStringScaleAware("§cNo Bags Data Found!", xPos + (width / 2f), yPos + (height / 2f), ProfileViewerGUI.getScaleText(), false);
         }
 
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderHelper.disableStandardItemLighting();
+        GlStateManagerCompat.color(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderHelperCompat.disableStandardItemLighting();
 
         if (hoveredItem != null) {
             int[] mouse = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
@@ -85,8 +87,8 @@ public class BagsInfoTab extends Tab {
         accScrollY += (accScrollTarget - accScrollY) * scrollSpeed;
 
         applyScissor(x, gridY, w, gridH);
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(0, -accScrollY, 0);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(0, -accScrollY, 0);
 
         int index = 0;
         int[] mouse = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
@@ -113,7 +115,7 @@ public class BagsInfoTab extends Tab {
             }
             index++;
         }
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
         return hoveredAcc;
@@ -169,7 +171,7 @@ public class BagsInfoTab extends Tab {
     }
 
     private void drawSlot(Minecraft mc, ItemStack icon, boolean active, int rarityScore, float x, float y, float size) {
-        GlStateManager.color(1, 1, 1, 1);
+        GlStateManagerCompat.color(1, 1, 1, 1);
         mc.getTextureManager().bindTexture(Resources.storageSlot(1));
         Gui.drawModalRectWithCustomSizedTexture((int)x, (int)y, 0, 0, (int)size, (int)size, (int)size, (int)size);
 
@@ -190,11 +192,11 @@ public class BagsInfoTab extends Tab {
     }
 
     private void handleVerticalScroll(float x, float y, float w, float h, float contentH) {
-        int[] mouse = KeybindHelper.getMouseCoords(Minecraft.getMinecraft().currentScreen.width, Minecraft.getMinecraft().currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getMinecraft().currentScreen.width, MinecraftCompat.getMinecraft().currentScreen.height);
         int mx = mouse[0], my = mouse[1];
 
         if (mx >= x && mx <= x + w && my >= y && my <= y + h) {
-            int dWheel = Mouse.getDWheel();
+            int dWheel = MouseCompat.getDWheel();
             if (dWheel != 0) {
                 float step = 50f;
                 accScrollTarget = Math.max(0, Math.min(accScrollTarget + (dWheel > 0 ? -step : step), Math.max(0, contentH - h)));
@@ -203,10 +205,10 @@ public class BagsInfoTab extends Tab {
     }
 
     private void applyScissor(float x, float y, float w, float h) {
-        ScaledResolution res = new ScaledResolution(Minecraft.getMinecraft());
+        ScaledResolution res = GuiScreenUtils.getScaledResolution();
         int f = res.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor((int)(x * f), (int)(Minecraft.getMinecraft().displayHeight - (y + h) * f), (int)(w * f), (int)(h * f));
+        GL11.glScissor((int)(x * f), (int)(MinecraftCompat.getMinecraft().displayHeight - (y + h) * f), (int)(w * f), (int)(h * f));
     }
 
     private void drawItemTooltip(Minecraft mc, ItemData data, int mouseX, int mouseY) {

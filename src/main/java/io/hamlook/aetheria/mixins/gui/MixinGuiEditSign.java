@@ -2,9 +2,9 @@ package io.hamlook.aetheria.mixins.gui;
 
 import io.hamlook.aetheria.events.SignSubmitEvent;
 import io.hamlook.aetheria.features.farming.visitors.VisitorSignFill;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.tileentity.TileEntitySign;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,13 +25,13 @@ public class MixinGuiEditSign {
     public IChatComponent[] onSignSubmit(TileEntitySign instance) {
         String[] lines = new String[4];
         for (int i = 0; i < 4; i++) {
-            lines[i] = instance.signText[i].getUnformattedText();
+            lines[i] = TextCompat.getUnformattedText(instance.signText[i]);
         }
         SignSubmitEvent event = new SignSubmitEvent((GuiEditSign) (Object) this, lines);
         event.post();
         IChatComponent[] result = new IChatComponent[4];
         for (int i = 0; i < 4; i++) {
-            result[i] = new ChatComponentText(event.lines[i]);
+            result[i] = TextCompat.createText(event.lines[i]);
         }
         return result;
     }

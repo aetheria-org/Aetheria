@@ -1,7 +1,9 @@
 package io.hamlook.aetheria.features.mining;
 
+import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.ColoredBlockCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import net.minecraft.block.*;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.EnumDyeColor;
@@ -89,10 +91,10 @@ public enum OreBlock {
         return state -> {
             Block block = state.getBlock();
             if (block == Blocks.stained_glass) {
-                return state.getValue(BlockStainedGlass.COLOR) == color;
+                return ColoredBlockCompat.isStainedGlass(state, color);
             }
             if (block == Blocks.stained_glass_pane) {
-                return state.getValue(BlockStainedGlassPane.COLOR) == color;
+                return ColoredBlockCompat.isStainedGlassPane(state, color);
             }
             return false;
         };
@@ -113,21 +115,21 @@ public enum OreBlock {
     private static boolean inCrystalOrEnd() { return inCrystal() || inEnd(); }
 
     private static boolean isLowTierMithril(IBlockState state) {
-        if (state.getBlock() == Blocks.wool) return state.getValue(BlockColored.COLOR) == EnumDyeColor.GRAY;
-        if (state.getBlock() == Blocks.stained_hardened_clay) return state.getValue(BlockColored.COLOR) == EnumDyeColor.CYAN;
+        if (BlockCompat.isWoolWithColor(state, EnumDyeColor.GRAY)) return true;
+        if (BlockCompat.isStainedHardenedClay(state.getBlock()) && ColoredBlockCompat.isStainedClay(state, EnumDyeColor.CYAN)) return true;
         return false;
     }
 
     private static boolean isMidTierMithril(IBlockState state) {
-        return state.getBlock() == Blocks.prismarine;
+        return BlockCompat.isPrismarine(state.getBlock());
     }
 
     private static boolean isHighTierMithril(IBlockState state) {
-        return state.getBlock() == Blocks.wool && state.getValue(BlockColored.COLOR) == EnumDyeColor.LIGHT_BLUE;
+        return BlockCompat.isWoolWithColor(state, EnumDyeColor.LIGHT_BLUE);
     }
 
     private static boolean isTitanium(IBlockState state) {
-        return state.getBlock() == Blocks.stone && state.getValue(BlockStone.VARIANT) == BlockStone.EnumType.DIORITE_SMOOTH;
+        return BlockCompat.isTitanium(state);
     }
 
     static boolean isTitaniumBlock(IBlockState state) {
@@ -135,25 +137,24 @@ public enum OreBlock {
     }
 
     private static boolean isStone(IBlockState state) {
-        return state.getBlock() == Blocks.stone && state.getValue(BlockStone.VARIANT) == BlockStone.EnumType.STONE;
+        return BlockCompat.isStone(state);
     }
 
     private static boolean isRedstoneOre(IBlockState state) {
-        return state.getBlock() == Blocks.redstone_ore || state.getBlock() == Blocks.lit_redstone_ore;
+        return BlockCompat.isRedstoneOre(state.getBlock());
     }
 
     private static boolean isRedSand(IBlockState state) {
-        return state.getBlock() == Blocks.sand && state.getValue(BlockSand.VARIANT) == BlockSand.EnumType.RED_SAND;
+        return BlockCompat.isRedSand(state);
     }
 
     private static boolean isHardStoneHollows(IBlockState state) {
         Block block = state.getBlock();
-        if (block == Blocks.wool) {
-            EnumDyeColor color = state.getValue(BlockColored.COLOR);
-            return color == EnumDyeColor.GRAY || color == EnumDyeColor.GREEN;
+        if (BlockCompat.isWoolWithColor(state, EnumDyeColor.GRAY) || BlockCompat.isWoolWithColor(state, EnumDyeColor.GREEN)) {
+            return true;
         }
-        if (block == Blocks.stained_hardened_clay) {
-            EnumDyeColor color = state.getValue(BlockColored.COLOR);
+        if (BlockCompat.isStainedHardenedClay(block)) {
+            EnumDyeColor color = state.getValue(net.minecraft.block.BlockColored.COLOR);
             switch (color) {
                 case CYAN: case BROWN: case GRAY: case BLACK:
                 case LIME: case GREEN: case BLUE: case RED: case SILVER:
@@ -162,7 +163,7 @@ public enum OreBlock {
                     return false;
             }
         }
-        return block == Blocks.clay || block == Blocks.stonebrick || block == Blocks.stone;
+        return BlockCompat.isClay(block) || BlockCompat.isStoneBricks(block) || block == Blocks.stone;
     }
 
     public enum OreCategory {

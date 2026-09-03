@@ -5,11 +5,11 @@ package io.hamlook.aetheria.core.moulconfig.gui;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.KeybindHelper;
-import net.minecraft.client.gui.GuiScreen;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 
 import java.io.IOException;
 
-public class GuiScreenElementWrapper extends GuiScreen {
+public class GuiScreenElementWrapper extends AetheriaBaseScreen {
 
     public final GuiElement element;
 
@@ -18,14 +18,12 @@ public class GuiScreenElementWrapper extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        super.drawScreen(mouseX, mouseY, partialTicks);
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         element.render();
     }
 
     @Override
-    public void handleMouseInput() throws IOException {
-        super.handleMouseInput();
+    public void onHandleMouseInput() {
         int i = KeybindHelper.getScaledEventX(this.width);
         int j = KeybindHelper.getScaledEventY(this.height);
         element.mouseInput(i, j);
@@ -38,7 +36,7 @@ public class GuiScreenElementWrapper extends GuiScreen {
     }
 
     @Override
-    public void onGuiClosed() {
+    public void guiClosed() {
         ATHRConfig.saveConfig();
     }
 }

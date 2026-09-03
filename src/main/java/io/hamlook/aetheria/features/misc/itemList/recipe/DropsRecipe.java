@@ -4,12 +4,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,10 +55,10 @@ public class DropsRecipe extends Recipe {
         int listX = x + 20;
         int listY = y + 5;
 
-        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int sf = sr.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x * sf, (Minecraft.getMinecraft().displayHeight - (y + height) * sf), width * sf, height * sf);
+        GL11.glScissor(x * sf, (MinecraftCompat.getMinecraft().displayHeight - (y + height) * sf), width * sf, height * sf);
 
         for (int i = 0; i < drops.size(); i++) {
             int sy = listY + i * ROW_H - scrollY;

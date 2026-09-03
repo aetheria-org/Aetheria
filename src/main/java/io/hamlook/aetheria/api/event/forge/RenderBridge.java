@@ -4,7 +4,7 @@ import io.hamlook.aetheria.events.ASMBlockHighlightEvent;
 import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
 import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
@@ -21,7 +21,7 @@ public class RenderBridge {
 
     @SubscribeEvent
     public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         new ASMRenderOverlayEvent(sr, event.partialTicks, event.type.ordinal()).post();
     }
 

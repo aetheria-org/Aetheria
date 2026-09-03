@@ -1,28 +1,30 @@
 package io.hamlook.aetheria.features.profile.viewer.ui.tabs;
 
-import io.hamlook.aetheria.utils.KeybindHelper;
-import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.features.profile.data.collection.CollectionBase;
 import io.hamlook.aetheria.features.profile.data.collection.CollectionData;
 import io.hamlook.aetheria.features.profile.data.collection.CollectionType;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
-import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.StringUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
+import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
-import java.awt.Color;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -81,7 +83,7 @@ public class CollectionInfoTab extends Tab {
         scrollY += (scrollTarget - scrollY) * scrollSpeed;
         if (Math.abs(scrollTarget - scrollY) < 0.5f) scrollY = scrollTarget;
 
-        ScaledResolution res = new ScaledResolution(mc);
+        ScaledResolution res = GuiScreenUtils.getScaledResolution();
         int scaleFactor = res.getScaleFactor();
 
         int scissorX = (int) (xPos * scaleFactor);
@@ -92,8 +94,8 @@ public class CollectionInfoTab extends Tab {
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(scissorX, scissorY, scissorW, scissorH);
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(0, -scrollY, 0);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(0, -scrollY, 0);
 
         int index = 0;
         int totalItems = filteredTypes.size();
@@ -120,7 +122,7 @@ public class CollectionInfoTab extends Tab {
             index++;
         }
 
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
         if (isDropdownOpen) {
@@ -238,7 +240,7 @@ public class CollectionInfoTab extends Tab {
             case "QUARTZ": return new ItemStack(Items.quartz);
             case "REDSTONE": return new ItemStack(Items.redstone);
             case "SAND": return new ItemStack(Blocks.sand);
-            case "HARD_STONE": return new ItemStack(Blocks.stone);
+            case "HARD_STONE": return BlockCompat.getStoneItem();
             case "BONE": return new ItemStack(Items.bone);
             case "ENDER_PEARL": return new ItemStack(Items.ender_pearl);
             case "GHAST_TEAR": return new ItemStack(Items.ghast_tear);
@@ -248,16 +250,16 @@ public class CollectionInfoTab extends Tab {
             case "SLIME_BALL": return new ItemStack(Items.slime_ball);
             case "SPIDER_EYE": return new ItemStack(Items.spider_eye);
             case "STRING": return new ItemStack(Items.string);
-            case "ACACIA_WOOD": return new ItemStack(Blocks.log2, 1, 0);
-            case "BIRCH_WOOD": return new ItemStack(Blocks.log, 1, 2);
-            case "DARK_OAK_WOOD": return new ItemStack(Blocks.log2, 1, 1);
-            case "JUNGLE_WOOD": return new ItemStack(Blocks.log, 1, 3);
-            case "OAK_WOOD": return new ItemStack(Blocks.log, 1, 0);
-            case "SPRUCE_WOOD": return new ItemStack(Blocks.log, 1, 1);
+            case "ACACIA_WOOD": return BlockCompat.getLog2(0);
+            case "BIRCH_WOOD": return BlockCompat.getLog(2);
+            case "DARK_OAK_WOOD": return BlockCompat.getLog2(1);
+            case "JUNGLE_WOOD": return BlockCompat.getLog(3);
+            case "OAK_WOOD": return BlockCompat.getLog(0);
+            case "SPRUCE_WOOD": return BlockCompat.getLog(1);
             case "CLAY": return new ItemStack(Items.clay_ball);
             case "CLOWNFISH": return new ItemStack(Items.fish, 1, 2);
             case "INK_SACK": return new ItemStack(Items.dye, 1, 0);
-            case "LILY_PAD": return new ItemStack(Blocks.waterlily);
+            case "LILY_PAD": return BlockCompat.getLilyPad();
             case "PRISMARINE_CRYSTALS": return new ItemStack(Items.prismarine_crystals);
             case "PRISMARINE_SHARD": return new ItemStack(Items.prismarine_shard);
             case "PUFFERFISH": return new ItemStack(Items.fish, 1, 3);
@@ -311,7 +313,7 @@ public class CollectionInfoTab extends Tab {
         int[] mouse = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
         int mouseX = mouse[0], mouseY = mouse[1];
 
-        boolean isMouseDown = Mouse.isButtonDown(0);
+        boolean isMouseDown = MouseCompat.isButtonDown(0);
         boolean isLeftClick = isMouseDown && !wasMouseDown;
         wasMouseDown = isMouseDown;
 
@@ -336,7 +338,7 @@ public class CollectionInfoTab extends Tab {
             }
         }
 
-        int dWheel = Mouse.getDWheel();
+        int dWheel = MouseCompat.getDWheel();
         if (dWheel != 0 && !isDropdownOpen) {
             if (mouseX >= xPos && mouseX <= xPos + width && mouseY >= yPos && mouseY <= yPos + height) {
                 float scrollStep = ProfileViewerGUI.getScaledF(45);
@@ -372,14 +374,14 @@ public class CollectionInfoTab extends Tab {
         float green = (float)(hexColor >> 8 & 255) / 255.0F;
         float blue = (float)(hexColor & 255) / 255.0F;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.enableBlend();
-        GlStateManager.disableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
 
         GL11.glEnable(GL11.GL_LINE_SMOOTH);
         GL11.glLineWidth(thickness);
-        GlStateManager.color(red, green, blue, alpha);
+        GlStateManagerCompat.color(red, green, blue, alpha);
 
         GL11.glBegin(GL11.GL_LINE_STRIP);
         int segments = 60;
@@ -392,8 +394,8 @@ public class CollectionInfoTab extends Tab {
         GL11.glEnd();
 
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.popMatrix();
     }
 }

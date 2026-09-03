@@ -1,15 +1,18 @@
 package io.hamlook.aetheria.features.chat.emoji;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import io.hamlook.aetheria.core.StorageManager;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
 
@@ -227,11 +230,11 @@ public class EmojiManager {
                 if (fImg != null && fImg.getWidth() >= maxRequired) {
                     sheetSizes.put(EmojiLinks.CUSTOM_SHEET, fImg.getWidth());
                     EmojiLinks.SHEET_SIZE = fImg.getWidth();
-                    Minecraft.getMinecraft().addScheduledTask(() -> {
+                    MinecraftCompat.getMinecraft().addScheduledTask(() -> {
                         try {
                             DynamicTexture texture = new DynamicTexture(fImg);
                             ResourceLocation loc = EmojiLinks.getSpriteResource(EmojiLinks.CUSTOM_SHEET);
-                            Minecraft.getMinecraft().getTextureManager().loadTexture(loc, texture);
+                            MinecraftCompat.getMinecraft().getTextureManager().loadTexture(loc, texture);
                         } catch (Exception e) {
                             Aetheria.logger.info("[EMOJI] Error re-uploading custom sheet: " + e.getMessage());
                         }
@@ -261,7 +264,7 @@ public class EmojiManager {
             }
         }
         if (!images.isEmpty()) {
-            Minecraft.getMinecraft().addScheduledTask(() -> {
+            MinecraftCompat.getMinecraft().addScheduledTask(() -> {
                 for (Map.Entry<String, BufferedImage> entry : images.entrySet()) {
                     try {
                         String sheetName = entry.getKey();
@@ -271,7 +274,7 @@ public class EmojiManager {
                         EmojiLinks.SHEET_SIZE = img.getWidth();
                         DynamicTexture texture = new DynamicTexture(img);
                         ResourceLocation location = EmojiLinks.getSpriteResource(sheetName);
-                        Minecraft.getMinecraft().getTextureManager().loadTexture(location, texture);
+                        MinecraftCompat.getMinecraft().getTextureManager().loadTexture(location, texture);
                     } catch (Exception e) {
                         Aetheria.logger.info("[EMOJI] Error uploading texture for " + entry.getKey() + ": " + e.getMessage());
                     }

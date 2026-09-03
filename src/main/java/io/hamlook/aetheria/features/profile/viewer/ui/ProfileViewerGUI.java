@@ -1,26 +1,27 @@
 package io.hamlook.aetheria.features.profile.viewer.ui;
 
 import io.hamlook.aetheria.Resources;
-import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.features.profile.viewer.PlayerProfile;
 import io.hamlook.aetheria.features.profile.viewer.ProfileViewerAPI;
 import io.hamlook.aetheria.features.profile.viewer.ui.modules.PVButton;
-import io.hamlook.aetheria.features.profile.viewer.ui.modules.PlayerModule;
 import io.hamlook.aetheria.features.profile.viewer.ui.modules.PVSearchBar;
+import io.hamlook.aetheria.features.profile.viewer.ui.modules.PlayerModule;
 import io.hamlook.aetheria.features.profile.viewer.ui.tabs.*;
-import io.hamlook.aetheria.utils.render.NineSliceUtils;
-import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.utils.render.ResolutionUtils;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.render.NineSliceUtils;
+import io.hamlook.aetheria.utils.render.ResolutionUtils;
+import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -30,7 +31,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
-public class ProfileViewerGUI extends GuiScreen {
+public class ProfileViewerGUI extends AetheriaBaseScreen {
 
     // UI Data
     public static ResourceLocation CONTAINER_BG = Resources.CAPES_UI;
@@ -110,9 +111,8 @@ public class ProfileViewerGUI extends GuiScreen {
     }
 
     @Override
-    public void initGui() {
-        super.initGui();
-        Keyboard.enableRepeatEvents(true);
+    public void onInitGui() {
+        KeyboardCompat.enableRepeatEvents(true);
 
         profileButton = null;
         tabButton = null;
@@ -132,9 +132,8 @@ public class ProfileViewerGUI extends GuiScreen {
     }
 
     @Override
-    public void onGuiClosed() {
-        super.onGuiClosed();
-        Keyboard.enableRepeatEvents(false);
+    public void guiClosed() {
+        KeyboardCompat.enableRepeatEvents(false);
     }
 
     public void drawTooltip(List<String> textLines, int x, int y) {
@@ -144,7 +143,7 @@ public class ProfileViewerGUI extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         int maxWidth = (int)(this.width * 0.9f);
         boxW = Math.min(maxWidth, getScaled(900));
         boxH = (int)(boxW * 0.62f);
@@ -233,8 +232,6 @@ public class ProfileViewerGUI extends GuiScreen {
             tabs.get(tab).draw(rightBoxX, contentY, boxW, contentH, activeProfileData, mc);
         }
 
-        super.drawScreen(mouseX, mouseY, partialTicks);
-
         if (isDropdownOpen && this.playerProfile != null && this.playerProfile.profiles != null) {
             drawProfileDropdown(mouseX, mouseY);
         }
@@ -243,10 +240,10 @@ public class ProfileViewerGUI extends GuiScreen {
         }
 
         if (tooltipToDraw != null) {
-            net.minecraft.client.renderer.GlStateManager.pushMatrix();
-            net.minecraft.client.renderer.GlStateManager.translate(0, 0, 500);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(0, 0, 500);
             TextRenderUtils.drawHoveringText(tooltipToDraw, tooltipX, tooltipY, fontRendererObj);
-            net.minecraft.client.renderer.GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
             tooltipToDraw = null;
         }
     }
@@ -277,8 +274,8 @@ public class ProfileViewerGUI extends GuiScreen {
         dropH = itemHeight * numProfiles;
         dropY = profileButton.yPosition + profileButton.height;
 
-        net.minecraft.client.renderer.GlStateManager.pushMatrix();
-        net.minecraft.client.renderer.GlStateManager.translate(0, 0, 300);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(0, 0, 300);
 
         NineSliceUtils.draw(CONTAINER_BG, dropX, dropY, dropW, dropH, 6, 18);
 
@@ -301,7 +298,7 @@ public class ProfileViewerGUI extends GuiScreen {
             TextRenderUtils.drawCenteredStringScaleAware(displayPrefix + pName, centerX, centerY, (uiScale * 1.8f), false);
         }
         
-        net.minecraft.client.renderer.GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     private void drawTabDropdown(int mouseX, int mouseY) {
@@ -313,8 +310,8 @@ public class ProfileViewerGUI extends GuiScreen {
         tabDropH = tabItemHeight * numTabs;
         tabDropY = tabButton.yPosition + tabButton.height;
 
-        net.minecraft.client.renderer.GlStateManager.pushMatrix();
-        net.minecraft.client.renderer.GlStateManager.translate(0, 0, 300);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(0, 0, 300);
 
         NineSliceUtils.draw(CONTAINER_BG, tabDropX, tabDropY, tabDropW, tabDropH, 6, 18);
 
@@ -339,11 +336,11 @@ public class ProfileViewerGUI extends GuiScreen {
             TextRenderUtils.drawCenteredStringScaleAware(displayPrefix + t.name, centerX, centerY, (uiScale * 1.8f), false);
         }
         
-        net.minecraft.client.renderer.GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void onKeyTyped(char typedChar, int keyCode) {
         if (searchBar != null && searchBar.isFocused) {
             if (keyCode == Keyboard.KEY_ESCAPE) {
                 searchBar.isFocused = false;
@@ -354,21 +351,19 @@ public class ProfileViewerGUI extends GuiScreen {
             if (pressedEnter) {
                 String target = searchBar.text.trim();
                 if (!target.isEmpty()) {
-                    Minecraft.getMinecraft().displayGuiScreen(new ProfileViewerGUI(target));
+                    MinecraftCompat.getMinecraft().displayGuiScreen(new ProfileViewerGUI(target));
                 }
             }
             return;
         }
-
-        super.keyTyped(typedChar, keyCode);
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (searchBar != null) {
             String suggestionClicked = searchBar.mouseClicked(mouseX, mouseY, mouseButton);
             if (suggestionClicked != null) {
-                Minecraft.getMinecraft().displayGuiScreen(new ProfileViewerGUI(suggestionClicked));
+                MinecraftCompat.getMinecraft().displayGuiScreen(new ProfileViewerGUI(suggestionClicked));
                 return;
             }
         }
@@ -411,7 +406,6 @@ public class ProfileViewerGUI extends GuiScreen {
                 tabs.get(tab).mouseClicked(mouseX, mouseY, mouseButton);
             }
         }
-        super.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     @Override

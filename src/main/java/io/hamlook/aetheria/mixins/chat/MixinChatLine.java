@@ -4,7 +4,8 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.ChatLineHook;
 import io.hamlook.aetheria.features.chat.ChatUtilsState;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.ChatLine;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -18,8 +19,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.HashMap;
-import java.util.logging.Level;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 @Mixin(ChatLine.class)
@@ -43,10 +44,10 @@ public class MixinChatLine implements ChatLineHook {
 
         if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.chatHeads) return;
 
-        NetHandlerPlayClient netHandler = Minecraft.getMinecraft().getNetHandler();
+        NetHandlerPlayClient netHandler = MinecraftCompat.getMinecraft().getNetHandler();
         if (netHandler == null) return;
 
-        String text = StringUtils.substringAfter(lineString.getFormattedText(), "]");
+        String text = StringUtils.substringAfter(TextCompat.getFormattedText((lineString)), "]");
         String beforeColon = StringUtils.substringBefore(text, ":");
         Map<String, NetworkPlayerInfo> nicknameCache = new HashMap<>();
 

@@ -10,16 +10,16 @@ import io.hamlook.aetheria.features.chat.emoji.EmojiLinks;
 import io.hamlook.aetheria.features.chat.emoji.EmojiManager;
 import io.hamlook.aetheria.features.chat.emoji.SpritePos;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
@@ -49,7 +49,7 @@ public final class RenderUtils {
         int w = field.width;
         int h = field.height;
 
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         ResourceLocation texture = useGoldTexture ? SEARCH_BAR_TEX_GOLD : SEARCH_BAR_TEX;
         if (!useTexture || !drawSearchBarTexture(texture, x, y, w, h)) {
@@ -57,7 +57,7 @@ public final class RenderUtils {
             Gui.drawRect(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF111111);
         }
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         FontRenderer fr = mc.fontRendererObj;
         String text = field.getText();
         int textY = y - 4 + h / 2;
@@ -82,9 +82,9 @@ public final class RenderUtils {
     private static boolean drawSearchBarTexture(ResourceLocation texture, int x, int y, int w, int h) {
         if (!resourceExists(texture)) return false;
 
-        Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(texture);
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
 
         for (int yi = 0; yi <= 2; yi++) {
             for (int xi = 0; xi <= 2; xi++) {
@@ -118,7 +118,7 @@ public final class RenderUtils {
             }
         }
 
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.disableBlend();
         return true;
     }
 
@@ -126,20 +126,18 @@ public final class RenderUtils {
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
 
-        Tessellator tessellator = Tessellator.getInstance();
-        WorldRenderer worldrenderer = tessellator.getWorldRenderer();
-        worldrenderer.begin(7, DefaultVertexFormats.POSITION_TEX);
-        worldrenderer.pos(x, y + h, 0).tex(uMin, vMax).endVertex();
-        worldrenderer.pos(x + w, y + h, 0).tex(uMax, vMax).endVertex();
-        worldrenderer.pos(x + w, y, 0).tex(uMax, vMin).endVertex();
-        worldrenderer.pos(x, y, 0).tex(uMin, vMin).endVertex();
-        tessellator.draw();
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_TEX);
+        vb.pos(x, y + h, 0).tex(uMin, vMax).endVertex();
+        vb.pos(x + w, y + h, 0).tex(uMax, vMax).endVertex();
+        vb.pos(x + w, y, 0).tex(uMax, vMin).endVertex();
+        vb.pos(x, y, 0).tex(uMin, vMin).endVertex();
+        vb.draw();
     }
 
     private static boolean resourceExists(ResourceLocation location) {
         return RESOURCE_CACHE.computeIfAbsent(location, loc -> {
             try {
-                Minecraft.getMinecraft().getResourceManager().getResource(loc);
+                MinecraftCompat.getMinecraft().getResourceManager().getResource(loc);
                 return true;
             } catch (Exception ignored) {
                 return false;
@@ -150,39 +148,37 @@ public final class RenderUtils {
     public static boolean drawButton(int x, int y, int w, int h, String tooltip, Runnable drawIcon) {
         NineSliceUtils.draw(Resources.storageBackground(1), x, y, w, h, 6, 18);
 
-        int[] mouse = KeybindHelper.getMouseCoords(new ScaledResolution(Minecraft.getMinecraft()));
+        int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledResolution());
         boolean hovered = mouse[0] >= x && mouse[0] < x + w && mouse[1] >= y && mouse[1] < y + h;
         if (drawIcon != null) drawIcon.run();
         if (hovered) {
             Gui.drawRect(x + 1, y + 1, x + w - 2, y + h - 1, 0x33FFFFFF);
             if (tooltip != null && !tooltip.isEmpty()) {
-                TextRenderUtils.drawHoveringText(tooltip, mouse[0], mouse[1], Minecraft.getMinecraft().fontRendererObj);
+                TextRenderUtils.drawHoveringText(tooltip, mouse[0], mouse[1], MinecraftCompat.getMinecraft().fontRendererObj);
             }
         }
         return hovered;
     }
 
     public static void drawWorldCircle(double radius, int steps, float lineWidth, float r, float g, float b, float a) {
-        GlStateManager.disableTexture2D();
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.disableDepth();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.disableDepth();
         GL11.glLineWidth(lineWidth);
         GL11.glColor4f(r, g, b, a);
 
-        Tessellator tess = Tessellator.getInstance();
-        WorldRenderer wr = tess.getWorldRenderer();
-        wr.begin(GL11.GL_LINE_STRIP, DefaultVertexFormats.POSITION);
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINE_STRIP, TessellatorCompat.POSITION);
         for (int i = 0; i <= steps; i++) {
             double angle = (Math.PI * 2) * i / steps;
-            wr.pos(Math.cos(angle) * radius, 0, Math.sin(angle) * radius).endVertex();
+            vb.pos(Math.cos(angle) * radius, 0, Math.sin(angle) * radius).endVertex();
         }
-        tess.draw();
+        vb.draw();
 
         GL11.glColor4f(1f, 1f, 1f, 1f);
-        GlStateManager.enableDepth();
-        GlStateManager.disableBlend();
-        GlStateManager.enableTexture2D();
+        GlStateManagerCompat.enableDepth();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.enableTexture2D();
     }
 
     public static void drawFloatingRectDark(int x, int y, int width, int height) {
@@ -218,25 +214,23 @@ public final class RenderUtils {
     }
 
     public static void drawTexturedRect(float x, float y, float width, float height, float uMin, float uMax, float vMin, float vMax, int filter) {
-        GlStateManager.enableBlend();
+        GlStateManagerCompat.enableBlend();
         GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
         drawTexturedRectNoBlend(x, y, width, height, uMin, uMax, vMin, vMax, filter);
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.disableBlend();
     }
 
     public static void drawTexturedRectNoBlend(float x, float y, float width, float height, float uMin, float uMax, float vMin, float vMax, int filter) {
-        GlStateManager.enableTexture2D();
+        GlStateManagerCompat.enableTexture2D();
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, filter);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, filter);
 
-        Tessellator t = Tessellator.getInstance();
-        WorldRenderer wr = t.getWorldRenderer();
-        wr.begin(7, DefaultVertexFormats.POSITION_TEX);
-        wr.pos(x, y + height, 0).tex(uMin, vMax).endVertex();
-        wr.pos(x + width, y + height, 0).tex(uMax, vMax).endVertex();
-        wr.pos(x + width, y, 0).tex(uMax, vMin).endVertex();
-        wr.pos(x, y, 0).tex(uMin, vMin).endVertex();
-        t.draw();
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_TEX);
+        vb.pos(x, y + height, 0).tex(uMin, vMax).endVertex();
+        vb.pos(x + width, y + height, 0).tex(uMax, vMax).endVertex();
+        vb.pos(x + width, y, 0).tex(uMax, vMin).endVertex();
+        vb.pos(x, y, 0).tex(uMin, vMin).endVertex();
+        vb.draw();
 
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
@@ -248,25 +242,23 @@ public final class RenderUtils {
         float eA = (endColor >> 24 & 255) / 255f, eR = (endColor >> 16 & 255) / 255f;
         float eG = (endColor >> 8 & 255) / 255f, eB = (endColor & 255) / 255f;
 
-        GlStateManager.disableTexture2D();
-        GlStateManager.enableBlend();
-        GlStateManager.disableAlpha();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.shadeModel(7425);
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableAlpha();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.shadeModel(7425);
 
-        Tessellator t = Tessellator.getInstance();
-        WorldRenderer wr = t.getWorldRenderer();
-        wr.begin(7, DefaultVertexFormats.POSITION_COLOR);
-        wr.pos(right, top, zLevel).color(sR, sG, sB, sA).endVertex();
-        wr.pos(left, top, zLevel).color(sR, sG, sB, sA).endVertex();
-        wr.pos(left, bottom, zLevel).color(eR, eG, eB, eA).endVertex();
-        wr.pos(right, bottom, zLevel).color(eR, eG, eB, eA).endVertex();
-        t.draw();
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_COLOR);
+        vb.pos(right, top, zLevel).color(sR, sG, sB, sA).endVertex();
+        vb.pos(left, top, zLevel).color(sR, sG, sB, sA).endVertex();
+        vb.pos(left, bottom, zLevel).color(eR, eG, eB, eA).endVertex();
+        vb.pos(right, bottom, zLevel).color(eR, eG, eB, eA).endVertex();
+        vb.draw();
 
-        GlStateManager.shadeModel(7424);
-        GlStateManager.disableBlend();
-        GlStateManager.enableAlpha();
-        GlStateManager.enableTexture2D();
+        GlStateManagerCompat.shadeModel(7424);
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.enableAlpha();
+        GlStateManagerCompat.enableTexture2D();
     }
 
     public static void drawLine(int x1, int y1, int x2, int y2, int color, float lineWidth) {
@@ -275,25 +267,23 @@ public final class RenderUtils {
         float g = (color >> 8 & 0xFF) / 255f;
         float b = (color & 0xFF) / 255f;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.enableBlend();
-        GlStateManager.disableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
         GL11.glEnable(GL11.GL_LINE_SMOOTH);
         GL11.glLineWidth(lineWidth);
 
-        Tessellator tess = Tessellator.getInstance();
-        WorldRenderer wr = tess.getWorldRenderer();
-        wr.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
-        wr.pos(x1, y1, 0).color(r, g, b, a).endVertex();
-        wr.pos(x2, y2, 0).color(r, g, b, a).endVertex();
-        tess.draw();
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINES, TessellatorCompat.POSITION_COLOR);
+        vb.pos(x1, y1, 0).color(r, g, b, a).endVertex();
+        vb.pos(x2, y2, 0).color(r, g, b, a).endVertex();
+        vb.draw();
 
         GL11.glLineWidth(1f);
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.popMatrix();
     }
 
     // Binds and draws the texture for a :name:/alias emoji token at (x, y) as a
@@ -306,16 +296,16 @@ public final class RenderUtils {
             ResourceLocation texture = EmojiLinks.getSpriteResource(sheetName);
             int sheetW = EmojiManager.getSheetWidth(sheetName);
 
-            GlStateManager.pushMatrix();
-            GlStateManager.color(1f, 1f, 1f, 1f);
-            Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(texture);
 
             float uMin = (float) emoji.sheetX / sheetW;
             float uMax = (float) (emoji.sheetX + EmojiLinks.SHEET_RESOLUTION) / sheetW;
             float vMin = (float) emoji.sheetY / sheetW;
             float vMax = (float) (emoji.sheetY + EmojiLinks.SHEET_RESOLUTION) / sheetW;
             drawTexturedRect(x, y, size, size, uMin, uMax, vMin, vMax, GL11.GL_LINEAR);
-            GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
             return true;
         }
 
@@ -344,12 +334,12 @@ public final class RenderUtils {
             }
 
             ResourceLocation texture = EmojiLinks.getSpriteResource(EmojiLinks.CUSTOM_SHEET);
-            GlStateManager.pushMatrix();
-            GlStateManager.color(1f, 1f, 1f, 1f);
-            Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(texture);
 
             drawTexturedRect(x, y, size, size, uMin, uMax, vMin, vMax, GL11.GL_LINEAR);
-            GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
             return true;
         }
         return false;
@@ -358,22 +348,22 @@ public final class RenderUtils {
     public static void renderPlayerName(float pixelX, float pixelZ, int color, float headScale, float scale, String name, boolean centered) {
         if (name == null || name.isEmpty()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         float stringWidth = mc.fontRendererObj.getStringWidth(name);
 
-        GlStateManager.pushMatrix();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
-        GlStateManager.enableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.enableAlpha();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
 
         int alpha = (color >> 24) & 0xFF;
         float nameAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
-        GlStateManager.color(1.0f, 1.0f, 1.0f, nameAlpha);
+        GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, nameAlpha);
 
         if (centered) {
-            GlStateManager.translate(pixelX, pixelZ, 0f);
-            GlStateManager.scale(scale, scale, 1.0f);
+            GlStateManagerCompat.translate(pixelX, pixelZ, 0f);
+            GlStateManagerCompat.scale(scale, scale, 1.0f);
 
             float paddingX = 3f;
             float paddingY = 2f;
@@ -383,7 +373,7 @@ public final class RenderUtils {
             float y2 = mc.fontRendererObj.FONT_HEIGHT / 2f + paddingY;
 
             Gui.drawRect((int) x1, (int) y1, (int) x2, (int) y2, 0x60000000);
-            GlStateManager.enableTexture2D();
+            GlStateManagerCompat.enableTexture2D();
             mc.fontRendererObj.drawString(name, (int) (-stringWidth / 2f), (int) (-mc.fontRendererObj.FONT_HEIGHT / 2f), 0xFFFFFFFF);
         } else {
             float headSize = headScale * 8f;
@@ -395,35 +385,35 @@ public final class RenderUtils {
             float nameWidth = stringWidth * scale;
             float nameX = cx - nameWidth / 2f;
 
-            GlStateManager.translate(nameX, cy, 0f);
-            GlStateManager.scale(scale, scale, scale);
+            GlStateManagerCompat.translate(nameX, cy, 0f);
+            GlStateManagerCompat.scale(scale, scale, scale);
             mc.fontRendererObj.drawString(name, 0, 0, 0xFFFFFFFF);
         }
 
-        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f);
+        GlStateManagerCompat.popMatrix();
     }
 
     public static void renderRoomName(float pixelX, float pixelZ, float scale, String name, int color) {
         if (name == null || name.isEmpty()) return;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         String[] words = name.split(" ");
         if (words.length == 0) return;
         int fontHeight = mc.fontRendererObj.FONT_HEIGHT + 1;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
-        GlStateManager.enableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.translate(pixelX, pixelZ, 0f);
-        GlStateManager.scale(scale, scale, 1.0f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.enableAlpha();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.translate(pixelX, pixelZ, 0f);
+        GlStateManagerCompat.scale(scale, scale, 1.0f);
         float yTextOffset = words.length * fontHeight / -2f;
         for (int i = 0; i < words.length; i++) {
             String word = words[i];
             mc.fontRendererObj.drawString(word, (int) (-mc.fontRendererObj.getStringWidth(word) / 2f), (int) (yTextOffset + i * fontHeight), color, true);
         }
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     public static void renderPlayerHead(float x, float y, int color, float scale, ResourceLocation skin, float rotation) {
@@ -432,42 +422,42 @@ public final class RenderUtils {
         }
         int alpha = (color >> 24) & 0xFF;
         float headAlpha = (alpha == 0) ? 1.0f : alpha / 255f;
-        Minecraft mc = Minecraft.getMinecraft();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
-        GlStateManager.enableTexture2D();
-        GlStateManager.pushMatrix();
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.enableAlpha();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.pushMatrix();
         float half = (scale * 8f) / 2f;
         float cx = x + half;
         float cy = (y - 1f) + half;
-        GlStateManager.translate(cx, cy, 0f);
-        GlStateManager.rotate(rotation, 0f, 0f, 1f);
-        GlStateManager.translate(-cx, -cy, 0f);
+        GlStateManagerCompat.translate(cx, cy, 0f);
+        GlStateManagerCompat.rotate(rotation, 0f, 0f, 1f);
+        GlStateManagerCompat.translate(-cx, -cy, 0f);
         mc.getTextureManager().bindTexture(skin);
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.color(1.0f, 1.0f, 1.0f, headAlpha);
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, headAlpha);
         drawSkinRegion(x, y - 1f, scale * 8f, 8f);
         drawSkinRegion(x, y - 1f, scale * 8f, 40f);
-        GlStateManager.popMatrix();
-        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+        GlStateManagerCompat.popMatrix();
+        GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     public static void renderPlayerArrow(float x, float y, float scale, float rotation, int rgbColor, boolean isSelf) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         float size = scale * 8f;
         float half = size / 2f;
         float cx = x + half;
         float cy = (y - 1f) + half;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.enableAlpha();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
 
-        GlStateManager.translate(cx, cy, 0f);
-        GlStateManager.rotate(rotation, 0f, 0f, 1f);
-        GlStateManager.translate(-half * 0.125f, half * 0.125f, 0f);
+        GlStateManagerCompat.translate(cx, cy, 0f);
+        GlStateManagerCompat.rotate(rotation, 0f, 0f, 1f);
+        GlStateManagerCompat.translate(-half * 0.125f, half * 0.125f, 0f);
 
         mc.getTextureManager().bindTexture(Resources.DEFAULT_MAP_ICONS);
 
@@ -486,27 +476,25 @@ public final class RenderUtils {
         float r = ((rgbColor >> 16) & 0xFF) / 255f;
         float g = ((rgbColor >> 8) & 0xFF) / 255f;
         float b = (rgbColor & 0xFF) / 255f;
-        GlStateManager.color(r, g, b, a);
+        GlStateManagerCompat.color(r, g, b, a);
 
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
 
-        Tessellator tessellator = Tessellator.getInstance();
-        WorldRenderer worldrenderer = tessellator.getWorldRenderer();
-        worldrenderer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
-        worldrenderer.pos(-half, half, 0.0D).tex(u0, v0).endVertex();
-        worldrenderer.pos(half, half, 0.0D).tex(u1, v0).endVertex();
-        worldrenderer.pos(half, -half, 0.0D).tex(u1, v1).endVertex();
-        worldrenderer.pos(-half, -half, 0.0D).tex(u0, v1).endVertex();
-        tessellator.draw();
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_TEX);
+        vb.pos(-half, half, 0.0D).tex(u0, v0).endVertex();
+        vb.pos(half, half, 0.0D).tex(u1, v0).endVertex();
+        vb.pos(half, -half, 0.0D).tex(u1, v1).endVertex();
+        vb.pos(-half, -half, 0.0D).tex(u0, v1).endVertex();
+        vb.draw();
 
-        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f);
+        GlStateManagerCompat.popMatrix();
     }
 
     public static void renderFramedHead(float cx, float cy, float yaw, float frameSize, String frameColorStr, ResourceLocation skin, boolean flowChroma) {
         float headAlpha = 1f;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (frameColorStr == null || frameColorStr.isEmpty()) frameColorStr = "0:255:85:255:85";
         if (skin == null) skin = DefaultPlayerSkin.getDefaultSkinLegacy();
 
@@ -526,25 +514,24 @@ public final class RenderUtils {
             solidArgb = ChromaColour.specialToChromaRGB(frameColorStr);
         }
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(cx, cy, 0f);
-        GlStateManager.rotate(yaw, 0f, 0f, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(cx, cy, 0f);
+        GlStateManagerCompat.rotate(yaw, 0f, 0f, 1f);
 
         float half = frameSize / 2f;
         float headHalf = half * 0.72f;
 
-        GlStateManager.disableLighting();
-        GlStateManager.enableBlend();
-        GlStateManager.enableAlpha();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.enableAlpha();
 
-        GlStateManager.disableCull();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.disableCull();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
 
-        Tessellator tessellator = Tessellator.getInstance();
-        WorldRenderer wr = tessellator.getWorldRenderer();
+        VertexBuilder vb;
 
-        GlStateManager.disableTexture2D();
-        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
+        GlStateManagerCompat.disableTexture2D();
+        vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_COLOR);
         if (flow) {
             int strips = Math.max(4, (int) Math.ceil(frameSize));
             float stripW = frameSize / strips;
@@ -554,29 +541,29 @@ public final class RenderUtils {
                 int argb = ChromaColour.applyChromaShift(chromaBase, cx + sx, cy, chromaMode, chromaSize);
                 float a = ((argb >>> 24) & 0xFF) / 255f;
                 float r = argbR(argb), g = argbG(argb), b = argbB(argb);
-                wr.pos(sx, -half, 0d).color(r, g, b, a).endVertex();
-                wr.pos(sx, half, 0d).color(r, g, b, a).endVertex();
-                wr.pos(ex, half, 0d).color(r, g, b, a).endVertex();
-                wr.pos(ex, -half, 0d).color(r, g, b, a).endVertex();
+                vb.pos(sx, -half, 0d).color(r, g, b, a).endVertex();
+                vb.pos(sx, half, 0d).color(r, g, b, a).endVertex();
+                vb.pos(ex, half, 0d).color(r, g, b, a).endVertex();
+                vb.pos(ex, -half, 0d).color(r, g, b, a).endVertex();
             }
         } else {
             float a = ((solidArgb >>> 24) & 0xFF) / 255f;
             float r = argbR(solidArgb), g = argbG(solidArgb), b = argbB(solidArgb);
-            wr.pos(-half, -half, 0d).color(r, g, b, a).endVertex();
-            wr.pos(-half, half, 0d).color(r, g, b, a).endVertex();
-            wr.pos(half, half, 0d).color(r, g, b, a).endVertex();
-            wr.pos(half, -half, 0d).color(r, g, b, a).endVertex();
+            vb.pos(-half, -half, 0d).color(r, g, b, a).endVertex();
+            vb.pos(-half, half, 0d).color(r, g, b, a).endVertex();
+            vb.pos(half, half, 0d).color(r, g, b, a).endVertex();
+            vb.pos(half, -half, 0d).color(r, g, b, a).endVertex();
         }
-        tessellator.draw();
+        vb.draw();
 
-        GlStateManager.enableTexture2D();
+        GlStateManagerCompat.enableTexture2D();
         mc.getTextureManager().bindTexture(skin);
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.color(1f, 1f, 1f, headAlpha);
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.color(1f, 1f, 1f, headAlpha);
         drawSkinRegion(-headHalf, -headHalf, headHalf * 2f, 8f);
         drawSkinRegion(-headHalf, -headHalf, headHalf * 2f, 40f);
 
-        GlStateManager.disableTexture2D();
+        GlStateManagerCompat.disableTexture2D();
         float tw = frameSize / 3f;
         float th = frameSize / 3.5f;
         int cApex, cBaseL, cBaseR;
@@ -589,31 +576,29 @@ public final class RenderUtils {
             cBaseL = solidArgb;
             cBaseR = solidArgb;
         }
-        wr.begin(GL11.GL_TRIANGLES, DefaultVertexFormats.POSITION_COLOR);
-        wr.pos(-tw / 2f, -half, 0d).color(argbR(cBaseL), argbG(cBaseL), argbB(cBaseL),
+        vb = TessellatorCompat.beginDraw(TessellatorCompat.TRIANGLES, TessellatorCompat.POSITION_COLOR);
+        vb.pos(-tw / 2f, -half, 0d).color(argbR(cBaseL), argbG(cBaseL), argbB(cBaseL),
                 ((cBaseL >>> 24) & 0xFF) / 255f).endVertex();
-        wr.pos(tw / 2f, -half, 0d).color(argbR(cBaseR), argbG(cBaseR), argbB(cBaseR),
+        vb.pos(tw / 2f, -half, 0d).color(argbR(cBaseR), argbG(cBaseR), argbB(cBaseR),
                 ((cBaseR >>> 24) & 0xFF) / 255f).endVertex();
-        wr.pos(0f, -half - th, 0d).color(argbR(cApex), argbG(cApex), argbB(cApex),
+        vb.pos(0f, -half - th, 0d).color(argbR(cApex), argbG(cApex), argbB(cApex),
                 ((cApex >>> 24) & 0xFF) / 255f).endVertex();
-        tessellator.draw();
+        vb.draw();
 
-        GlStateManager.enableTexture2D();
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.popMatrix();
     }
 
     /** One textured layer of a skinhead quad at float coords (POSITION_TEX). Both face and hat layers share texture row y=8. */
     private static void drawSkinRegion(float x, float y, float size, float texU) {
-        Tessellator tessellator = Tessellator.getInstance();
-        WorldRenderer wr = tessellator.getWorldRenderer();
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_TEX);
         float u0 = texU / 64f, v0 = 8f / 64f, u1 = (texU + 8f) / 64f, v1 = 16f / 64f;
-        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
-        wr.pos(x, y + size, 0d).tex(u0, v1).endVertex();
-        wr.pos(x + size, y + size, 0d).tex(u1, v1).endVertex();
-        wr.pos(x + size, y, 0d).tex(u1, v0).endVertex();
-        wr.pos(x, y, 0d).tex(u0, v0).endVertex();
-        tessellator.draw();
+        vb.pos(x, y + size, 0d).tex(u0, v1).endVertex();
+        vb.pos(x + size, y + size, 0d).tex(u1, v1).endVertex();
+        vb.pos(x + size, y, 0d).tex(u1, v0).endVertex();
+        vb.pos(x, y, 0d).tex(u0, v0).endVertex();
+        vb.draw();
     }
 
     private static float argbR(int argb) {
@@ -629,8 +614,8 @@ public final class RenderUtils {
     }
 
     public static void renderMapCheckmark(ResourceLocation texture, float x, float y, float size) {
-        Minecraft.getMinecraft().getTextureManager().bindTexture(texture);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(texture);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         drawTexturedRect(x, y, size, size, GL11.GL_NEAREST);
     }
 
@@ -650,13 +635,13 @@ public final class RenderUtils {
         GL11.glStencilFunc(GL11.GL_ALWAYS, 1, 0xFF);
         GL11.glStencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_REPLACE);
 
-        GlStateManager.colorMask(false, false, false, false);
-        GlStateManager.depthMask(false);
+        GlStateManagerCompat.colorMask(false, false, false, false);
+        GlStateManagerCompat.depthMask(false);
 
         drawRoundedRect(x, y, w, h, r, 0xFFFFFFFF);
 
-        GlStateManager.colorMask(true, true, true, true);
-        GlStateManager.depthMask(true);
+        GlStateManagerCompat.colorMask(true, true, true, true);
+        GlStateManagerCompat.depthMask(true);
         GL11.glStencilMask(0x00);
 
         GL11.glStencilFunc(GL11.GL_EQUAL, 1, 0xFF);

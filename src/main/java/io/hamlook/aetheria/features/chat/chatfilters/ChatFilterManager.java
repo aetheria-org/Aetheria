@@ -4,7 +4,7 @@ import com.google.gson.reflect.TypeToken;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.GsonBuilder;
 import io.hamlook.aetheria.core.StorageManager;
-import net.minecraft.util.ChatComponentText;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.IChatComponent;
 
 import java.io.File;
@@ -20,7 +20,8 @@ public class ChatFilterManager {
     public static void initialise() {
         file = new File(ATHRConfig.configDirectory, "chatFilters.json");
         chatFilters.clear();
-        Type type = new TypeToken<List<ChatFilter>>() {}.getType();
+        Type type = new TypeToken<List<ChatFilter>>() {
+        }.getType();
         List<ChatFilter> loaded = StorageManager.loadSafe(file, type, GsonBuilder.GSON);
         if (loaded != null) chatFilters = loaded;
     }
@@ -31,12 +32,12 @@ public class ChatFilterManager {
 
     public static IChatComponent applyFilters(IChatComponent message) {
         if (message == null) return null;
-        String msg = message.getFormattedText();
+        String msg = TextCompat.getFormattedText(message);
         for (ChatFilter filter : chatFilters) {
             msg = filter.applyFilter(msg);
             if (msg == null) return null;
         }
-        if (msg.equals(message.getFormattedText())) return message;
-        return new ChatComponentText(msg.trim());
+        if (msg.equals(TextCompat.getFormattedText(message))) return message;
+        return TextCompat.createText(msg.trim());
     }
 }

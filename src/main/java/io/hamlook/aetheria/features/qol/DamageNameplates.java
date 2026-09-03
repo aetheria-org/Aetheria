@@ -3,9 +3,9 @@ package io.hamlook.aetheria.features.qol;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityArmorStand;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 
@@ -46,18 +46,18 @@ public class DamageNameplates {
 
             if (critMatcher.matches()) {
                 if (hideCrit) {
-                    return new ChatComponentText("");
+                    return TextCompat.createText("");
                 } else if (formatDamage) {
-                    ChatComponentText replacement = formatCritDamage(critMatcher.group(1), S + "f" + STAR, S + "f" + STAR + critMatcher.group(2));
+                    IChatComponent replacement = formatCritDamage(critMatcher.group(1), S + "f" + STAR, S + "f" + STAR + critMatcher.group(2));
                     if (replacement != null) return replacement;
                 }
             } else {
                 Matcher overloadMatcher = OVERLOAD.matcher(text);
                 if (overloadMatcher.matches()) {
                     if (hideCrit) {
-                        return new ChatComponentText("");
+                        return TextCompat.createText("");
                     } else if (formatDamage) {
-                        ChatComponentText replacement = formatCritDamage(overloadMatcher.group(2), overloadMatcher.group(1) + OVERLOAD_STAR, overloadMatcher.group(3) + OVERLOAD_STAR + S + "r");
+                        IChatComponent replacement = formatCritDamage(overloadMatcher.group(2), overloadMatcher.group(1) + OVERLOAD_STAR, overloadMatcher.group(3) + OVERLOAD_STAR + S + "r");
                         if (replacement != null) return replacement;
                     }
                 }
@@ -73,10 +73,10 @@ public class DamageNameplates {
 
                 if ((gray || fire) && cleanEnd) {
                     if (hideNonCrit) {
-                        return new ChatComponentText("");
+                        return TextCompat.createText("");
                     } else if (formatDamage) {
                         String suffix = rest != null && rest.startsWith("§r") ? rest : "§r" + (rest != null ? rest : "");
-                        ChatComponentText replacement = formatNonCritDamage(noCritMatcher.group(2), noCritMatcher.group(1), suffix);
+                        IChatComponent replacement = formatNonCritDamage(noCritMatcher.group(2), noCritMatcher.group(1), suffix);
                         if (replacement != null) return replacement;
                     }
                 }
@@ -115,7 +115,7 @@ public class DamageNameplates {
         return (long) (Double.parseDouble(text) * multiplier);
     }
 
-    private static ChatComponentText formatCritDamage(String numbersRaw, String prefix, String suffix) {
+    private static IChatComponent formatCritDamage(String numbersRaw, String prefix, String suffix) {
         String numbers = StringUtils.cleanColour(numbersRaw);
 
         try {
@@ -132,19 +132,19 @@ public class DamageNameplates {
                 colored.append(c);
             }
 
-            return new ChatComponentText(prefix + colored + suffix);
+            return TextCompat.createText(prefix + colored + suffix);
         } catch (NumberFormatException e) {
             return null;
         }
     }
 
-    private static ChatComponentText formatNonCritDamage(String numbersRaw, String prefix, String suffix) {
+    private static IChatComponent formatNonCritDamage(String numbersRaw, String prefix, String suffix) {
         try {
             long damage = parseNumber(numbersRaw);
             if (damage <= 999) return null;
 
             String formatted = Utils.shortNumberFormat(damage, 0);
-            return new ChatComponentText(prefix + formatted + suffix);
+            return TextCompat.createText(prefix + formatted + suffix);
         } catch (NumberFormatException e) {
             return null;
         }

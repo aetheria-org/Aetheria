@@ -1,13 +1,14 @@
 package io.hamlook.aetheria.utils.overlay;
 
 import io.hamlook.aetheria.features.storage.StorageManager;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;
-import org.lwjgl.input.Keyboard;
 
 public class OverlayUtils {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private static Boolean tabHeldCache;
     private static int tabHeldTick = -1;
 
@@ -16,7 +17,7 @@ public class OverlayUtils {
     public static boolean isTabHeld() {
         int tick = mc.thePlayer != null ? mc.thePlayer.ticksExisted : -1;
         if (tick != tabHeldTick) {
-            tabHeldCache = mc.currentScreen == null && Keyboard.isKeyDown(mc.gameSettings.keyBindPlayerList.getKeyCode());
+            tabHeldCache = mc.currentScreen == null && KeyboardCompat.isKeyDown(mc.gameSettings.keyBindPlayerList.getKeyCode());
             tabHeldTick = tick;
         }
         return tabHeldCache;

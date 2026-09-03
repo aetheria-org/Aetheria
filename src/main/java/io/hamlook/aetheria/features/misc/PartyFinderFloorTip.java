@@ -11,7 +11,6 @@ import io.hamlook.aetheria.utils.item.ItemStackUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.List;
 

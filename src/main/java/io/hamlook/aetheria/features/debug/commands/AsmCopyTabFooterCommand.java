@@ -3,6 +3,8 @@ package io.hamlook.aetheria.features.debug.commands;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.command.CommandException;
@@ -45,7 +47,7 @@ public class AsmCopyTabFooterCommand extends ASMCommand {
     public void execute(ICommandSender sender, String[] args) throws CommandException {
         boolean noColor = Arrays.asList(args).contains("-nocolor");
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null) {
             ChatUtils.sendMessage(EnumChatFormatting.RED + "Not in a world.");
             return;
@@ -57,7 +59,7 @@ public class AsmCopyTabFooterCommand extends ASMCommand {
             return;
         }
 
-        String formatted = footer.getFormattedText();
+        String formatted = TextCompat.getFormattedText(footer);
         String text = noColor ? StringUtils.stripControlCodes(formatted) : formatted;
 
         GuiScreen.setClipboardString(text);
@@ -68,7 +70,7 @@ public class AsmCopyTabFooterCommand extends ASMCommand {
      * name (field_175255_h) isn't stable across mappings. */
     private static IChatComponent readFooterField() {
         try {
-            Object tabList = Minecraft.getMinecraft().ingameGUI.getTabList();
+            Object tabList = MinecraftCompat.getMinecraft().ingameGUI.getTabList();
             Field f = tabList.getClass().getDeclaredField("field_175255_h");
             f.setAccessible(true);
             return (IChatComponent) f.get(tabList);

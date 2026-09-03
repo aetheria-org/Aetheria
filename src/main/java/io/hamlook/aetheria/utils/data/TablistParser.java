@@ -2,11 +2,17 @@ package io.hamlook.aetheria.utils.data;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldLoadEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.features.scoreboard.BankParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ElectionUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
@@ -14,20 +20,11 @@ import net.minecraft.client.gui.GuiPlayerTabOverlay;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.world.WorldSettings;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMWorldLoadEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class TablistParser {
@@ -89,7 +86,7 @@ public class TablistParser {
 
     private static net.minecraft.util.IChatComponent getTabFooter() {
         try {
-            Minecraft mc = Minecraft.getMinecraft();
+            Minecraft mc = MinecraftCompat.getMinecraft();
             if (mc.thePlayer == null) return null;
             java.lang.reflect.Field f = mc.ingameGUI.getTabList().getClass().getDeclaredField("field_175255_h");
             f.setAccessible(true);
@@ -100,7 +97,7 @@ public class TablistParser {
     }
 
     public static String readGems() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null) return null;
         GuiPlayerTabOverlay tab = mc.ingameGUI.getTabList();
         List<NetworkPlayerInfo> infos = PLAYER_ORDERING.sortedCopy(mc.thePlayer.sendQueue.getPlayerInfoMap());
@@ -126,7 +123,7 @@ public class TablistParser {
     public static String readCookieBuff() {
         net.minecraft.util.IChatComponent footer = getTabFooter();
         if (footer == null) return null;
-        String[] lines = net.minecraft.util.StringUtils.stripControlCodes(footer.getFormattedText()).split("\n");
+        String[] lines = net.minecraft.util.StringUtils.stripControlCodes(TextCompat.getFormattedText(footer)).split("\n");
         boolean sawCookie = false;
         for (String line : lines) {
             String l = line.trim();
@@ -448,7 +445,7 @@ public class TablistParser {
                 : TICK_INTERVAL;
         if ((tickCounter = (tickCounter + 1) % interval) != 0) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null) return;
 
         parseTablist(mc);

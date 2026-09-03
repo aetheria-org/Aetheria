@@ -1,24 +1,25 @@
 package io.hamlook.aetheria.features.waypoints;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.StringUtils;
 import net.minecraft.util.Vec3;
-import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.List;
-import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 @RegisterEvents
 public class WaypointRenderer {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private Color argbToColor(int argb) {
         return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
@@ -138,8 +139,8 @@ public class WaypointRenderer {
         GL11.glRotatef(mc.getRenderManager().playerViewX, 1f, 0f, 0f);
         GL11.glScalef(-scale, -scale, scale);
 
-        GlStateManager.disableLighting();
-        GlStateManager.disableDepth();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableDepth();
 
         float sx = -nameW / 2f;
         mc.fontRendererObj.drawString(nameStr, sx, 0f, nameColor, false);
@@ -150,7 +151,7 @@ public class WaypointRenderer {
         mc.fontRendererObj.drawString(distNum, bx + bw1, 10f, nameColor, false);
         mc.fontRendererObj.drawString(bracketClose, bx + bw1 + mc.fontRendererObj.getStringWidth(distNum), 10f, 0xAAAAAA, false);
 
-        GlStateManager.enableDepth();
+        GlStateManagerCompat.enableDepth();
         GL11.glPopMatrix();
     }
 

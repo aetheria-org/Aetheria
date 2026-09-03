@@ -9,7 +9,6 @@ import io.hamlook.aetheria.utils.RomanNumeralParser;
 import io.hamlook.aetheria.utils.item.ItemStackUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.item.ItemStack;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 @RegisterEvents
 public class EnchantLevelTip {

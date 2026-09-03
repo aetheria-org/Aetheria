@@ -3,18 +3,18 @@
 
 package io.hamlook.aetheria.core.moulconfig.editors;
 
-import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
-
-import io.hamlook.aetheria.Resources;
 
 import static io.hamlook.aetheria.Resources.button_tex;
 
@@ -38,29 +38,29 @@ public class GuiOptionEditorKeybind extends GuiOptionEditor {
 
         int height = getHeight();
 
-        GlStateManager.color(1, 1, 1, 1);
-        Minecraft.getMinecraft().getTextureManager().bindTexture(button_tex);
+        GlStateManagerCompat.color(1, 1, 1, 1);
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(button_tex);
         RenderUtils.drawTexturedRect(x + width / 6 - 24, y + height - 7 - 14, 48, 16);
 
         String keyName = KeybindHelper.getKeyName(keyCode);
         String text = editingKeycode ? "> " + keyName + " <" : keyName;
-        TextRenderUtils.drawStringCenteredScaledMaxWidth(text, Minecraft.getMinecraft().fontRendererObj, x + width / 6, y + height - 7 - 6, false, 40, 0xFF303030);
+        TextRenderUtils.drawStringCenteredScaledMaxWidth(text, MinecraftCompat.getMinecraft().fontRendererObj, x + width / 6, y + height - 7 - 6, false, 40, 0xFF303030);
 
-        Minecraft.getMinecraft().getTextureManager().bindTexture(RESET);
-        GlStateManager.color(1, 1, 1, 1);
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(RESET);
+        GlStateManagerCompat.color(1, 1, 1, 1);
         RenderUtils.drawTexturedRect(x + width / 6 - 24 + 48 + 3, y + height - 7 - 14 + 3, 10, 11, GL11.GL_NEAREST);
     }
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
-        if (Mouse.getEventButtonState() && Mouse.getEventButton() != -1 && editingKeycode) {
+        if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() != -1 && editingKeycode) {
             editingKeycode = false;
-            keyCode = Mouse.getEventButton() - 100;
+            keyCode = MouseCompat.getEventButton() - 100;
             option.set(keyCode);
             return true;
         }
 
-        if (Mouse.getEventButtonState() && Mouse.getEventButton() == 0) {
+        if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0) {
             int height = getHeight();
             if (mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24 && mouseY > y + height - 7 - 14 && mouseY < y + height - 7 + 2) {
                 editingKeycode = true;
@@ -80,10 +80,10 @@ public class GuiOptionEditorKeybind extends GuiOptionEditor {
     public boolean keyboardInput() {
         if (editingKeycode) {
             editingKeycode = false;
-            if (Keyboard.getEventKey() == Keyboard.KEY_ESCAPE) {
+            if (KeyboardCompat.getEventKey() == Keyboard.KEY_ESCAPE) {
                 keyCode = 0;
             } else {
-                keyCode = Keyboard.getEventKey() == 0 ? Keyboard.getEventCharacter() + 256 : Keyboard.getEventKey();
+                keyCode = KeyboardCompat.getEventKey() == 0 ? KeyboardCompat.getEventCharacter() + 256 : KeyboardCompat.getEventKey();
             }
             option.set(keyCode);
             return true;

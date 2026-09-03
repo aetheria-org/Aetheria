@@ -1,25 +1,26 @@
 package io.hamlook.aetheria.features.farming.pests.overlay;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.PestAlertConfig;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.SimpleOverlay;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.events.ASMTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @RegisterEvents
 public class PestAlertOverlay extends SimpleOverlay {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private static final long DISPLAY_MS = 3000L;
     private static final long SOUND_REPEAT_MS = 1000L;
     private static final long FADE_IN_MS = 250L;
@@ -140,24 +141,24 @@ public class PestAlertOverlay extends SimpleOverlay {
         float xSub = (sr.getScaledWidth() - subW * subScale) / 2f;
 
         if (mainAlpha < 1f || subAlpha < 1f) {
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+            GlStateManagerCompat.enableBlend();
+            GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
         }
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(xMain, yMain, 0);
-        GlStateManager.scale(scale, scale, 1);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(xMain, yMain, 0);
+        GlStateManagerCompat.scale(scale, scale, 1);
         fr.drawStringWithShadow(main, 0, 0, alpha(mainAlpha));
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(xSub, yMain + fr.FONT_HEIGHT * scale + gap, 0);
-        GlStateManager.scale(subScale, subScale, 1);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(xSub, yMain + fr.FONT_HEIGHT * scale + gap, 0);
+        GlStateManagerCompat.scale(subScale, subScale, 1);
         fr.drawStringWithShadow(sub, 0, 0, alpha(subAlpha));
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
 
         if (mainAlpha < 1f || subAlpha < 1f) {
-            GlStateManager.disableBlend();
+            GlStateManagerCompat.disableBlend();
         }
     }
 

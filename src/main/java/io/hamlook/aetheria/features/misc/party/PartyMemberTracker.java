@@ -1,16 +1,17 @@
 package io.hamlook.aetheria.features.misc.party;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMChatEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 /**
  * Tracks who is currently in the player's party by parsing Hypixel's party chat
@@ -118,7 +119,7 @@ public class PartyMemberTracker {
     }
 
     private static String ownName() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         return mc.thePlayer != null ? mc.thePlayer.getName() : "";
     }
 

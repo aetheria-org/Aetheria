@@ -5,12 +5,12 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -27,7 +27,7 @@ import java.awt.*;
 @RegisterEvents
 public class PartyMemberOutline {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     @HandleEvent(priority = HandleEvent.HIGH)
     public void onRenderEntityModel(RenderEntityModelEvent event) {
@@ -54,31 +54,31 @@ public class PartyMemberOutline {
     private void renderOutline(RenderEntityModelEvent event, Color color) {
         EntityLivingBase entity = event.getEntity();
 
-        GlStateManager.pushMatrix();
-        GlStateManager.pushAttrib();
-        GlStateManager.disableLighting();
-        GlStateManager.disableTexture2D();
-        GlStateManager.enableBlend();
-        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlStateManager.depthMask(false);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.pushAttrib();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GlStateManagerCompat.depthMask(false);
 
         float r = color.getRed() / 255f, g = color.getGreen() / 255f, b = color.getBlue() / 255f, a = color.getAlpha() / 255f;
 
-        GlStateManager.color(r, g, b, a * 0.35f);
-        GlStateManager.scale(1.05f, 1.05f, 1.05f);
+        GlStateManagerCompat.color(r, g, b, a * 0.35f);
+        GlStateManagerCompat.scale(1.05f, 1.05f, 1.05f);
         event.getModel().render(entity, event.getLimbSwing(), event.getLimbSwingAmount(), event.getAgeInTicks(), event.getHeadYaw(), event.getHeadPitch(), event.getScaleFactor());
 
-        GlStateManager.color(r, g, b, a);
+        GlStateManagerCompat.color(r, g, b, a);
         float shrink = 1.02f / 1.05f;
-        GlStateManager.scale(shrink, shrink, shrink);
+        GlStateManagerCompat.scale(shrink, shrink, shrink);
         event.getModel().render(entity, event.getLimbSwing(), event.getLimbSwingAmount(), event.getAgeInTicks(), event.getHeadYaw(), event.getHeadPitch(), event.getScaleFactor());
 
-        GlStateManager.depthMask(true);
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableLighting();
-        GlStateManager.disableBlend();
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        GlStateManager.popAttrib();
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.depthMask(true);
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.enableLighting();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.popAttrib();
+        GlStateManagerCompat.popMatrix();
     }
 }

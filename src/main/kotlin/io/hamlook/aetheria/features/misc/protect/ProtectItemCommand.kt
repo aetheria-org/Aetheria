@@ -3,8 +3,8 @@ package io.hamlook.aetheria.features.misc.protect
 import io.hamlook.aetheria.command.ASMCommand
 import io.hamlook.aetheria.init.RegisterCommand
 import io.hamlook.aetheria.utils.chat.ChatUtils
+import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import io.hamlook.aetheria.utils.item.ItemUtils
-import net.minecraft.client.Minecraft
 import net.minecraft.command.ICommandSender
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.util.BlockPos
@@ -13,7 +13,7 @@ import net.minecraft.util.BlockPos
 class ProtectItemCommand : ASMCommand() {
 
     companion object {
-        private val mc = Minecraft.getMinecraft()
+        private val mc = MinecraftCompat.getMinecraft()
 
         private const val PREFIX = "§b[ItemProtect] §r"
 
@@ -31,7 +31,7 @@ class ProtectItemCommand : ASMCommand() {
     override fun getUsage() = "/athrprotect [list|clear]"
 
     override fun execute(sender: ICommandSender, args: Array<String>) {
-        val player = mc.thePlayer ?: return
+        val player = MinecraftCompat.getLocalPlayer() ?: return
 
         when (args.firstOrNull()?.lowercase()) {
             null -> toggleProtection(player)

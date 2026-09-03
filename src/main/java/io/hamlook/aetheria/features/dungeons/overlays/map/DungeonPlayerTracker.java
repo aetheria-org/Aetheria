@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.dungeons.overlays.map;
 
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
@@ -40,7 +41,7 @@ public class DungeonPlayerTracker {
         players.clear();
         playerNames.clear();
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null || mc.theWorld == null) return;
 
         if (!isRunStarted()) return;
@@ -73,7 +74,7 @@ public class DungeonPlayerTracker {
      */
     private List<String> getOrderedPartyUsernames() {
         List<String> members = new ArrayList<>();
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.getNetHandler() == null) return members;
 
         Collection<NetworkPlayerInfo> tabList = mc.getNetHandler().getPlayerInfoMap();
@@ -109,7 +110,7 @@ public class DungeonPlayerTracker {
      * mis-assigned to a teammate.
      */
     public void matchDecorations(Map<String, Vec4b> mapDecorations) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null || playerNames.isEmpty()) return;
         if (mapDecorations == null || mapDecorations.isEmpty()) return;
 

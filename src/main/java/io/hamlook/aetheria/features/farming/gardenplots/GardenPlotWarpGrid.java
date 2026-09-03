@@ -1,13 +1,17 @@
 package io.hamlook.aetheria.features.farming.gardenplots;
 
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMMouseEvent;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
@@ -15,18 +19,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiInventory;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.Map;
-import io.hamlook.aetheria.events.ASMMouseEvent;
 
 @RegisterEvents
 public class GardenPlotWarpGrid {
 
-    private static final Minecraft MC = Minecraft.getMinecraft();
+    private static final Minecraft MC = MinecraftCompat.getMinecraft();
     private static final GardenPlotWarpGrid INSTANCE = new GardenPlotWarpGrid();
 
     private static final int GRID_DIM = 5;
@@ -81,7 +82,7 @@ public class GardenPlotWarpGrid {
     }
 
     public void render(boolean preview) {
-        ScaledResolution sr = new ScaledResolution(MC);
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int[] pos = calculatePosition(sr);
         draw(pos[0], pos[1]);
     }
@@ -123,7 +124,7 @@ public class GardenPlotWarpGrid {
             }
 
             if (plot == 0) {
-                GlStateManager.color(1f, 1f, 1f, 1f);
+                GlStateManagerCompat.color(1f, 1f, 1f, 1f);
                 ItemRenderUtils.renderItemIcon(MC, new ItemStack(Blocks.hay_block), x + 2, y + 2, CELL_SIZE - 4);
             } else {
                 String text = String.valueOf(plot);
@@ -174,12 +175,12 @@ public class GardenPlotWarpGrid {
     @HandleEvent
     public void onDrawGui(GuiContainerRenderBeforeTooltipEvent event) {
         if (!isEnabled() || !isSupportedGui(event.gui)) return;
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(-event.gui.guiLeft, -event.gui.guiTop, 50);
-        ScaledResolution sr = new ScaledResolution(MC);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(-event.gui.guiLeft, -event.gui.guiTop, 50);
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int[] pos = calculatePosition(sr);
         draw(pos[0], pos[1]);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     @HandleEvent

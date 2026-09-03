@@ -1,36 +1,25 @@
 package io.hamlook.aetheria.features.mining;
 
 import io.hamlook.aetheria.Aetheria;
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.features.misc.PerformanceHUD;
-import io.hamlook.aetheria.events.BlockClickEvent;
-import io.hamlook.aetheria.events.DebugReportEvent;
-import io.hamlook.aetheria.events.OreMinedEvent;
-import io.hamlook.aetheria.events.PlaySoundEvent;
-import io.hamlook.aetheria.events.ServerBlockChangeEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.BlockPos;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class MiningApi {
@@ -116,7 +105,7 @@ public class MiningApi {
             } else {
                 if (System.currentTimeMillis() - lastClicked > CLICK_WINDOW_MS) { debugLogRateLimited("orb:window", "Init reject orb: outside click window (" + (System.currentTimeMillis() - lastClicked) + "ms > " + CLICK_WINDOW_MS + ")"); return; }
                 if (lastClickedPos == null) { debugLogRateLimited("orb:null", "Init reject orb: lastClickedPos is null"); return; }
-                IBlockState state = Minecraft.getMinecraft().theWorld.getBlockState(lastClickedPos);
+                IBlockState state = MinecraftCompat.getMinecraft().theWorld.getBlockState(lastClickedPos);
                 OreBlock ore = OreBlock.getByStateOrNull(state);
                 if (ore == null) { debugLogRateLimited("orb:unknown:" + lastClickedPos, "Init reject orb: unknown ore at " + lastClickedPos + " state=" + state); return; }
                 if (ore.hasInitSound) { debugLogRateLimited("orb:hasInit:" + ore.name(), "Init reject orb: " + ore.name() + " hasInitSound=true"); return; }
@@ -152,12 +141,12 @@ public class MiningApi {
         Block newBlock = newState.getBlock();
 
         if (oldState.equals(newState)) return;
-        if (oldBlock == Blocks.air || oldBlock == Blocks.bedrock) { debugLogRateLimited("s22:ab:" + event.pos, "S22: old block is air/bedrock at " + event.pos); return; }
-        if (newBlock != Blocks.air && newBlock != Blocks.bedrock && !OreBlock.isTitaniumBlock(newState)) { debugLogRateLimited("s22:nt:" + event.pos, "S22: new block not air/titanium at " + event.pos); return; }
+        if (BlockCompat.isAir(oldBlock) || oldBlock == Blocks.bedrock) { debugLogRateLimited("s22:ab:" + event.pos, "S22: old block is air/bedrock at " + event.pos); return; }
+        if (!BlockCompat.isAir(newBlock) && newBlock != Blocks.bedrock && !OreBlock.isTitaniumBlock(newState)) { debugLogRateLimited("s22:nt:" + event.pos, "S22: new block not air/titanium at " + event.pos); return; }
 
         BlockPos pos = event.pos;
 
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayer player = MinecraftCompat.getMinecraft().thePlayer;
         if (player == null) return;
         double dist = player.getDistance(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
         if (dist > MAX_BREAK_DISTANCE) { debugLogRateLimited("s22:far:" + pos, "S22: too far (" + String.format("%.1f", dist) + ") at " + pos); return; }
@@ -298,7 +287,7 @@ public class MiningApi {
 
     private static String buildSoundDebugMessage(PlaySoundEvent event) {
         BlockPos bp = event.getBlockPos();
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayer player = MinecraftCompat.getMinecraft().thePlayer;
         double dist = player != null
             ? player.getDistance(bp.getX() + 0.5, bp.getY() + 0.5, bp.getZ() + 0.5)
             : -1;

@@ -5,11 +5,11 @@ package io.hamlook.aetheria.core.moulconfig.gui;
 
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.utils.LerpUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
-import org.lwjgl.input.Mouse;
 
 import java.util.function.Consumer;
 
@@ -43,8 +43,8 @@ public class GuiElementBoolean extends GuiElement {
 
     @Override
     public void render() {
-        GlStateManager.color(1, 1, 1, 1);
-        Minecraft.getMinecraft().getTextureManager().bindTexture(Resources.BAR);
+        GlStateManagerCompat.color(1, 1, 1, 1);
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.BAR);
         RenderUtils.drawTexturedRect(x, y, xSize, ySize);
 
         ResourceLocation buttonLoc = Resources.ON;
@@ -74,7 +74,7 @@ public class GuiElementBoolean extends GuiElement {
         else if (anim < 23) buttonLoc = Resources.TWO;
         else if (anim < 33) buttonLoc = Resources.THREE;
 
-        Minecraft.getMinecraft().getTextureManager().bindTexture(buttonLoc);
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(buttonLoc);
         RenderUtils.drawTexturedRect(x + anim, y, 12, 14);
     }
 
@@ -82,8 +82,8 @@ public class GuiElementBoolean extends GuiElement {
     public boolean mouseInput(int mouseX, int mouseY) {
         if (mouseX > x - clickRadius && mouseX < x + xSize + clickRadius &&
                 mouseY > y - clickRadius && mouseY < y + ySize + clickRadius) {
-            if (Mouse.getEventButton() == 0) {
-                if (Mouse.getEventButtonState()) {
+            if (MouseCompat.getEventButton() == 0) {
+                if (MouseCompat.getEventButtonState()) {
                     previewValue = !value;
                 } else if (previewValue == !value) {
                     value = !value;

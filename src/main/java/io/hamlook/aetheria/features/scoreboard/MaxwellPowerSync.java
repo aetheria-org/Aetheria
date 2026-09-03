@@ -1,19 +1,19 @@
 package io.hamlook.aetheria.features.scoreboard;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.GsonBuilder;
 import io.hamlook.aetheria.core.StorageManager;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.init.RegisterInstance;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagList;
-import io.hamlook.aetheria.api.event.HandleEvent;
-
-import java.io.*;
-import io.hamlook.aetheria.events.ASMTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+
+import java.io.File;
 
 public class MaxwellPowerSync implements StorageManager.Managed, StorageManager.AutoSaveable {
 
@@ -64,7 +64,7 @@ public class MaxwellPowerSync implements StorageManager.Managed, StorageManager.
         IInventory inv = ContainerUtils.getLowerInventory();
         if (inv == null) return;
 
-        String title = ColorUtils.stripColor(inv.getDisplayName().getUnformattedText());
+        String title = ColorUtils.stripColor(TextCompat.getUnformattedText(inv.getDisplayName()));
         if (!title.contains("Accessory Bag Thaumaturgy")) return;
 
         for (int i = 0; i < inv.getSizeInventory(); i++) {
@@ -84,12 +84,8 @@ public class MaxwellPowerSync implements StorageManager.Managed, StorageManager.
 
     private boolean hasSelectedLine(ItemStack item) {
         try {
-            NBTTagList lore = item.getTagCompound().getCompoundTag("display").getTagList("Lore", 8);
-            for (int i = 0; i < lore.tagCount(); i++) {
-                if (ColorUtils.stripColor(lore.getStringTagAt(i)).trim().equals("Power is selected!")) {
-                    return true;
-                }
-            }
+            String line = ItemUtils.getLoreLine(item, "Power is selected!");
+            return line != null;
         } catch (Exception ignored) {
         }
         return false;

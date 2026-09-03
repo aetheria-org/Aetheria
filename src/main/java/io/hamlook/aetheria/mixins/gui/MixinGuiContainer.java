@@ -5,16 +5,18 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.events.SlotClickEvent;
 import io.hamlook.aetheria.features.misc.protect.ProtectItemFeature;
-import io.hamlook.aetheria.utils.compat.NefSlotClickCompat;
 import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.features.qol.BetterContainers;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
+import io.hamlook.aetheria.utils.compat.NefSlotClickCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.NBTFormatter;
 import io.hamlook.aetheria.utils.render.HighlightUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -22,7 +24,6 @@ import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import org.lwjgl.input.Keyboard;
 import org.spongepowered.asm.mixin.Mixin;
@@ -78,17 +79,18 @@ public abstract class MixinGuiContainer extends GuiScreen {
     @Inject(method = "keyTyped", at = @At("HEAD"))
     private void ATHR$nbtCopy(char typedChar, int keyCode, CallbackInfo ci) {
         if (keyCode == ATHRConfig.feature.debug.copyNBTKey && ATHRConfig.feature.debug.copyNBTData) {
-            if (this.theSlot != null && this.theSlot.getHasStack()) {
-                ItemStack stack = this.theSlot.getStack();
-                if (stack.hasTagCompound()) {
-                    String prettyNbt = NBTFormatter.format(stack.getTagCompound());
+                if (this.theSlot != null && this.theSlot.getHasStack()) {
+                    ItemStack stack = this.theSlot.getStack();
+                    net.minecraft.nbt.NBTTagCompound tag = NbtCompat.getTagCompound(stack);
+                    if (tag != null) {
+                        String prettyNbt = NBTFormatter.format(tag);
                     GuiScreen.setClipboardString(prettyNbt);
-                    Minecraft.getMinecraft().thePlayer.addChatMessage(
-                            new ChatComponentText(EnumChatFormatting.GREEN + "Copied NBT to clipboard!")
+                    MinecraftCompat.getMinecraft().thePlayer.addChatMessage(
+                            TextCompat.createText(EnumChatFormatting.GREEN + "Copied NBT to clipboard!")
                     );
                 } else {
-                    Minecraft.getMinecraft().thePlayer.addChatMessage(
-                            new ChatComponentText(EnumChatFormatting.RED + "This item has no NBT data.")
+                    MinecraftCompat.getMinecraft().thePlayer.addChatMessage(
+                            TextCompat.createText(EnumChatFormatting.RED + "This item has no NBT data.")
                     );
                 }
             }

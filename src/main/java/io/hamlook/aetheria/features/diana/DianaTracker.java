@@ -1,20 +1,21 @@
 package io.hamlook.aetheria.features.diana;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
+import io.hamlook.aetheria.events.ASMServerJoinEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMChatEvent;
-import io.hamlook.aetheria.events.ASMServerJoinEvent;
-import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
 
 @RegisterEvents
 public class DianaTracker {
@@ -33,7 +34,7 @@ public class DianaTracker {
     private static final Pattern DROP_COINS = Pattern.compile("RARE DROP! You dug out ([\\d,]+) Coins");
     private static final Pattern GRIFFIN_DOUBLED = Pattern.compile("Your Griffin doubled your rewards?!");
     private static final Pattern LOOT_SHARE = Pattern.compile("^LOOT SHARE You received loot for assisting");
-    private final Minecraft mc = Minecraft.getMinecraft();
+    private final Minecraft mc = MinecraftCompat.getMinecraft();
     private volatile boolean pendingDouble = false;
 
     private static boolean isInHub() {

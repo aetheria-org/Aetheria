@@ -1,7 +1,10 @@
 package io.hamlook.aetheria.core.features.qol;
 
 import com.google.gson.annotations.Expose;
-import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigEditorBoolean;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigEditorColour;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigEditorKeybind;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigOption;
 import org.lwjgl.input.Keyboard;
 
 import java.util.HashMap;

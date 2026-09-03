@@ -1,13 +1,14 @@
 package io.hamlook.aetheria.utils;
 
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ModCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraftforge.fml.common.Loader;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
@@ -23,21 +24,21 @@ public class Utils {
     //Labymod compatibility
     private static final FloatBuffer projectionMatrixOld = BufferUtils.createFloatBuffer(16);
     private static final FloatBuffer modelviewMatrixOld = BufferUtils.createFloatBuffer(16);
-    private static ScaledResolution lastScale = new ScaledResolution(Minecraft.getMinecraft());
+    private static ScaledResolution lastScale = GuiScreenUtils.getScaledResolution();
 
     public static boolean overlayShouldRender(Integer type, boolean... booleans) {
         return overlayShouldRender(false, type, 9, booleans);
     }
 
     public static boolean overlayShouldRender(boolean hideOnf3, Integer type, Integer checkType, boolean... booleans) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         for (boolean aBoolean : booleans) if (!aBoolean) return false;
         if (hideOnf3) {
             if (mc.gameSettings.showDebugInfo || (mc.gameSettings.keyBindPlayerList.isKeyDown() && (!mc.isIntegratedServerRunning() || mc.thePlayer.sendQueue.getPlayerInfoMap().size() > 1))) {
                 return false;
             }
         }
-        return ((type == null && Loader.isModLoaded("labymod")) || type == checkType);
+        return ((type == null && ModCompat.isModLoaded("labymod")) || type == checkType);
     }
 
     public static void drawStringScaledMaxWidth(String str, FontRenderer fr, float x, float y, boolean shadow, int len, int colour) {
@@ -49,32 +50,30 @@ public class Utils {
     }
 
     public static void drawStringScaled(String str, FontRenderer fr, float x, float y, boolean shadow, int colour, float factor) {
-        GlStateManager.scale(factor, factor, 1);
+        GlStateManagerCompat.scale(factor, factor, 1);
         fr.drawString(str, x / factor, y / factor, colour, shadow);
-        GlStateManager.scale(1 / factor, 1 / factor, 1);
+        GlStateManagerCompat.scale(1 / factor, 1 / factor, 1);
     }
 
     public static void drawTexturedRect(float x, float y, float width, float height, float uMin, float uMax, float vMin, float vMax, int filter) {
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableBlend();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.enableBlend();
         GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
 
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, filter);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, filter);
 
-        Tessellator tessellator = Tessellator.getInstance();
-        WorldRenderer worldrenderer = tessellator.getWorldRenderer();
-        worldrenderer.begin(7, DefaultVertexFormats.POSITION_TEX);
-        worldrenderer.pos(x, y + height, 0.0D).tex(uMin, vMax).endVertex();
-        worldrenderer.pos(x + width, y + height, 0.0D).tex(uMax, vMax).endVertex();
-        worldrenderer.pos(x + width, y, 0.0D).tex(uMax, vMin).endVertex();
-        worldrenderer.pos(x, y, 0.0D).tex(uMin, vMin).endVertex();
-        tessellator.draw();
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_TEX);
+        vb.pos(x, y + height, 0.0D).tex(uMin, vMax).endVertex();
+        vb.pos(x + width, y + height, 0.0D).tex(uMax, vMax).endVertex();
+        vb.pos(x + width, y, 0.0D).tex(uMax, vMin).endVertex();
+        vb.pos(x, y, 0.0D).tex(uMin, vMin).endVertex();
+        vb.draw();
 
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
 
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.disableBlend();
     }
 
     public static void drawTexturedRect(float x, float y, float width, float height) {
@@ -99,7 +98,7 @@ public class Utils {
 
     public static ScaledResolution pushGuiScale(int scale) {
         if (guiScales.isEmpty()) {
-            if (Loader.isModLoaded("labymod")) {
+            if (ModCompat.isModLoaded("labymod")) {
                 GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projectionMatrixOld);
                 GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelviewMatrixOld);
             }
@@ -111,41 +110,41 @@ public class Utils {
             }
         } else {
             if (scale == 0) {
-                guiScales.push(Minecraft.getMinecraft().gameSettings.guiScale);
+                guiScales.push(MinecraftCompat.getMinecraft().gameSettings.guiScale);
             } else {
                 guiScales.push(scale);
             }
         }
 
-        int newScale = !guiScales.isEmpty() ? Math.max(0, Math.min(4, guiScales.peek())) : Minecraft.getMinecraft().gameSettings.guiScale;
-        if (newScale == 0) newScale = Minecraft.getMinecraft().gameSettings.guiScale;
+        int newScale = !guiScales.isEmpty() ? Math.max(0, Math.min(4, guiScales.peek())) : MinecraftCompat.getMinecraft().gameSettings.guiScale;
+        if (newScale == 0) newScale = MinecraftCompat.getMinecraft().gameSettings.guiScale;
 
-        int oldScale = Minecraft.getMinecraft().gameSettings.guiScale;
-        Minecraft.getMinecraft().gameSettings.guiScale = newScale;
-        ScaledResolution scaledresolution = new ScaledResolution(Minecraft.getMinecraft());
-        Minecraft.getMinecraft().gameSettings.guiScale = oldScale;
+        int oldScale = MinecraftCompat.getMinecraft().gameSettings.guiScale;
+        MinecraftCompat.getMinecraft().gameSettings.guiScale = newScale;
+        ScaledResolution scaledresolution = GuiScreenUtils.getScaledResolution();
+        MinecraftCompat.getMinecraft().gameSettings.guiScale = oldScale;
 
         if (!guiScales.isEmpty()) {
-            GlStateManager.viewport(0, 0, Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
-            GlStateManager.matrixMode(GL11.GL_PROJECTION);
-            GlStateManager.loadIdentity();
-            GlStateManager.ortho(0.0D, scaledresolution.getScaledWidth_double(), scaledresolution.getScaledHeight_double(), 0.0D, 1000.0D, 3000.0D);
-            GlStateManager.matrixMode(GL11.GL_MODELVIEW);
-            GlStateManager.loadIdentity();
-            GlStateManager.translate(0.0F, 0.0F, -2000.0F);
+            GlStateManagerCompat.viewport(0, 0, MinecraftCompat.getMinecraft().displayWidth, MinecraftCompat.getMinecraft().displayHeight);
+            GlStateManagerCompat.matrixMode(GL11.GL_PROJECTION);
+            GlStateManagerCompat.loadIdentity();
+            GlStateManagerCompat.ortho(0.0D, scaledresolution.getScaledWidth_double(), scaledresolution.getScaledHeight_double(), 0.0D, 1000.0D, 3000.0D);
+            GlStateManagerCompat.matrixMode(GL11.GL_MODELVIEW);
+            GlStateManagerCompat.loadIdentity();
+            GlStateManagerCompat.translate(0.0F, 0.0F, -2000.0F);
         } else {
-            if (Loader.isModLoaded("labymod") && projectionMatrixOld.limit() > 0 && modelviewMatrixOld.limit() > 0) {
-                GlStateManager.matrixMode(GL11.GL_PROJECTION);
+            if (ModCompat.isModLoaded("labymod") && projectionMatrixOld.limit() > 0 && modelviewMatrixOld.limit() > 0) {
+                GlStateManagerCompat.matrixMode(GL11.GL_PROJECTION);
                 GL11.glLoadMatrix(projectionMatrixOld);
-                GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+                GlStateManagerCompat.matrixMode(GL11.GL_MODELVIEW);
                 GL11.glLoadMatrix(modelviewMatrixOld);
             } else {
-                GlStateManager.matrixMode(GL11.GL_PROJECTION);
-                GlStateManager.loadIdentity();
-                GlStateManager.ortho(0.0D, scaledresolution.getScaledWidth_double(), scaledresolution.getScaledHeight_double(), 0.0D, 1000.0D, 3000.0D);
-                GlStateManager.matrixMode(GL11.GL_MODELVIEW);
-                GlStateManager.loadIdentity();
-                GlStateManager.translate(0.0F, 0.0F, -2000.0F);
+                GlStateManagerCompat.matrixMode(GL11.GL_PROJECTION);
+                GlStateManagerCompat.loadIdentity();
+                GlStateManagerCompat.ortho(0.0D, scaledresolution.getScaledWidth_double(), scaledresolution.getScaledHeight_double(), 0.0D, 1000.0D, 3000.0D);
+                GlStateManagerCompat.matrixMode(GL11.GL_MODELVIEW);
+                GlStateManagerCompat.loadIdentity();
+                GlStateManagerCompat.translate(0.0F, 0.0F, -2000.0F);
             }
         }
 

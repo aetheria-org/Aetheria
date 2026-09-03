@@ -10,7 +10,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -68,7 +68,7 @@ public class DianaPartyConnector {
         cmd.addProperty("command", "dpartyjoin");
         cmd.addProperty("partyID", partyID);
         cmd.addProperty("pass", password);
-        cmd.addProperty("member", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
+        cmd.addProperty("member", MinecraftCompat.getMinecraft().getSession().getUsername().toLowerCase());
 
         return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(cmd));
     }
@@ -92,7 +92,7 @@ public class DianaPartyConnector {
         obj.addProperty("command", "dpartycreate");
         obj.addProperty("partyName", pName);
         obj.addProperty("pass", password);
-        obj.addProperty("creator", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
+        obj.addProperty("creator", MinecraftCompat.getMinecraft().getSession().getUsername().toLowerCase());
 
         return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
     }
@@ -142,7 +142,7 @@ public class DianaPartyConnector {
         JsonObject obj = new JsonObject();
         obj.addProperty("command", "dpartychat");
         obj.addProperty("message", msg);
-        obj.addProperty("player", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
+        obj.addProperty("player", MinecraftCompat.getMinecraft().getSession().getUsername().toLowerCase());
 
         return Aetheria.webSocketClient.sendAndRecieve(GSON.toJson(obj));
     }
@@ -201,7 +201,7 @@ public class DianaPartyConnector {
                     for (com.google.gson.JsonElement e : json.get("parties").getAsJsonArray()) {
                         if (e.isJsonObject()) parties.add(e.getAsJsonObject());
                     }
-                    Minecraft.getMinecraft().addScheduledTask(() -> partyListListener.onPartyList(parties));
+                    MinecraftCompat.getMinecraft().addScheduledTask(() -> partyListListener.onPartyList(parties));
                 }
                 return true;
             }
@@ -222,7 +222,7 @@ public class DianaPartyConnector {
             }
             if (type.equalsIgnoreCase("dpartykicked")) {
                 String player = json.get("player").getAsString();
-                String user = Minecraft.getMinecraft().getSession().getUsername().toLowerCase();
+                String user = MinecraftCompat.getMinecraft().getSession().getUsername().toLowerCase();
                 if (user.equalsIgnoreCase(player)) {
                     ChatUtils.sendMessage("§b[D-Party Chat] §cYou have been kicked from the Diana Party.");
                 } else {

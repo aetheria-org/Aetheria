@@ -4,11 +4,13 @@ import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.dungeons.DungeonMapConfig;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoom;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.network.NetworkPlayerInfo;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 
@@ -35,11 +37,11 @@ public class DungeonMapRenderer {
         int gridW = grid.getGridPixelWidth();
         int gridH = grid.getGridPixelHeight();
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(centerX - gridW * scale / 2f, centerY - gridH * scale / 2f, 0f);
-        GlStateManager.scale(scale, scale, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(centerX - gridW * scale / 2f, centerY - gridH * scale / 2f, 0f);
+        GlStateManagerCompat.scale(scale, scale, 1f);
 
         for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
             DungeonMapGrid.RoomOffset off = entry.getKey();
@@ -125,7 +127,7 @@ public class DungeonMapRenderer {
         }
 
         if (!cfg.players.showPlayerHead || tracker == null) {
-            GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
             return;
         }
 
@@ -191,7 +193,7 @@ public class DungeonMapRenderer {
             }
         }
 
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     /**
@@ -219,10 +221,10 @@ public class DungeonMapRenderer {
 
     private static String getDisplayName(String name, NetworkPlayerInfo info, EntityPlayer entity) {
         if (info != null && info.getDisplayName() != null) {
-            return info.getDisplayName().getFormattedText();
+            return TextCompat.getFormattedText(info.getDisplayName());
         }
         if (entity != null && entity.getDisplayName() != null) {
-            return entity.getDisplayName().getFormattedText();
+            return TextCompat.getFormattedText(entity.getDisplayName());
         }
         return name;
     }

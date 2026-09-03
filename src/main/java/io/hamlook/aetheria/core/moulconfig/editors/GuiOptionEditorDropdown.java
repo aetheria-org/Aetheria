@@ -4,12 +4,12 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
-import org.lwjgl.input.Mouse;
 
 public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
@@ -33,7 +33,7 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
         if (!open) {
             int height = getHeight();
 
-            FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+            FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
             int dropdownWidth = Math.min(width / 3 - 10, 80);
             int left = x + width / 6 - dropdownWidth / 2;
             int top = y + height - 7 - 14;
@@ -60,7 +60,7 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
             int height = getHeight();
 
-            FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+            FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
             int dropdownWidth = Math.min(width / 3 - 10, 80);
             int left = x + width / 6 - dropdownWidth / 2;
             int top = y + height - 7 - 14;
@@ -99,7 +99,7 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
         int left = x + width / 6 - 40;
         int top = y + height - 7 - 14;
 
-        if (Mouse.getEventButtonState() && Mouse.getEventButton() == 0) {
+        if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0) {
             if (mouseX >= left && mouseX <= left + 80 && mouseY >= top && mouseY <= top + 14) {
                 open = !open;
                 return true;
@@ -116,7 +116,7 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
         int left = x + width / 6 - 40;
         int top = y + height - 7 - 14;
 
-        if (Mouse.getEventButtonState() && Mouse.getEventButton() == 0) {
+        if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0) {
             if (!(mouseX >= left && mouseX <= left + 80 && mouseY >= top && mouseY <= top + 14) && open) {
                 open = false;
                 if (mouseX >= left && mouseX <= left + 80) {

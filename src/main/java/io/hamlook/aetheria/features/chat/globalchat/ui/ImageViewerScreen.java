@@ -3,13 +3,13 @@ package io.hamlook.aetheria.features.chat.globalchat.ui;
 import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.utils.MediaSaver;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.renderer.GlStateManager;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -21,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
  * thumbnails. Images come from the shared {@link ImageManager} cache so no
  * re-download happens.
  */
-public class ImageViewerScreen extends GuiScreen {
+public class ImageViewerScreen extends AetheriaBaseScreen {
 
     public static class ImageRef {
         public final String name;
@@ -48,13 +48,13 @@ public class ImageViewerScreen extends GuiScreen {
     }
 
     @Override
-    public void initGui() {
-        Keyboard.enableRepeatEvents(true);
+    public void onInitGui() {
+        KeyboardCompat.enableRepeatEvents(true);
     }
 
     @Override
-    public void onGuiClosed() {
-        Keyboard.enableRepeatEvents(false);
+    public void guiClosed() {
+        KeyboardCompat.enableRepeatEvents(false);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class ImageViewerScreen extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         drawRect(0, 0, width, height, 0xC8101418);
         if (images.isEmpty()) {
             mc.displayGuiScreen(null);
@@ -91,10 +91,10 @@ public class ImageViewerScreen extends GuiScreen {
             ResourceLocation tex = img.getTextureToRender(mouseX >= ix && mouseX <= ix + drawW && mouseY >= iy && mouseY <= iy + drawH);
             if (tex != null) {
                 mc.getTextureManager().bindTexture(tex);
-                GlStateManager.color(1f, 1f, 1f, 1f);
-                GlStateManager.enableBlend();
+                GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+                GlStateManagerCompat.enableBlend();
                 drawScaledCustomSizeModalRect(ix, iy, 0, 0, img.width, img.height, drawW, drawH, img.width, img.height);
-                GlStateManager.disableBlend();
+                GlStateManagerCompat.disableBlend();
             }
         } else {
             String label = img != null && img.loadFailed ? "Could not load image" : "Loading...";
@@ -182,10 +182,10 @@ public class ImageViewerScreen extends GuiScreen {
                     if (ratio > 1f) { srcW = srcH = img.height; srcX = (img.width - srcW) / 2; }
                     else { srcW = srcH = img.width; srcY = (img.height - srcH) / 2; }
                     mc.getTextureManager().bindTexture(tex);
-                    GlStateManager.color(1f, 1f, 1f, 1f);
-                    GlStateManager.enableBlend();
+                    GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+                    GlStateManagerCompat.enableBlend();
                     drawScaledCustomSizeModalRect(tx, ty, srcX, srcY, srcW, srcH, thumb, thumb, img.width, img.height);
-                    GlStateManager.disableBlend();
+                    GlStateManagerCompat.disableBlend();
                 }
             } else {
                 drawRect(tx, ty, tx + thumb, ty + thumb, 0xFF232428);
@@ -206,15 +206,15 @@ public class ImageViewerScreen extends GuiScreen {
         float r = (color >> 16 & 0xFF) / 255f;
         float g = (color >> 8 & 0xFF) / 255f;
         float b = (color & 0xFF) / 255f;
-        GlStateManager.disableTexture2D();
-        GlStateManager.enableBlend();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.enableBlend();
         GL11.glColor4f(r, g, b, a);
         GL11.glBegin(GL11.GL_TRIANGLES);
         GL11.glVertex2i(x1, y1);
         GL11.glVertex2i(x2, y2);
         GL11.glVertex2i(x3, y3);
         GL11.glEnd();
-        GlStateManager.enableTexture2D();
+        GlStateManagerCompat.enableTexture2D();
     }
 
     private GCImage getImage(String url) {
@@ -223,7 +223,7 @@ public class ImageViewerScreen extends GuiScreen {
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (mouseButton == 0) {
             if (mouseX >= closeX && mouseX <= closeX + closeW && mouseY >= closeY && mouseY <= closeY + closeH) {
                 mc.displayGuiScreen(null);
@@ -250,11 +250,10 @@ public class ImageViewerScreen extends GuiScreen {
                 }
             }
         }
-        super.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void onKeyTyped(char typedChar, int keyCode) {
         if (keyCode == Keyboard.KEY_ESCAPE) {
             mc.displayGuiScreen(null);
         } else if (keyCode == Keyboard.KEY_LEFT) {
@@ -263,8 +262,6 @@ public class ImageViewerScreen extends GuiScreen {
             if (current < images.size() - 1) current++;
         } else if (keyCode == Keyboard.KEY_S) {
             downloadCurrent();
-        } else {
-            super.keyTyped(typedChar, keyCode);
         }
     }
 

@@ -3,7 +3,8 @@ package io.hamlook.aetheria.features.debug.commands;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -78,8 +79,8 @@ public class AsmCopyBossbarCommand extends ASMCommand {
      * given keyword ("title"/"subtitle") and whose type is IChatComponent or String. */
     private static String readTitleField(String keyword) {
         try {
-            Object tabList = Minecraft.getMinecraft().ingameGUI;
-            for (Field field : Minecraft.getMinecraft().ingameGUI.getClass().getDeclaredFields()) {
+            Object tabList = MinecraftCompat.getMinecraft().ingameGUI;
+            for (Field field : MinecraftCompat.getMinecraft().ingameGUI.getClass().getDeclaredFields()) {
                 String name = field.getName().toLowerCase();
                 if (!name.contains(keyword)) continue;
                 if (name.contains("sub") && keyword.equals("title")) continue; // don't match subTitle when looking for title
@@ -88,7 +89,7 @@ public class AsmCopyBossbarCommand extends ASMCommand {
                 field.setAccessible(true);
                 Object value = field.get(tabList);
                 if (value == null) return null;
-                if (value instanceof IChatComponent) return ((IChatComponent) value).getFormattedText();
+                if (value instanceof IChatComponent) return TextCompat.getFormattedText(((IChatComponent) value));
                 return value.toString();
             }
         } catch (Exception ignored) {

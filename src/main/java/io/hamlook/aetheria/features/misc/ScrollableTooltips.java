@@ -1,13 +1,14 @@
 package io.hamlook.aetheria.features.misc;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.item.ItemStack;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
-import io.hamlook.aetheria.events.ASMTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+import org.lwjgl.input.Keyboard;
 
 @RegisterEvents
 public class ScrollableTooltips {
@@ -40,7 +41,7 @@ public class ScrollableTooltips {
             return;
         }
 
-        int wheel = Mouse.getDWheel();
+        int wheel = MouseCompat.getDWheel();
         if (wheel != 0) {
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastScrollTime > 50) { // Prevent too rapid scrolling
@@ -71,7 +72,7 @@ public class ScrollableTooltips {
         if (StorageManager.getRenderer().isHoveredItemFromInventory()) {
             return true;
         } else {
-            return Keyboard.isKeyDown(Keyboard.KEY_LSHIFT);
+            return KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT);
         }
     }
 

@@ -2,7 +2,7 @@ package io.hamlook.aetheria.features.custommenu.ui.buttons.impl;
 
 import io.hamlook.aetheria.features.custommenu.Position;
 import io.hamlook.aetheria.features.custommenu.ui.buttons.CMMButton;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.GuiScreen;
 
 public class ActionButton extends CMMButton {
@@ -11,13 +11,13 @@ public class ActionButton extends CMMButton {
     public void onClick(GuiScreen screen) {
         switch (action){
             case EXIT:
-                Minecraft.getMinecraft().shutdown();
+                MinecraftCompat.getMinecraft().shutdown();
                 break;
             case CLOSE_MENU:
-                Minecraft.getMinecraft().displayGuiScreen(null);
+                MinecraftCompat.getMinecraft().displayGuiScreen(null);
                 break;
             case OPEN_MAIN_MENU:
-                Minecraft.getMinecraft().displayGuiScreen(new io.hamlook.aetheria.features.custommenu.CustomMainMenu(
+                MinecraftCompat.getMinecraft().displayGuiScreen(new io.hamlook.aetheria.features.custommenu.CustomMainMenu(
                         io.hamlook.aetheria.features.custommenu.util.CMMHelper.getCMMConfig()));
                 break;
         }

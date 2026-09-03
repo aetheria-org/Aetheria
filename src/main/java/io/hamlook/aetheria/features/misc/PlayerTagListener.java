@@ -1,24 +1,23 @@
 package io.hamlook.aetheria.features.misc;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.repo.PlayerTagRepo;
 import io.hamlook.aetheria.repo.data.PlayerTagData;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraft.event.HoverEvent;
-import net.minecraft.util.ChatComponentText;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.List;
-import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class PlayerTagListener {
 
     @HandleEvent(priority = HandleEvent.LOWEST, receiveCancelled = true)
     public void onChat(ASMChatEvent event) {
-        String plain = StringUtils.stripControlCodes(event.message.getFormattedText());
+        String plain = StringUtils.stripControlCodes(TextCompat.getFormattedText(event.message));
 
         String ign = ChatUtils.getPlayerMessageSender(plain);
         if (ign == null) ign = ChatUtils.getPartySender(plain);
@@ -45,7 +44,7 @@ public class PlayerTagListener {
      * original ClickEvents on all other siblings are untouched.
      */
     private boolean injectAfterIgn(IChatComponent root, String ign, IChatComponent tagComp) {
-        List<IChatComponent> siblings = root.getSiblings();
+        List<IChatComponent> siblings = TextCompat.getSiblings(root);
         for (int i = 0; i < siblings.size(); i++) {
             IChatComponent sib = siblings.get(i);
             String sibText = sib.getUnformattedTextForChat();
@@ -55,15 +54,15 @@ public class PlayerTagListener {
                 String before = sibText.substring(0, idx);
                 String after = sibText.substring(idx);
 
-                ChatComponentText beforeComp = new ChatComponentText(before);
-                beforeComp.setChatStyle(sib.getChatStyle().createDeepCopy());
+                IChatComponent beforeComp = TextCompat.createText(before);
+                beforeComp.setChatStyle(TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
 
-                ChatComponentText afterComp = new ChatComponentText(after);
-                afterComp.setChatStyle(sib.getChatStyle().createDeepCopy());
+                IChatComponent afterComp = TextCompat.createText(after);
+                afterComp.setChatStyle(TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
 
                 // Re-attach sib's own children to afterComp
-                for (IChatComponent child : sib.getSiblings()) {
-                    afterComp.appendSibling(child);
+                for (IChatComponent child : TextCompat.getSiblings(sib)) {
+                    TextCompat.appendSibling(afterComp, child);
                 }
 
                 siblings.set(i, beforeComp);
@@ -94,11 +93,11 @@ public class PlayerTagListener {
         char sym = entry.resolveSymbol();
         if (sym == 0) return null;
 
-        ChatComponentText tagComp = new ChatComponentText(" §r" + entry.resolveUnicodeColor() + sym + "§r");
+        IChatComponent tagComp = TextCompat.createText(" §r" + entry.resolveUnicodeColor() + sym + "§r");
 
         String hoverText = entry.text != null ? entry.text : "";
         if (!hoverText.isEmpty()) {
-            tagComp.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(hoverText)));
+            TextCompat.setHoverShowText(TextCompat.getChatStyle(tagComp), hoverText);
         }
 
         return tagComp;

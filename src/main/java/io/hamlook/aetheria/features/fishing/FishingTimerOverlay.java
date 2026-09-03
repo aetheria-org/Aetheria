@@ -1,17 +1,18 @@
 package io.hamlook.aetheria.features.fishing;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.SoundUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.projectile.EntityFishHook;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.events.ASMTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 @RegisterEvents
 public class FishingTimerOverlay {
@@ -27,7 +28,7 @@ public class FishingTimerOverlay {
         if (event.phase != TickEvent.Phase.END) return;
         if (!isEnabled()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null) return;
 
         EntityFishHook hook = mc.thePlayer.fishEntity;
@@ -55,7 +56,7 @@ public class FishingTimerOverlay {
     public void onRenderWorldLast(ASMRenderWorldEvent event) {
         if (!isEnabled()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null) return;
 
         EntityFishHook hook = mc.thePlayer.fishEntity;
@@ -69,7 +70,7 @@ public class FishingTimerOverlay {
     }
 
     private String getTimerText() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null || mc.thePlayer.fishEntity == null) return "";
 
         float seconds = mc.thePlayer.fishEntity.ticksExisted / 20f;
@@ -79,7 +80,7 @@ public class FishingTimerOverlay {
     private int getCurrentColor() {
         if (ATHRConfig.feature == null) return 0xFFFFFFFF;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null || mc.thePlayer.fishEntity == null) return 0xFFFFFFFF;
 
         float seconds = mc.thePlayer.fishEntity.ticksExisted / 20f;
@@ -89,31 +90,31 @@ public class FishingTimerOverlay {
     }
 
     private void renderText(double x, double y, double z, String text, int color) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
         double viewerX = mc.getRenderManager().viewerPosX;
         double viewerY = mc.getRenderManager().viewerPosY;
         double viewerZ = mc.getRenderManager().viewerPosZ;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(x - viewerX, y - viewerY, z - viewerZ);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(x - viewerX, y - viewerY, z - viewerZ);
 
-        GlStateManager.rotate(-mc.getRenderManager().playerViewY, 0, 1, 0);
-        GlStateManager.rotate(mc.getRenderManager().playerViewX, 1, 0, 0);
+        GlStateManagerCompat.rotate(-mc.getRenderManager().playerViewY, 0, 1, 0);
+        GlStateManagerCompat.rotate(mc.getRenderManager().playerViewX, 1, 0, 0);
 
         float scale = 0.025f;
-        GlStateManager.scale(-scale, -scale, scale);
+        GlStateManagerCompat.scale(-scale, -scale, scale);
 
-        GlStateManager.disableLighting();
-        GlStateManager.disableDepth();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableDepth();
 
         FontRenderer fr = mc.fontRendererObj;
         int width = fr.getStringWidth(text) / 2;
 
         fr.drawString(text, -width, 0, color, true);
 
-        GlStateManager.enableDepth();
-        GlStateManager.enableLighting();
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.enableDepth();
+        GlStateManagerCompat.enableLighting();
+        GlStateManagerCompat.popMatrix();
     }
 }

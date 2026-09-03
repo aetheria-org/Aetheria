@@ -1,12 +1,13 @@
 package io.hamlook.aetheria.repo;
 
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.repo.data.UpdateData;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.EnumChatFormatting;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class VersionChecker {
@@ -40,7 +41,7 @@ public class VersionChecker {
     @HandleEvent
     public void onChat(ASMChatEvent event) {
         if (notified) return;
-        if (!"Welcome to Fakepixel SkyBlock!".equals(event.message.getUnformattedText())) return;
+        if (!"Welcome to Fakepixel SkyBlock!".equals(TextCompat.getUnformattedText(event.message))) return;
         notified = true;
 
         UpdateData data = RepoHandler.get(ATHRRepo.KEY_UPDATE, UpdateData.class, FALLBACK);

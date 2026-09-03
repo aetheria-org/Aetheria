@@ -1,15 +1,14 @@
 package io.hamlook.aetheria.network;
 
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
 
-import java.io.IOException;
-
-public abstract class NetworkNoticeScreen extends GuiScreen {
+public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
 
     protected static final int PANEL_W = 400;
     protected static final int PANEL_H = 280;
@@ -22,7 +21,7 @@ public abstract class NetworkNoticeScreen extends GuiScreen {
     protected float animOffset;
 
     @Override
-    public void initGui() {
+    public void onInitGui() {
         px = (width - PANEL_W) / 2;
         py = (height - PANEL_H) / 2;
     }
@@ -47,45 +46,41 @@ public abstract class NetworkNoticeScreen extends GuiScreen {
     protected abstract boolean handleClick(int mouseX, int mouseY, int mouseButton);
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         drawPanelBackground();
 
         float slide = animOffset;
         float alpha = 1f - Math.min(1f, Math.abs(slide) / (PANEL_W * 0.4f));
 
-        ScaledResolution sr = new ScaledResolution(mc);
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int scale = sr.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(px * scale, mc.displayHeight - (py + PANEL_H) * scale, PANEL_W * scale, PANEL_H * scale);
 
-        GlStateManager.enableBlend();
-        GlStateManager.color(1f, 1f, 1f, alpha);
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.color(1f, 1f, 1f, alpha);
         drawPageContent(mouseX, mouseY, (int) slide);
 
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         drawNavigation(mouseX, mouseY);
         drawTooltips(mouseX, mouseY);
-
-        super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (animOffset != 0) return;
         if (!handleClick(mouseX, mouseY, mouseButton)) {
-            super.mouseClicked(mouseX, mouseY, mouseButton);
         }
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void onKeyTyped(char typedChar, int keyCode) {
         if (keyCode == 1) return;
-        super.keyTyped(typedChar, keyCode);
     }
 
     @Override

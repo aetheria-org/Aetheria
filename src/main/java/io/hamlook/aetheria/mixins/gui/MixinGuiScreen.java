@@ -1,9 +1,9 @@
 package io.hamlook.aetheria.mixins.gui;
 
-import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.features.farming.visitors.VisitorTooltips;
+import io.hamlook.aetheria.features.storage.StorageManager;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,6 +28,6 @@ public class MixinGuiScreen {
         List<String> lines = VisitorTooltips.replaceToolTip(stack);
         if (lines == null) return;
         ci.cancel();
-        TextRenderUtils.drawHoveringText(lines, x, y, Minecraft.getMinecraft().fontRendererObj);
+        TextRenderUtils.drawHoveringText(lines, x, y, MinecraftCompat.getMinecraft().fontRendererObj);
     }
 }

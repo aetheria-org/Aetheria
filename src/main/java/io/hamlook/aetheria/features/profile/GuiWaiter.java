@@ -1,20 +1,23 @@
 package io.hamlook.aetheria.features.profile;
 
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.ItemStack;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Consumer;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMChatEvent;
 
 public class GuiWaiter {
 
@@ -90,7 +93,7 @@ public class GuiWaiter {
             return;
         }
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         int actualNextSlot = resolveSlot(container, nextPageSlot);
         boolean hasNextPage = false;
 
@@ -102,7 +105,7 @@ public class GuiWaiter {
 
         if (hasNextPage) {
             //ATHRMod.logger.info("[GuiWaiter] Paged GUI: clicking next page (slot " + actualNextSlot + ")");
-            mc.playerController.windowClick(container.windowId, actualNextSlot, 0, 0, mc.thePlayer);
+            InventoryCompat.windowClick(container.windowId, actualNextSlot, 0, 0, mc.thePlayer);
 
             queue.addFirst(new PendingWait(expectedTitle, tickDelay, -1,
                     next -> handlePage(next, expectedTitle, tickDelay,
@@ -113,7 +116,7 @@ public class GuiWaiter {
             Aetheria.logger.info("[GuiWaiter] Paged GUI: last page reached, clicking back (slot " + actualBackSlot + ")");
             WaiterLogs.addLog("[GuiWaiter] Paged GUI: last page reached, clicking back (slot " + actualBackSlot + ")");
             if (actualBackSlot >= 0) {
-                mc.playerController.windowClick(container.windowId, actualBackSlot, 0, 0, mc.thePlayer);
+                InventoryCompat.windowClick(container.windowId, actualBackSlot, 0, 0, mc.thePlayer);
                 //ATHRMod.logger.info("[GuiWaiter] Page GUI: clicked on slot " + actualBackSlot + " | " + container.windowId);
             }
             if (returnTitle != null && onReturn != null) {
@@ -203,7 +206,7 @@ public class GuiWaiter {
         // If we are already processing the opened GUI, ignore chat messages
         if (head.guiReceived) return;
 
-        String msg = ColorUtils.stripColor(event.message.getUnformattedText()).trim();
+        String msg = ColorUtils.stripColor(TextCompat.getUnformattedText(event.message)).trim();
         String lowerMsg = msg.toLowerCase();
 
         if ((lowerMsg.contains("is empty") || lowerMsg.contains("empty!")) && !lowerMsg.contains(": ")) {
@@ -238,10 +241,10 @@ public class GuiWaiter {
                 if (head.pressSlot > 0 && head.pollTicks % 100 == 0 && head.pollTicks <= 500) {
                     Aetheria.logger.info("[GuiWaiter] Retry " + (head.pollTicks / 100) + "/5 for '" + head.expectedTitle + "'");
                     WaiterLogs.addLog("[GuiWaiter] Retry " + (head.pollTicks / 100) + "/5 for '" + head.expectedTitle + "'");
-                    Minecraft mc = Minecraft.getMinecraft();
+                    Minecraft mc = MinecraftCompat.getMinecraft();
                     ContainerChest current = getOpenChest("View Profile", -1);
                     if (current != null) {
-                        mc.playerController.windowClick(current.windowId, head.pressSlot - 1, 0, 0, mc.thePlayer);
+                        InventoryCompat.windowClick(current.windowId, head.pressSlot - 1, 0, 0, mc.thePlayer);
                     }
                 }
 
@@ -282,8 +285,8 @@ public class GuiWaiter {
         int actualPressSlot = resolveSlot(head.container, head.pressSlot);
         if (actualPressSlot >= 0) {
             // ATHRMod.logger.info("[GuiWaiter] Clicking slot " + actualPressSlot + " to navigate away from '" + head.expectedTitle + "'");
-            Minecraft mc = Minecraft.getMinecraft();
-            mc.playerController.windowClick(
+            Minecraft mc = MinecraftCompat.getMinecraft();
+            InventoryCompat.windowClick(
                     head.container.windowId, actualPressSlot, 0, 0, mc.thePlayer
             );
         }
@@ -297,21 +300,21 @@ public class GuiWaiter {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static String getCurrentTitle() {
-        if (!(Minecraft.getMinecraft().currentScreen instanceof GuiContainer)) {
-            return Minecraft.getMinecraft().currentScreen == null ? "null"
-                    : Minecraft.getMinecraft().currentScreen.getClass().getSimpleName();
+        if (!(MinecraftCompat.getMinecraft().currentScreen instanceof GuiContainer)) {
+            return MinecraftCompat.getMinecraft().currentScreen == null ? "null"
+                    : MinecraftCompat.getMinecraft().currentScreen.getClass().getSimpleName();
         }
-        Container container = ((GuiContainer) Minecraft.getMinecraft().currentScreen).inventorySlots;
+        Container container = InventoryCompat.getContainer((GuiContainer) MinecraftCompat.getMinecraft().currentScreen);
         if (!(container instanceof ContainerChest)) return "(non-chest container)";
         return ColorUtils.stripColor(
-                ((ContainerChest) container).getLowerChestInventory()
-                        .getDisplayName().getUnformattedText()
+                TextCompat.getUnformattedText(((ContainerChest) container).getLowerChestInventory()
+                        .getDisplayName())
         ).trim();
     }
 
     private static ContainerChest getOpenChest(String expectedTitle, int ignoreWindowId) {
-        if (!(Minecraft.getMinecraft().currentScreen instanceof GuiContainer)) return null;
-        Container container = ((GuiContainer) Minecraft.getMinecraft().currentScreen).inventorySlots;
+        if (!(MinecraftCompat.getMinecraft().currentScreen instanceof GuiContainer)) return null;
+        Container container = InventoryCompat.getContainer((GuiContainer) MinecraftCompat.getMinecraft().currentScreen);
         if (!(container instanceof ContainerChest)) return null;
 
         if (container.windowId == ignoreWindowId) return null;
@@ -320,8 +323,8 @@ public class GuiWaiter {
         // -------------------------------------------------------------------------
 
         String title = ColorUtils.stripColor(
-                ((ContainerChest) container).getLowerChestInventory()
-                        .getDisplayName().getUnformattedText()
+                TextCompat.getUnformattedText(((ContainerChest) container).getLowerChestInventory()
+                        .getDisplayName())
         ).trim();
         return title.equals(expectedTitle) ? (ContainerChest) container : null;
     }

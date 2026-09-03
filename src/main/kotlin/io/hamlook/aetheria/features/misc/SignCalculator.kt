@@ -1,17 +1,17 @@
-package io.hamlook.aetheria.features.misc
+﻿package io.hamlook.aetheria.features.misc
 
 import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
+import io.hamlook.aetheria.events.ASMGuiDrawEvent
 import io.hamlook.aetheria.events.SignSubmitEvent
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor
 import io.hamlook.aetheria.utils.CalculatorUtils
 import io.hamlook.aetheria.utils.Utils
-import net.minecraft.client.Minecraft
+import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import net.minecraft.client.gui.inventory.GuiEditSign
 import net.minecraft.util.EnumChatFormatting.*
 import java.math.BigDecimal
-import io.hamlook.aetheria.events.ASMGuiDrawEvent
 
 @RegisterEvents
 class SignCalculator {
@@ -33,12 +33,12 @@ class SignCalculator {
         val source = sign.signText[0].unformattedText
         refresh(source)
 
-        val mc = Minecraft.getMinecraft()
+        MinecraftCompat.getMinecraft()
         val result = lastResult
         val rendered = when {
             result != null -> {
                 val formatted = CalculatorUtils.FORMAT.format(result)
-                if (mc.fontRendererObj.getStringWidth(formatted) > 90) {
+                if (MinecraftCompat.getFontRenderer().getStringWidth(formatted) > 90) {
                     "$WHITE$lastSource $YELLOW= ${RED}Result too long"
                 } else {
                     "$WHITE$lastSource $YELLOW= $GREEN$formatted"
@@ -49,7 +49,14 @@ class SignCalculator {
             else -> "${RED}No calculation"
         }
 
-        Utils.drawStringCentered(rendered, mc.fontRendererObj, gui.width / 2f, 58f, false, 0x808080FF.toInt())
+        Utils.drawStringCentered(
+            rendered,
+            MinecraftCompat.getFontRenderer(),
+            gui.width / 2f,
+            58f,
+            false,
+            0x808080FF.toInt()
+        )
     }
 
     @HandleEvent

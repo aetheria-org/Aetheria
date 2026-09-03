@@ -3,12 +3,12 @@
 
 package io.hamlook.aetheria.core.moulconfig.editors;
 
+import io.hamlook.aetheria.core.moulconfig.gui.GuiElementSlider;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElementTextField;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
-import io.hamlook.aetheria.core.moulconfig.gui.GuiElementSlider;
-import net.minecraft.client.Minecraft;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 
 public class GuiOptionEditorSlider extends GuiOptionEditor {
 
@@ -71,7 +71,7 @@ public class GuiOptionEditorSlider extends GuiOptionEditor {
 
         if (textField.getFocus()) {
             textField.setOptions(GuiElementTextField.NO_SPACE | GuiElementTextField.NUM_ONLY);
-            textField.setSize(Minecraft.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10, 16);
+            textField.setSize(MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10, 16);
         } else {
             textField.setSize(textFieldWidth, 16);
             textField.setOptions(GuiElementTextField.NO_SPACE | GuiElementTextField.NUM_ONLY | GuiElementTextField.SCALE_TEXT);
@@ -97,16 +97,16 @@ public class GuiOptionEditorSlider extends GuiOptionEditor {
         }
 
         if (textField.getFocus()) {
-            textFieldWidth = Minecraft.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10;
+            textFieldWidth = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10;
         }
 
         int textFieldX = x + width / 6 - fullWidth / 2 + sliderWidth + 5;
         int textFieldY = y + height - 7 - 14;
         textField.setSize(textFieldWidth, 16);
 
-        if (Mouse.getEventButtonState() && (Mouse.getEventButton() == 0 || Mouse.getEventButton() == 1)) {
+        if (MouseCompat.getEventButtonState() && (MouseCompat.getEventButton() == 0 || MouseCompat.getEventButton() == 1)) {
             if (mouseX > textFieldX && mouseX < textFieldX + textFieldWidth && mouseY > textFieldY && mouseY < textFieldY + 16) {
-                textField.mouseClicked(mouseX, mouseY, Mouse.getEventButton());
+                textField.mouseClicked(mouseX, mouseY, MouseCompat.getEventButton());
                 return true;
             }
             textField.unfocus();
@@ -117,8 +117,8 @@ public class GuiOptionEditorSlider extends GuiOptionEditor {
 
     @Override
     public boolean keyboardInput() {
-        if (Keyboard.getEventKeyState() && textField.getFocus()) {
-            textField.keyTyped(Keyboard.getEventCharacter(), Keyboard.getEventKey());
+        if (KeyboardCompat.getEventKeyState() && textField.getFocus()) {
+            textField.keyTyped(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
 
             try {
                 textField.setCustomBorderColour(0xffffffff);

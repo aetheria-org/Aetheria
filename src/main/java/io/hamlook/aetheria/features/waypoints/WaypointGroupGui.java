@@ -3,17 +3,16 @@ package io.hamlook.aetheria.features.waypoints;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import io.hamlook.aetheria.core.moulconfig.gui.GuiElement;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.core.moulconfig.gui.GuiElement;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.*;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.EnumChatFormatting;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import java.lang.reflect.Type;
@@ -158,16 +157,16 @@ public class WaypointGroupGui extends GuiElement {
 
     @Override
     public void render() {
-        Minecraft mc = Minecraft.getMinecraft();
-        ScaledResolution sr = new ScaledResolution(mc);
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         FontRenderer fr = mc.fontRendererObj;
         updatePanel(sr);
 
         Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0xaa050508);
 
-        GlStateManager.color(0.18f, 0.18f, 0.18f, 1f);
+        GlStateManagerCompat.color(0.18f, 0.18f, 0.18f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), px, py, pw, ph, 6, 18);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         int curY = py + PAD;
 
@@ -180,9 +179,9 @@ public class WaypointGroupGui extends GuiElement {
         WaypointState state = WaypointState.getInstance();
         WaypointStorage storage = WaypointStorage.getInstance();
 
-        GlStateManager.color(0.14f, 0.14f, 0.14f, 1f);
+        GlStateManagerCompat.color(0.14f, 0.14f, 0.14f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), px + PAD, curY, pw - PAD * 2, ROW_H, 6, 18);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         if (state.hasGroup()) {
             String dot = EnumChatFormatting.GREEN + "▶ ";
@@ -255,7 +254,7 @@ public class WaypointGroupGui extends GuiElement {
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
         List<RowItem> rows = buildRows(listTopY, groups);
         int scale = sr.getScaleFactor();
-        GlStateManager.pushMatrix();
+        GlStateManagerCompat.pushMatrix();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(px * scale, mc.displayHeight - listBottomY * scale, pw * scale, visibleH * scale);
 
@@ -267,7 +266,7 @@ public class WaypointGroupGui extends GuiElement {
         }
 
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
 
         if (groups.isEmpty()) {
             String msg = query.isEmpty() ? EnumChatFormatting.DARK_GRAY + "No groups — click " + EnumChatFormatting.WHITE + "+ New" + EnumChatFormatting.DARK_GRAY + " or /w create <name>" : EnumChatFormatting.DARK_GRAY + "No groups match \"" + query + "\"";
@@ -287,9 +286,9 @@ public class WaypointGroupGui extends GuiElement {
     private void renderGroupRow(int panelX, int panelW, GroupRow gr, WaypointState state, FontRenderer fr) {
         boolean isLoaded = state.loadedGroup != null && state.loadedGroup.name.equalsIgnoreCase(gr.g.name);
 
-        GlStateManager.color(isLoaded ? 0.12f : 0.14f, isLoaded ? 0.16f : 0.14f, isLoaded ? 0.12f : 0.14f, 1f);
+        GlStateManagerCompat.color(isLoaded ? 0.12f : 0.14f, isLoaded ? 0.16f : 0.14f, isLoaded ? 0.12f : 0.14f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), panelX + PAD, gr.y, panelW - PAD * 2, ROW_H, 6, 18);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         if (isLoaded) Gui.drawRect(panelX + PAD, gr.y, panelX + PAD + 2, gr.y + ROW_H, 0xff55aa55);
         String arrow = gr.expanded ? EnumChatFormatting.GRAY + "▼" : EnumChatFormatting.DARK_GRAY + "▶";
         fr.drawStringWithShadow(arrow, panelX + PAD + 5, gr.y + 7, -1);
@@ -343,15 +342,15 @@ public class WaypointGroupGui extends GuiElement {
 
     @Override
     public boolean mouseInput(int mouseX, int mouseY) {
-        int dWheel = Mouse.getEventDWheel();
+        int dWheel = MouseCompat.getEventDWheel();
         if (dWheel != 0) {
             scrollOffset = Math.max(0, scrollOffset - (dWheel > 0 ? 20 : -20));
             return false;
         }
-        if (!Mouse.getEventButtonState() || Mouse.getEventButton() != 0) return false;
+        if (!MouseCompat.getEventButtonState() || MouseCompat.getEventButton() != 0) return false;
 
-        Minecraft mc = Minecraft.getMinecraft();
-        ScaledResolution sr = new ScaledResolution(mc);
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         updatePanel(sr);
         WaypointState state = WaypointState.getInstance();
         WaypointStorage storage = WaypointStorage.getInstance();
@@ -484,9 +483,9 @@ public class WaypointGroupGui extends GuiElement {
 
     @Override
     public boolean keyboardInput() {
-        if (!Keyboard.getEventKeyState()) return false;
-        int key = Keyboard.getEventKey();
-        char c = Keyboard.getEventCharacter();
+        if (!KeyboardCompat.getEventKeyState()) return false;
+        int key = KeyboardCompat.getEventKey();
+        char c = KeyboardCompat.getEventCharacter();
 
         boolean sf = searchField != null && searchField.isFocused();
         boolean imf = importField != null && importField.isFocused();
@@ -611,8 +610,8 @@ public class WaypointGroupGui extends GuiElement {
     }
 
     private boolean isHovered(int x, int y, int w, int h) {
-        Minecraft mc = Minecraft.getMinecraft();
-        ScaledResolution sr = new ScaledResolution(mc);
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int[] mouse = KeybindHelper.getMouseCoords(sr);
         int mx = mouse[0], my = mouse[1];
         return inBounds(mx, my, x, y, w, h);

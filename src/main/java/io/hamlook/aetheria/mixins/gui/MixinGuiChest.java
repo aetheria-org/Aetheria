@@ -4,16 +4,12 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.features.qol.BetterContainers;
 import io.hamlook.aetheria.features.storage.StorageManager;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.util.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GuiChest.class)
@@ -45,7 +41,7 @@ public class MixinGuiChest {
         if (!BetterContainers.isEnabled() || !BetterContainers.getInstance().isLoaded()
                 || ATHRConfig.feature == null) return;
         String label = "ASM";
-        int textW = Minecraft.getMinecraft().fontRendererObj.getStringWidth(label);
+        int textW = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(label);
         int x = ((GuiChest)(Object)this).xSize - textW - 10;
         int y = 6;
         int baseColor = ChromaColour.specialToChromaRGB(
@@ -53,7 +49,7 @@ public class MixinGuiChest {
         int color = ChromaColour.applyChromaShift(baseColor, x, y,
                 ATHRConfig.feature.qol.betterContainers.watermarkChromaMode,
                 ATHRConfig.feature.qol.betterContainers.watermarkChromaSize);
-        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(label, x, y, color);
+        MinecraftCompat.getMinecraft().fontRendererObj.drawStringWithShadow(label, x, y, color);
     }
 
     @Inject(method = "drawGuiContainerBackgroundLayer", at = @At("HEAD"), cancellable = true)

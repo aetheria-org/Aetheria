@@ -1,8 +1,8 @@
 package io.hamlook.aetheria.events;
 
 import io.hamlook.aetheria.api.event.AetheriaEvent;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockPos;
 
 public class ServerBlockChangeEvent extends AetheriaEvent {
@@ -16,6 +16,6 @@ public class ServerBlockChangeEvent extends AetheriaEvent {
     }
 
     public IBlockState getOldState() {
-        return Minecraft.getMinecraft().theWorld.getBlockState(pos);
+        return MinecraftCompat.getMinecraft().theWorld.getBlockState(pos);
     }
 }

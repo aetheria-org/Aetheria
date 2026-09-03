@@ -1,10 +1,11 @@
 package io.hamlook.aetheria.utils;
 
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.entity.player.EntityPlayer;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class KeybindHelper {
 
-    private static final Minecraft MC = Minecraft.getMinecraft();
+    private static final Minecraft MC = MinecraftCompat.getMinecraft();
     private static final Map<Integer, Boolean> PREV_DOWN = new ConcurrentHashMap<>();
     private static final Map<Integer, Boolean> CURR_DOWN = new ConcurrentHashMap<>();
     private static int cacheTick = -1;
@@ -30,7 +31,7 @@ public final class KeybindHelper {
         if (keyCode == 0) return "NONE";
         if (keyCode < 0) return "Button " + (keyCode + 101);
         try {
-            String name = Keyboard.getKeyName(keyCode);
+            String name = KeyboardCompat.getKeyName(keyCode);
             if (name == null) return "???";
             if (name.equalsIgnoreCase("LMENU")) return "LALT";
             if (name.equalsIgnoreCase("RMENU")) return "RALT";
@@ -50,7 +51,7 @@ public final class KeybindHelper {
 
     public static boolean isKeyDown(int keyCode) {
         if (isKeyInvalid(keyCode)) return false;
-        return keyCode < 0 ? Mouse.isButtonDown(keyCode + 100) : Keyboard.isKeyDown(keyCode);
+        return keyCode < 0 ? MouseCompat.isButtonDown(keyCode + 100) : KeyboardCompat.isKeyDown(keyCode);
     }
 
     /**
@@ -61,7 +62,7 @@ public final class KeybindHelper {
      */
     public static boolean isKeyPressed(int keyCode) {
         if (isKeyInvalid(keyCode)) return false;
-        return keyCode < 0 ? Mouse.getEventButtonState() && Mouse.getEventButton() == keyCode + 100 : Keyboard.getEventKeyState() && Keyboard.getEventKey() == keyCode;
+        return keyCode < 0 ? MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == keyCode + 100 : KeyboardCompat.getEventKeyState() && KeyboardCompat.getEventKey() == keyCode;
     }
 
     public static boolean isKeyTapped(int keyCode) {
@@ -102,32 +103,32 @@ public final class KeybindHelper {
 
     // Keyboard event accessors
     public static char getEventCharacter() {
-        return Keyboard.getEventCharacter();
+        return KeyboardCompat.getEventCharacter();
     }
 
     public static boolean getEventKeyState() {
-        return Keyboard.getEventKeyState();
+        return KeyboardCompat.getEventKeyState();
     }
 
     public static int getEventKeyCode() {
-        return Keyboard.getEventKey();
+        return KeyboardCompat.getEventKey();
     }
 
     public static void enableRepeatEvents(boolean repeat) {
-        Keyboard.enableRepeatEvents(repeat);
+        KeyboardCompat.enableRepeatEvents(repeat);
     }
 
     // Mouse event accessors
     public static boolean getEventButtonState() {
-        return Mouse.getEventButtonState();
+        return MouseCompat.getEventButtonState();
     }
 
     public static int getEventButton() {
-        return Mouse.getEventButton();
+        return MouseCompat.getEventButton();
     }
 
     public static int getEventDWheel() {
-        return Mouse.getEventDWheel();
+        return MouseCompat.getEventDWheel();
     }
 
     // Coordinate helpers, poll-based (for draw/render)
@@ -136,23 +137,23 @@ public final class KeybindHelper {
     }
 
     public static int[] getMouseCoords(int guiWidth, int guiHeight) {
-        int mouseX = Mouse.getX() * guiWidth / MC.displayWidth;
-        int mouseY = guiHeight - Mouse.getY() * guiHeight / MC.displayHeight - 1;
+        int mouseX = MouseCompat.getX() * guiWidth / MC.displayWidth;
+        int mouseY = guiHeight - MouseCompat.getY() * guiHeight / MC.displayHeight - 1;
         return new int[]{mouseX, mouseY};
     }
 
     public static float[] getMouseCoordsFloat(ScaledResolution sr) {
-        float mouseX = (float) (Mouse.getX() * sr.getScaledWidth_double() / MC.displayWidth);
-        float mouseY = (float) (sr.getScaledHeight_double() - Mouse.getY() * sr.getScaledHeight_double() / MC.displayHeight - 1);
+        float mouseX = (float) (MouseCompat.getX() * sr.getScaledWidth_double() / MC.displayWidth);
+        float mouseY = (float) (sr.getScaledHeight_double() - MouseCompat.getY() * sr.getScaledHeight_double() / MC.displayHeight - 1);
         return new float[]{mouseX, mouseY};
     }
 
     // Coordinate helpers, event-based (for mouse input events)
     public static int getScaledEventX(int guiWidth) {
-        return Mouse.getEventX() * guiWidth / MC.displayWidth;
+        return MouseCompat.getEventX() * guiWidth / MC.displayWidth;
     }
 
     public static int getScaledEventY(int guiHeight) {
-        return guiHeight - Mouse.getEventY() * guiHeight / MC.displayHeight - 1;
+        return guiHeight - MouseCompat.getEventY() * guiHeight / MC.displayHeight - 1;
     }
 }

@@ -1,23 +1,24 @@
 package io.hamlook.aetheria.features.qol.overlays;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.events.ASMBlockHighlightEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.MovingObjectPosition;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.awt.*;
-import io.hamlook.aetheria.events.ASMBlockHighlightEvent;
 
 @RegisterEvents
 public class BlockOverlay {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static AxisAlignedBB getSelectionAABB(BlockPos pos) {
         if (mc.theWorld == null) {

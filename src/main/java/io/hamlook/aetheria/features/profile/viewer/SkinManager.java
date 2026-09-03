@@ -6,7 +6,7 @@ import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.util.ResourceLocation;
@@ -55,9 +55,9 @@ public class SkinManager {
                 if (skinFile.exists()) {
                     BufferedImage finalImg = ImageIO.read(skinFile);
                     if (finalImg != null) {
-                        Minecraft.getMinecraft().addScheduledTask(() -> {
+                        MinecraftCompat.getMinecraft().addScheduledTask(() -> {
                             DynamicTexture dynTex = new DynamicTexture(finalImg);
-                            ResourceLocation loc = Minecraft.getMinecraft().getTextureManager().getDynamicTextureLocation("skin_" + username, dynTex);
+                            ResourceLocation loc = MinecraftCompat.getMinecraft().getTextureManager().getDynamicTextureLocation("skin_" + username, dynTex);
                             loadedSkins.put(username, loc);
                         });
                     }

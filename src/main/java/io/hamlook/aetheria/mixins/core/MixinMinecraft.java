@@ -1,9 +1,10 @@
 package io.hamlook.aetheria.mixins.core;
 
 import io.hamlook.aetheria.features.storage.StorageManager;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,11 +15,11 @@ public class MixinMinecraft {
 
     @Inject(method = "runTick", at = @At("HEAD"))
     private void ATHR$consumeInputDuringTransition(CallbackInfo ci) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (StorageManager.isTransitioning() && mc.currentScreen == null) {
-            while (Mouse.next()) {
+            while (MouseCompat.next()) {
             }
-            while (Keyboard.next()) {
+            while (KeyboardCompat.next()) {
             }
         }
     }

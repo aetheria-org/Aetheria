@@ -1,15 +1,17 @@
 package io.hamlook.aetheria.features.dungeons.caseopening;
 
 import io.hamlook.aetheria.DebugLogger;
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.SoundUtils;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.netty.util.internal.ThreadLocalRandom;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.shader.ShaderGroup;
@@ -18,17 +20,14 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CustomDropAnimationGui extends GuiScreen {
+public class CustomDropAnimationGui extends AetheriaBaseScreen {
 
     private static final ResourceLocation FADE_SIDE  = Resources.CASE_FADE_SIDE;
-    // AUDIO is a Minecraft sound event ResourceLocation – kept inline below where used
-    private static final ResourceLocation AUDIO = new ResourceLocation("gui.button.press");
 
-    private final Minecraft mc = Minecraft.getMinecraft();
+    private final Minecraft mc = MinecraftCompat.getMinecraft();
     private final FloatFontRenderer floatFont;
     private final DungeonDropData.Rule rewardItem;
     private final DungeonDropData.Floor floor;
@@ -57,7 +56,7 @@ public class CustomDropAnimationGui extends GuiScreen {
     private boolean hasShownResult = false;
 
     public CustomDropAnimationGui(DungeonDropData.Rule rewardItem, DungeonDropData.Floor floor, DungeonDropData.CaseMaterial material) {
-        this.mc.getSoundHandler().playSound(PositionedSoundRecord.create(AUDIO, 1.0F));
+        SoundUtils.playSound("gui.button.press");
         this.floatFont = new FloatFontRenderer(mc.fontRendererObj);
         this.rewardItem = rewardItem;
         this.floor = floor;
@@ -186,8 +185,7 @@ public class CustomDropAnimationGui extends GuiScreen {
     }
 
     @Override
-    public void initGui() {
-        super.initGui();
+    public void onInitGui() {
         DebugLogger.log("[ATHR ANIMATION] initGui called - initializing animation GUI");
         try {
             blurShader = new ShaderGroup(mc.getTextureManager(), mc.getResourceManager(), mc.getFramebuffer(), Resources.CASE_BLUR_SHADER);
@@ -200,14 +198,14 @@ public class CustomDropAnimationGui extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         // Clear the screen to prevent black background with OptiFine
         drawDefaultBackground();
 
         float progress = Math.min((System.nanoTime() - guiOpenStartTime) / (float) animationDuration, 1.0f);
         progress = 1 - (1 - progress) * (1 - progress);
 
-        ScaledResolution scaled = new ScaledResolution(mc);
+        ScaledResolution scaled = GuiScreenUtils.getScaledResolution();
         scaleFactor = scaled.getScaleFactor();
         screenWidth = scaled.getScaledWidth() * scaleFactor;
         screenHeight = scaled.getScaledHeight() * scaleFactor;
@@ -257,10 +255,10 @@ public class CustomDropAnimationGui extends GuiScreen {
                     return;
             }
 
-            mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("minecraft", sound), 1.0F));
+            SoundUtils.playSound(sound);
             if (rewardItem.rarity == 1) {
-                mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("minecraft", "fireworks.launch"), 1.0F));
-                mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation("minecraft", "mob.wither.spawn"), 1.0F));
+                SoundUtils.playSound("fireworks.launch");
+                SoundUtils.playSound("mob.wither.spawn");
             }
             mc.displayGuiScreen(ChestListener.originalGui);
         }
@@ -272,8 +270,6 @@ public class CustomDropAnimationGui extends GuiScreen {
         renderLayer(frameBufferLayer2, progress, true);
         renderJudgementLine();
         GL11.glPopMatrix();
-
-        super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
     private void renderLayer(Framebuffer fb, float progress, boolean inner) {
@@ -282,7 +278,7 @@ public class CustomDropAnimationGui extends GuiScreen {
         GL11.glEnable(GL11.GL_STENCIL_TEST);
         if (inner) {
             GL11.glStencilFunc(GL11.GL_EQUAL, 1, 0xFF);
-            GlStateManager.color(1f, 1f, 1f, 1f);
+            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
             drawCircleMask(centerX, centerY, centerY * 2 / 3 * progress, 0x3F000000);
         } else {
             GL11.glStencilFunc(GL11.GL_NOTEQUAL, 1, 0xFF);
@@ -292,21 +288,21 @@ public class CustomDropAnimationGui extends GuiScreen {
         drawCarousel(centerX, centerY, inner ? progress : progress * 0.8f);
 
         if (!inner) {
-            GlStateManager.enableBlend();
-            GlStateManager.blendFunc(GL11.GL_ZERO, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GlStateManagerCompat.enableBlend();
+            GlStateManagerCompat.blendFunc(GL11.GL_ZERO, GL11.GL_ONE_MINUS_SRC_ALPHA);
             mc.getTextureManager().bindTexture(FADE_SIDE);
             Gui.drawModalRectWithCustomSizedTexture(0, 0, 0, 0, 1920, 1080, screenWidth, screenHeight);
-            GlStateManager.disableBlend();
-            GlStateManager.color(1f, 1f, 1f, 1f);
+            GlStateManagerCompat.disableBlend();
+            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         }
 
         GL11.glDisable(GL11.GL_STENCIL_TEST);
         mc.getFramebuffer().bindFramebuffer(true);
-        GlStateManager.enableBlend();
-        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         fb.framebufferRenderExt(screenWidth, screenHeight, false);
-        GlStateManager.disableBlend();
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
     }
 
     private void drawCarousel(float cx, float cy, float size) {
@@ -322,13 +318,13 @@ public class CustomDropAnimationGui extends GuiScreen {
             float y1 = y + itemBoxHeight * size * 15 / 16f;
             float y2 = y + itemBoxHeight * size;
 
-            GlStateManager.color(1f, 1f, 1f, 1f);
+            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
             drawRect((int) x, (int) y, (int) (x + itemBoxWidth * size), (int) (y + itemBoxHeight * size), 0x3F888888);
             drawRect((int) x, (int) y1, (int) (x + itemBoxWidth * size), (int) y2, boxColor);
-            GlStateManager.enableBlend();
-            GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GlStateManagerCompat.enableBlend();
+            GlStateManagerCompat.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             drawGradientRect((int) x, (int) (y2 - itemBoxHeight * size), (int) (x + itemBoxWidth * size), (int) y2, (boxColor & 0x00FFFFFF), (boxColor & 0x00FFFFFF) | 0xCC000000);
-            GlStateManager.disableBlend();
+            GlStateManagerCompat.disableBlend();
 
             renderItemImage(i, x, y, size);
 
@@ -363,7 +359,7 @@ public class CustomDropAnimationGui extends GuiScreen {
             mc.getTextureManager().bindTexture(TextureMap.LOCATION_MISSING_TEXTURE);
         }
 
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         drawScaledCustomSizeModalRect((int) imageX, (int) imageY, 0, v, 16, 16, (int) imageSize, (int) imageSize, 16f, frameHeight * tex.getFrames());
     }
 
@@ -373,7 +369,7 @@ public class CustomDropAnimationGui extends GuiScreen {
         drawRect((int) (centerX - lineWidth / 2), (int) (centerY - lineHeight / 3 * 2.5), (int) (centerX + lineWidth), (int) (centerY + lineHeight), 0xFFFFA500);
 
         int boxDistance = (int) offsetX % (int) spacing;
-        if (boxDistance < lastBoxDistance) mc.getSoundHandler().playSound(PositionedSoundRecord.create(AUDIO, 1.0F));
+        if (boxDistance < lastBoxDistance) SoundUtils.playSound("gui.button.press");
         lastBoxDistance = boxDistance;
     }
 
@@ -430,17 +426,16 @@ public class CustomDropAnimationGui extends GuiScreen {
     }
 
     @Override
-    public void onGuiClosed() {
+    public void guiClosed() {
         if (mc.entityRenderer != null) mc.entityRenderer.stopUseShader();
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void onKeyTyped(char typedChar, int keyCode) {
         if (keyCode == Keyboard.KEY_ESCAPE) {
             mc.displayGuiScreen(ChestListener.originalGui);
             return;
         }
-        super.keyTyped(typedChar, keyCode);
     }
 
     @Override

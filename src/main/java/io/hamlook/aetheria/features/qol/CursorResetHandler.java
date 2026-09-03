@@ -1,16 +1,17 @@
 package io.hamlook.aetheria.features.qol;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import org.lwjgl.input.Mouse;
-import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 
 @RegisterEvents
 public class CursorResetHandler {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     // Cached mouse coordinates
     public static int cachedX;
@@ -18,8 +19,8 @@ public class CursorResetHandler {
 
 
     public static void cacheMouse() {
-        cachedX = Mouse.getX();
-        cachedY = Mouse.getY();
+        cachedX = MouseCompat.getX();
+        cachedY = MouseCompat.getY();
     }
 
 

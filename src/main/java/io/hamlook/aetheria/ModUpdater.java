@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 
@@ -56,7 +56,7 @@ public class ModUpdater {
                 String downloadUrl = jarAsset.get("browser_download_url").getAsString();
                 String newFileName = jarAsset.get("name").getAsString();
 
-                File modsDir = new File(Minecraft.getMinecraft().mcDataDir, "mods");
+                File modsDir = new File(MinecraftCompat.getMinecraft().mcDataDir, "mods");
                 File newModFile = new File(modsDir, newFileName);
 
                 URL downloadURL = new URL(downloadUrl);
@@ -82,7 +82,7 @@ public class ModUpdater {
                 }
 
                 if(shutdown) {
-                    Minecraft.getMinecraft().shutdown();
+                    MinecraftCompat.getMinecraft().shutdown();
                 }
             } catch (Exception e) {
                 e.printStackTrace();

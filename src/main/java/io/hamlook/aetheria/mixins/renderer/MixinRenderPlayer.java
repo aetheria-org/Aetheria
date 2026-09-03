@@ -3,9 +3,9 @@ package io.hamlook.aetheria.mixins.renderer;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.repo.PlayerSizeRepo;
 import io.hamlook.aetheria.repo.data.PlayerSizeData;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.entity.AbstractClientPlayer;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.entity.RenderPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,7 +24,7 @@ public class MixinRenderPlayer {
         if (data == null) return;
         float x = data.x(), y = data.y(), z = data.z();
         if (x == 0 || y == 0 || z == 0) return;
-        if (y < 0) GlStateManager.translate(0f, y * 2, 0f);
-        GlStateManager.scale(x, y, z);
+        if (y < 0) GlStateManagerCompat.translate(0f, y * 2, 0f);
+        GlStateManagerCompat.scale(x, y, z);
     }
 }

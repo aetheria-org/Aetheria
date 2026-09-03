@@ -3,7 +3,7 @@
 
 package io.hamlook.aetheria.core.moulconfig.gui;
 
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 
@@ -29,7 +29,7 @@ public class GlScissorStack {
         }
 
         void set(ScaledResolution sr) {
-            int height = Minecraft.getMinecraft().displayHeight;
+            int height = MinecraftCompat.getMinecraft().displayHeight;
             int scale  = sr.getScaleFactor();
             GL11.glScissor(left * scale, height - bottom * scale, (right - left) * scale, (bottom - top) * scale);
         }

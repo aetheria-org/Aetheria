@@ -10,7 +10,7 @@ import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
 
@@ -164,9 +164,9 @@ public class CapeLoader {
     }
 
     private static void uploadTexture(Cape cape, BufferedImage image) {
-        Minecraft.getMinecraft().addScheduledTask(() -> {
+        MinecraftCompat.getMinecraft().addScheduledTask(() -> {
             ResourceLocation location = new ResourceLocation("aetheria", "capes/" + cape.id);
-            Minecraft.getMinecraft().getTextureManager().loadTexture(location, new DynamicTexture(image));
+            MinecraftCompat.getMinecraft().getTextureManager().loadTexture(location, new DynamicTexture(image));
             cape.resourceLocation = location;
         });
     }

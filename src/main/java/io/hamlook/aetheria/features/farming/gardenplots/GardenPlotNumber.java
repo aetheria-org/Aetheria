@@ -10,20 +10,15 @@ import io.hamlook.aetheria.events.RenderItemOverlayEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemStackUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.HighlightUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -102,7 +97,7 @@ public class GardenPlotNumber {
     }
 
     private static PlotInfo info(ItemStack stack) {
-        GuiScreen screen = Minecraft.getMinecraft().currentScreen;
+        GuiScreen screen = MinecraftCompat.getMinecraft().currentScreen;
         if (screen != cacheScreen) {
             cacheScreen = screen;
             PLOT_CACHE.clear();

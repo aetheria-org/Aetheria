@@ -9,7 +9,7 @@ import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.entity.player.EntityPlayer;
 
 import java.io.OutputStream;
@@ -139,7 +139,7 @@ public class CapeManager {
         }
         if (capeID == null || capeID.equals("pending")) return null;
         if (capeID.equals("none")) {
-            EntityPlayer self = Minecraft.getMinecraft().thePlayer;
+            EntityPlayer self = MinecraftCompat.getMinecraft().thePlayer;
             if (self != null && pl.equals(self.getGameProfile().getName()) && !CLIENT_SIDE_CAPE_ID.isEmpty()) {
                 return getCape(CLIENT_SIDE_CAPE_ID);
             }

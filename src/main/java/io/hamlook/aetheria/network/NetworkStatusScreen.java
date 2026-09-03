@@ -2,10 +2,10 @@ package io.hamlook.aetheria.network;
 
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 
 import java.util.*;
@@ -69,7 +69,7 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) {
+    protected void onKeyTyped(char typedChar, int keyCode) {
     }
 
     @Override
@@ -178,7 +178,7 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
                 ATHRConfig.feature.network.networkStatusAckMask = NetworkStatusInfo.ackMaskFor(NetworkStatusInfo.currentMask());
                 ATHRConfig.saveConfig();
             }
-            Minecraft.getMinecraft().displayGuiScreen(null);
+            MinecraftCompat.getMinecraft().displayGuiScreen(null);
             return true;
         }
 
@@ -190,7 +190,7 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
         read.remove(gate);
         refreshSections();
         if (sections.isEmpty()) {
-            Minecraft.getMinecraft().displayGuiScreen(null);
+            MinecraftCompat.getMinecraft().displayGuiScreen(null);
         }
     }
 }

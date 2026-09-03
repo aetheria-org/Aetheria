@@ -1,16 +1,17 @@
 package io.hamlook.aetheria.features.diana;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMEntityJoinWorldEvent;
+import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityArmorStand;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
-import io.hamlook.aetheria.events.ASMEntityJoinWorldEvent;
 
 @RegisterEvents
 public class LootshareDetect {
@@ -25,7 +26,7 @@ public class LootshareDetect {
     private final Map<Integer, EntityArmorStand> tracked = new HashMap<>();
     private final Set<Integer> trackedInqs = new HashSet<>();
     private final Set<Integer> trackedNonInqs = new HashSet<>();
-    private final Minecraft mc = Minecraft.getMinecraft();
+    private final Minecraft mc = MinecraftCompat.getMinecraft();
 
     public LootshareDetect() {
         INSTANCE = this;
@@ -47,7 +48,7 @@ public class LootshareDetect {
     // Returns the closest tracked inq stand name, or null
     public static String getClosestInqName() {
         if (INSTANCE == null) return null;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null || mc.theWorld == null) return null;
         EntityArmorStand closest = null;
         double minDist = Double.MAX_VALUE;
@@ -67,7 +68,7 @@ public class LootshareDetect {
     // Returns the closest tracked non-inq diana mob stand name, only after a dig message fired
     public static String getClosestNonInqMobName() {
         if (INSTANCE == null || !nonInqMobActive) return null;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null || mc.theWorld == null) return null;
         EntityArmorStand closest = null;
         double minDist = Double.MAX_VALUE;

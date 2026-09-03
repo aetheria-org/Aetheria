@@ -4,7 +4,7 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
-import org.lwjgl.input.Mouse;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 
 import java.util.stream.Collectors;
 
@@ -21,7 +21,7 @@ public class GuiOptionEditorStyle extends GuiOptionEditorDropdown {
         int left = x + width / 6 - 40;
         int top = y + height - 7 - 14;
 
-        if (Mouse.getEventButtonState() && Mouse.getEventButton() == 0) {
+        if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0) {
             if (!(mouseX >= left && mouseX <= left + 80 && mouseY >= top && mouseY <= top + 14) && open) {
                 this.open = false;
                 if (mouseX >= left && mouseX <= left + 80) {

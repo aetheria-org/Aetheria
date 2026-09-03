@@ -1,19 +1,20 @@
 package io.hamlook.aetheria.features.misc.killcombo;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.chat.ChatFilter;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import lombok.Getter;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMChatEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @Getter
 @RegisterEvents
@@ -69,7 +70,7 @@ public class KillComboTracker {
         String stripped = ChatUtils.clean(event);
         if (isPlayerMessage(stripped)) return;
 
-        String text = event.message.getFormattedText();
+        String text = TextCompat.getFormattedText(event.message);
 
         if (text.contains(EXPIRE_MARKER)) {
             handleExpire(text);

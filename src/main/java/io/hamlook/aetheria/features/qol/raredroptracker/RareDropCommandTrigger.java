@@ -1,14 +1,16 @@
 package io.hamlook.aetheria.features.qol.raredroptracker;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiMousePostEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import org.lwjgl.input.Mouse;
-import io.hamlook.aetheria.events.ASMGuiDrawEvent;
-import io.hamlook.aetheria.events.ASMGuiMousePostEvent;
 
 /**
  * Handles the "click anywhere within 5 seconds" prompt fired after a tracked
@@ -55,8 +57,8 @@ public class RareDropCommandTrigger {
             messageSent = true;
         }
 
-        Minecraft mc = Minecraft.getMinecraft();
-        ScaledResolution sr = new ScaledResolution(mc);
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
 
         Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0x38000000);
 
@@ -68,7 +70,7 @@ public class RareDropCommandTrigger {
     @HandleEvent
     public void onMouseInputPost(ASMGuiMousePostEvent event) {
         if (isActive()) return;
-        if (!Mouse.getEventButtonState() || Mouse.getEventButton() != 0) return;
+        if (!MouseCompat.getEventButtonState() || MouseCompat.getEventButton() != 0) return;
 
         String command = pendingCommand;
         pendingCommand = null;

@@ -4,9 +4,9 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.tileentity.TileEntitySign;
-import net.minecraft.util.ChatComponentText;
 
 public final class VisitorSignFill {
 
@@ -28,7 +28,7 @@ public final class VisitorSignFill {
         }
 
         if (sign.signText == null || sign.signText.length == 0) return;
-        if (!sign.signText[0].getUnformattedText().isEmpty()) {
+        if (!TextCompat.getUnformattedText(sign.signText[0]).isEmpty()) {
             VisitorShoppingList.noteParse("[signfill] declined: sign text occupied");
             return;
         }
@@ -47,7 +47,7 @@ public final class VisitorSignFill {
             return;
         }
 
-        sign.signText[0] = new ChatComponentText(String.valueOf(missing));
+        sign.signText[0] = TextCompat.createText(String.valueOf(missing));
         VisitorShoppingList.noteParse("[signfill] filled " + missing + "x " + FarmingApi.getSearchedItemName());
         VisitorShoppingList.scheduleSignSubmit(gui);
     }

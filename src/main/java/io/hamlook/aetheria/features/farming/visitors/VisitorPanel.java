@@ -5,6 +5,8 @@ import io.hamlook.aetheria.core.features.farming.VisitorsConfig;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.OverlayUtils;
 import lombok.Getter;
@@ -40,15 +42,15 @@ public final class VisitorPanel extends VisitorPanelBase {
         if (OverlayUtils.isStorageActive()) return blocked("storage overlay active");
         if (VisitorShoppingList.hiddenAt(cfg.panel.visible))
             return blocked("hidden here (mode " + cfg.panel.visible + ", loc=" + SkyblockData.getCurrentLocation() + ", skyblock=" + SkyblockData.isOnSkyblock() + ")");
-        GuiScreen screen = Minecraft.getMinecraft().currentScreen;
+        GuiScreen screen = MinecraftCompat.getMinecraft().currentScreen;
         if (screen == null) return blocked("no screen open");
         if (cfg.panel.onlyShowWithData && !FarmingApi.hasVisitorData()) return blocked("no visitor data learned yet");
 
         boolean signSurface = screen instanceof GuiEditSign;
         boolean inventorySurface = screen instanceof GuiInventory;
         String chestTitle = null;
-        if (!signSurface && screen instanceof GuiContainer && ((GuiContainer) screen).inventorySlots instanceof ContainerChest) {
-            chestTitle = ContainerUtils.getTitle((ContainerChest) ((GuiContainer) screen).inventorySlots);
+        if (!signSurface && screen instanceof GuiContainer && InventoryCompat.getContainer((GuiContainer) screen) instanceof ContainerChest) {
+            chestTitle = ContainerUtils.getTitle((ContainerChest) InventoryCompat.getContainer((GuiContainer) screen));
         }
 
         boolean visitorSurface = chestTitle != null && FarmingApi.getVisitorNeeds().containsKey(chestTitle);
@@ -86,7 +88,7 @@ public final class VisitorPanel extends VisitorPanelBase {
 
     @Override
     protected List<VisitorLine> lines() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.currentScreen instanceof GuiEditSign && VisitorShoppingList.isOrderFlowActive()) {
             return VisitorShoppingList.buildSingleEntryLines();
         }

@@ -2,7 +2,7 @@ package io.hamlook.aetheria.features.misc.protect
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import net.minecraft.client.Minecraft
+import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import net.minecraft.util.ChatComponentText
 import java.io.File
 
@@ -24,7 +24,7 @@ object ProtectedItemStorage {
             val loaded: Set<String> = gson.fromJson(file.readText(), type) ?: return
             protectedUuids.addAll(loaded)
         } catch (e: Exception) {
-            Minecraft.getMinecraft().thePlayer?.addChatMessage(
+            MinecraftCompat.getLocalPlayer()?.addChatMessage(
                 ChatComponentText("§c[ATHR] Failed to load protected items: ${e.message}")
             )
         }
@@ -34,7 +34,7 @@ object ProtectedItemStorage {
         try {
             file.writeText(gson.toJson(protectedUuids))
         } catch (e: Exception) {
-            Minecraft.getMinecraft().thePlayer?.addChatMessage(
+            MinecraftCompat.getLocalPlayer()?.addChatMessage(
                 ChatComponentText("§c[ATHR] Failed to save protected items: ${e.message}")
             )
         }

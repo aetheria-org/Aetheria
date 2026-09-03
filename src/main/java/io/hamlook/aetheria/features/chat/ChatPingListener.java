@@ -1,19 +1,20 @@
 package io.hamlook.aetheria.features.chat;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.chat.ChatPingConfig;
+import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.List;
-import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class ChatPingListener {
@@ -28,11 +29,11 @@ public class ChatPingListener {
         ChatPingConfig cfg = ATHRConfig.feature.chat.chatPingConfig;
         if (!cfg.chatPing) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null) return;
 
         String name = mc.thePlayer.getName().toLowerCase();
-        String stripped = StringUtils.stripControlCodes(event.message.getFormattedText());
+        String stripped = StringUtils.stripControlCodes(TextCompat.getFormattedText(event.message));
 
         int colonIdx = stripped.indexOf(':');
         if (colonIdx != -1) {
@@ -85,7 +86,7 @@ public class ChatPingListener {
     }
 
     private void highlightName(IChatComponent component, String name, EnumChatFormatting color, boolean[] pastColon) {
-        List<IChatComponent> siblings = component.getSiblings();
+        List<IChatComponent> siblings = TextCompat.getSiblings(component);
         int nameLen = name.length();
         for (int i = 0; i < siblings.size(); i++) {
             IChatComponent sib = siblings.get(i);
@@ -128,14 +129,14 @@ public class ChatPingListener {
             String after = text.substring(namePos + nameLen);
 
             if (!before.isEmpty()) {
-                ChatComponentText beforeComp = new ChatComponentText(before);
-                beforeComp.setChatStyle(sib.getChatStyle().createDeepCopy());
+                IChatComponent beforeComp = TextCompat.createText(before);
+                beforeComp.setChatStyle(TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
                 siblings.set(i, beforeComp);
                 i++;
             }
 
-            ChatComponentText nameComp = new ChatComponentText(match);
-            nameComp.getChatStyle().setColor(color);
+            IChatComponent nameComp = TextCompat.createText(match);
+            TextCompat.setColor(TextCompat.getChatStyle(nameComp), color);
             if (before.isEmpty()) {
                 siblings.set(i, nameComp);
             } else {
@@ -147,10 +148,10 @@ public class ChatPingListener {
                 if (!after.startsWith("§")) {
                     after = getLastFormatCode(before) + after;
                 }
-                ChatComponentText afterComp = new ChatComponentText(after);
-                afterComp.setChatStyle(sib.getChatStyle().createDeepCopy());
-                for (IChatComponent child : sib.getSiblings()) {
-                    afterComp.appendSibling(child);
+                IChatComponent afterComp = TextCompat.createText(after);
+                afterComp.setChatStyle(TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
+                for (IChatComponent child : TextCompat.getSiblings(sib)) {
+                    TextCompat.appendSibling(afterComp, child);
                 }
                 siblings.add(i, afterComp);
                 i--;

@@ -6,11 +6,13 @@ import io.hamlook.aetheria.features.custommenu.ui.CMMElement;
 import io.hamlook.aetheria.features.custommenu.ui.buttons.CMMButton;
 import io.hamlook.aetheria.features.custommenu.util.ScreenHelper;
 import io.hamlook.aetheria.utils.SoundUtils;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.renderer.GlStateManager;
 
-public class CustomMainMenu extends GuiScreen {
+public class CustomMainMenu extends AetheriaBaseScreen {
 
     public CustomMMConfig configuration;
 
@@ -33,7 +35,7 @@ public class CustomMainMenu extends GuiScreen {
     }
 
     @Override
-    public void initGui() {
+    public void onInitGui() {
         ScreenHelper.updateScreenDimensions(this.width, this.height);
         if (configuration != null) {
             for(CMMElement element : configuration.elements) {
@@ -43,7 +45,7 @@ public class CustomMainMenu extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         if(configuration == null) return;
         drawRect(0,0, this.width, this.height, 0xBB000000);
         drawBackground();
@@ -54,7 +56,7 @@ public class CustomMainMenu extends GuiScreen {
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mButton) {
+    protected void onMouseClicked(int mouseX, int mouseY, int mButton) {
         if(mButton != 0) return;
         for(CMMButton button : configuration.getButtons()){
             if(button.checkHover(mouseX,mouseY)){
@@ -74,10 +76,10 @@ public class CustomMainMenu extends GuiScreen {
             drawDefaultBackground();
             return;
         }
-        GlStateManager.pushMatrix();
-        Minecraft.getMinecraft().getTextureManager().bindTexture(image.getTextureToRender(true));
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        GlStateManagerCompat.pushMatrix();
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(image.getTextureToRender(true));
+        GlStateManagerCompat.color(1.0F, 1.0F, 1.0F, 1.0F);
         GuiScreen.drawScaledCustomSizeModalRect(0,0,0,0,width,height,width,height,width,height);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 }

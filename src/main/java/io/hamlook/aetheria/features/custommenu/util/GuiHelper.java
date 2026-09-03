@@ -4,7 +4,7 @@ import io.hamlook.aetheria.OptionsMenu;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.*;
 
 import java.util.HashMap;
@@ -22,13 +22,13 @@ public class GuiHelper {
                 case "Multiplayer Menu":
                     return new GuiMultiplayer(parentScreen);
                 case "Options Menu":
-                    return new GuiOptions(parentScreen, Minecraft.getMinecraft().gameSettings);
+                    return new GuiOptions(parentScreen, MinecraftCompat.getMinecraft().gameSettings);
                 case "Controls Menu":
-                    return new GuiControls(parentScreen, Minecraft.getMinecraft().gameSettings);
+                    return new GuiControls(parentScreen, MinecraftCompat.getMinecraft().gameSettings);
                 case "Video Settings":
-                    return new GuiVideoSettings(parentScreen, Minecraft.getMinecraft().gameSettings);
+                    return new GuiVideoSettings(parentScreen, MinecraftCompat.getMinecraft().gameSettings);
                 case "Language Menu":
-                    return new GuiLanguage(parentScreen, Minecraft.getMinecraft().gameSettings, Minecraft.getMinecraft().getLanguageManager());
+                    return new GuiLanguage(parentScreen, MinecraftCompat.getMinecraft().gameSettings, MinecraftCompat.getMinecraft().getLanguageManager());
                 case "Create World Menu":
                     return new GuiCreateWorld(parentScreen);
                 case "ASM Config":

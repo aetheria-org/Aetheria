@@ -1,9 +1,13 @@
 package io.hamlook.aetheria.features.mining;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.RaycastUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.client.Minecraft;
@@ -11,13 +15,9 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.awt.*;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMChatEvent;
-import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 @RegisterEvents
 public class PickobulusPreview {
@@ -41,7 +41,7 @@ public class PickobulusPreview {
     }
 
     private boolean isHoldingPickobulus() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null) return false;
 
         int currentHash = System.identityHashCode(mc.thePlayer.getHeldItem());
@@ -79,7 +79,7 @@ public class PickobulusPreview {
             return;
         }
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null || mc.theWorld == null) {
             previewBox = null;
             return;

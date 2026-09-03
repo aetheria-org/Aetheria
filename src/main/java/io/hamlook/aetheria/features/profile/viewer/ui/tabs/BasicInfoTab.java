@@ -1,14 +1,14 @@
 package io.hamlook.aetheria.features.profile.viewer.ui.tabs;
 
-import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
-import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
+import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 
-import java.awt.Color;
+import java.awt.*;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;

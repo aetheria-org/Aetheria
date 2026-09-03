@@ -7,11 +7,10 @@ import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.event.ClickEvent;
-import net.minecraft.event.HoverEvent;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.IChatComponent;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -159,60 +158,60 @@ public class RareDropTrackerCommand extends ASMCommand {
     }
 
     private void showResults(ICommandSender sender, String query, List<SkyblockItem> matches, boolean addMode) {
-        sender.addChatMessage(new ChatComponentText(""));
-        sender.addChatMessage(new ChatComponentText("§d§lItem Search: §f\"" + query + "\" §7(" + matches.size() + " match" + (matches.size() == 1 ? "" : "es") + ")"));
+        sender.addChatMessage(TextCompat.createText(""));
+        sender.addChatMessage(TextCompat.createText("§d§lItem Search: §f\"" + query + "\" §7(" + matches.size() + " match" + (matches.size() == 1 ? "" : "es") + ")"));
 
         if (matches.isEmpty()) {
-            sender.addChatMessage(new ChatComponentText(" §7No items found."));
+            sender.addChatMessage(TextCompat.createText(" §7No items found."));
         } else {
             List<SkyblockItem> shown = matches.size() > MAX_RESULTS ? matches.subList(0, MAX_RESULTS) : matches;
             for (SkyblockItem item : shown) {
-                ChatComponentText root = new ChatComponentText(" §7- §f" + item.displayName + " §8(" + item.skyblockID + ")");
+                IChatComponent root = TextCompat.createText(" §7- §f" + item.displayName + " §8(" + item.skyblockID + ")");
                 if (addMode) {
-                    root.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/rdt add " + item.skyblockID));
-                    root.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§aClick to track this item")));
+                    TextCompat.setClickRunCommand(TextCompat.getChatStyle(root), "/rdt add " + item.skyblockID);
+                    TextCompat.setHoverShowText(TextCompat.getChatStyle(root), "§aClick to track this item");
                 } else {
-                    root.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/rdt add " + item.skyblockID));
-                    root.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§eClick to fill in the add command")));
+                    TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(root), "/rdt add " + item.skyblockID);
+                    TextCompat.setHoverShowText(TextCompat.getChatStyle(root), "§eClick to fill in the add command");
                 }
                 sender.addChatMessage(root);
             }
             if (matches.size() > MAX_RESULTS) {
-                sender.addChatMessage(new ChatComponentText(" §7...and " + (matches.size() - MAX_RESULTS) + " more. Narrow your search."));
+                sender.addChatMessage(TextCompat.createText(" §7...and " + (matches.size() - MAX_RESULTS) + " more. Narrow your search."));
             }
         }
-        sender.addChatMessage(new ChatComponentText(""));
+        sender.addChatMessage(TextCompat.createText(""));
     }
 
     private void showList(ICommandSender sender, RareDropTrackerConfig config) {
-        sender.addChatMessage(new ChatComponentText(""));
-        sender.addChatMessage(new ChatComponentText("§d§lRare Drop Tracker"));
+        sender.addChatMessage(TextCompat.createText(""));
+        sender.addChatMessage(TextCompat.createText("§d§lRare Drop Tracker"));
 
         if (config.trackedItems.isEmpty()) {
-            sender.addChatMessage(new ChatComponentText(" §7Not tracking anything yet. Try §f/rdt add <name>"));
+            sender.addChatMessage(TextCompat.createText(" §7Not tracking anything yet. Try §f/rdt add <name>"));
         } else {
             for (Map.Entry<String, RareDropTrackerConfig.TrackedItem> e : config.trackedItems.entrySet()) {
                 RareDropTrackerConfig.TrackedItem tracked = e.getValue();
                 String progress = tracked.goal > 0 ? " §7(" + tracked.count + "/" + tracked.goal + ")" : (tracked.count > 0 ? " §7(" + tracked.count + ")" : "");
-                ChatComponentText root = new ChatComponentText(" §7- §f" + tracked.displayName + progress);
-                ChatComponentText del = new ChatComponentText(" §c§l[DEL]");
-                del.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/rdt remove " + e.getKey()));
-                del.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§cStop tracking " + tracked.displayName)));
-                root.appendSibling(del);
+                IChatComponent root = TextCompat.createText(" §7- §f" + tracked.displayName + progress);
+                IChatComponent del = TextCompat.createText(" §c§l[DEL]");
+                TextCompat.setClickRunCommand(TextCompat.getChatStyle(del), "/rdt remove " + e.getKey());
+                TextCompat.setHoverShowText(TextCompat.getChatStyle(del), "§cStop tracking " + tracked.displayName);
+                TextCompat.appendSibling(root, del);
                 sender.addChatMessage(root);
             }
         }
 
-        sender.addChatMessage(new ChatComponentText(""));
-        ChatComponentText addNew = new ChatComponentText("§a§l[ADD NEW]");
-        addNew.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/rdt add "));
-        addNew.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§aSearch for an item to track")));
+        sender.addChatMessage(TextCompat.createText(""));
+        IChatComponent addNew = TextCompat.createText("§a§l[ADD NEW]");
+        TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(addNew), "/rdt add ");
+        TextCompat.setHoverShowText(TextCompat.getChatStyle(addNew), "§aSearch for an item to track");
         sender.addChatMessage(addNew);
-        ChatComponentText clear = new ChatComponentText(" §c§l[CLEAR ALL]");
-        clear.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/rdt clear"));
-        clear.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§cRemove all tracked items")));
+        IChatComponent clear = TextCompat.createText(" §c§l[CLEAR ALL]");
+        TextCompat.setClickRunCommand(TextCompat.getChatStyle(clear), "/rdt clear");
+        TextCompat.setHoverShowText(TextCompat.getChatStyle(clear), "§cRemove all tracked items");
         sender.addChatMessage(clear);
-        sender.addChatMessage(new ChatComponentText(""));
+        sender.addChatMessage(TextCompat.createText(""));
     }
 
     private String joinArgs(String[] args) {

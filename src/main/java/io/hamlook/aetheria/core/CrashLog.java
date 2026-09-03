@@ -31,7 +31,8 @@ public final class CrashLog {
     private static int blockCount;
     private static boolean capNoteWritten;
 
-    private CrashLog() {}
+    private CrashLog() {
+    }
 
     /**
      * Records a failed load or save. Creates the launch report on the first
@@ -77,30 +78,7 @@ public final class CrashLog {
     }
 
     private static String buildHeader() {
-        String sb = "---- Aetheria Storage Crash Report ----\n" +
-                "Written only when Aetheria fails to load or save a config or data file.\n" +
-                "Each \"Affected file\" block below describes one failed file.\n\n" +
-                "Field meanings:\n" +
-                "  Aetheria version     the mod version that was running\n" +
-                "  Minecraft version    the game version\n" +
-                "  Previous session clean\n" +
-                "                       true  = the last launch shut down normally\n" +
-                "                       false = the last launch did not shut down normally\n" +
-                "                               (crash, power loss, or forced kill)\n" +
-                "  Source               whether the file failed while loading or saving\n" +
-                "  Size                 the file size on disk; a full-size file filled with\n" +
-                "                       zero bytes means the write was interrupted\n" +
-                "  Last modified        when the file was last changed on disk\n" +
-                "  Diagnosis            the likely cause. \"interrupted write\" = damaged by a\n" +
-                "                       crash during a save; \"not crash-related\" = write bug\n" +
-                "                       or an external process\n" +
-                "  Error                the exact error message from the reader or writer\n\n" +
-                "Aetheria version: " + Aetheria.VERSION + "\n" +
-                "Minecraft version: " + getMinecraftVersion() + "\n" +
-                "Previous session clean: " + ATHRConfig.previousSessionClean + "\n\n" +
-                "Corrupted files are backed up as <file>.<timestamp>.corrupted next to the\n" +
-                "original before defaults are used.\n\n";
-        return sb;
+        return "---- Aetheria Storage Crash Report ----\n" + "Written only when Aetheria fails to load or save a config or data file.\n" + "Each \"Affected file\" block below describes one failed file.\n\n" + "Field meanings:\n" + "  Aetheria version     the mod version that was running\n" + "  Minecraft version    the game version\n" + "  Previous session clean\n" + "                       true  = the last launch shut down normally\n" + "                       false = the last launch did not shut down normally\n" + "                               (crash, power loss, or forced kill)\n" + "  Source               whether the file failed while loading or saving\n" + "  Size                 the file size on disk; a full-size file filled with\n" + "                       zero bytes means the write was interrupted\n" + "  Last modified        when the file was last changed on disk\n" + "  Diagnosis            the likely cause. \"interrupted write\" = damaged by a\n" + "                       crash during a save; \"not crash-related\" = write bug\n" + "                       or an external process\n" + "  Error                the exact error message from the reader or writer\n\n" + "Aetheria version: " + Aetheria.VERSION + "\n" + "Minecraft version: " + getMinecraftVersion() + "\n" + "Previous session clean: " + ATHRConfig.previousSessionClean + "\n\n" + "Corrupted files are backed up as <file>.<timestamp>.corrupted next to the\n" + "original before defaults are used.\n\n";
     }
 
     private static String buildBlock(File file, String source, String error) {
@@ -108,13 +86,8 @@ public final class CrashLog {
         sb.append("Affected file: ").append(file.getName()).append("\n");
         sb.append("  Source: ").append(source).append("\n");
         sb.append("  Size: ").append(file.length()).append(" bytes\n");
-        sb.append("  Last modified: ")
-                .append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(file.lastModified())))
-                .append("\n");
-        sb.append("  Diagnosis: ").append(ATHRConfig.previousSessionClean
-                ? "not crash-related (write bug or external process)"
-                : "interrupted write (crash, power loss, or forced kill)")
-                .append("\n");
+        sb.append("  Last modified: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(file.lastModified()))).append("\n");
+        sb.append("  Diagnosis: ").append(ATHRConfig.previousSessionClean ? "not crash-related (write bug or external process)" : "interrupted write (crash, power loss, or forced kill)").append("\n");
         sb.append("  Error: ").append(error == null ? "unknown" : error).append("\n\n");
         return sb.toString();
     }
@@ -128,8 +101,7 @@ public final class CrashLog {
     }
 
     private static void prune() {
-        File[] reports = logDir.listFiles((dir, name) ->
-                name.startsWith(REPORT_PREFIX) && name.endsWith(REPORT_SUFFIX));
+        File[] reports = logDir.listFiles((dir, name) -> name.startsWith(REPORT_PREFIX) && name.endsWith(REPORT_SUFFIX));
         if (reports == null || reports.length <= MAX_REPORTS) return;
         Arrays.sort(reports, Comparator.comparing(File::getName).reversed());
         for (int i = MAX_REPORTS; i < reports.length; i++) {
@@ -139,8 +111,7 @@ public final class CrashLog {
 
     private static void write(String content) {
         try {
-            Files.write(currentReport.toPath(), content.getBytes(StandardCharsets.UTF_8),
-                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            Files.write(currentReport.toPath(), content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         } catch (IOException e) {
             System.err.println("[ATHR] Failed to write crash report " + currentReport.getName() + ": " + e.getMessage());
         }

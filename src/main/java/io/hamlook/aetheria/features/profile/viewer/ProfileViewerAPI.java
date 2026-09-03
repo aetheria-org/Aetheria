@@ -1,20 +1,18 @@
 package io.hamlook.aetheria.features.profile.viewer;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.ChatComponentText;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
@@ -101,9 +99,9 @@ public class ProfileViewerAPI {
             } catch (Exception e) {
                 Aetheria.logger.info("Error While Fetching Profiles For: " + username);
                 e.printStackTrace();
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§cCould Not Fetch Profile For: §4" + username));
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§cPlease Share the Following Message with the devs to find a fix."));
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§c" + e.getMessage()));
+                MinecraftCompat.getMinecraft().thePlayer.addChatMessage(TextCompat.createText("§cCould Not Fetch Profile For: §4" + username));
+                MinecraftCompat.getMinecraft().thePlayer.addChatMessage(TextCompat.createText("§cPlease Share the Following Message with the devs to find a fix."));
+                MinecraftCompat.getMinecraft().thePlayer.addChatMessage(TextCompat.createText("§c" + e.getMessage()));
             }
         });
     }

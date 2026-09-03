@@ -1,15 +1,15 @@
 package io.hamlook.aetheria.features.misc.SkyblockExp;
 
-import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.events.ActionBarUpdateEvent;
 import io.hamlook.aetheria.events.ActionBarXpGainEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.StringUtils;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMChatEvent;
 
 
 @RegisterEvents
@@ -33,8 +33,8 @@ public class ActionBarDispatcher {
     public void onActionBar(ASMChatEvent event) {
         if (event.type != ACTION_BAR_TYPE) return;
 
-        String stripped = StringUtils.stripControlCodes(event.message.getUnformattedText());
-        String formatted = event.message.getFormattedText();
+        String stripped = StringUtils.stripControlCodes(TextCompat.getUnformattedText(event.message));
+        String formatted = TextCompat.getFormattedText(event.message);
 
         lastActionBarFormatted = formatted;
         lastActionBarStripped = stripped;

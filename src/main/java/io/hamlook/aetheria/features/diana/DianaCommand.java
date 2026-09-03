@@ -2,9 +2,9 @@ package io.hamlook.aetheria.features.diana;
 
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import java.util.Arrays;
@@ -32,7 +32,7 @@ public class DianaCommand extends ASMCommand {
         DianaStats s = DianaStats.getInstance();
 
         if (args.length == 0) {
-            sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.YELLOW + "Usage: /diana <reset|toggle>"));
+            sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.YELLOW + "Usage: /diana <reset|toggle>"));
             return;
         }
 
@@ -40,16 +40,16 @@ public class DianaCommand extends ASMCommand {
             case "reset":
                 s.reset();
                 s.save();
-                sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.GREEN + "Diana stats have been reset."));
+                sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.GREEN + "Diana stats have been reset."));
                 break;
 
             case "toggle":
                 boolean now = s.toggleTracking();
-                sender.addChatMessage(new ChatComponentText(PREFIX + (now ? EnumChatFormatting.GREEN + "Tracking enabled." : EnumChatFormatting.RED + "Tracking paused.")));
+                sender.addChatMessage(TextCompat.createText(PREFIX + (now ? EnumChatFormatting.GREEN + "Tracking enabled." : EnumChatFormatting.RED + "Tracking paused.")));
                 break;
 
             default:
-                sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.RED + "Unknown subcommand. Use: reset, toggle"));
+                sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.RED + "Unknown subcommand. Use: reset, toggle"));
         }
     }
 

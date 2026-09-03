@@ -1,26 +1,22 @@
 package io.hamlook.aetheria;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.ElectionUtils;
-import io.hamlook.aetheria.utils.chat.ChatUtils;
-import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.event.ClickEvent;
-import net.minecraft.event.HoverEvent;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.ChatStyle;
 import net.minecraft.util.IChatComponent;
-
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -82,12 +78,11 @@ public class SyncCommand extends ASMCommand {
         }
 
         if(System.currentTimeMillis() - lastUse < 240000 && !SYNC_CODE.isEmpty()) {
-            IChatComponent text = new ChatComponentText("§a[SkyAtlas] Your sync code is: §e§l" + SYNC_CODE);
-            text.setChatStyle(new ChatStyle().setChatClickEvent(
-                    new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, SYNC_CODE)
-            ).setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,new ChatComponentText("§aClick to show in chat"))));
-            Minecraft.getMinecraft().addScheduledTask(() -> {
-                        Minecraft.getMinecraft().thePlayer.addChatMessage(text);
+            IChatComponent text = TextCompat.createText("§a[SkyAtlas] Your sync code is: §e§l" + SYNC_CODE);
+            TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(text), SYNC_CODE);
+            TextCompat.setHoverShowText(TextCompat.getChatStyle(text), "§aClick to show in chat");
+            MinecraftCompat.getMinecraft().addScheduledTask(() -> {
+                        MinecraftCompat.getMinecraft().thePlayer.addChatMessage(text);
                         ChatUtils.sendMessage(
                                 "§r§aPlease paste this code in the §9#sync§a channel on Discord within 5 minutes!");
                     }
@@ -134,12 +129,11 @@ public class SyncCommand extends ASMCommand {
                         }
                     }
 
-                    IChatComponent text = new ChatComponentText("§a[SkyAtlas] Your sync code is: §e§l" + syncCode);
-                    text.setChatStyle(new ChatStyle().setChatClickEvent(
-                            new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, syncCode)
-                    ).setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,new ChatComponentText("§aClick to show in chat"))));
-                    Minecraft.getMinecraft().addScheduledTask(() -> {
-                                Minecraft.getMinecraft().thePlayer.addChatMessage(text);
+                    IChatComponent text = TextCompat.createText("§a[SkyAtlas] Your sync code is: §e§l" + syncCode);
+                    TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(text), syncCode);
+                    TextCompat.setHoverShowText(TextCompat.getChatStyle(text), "§aClick to show in chat");
+                    MinecraftCompat.getMinecraft().addScheduledTask(() -> {
+                                MinecraftCompat.getMinecraft().thePlayer.addChatMessage(text);
                                 ChatUtils.sendMessage(
                                         "§r§aPlease paste this code in the §9#sync§a channel on Discord within 5 minutes!");
                             }
@@ -147,7 +141,7 @@ public class SyncCommand extends ASMCommand {
                     lastUse = System.currentTimeMillis();
                     SYNC_CODE = syncCode;
                 } else {
-                    Minecraft.getMinecraft().addScheduledTask(() -> ChatUtils.sendMessage("§c[SkyAtlas] Failed to generate sync code. API returned status " + responseCode));
+                    MinecraftCompat.getMinecraft().addScheduledTask(() -> ChatUtils.sendMessage("§c[SkyAtlas] Failed to generate sync code. API returned status " + responseCode));
                 }
 
                 conn.disconnect();
@@ -155,7 +149,7 @@ public class SyncCommand extends ASMCommand {
             } catch (Exception e) {
                 e.printStackTrace();
 
-                Minecraft.getMinecraft().addScheduledTask(() -> ChatUtils.sendMessage("§c[SkyAtlas] An error occurred while contacting the sync server."));
+                MinecraftCompat.getMinecraft().addScheduledTask(() -> ChatUtils.sendMessage("§c[SkyAtlas] An error occurred while contacting the sync server."));
             }
         });
     }

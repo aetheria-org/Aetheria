@@ -4,6 +4,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.overlay.Overlay;
@@ -67,7 +68,7 @@ public class CurrentPetOverlay extends Overlay {
 
     @Override
     protected int getBaseWidth() {
-        return SKULL_SIZE + GAP + Minecraft.getMinecraft().fontRendererObj.getStringWidth("§7[Lvl 100] §6Tiger") + PADDING * 2;
+        return SKULL_SIZE + GAP + MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth("§7[Lvl 100] §6Tiger") + PADDING * 2;
     }
 
     @Override
@@ -79,7 +80,7 @@ public class CurrentPetOverlay extends Overlay {
     public void render(boolean preview) {
         if (!preview && OverlayUtils.shouldHide()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
         String formattedName;
         ItemStack skullItem = null;

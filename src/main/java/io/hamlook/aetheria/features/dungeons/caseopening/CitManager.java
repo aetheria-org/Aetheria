@@ -2,7 +2,7 @@ package io.hamlook.aetheria.features.dungeons.caseopening;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.resources.*;
 import net.minecraft.util.ResourceLocation;
 
@@ -30,7 +30,7 @@ public class CitManager {
     private static final Map<String, TextureData> citCache = new HashMap<>();
 
     public CitManager() {
-        ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(manager -> rebuildCache());
+        ((IReloadableResourceManager) MinecraftCompat.getMinecraft().getResourceManager()).registerReloadListener(manager -> rebuildCache());
     }
 
     private static int getFrameTime(IResourceManager rm, ResourceLocation rl) {
@@ -73,8 +73,8 @@ public class CitManager {
 
     private void rebuildCache() {
         citCache.clear();
-        IResourceManager rm = Minecraft.getMinecraft().getResourceManager();
-        for (ResourcePackRepository.Entry entry : Minecraft.getMinecraft().getResourcePackRepository().getRepositoryEntries()) {
+        IResourceManager rm = MinecraftCompat.getMinecraft().getResourceManager();
+        for (ResourcePackRepository.Entry entry : MinecraftCompat.getMinecraft().getResourcePackRepository().getRepositoryEntries()) {
             try {
                 IResourcePack pack = entry.getResourcePack();
                 for (String path : listCitFiles(pack)) {

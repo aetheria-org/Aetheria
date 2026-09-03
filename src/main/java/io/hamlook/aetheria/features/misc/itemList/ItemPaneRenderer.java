@@ -1,11 +1,20 @@
 package io.hamlook.aetheria.features.misc.itemList;
 
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiInitEvent;
+import io.hamlook.aetheria.events.ASMKeyEvent;
+import io.hamlook.aetheria.events.ASMMouseEvent;
 import io.hamlook.aetheria.features.misc.SearchBar;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -14,11 +23,7 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,10 +31,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-import io.hamlook.aetheria.events.ASMMouseEvent;
-import io.hamlook.aetheria.events.ASMKeyEvent;
-import io.hamlook.aetheria.events.ASMGuiDrawEvent;
-import io.hamlook.aetheria.events.ASMGuiInitEvent;
 
 @RegisterEvents
 public class ItemPaneRenderer {
@@ -144,7 +145,7 @@ private boolean shouldntShow() {
         if (ATHRConfig.feature == null) return true;
         if (!ATHRConfig.feature.misc.itemList.enabled) return true;
         if (StorageManager.isOverlayActive()) return true;
-        if (ATHRConfig.feature.misc.itemList.inventoryOnly && !(Minecraft.getMinecraft().currentScreen instanceof GuiInventory)) return true;
+        if (ATHRConfig.feature.misc.itemList.inventoryOnly && !(MinecraftCompat.getMinecraft().currentScreen instanceof GuiInventory)) return true;
         if (ATHRConfig.feature.misc.itemList.itemListSOnly && isGlobalSearch()) return !SearchBar.isSendToItemList();
         return !ItemRegistry.isLoaded || ItemRegistry.familyRegistry.isEmpty();
     }
@@ -177,12 +178,12 @@ private boolean shouldntShow() {
 
     private void renderItemInSlot(ItemStack stack, int sx, int sy) {
         if (stack == null) return;
-        GlStateManager.pushMatrix();
+        GlStateManagerCompat.pushMatrix();
         float itemScale = (S() - PAD) / 16.0f;
-        GlStateManager.translate(sx + PAD / 2f, sy + PAD / 2f, 0);
-        GlStateManager.scale(itemScale, itemScale, 1.0f);
+        GlStateManagerCompat.translate(sx + PAD / 2f, sy + PAD / 2f, 0);
+        GlStateManagerCompat.scale(itemScale, itemScale, 1.0f);
         ItemRenderUtils.drawItemStack(stack, 0, 0);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     @HandleEvent
@@ -192,7 +193,7 @@ private boolean shouldntShow() {
     }
 
     public void drawPane(int screenW, int screenH, int mouseX, int mouseY) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
         if (shouldntShow()) return;
         if (ItemRegistry.isLoaded && !wasLoaded) {
@@ -292,7 +293,7 @@ private boolean shouldntShow() {
             int col = i % COLUMNS, row = i / COLUMNS;
             int sx = gridX + col * S(), sy = gridY + row * S();
 
-            GlStateManager.color(1f, 1f, 1f, 1f);
+            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
             NineSliceUtils.draw(Resources.storageSlot(1), sx, sy, S(), S(), 6, 18);
 
             if (rep != null) renderItemInSlot(rep.getStack(), sx, sy);
@@ -304,10 +305,10 @@ private boolean shouldntShow() {
 
             boolean hovered = isInBounds(mouseX, mouseY, sx, sy, S(), S());
             if (hovered && !overDropdown) {
-                GlStateManager.enableBlend();
-                GlStateManager.disableDepth();
+                GlStateManagerCompat.enableBlend();
+                GlStateManagerCompat.disableDepth();
                 Gui.drawRect(sx, sy, sx + S(), sy + S(), 0x80FFFFFF);
-                GlStateManager.enableDepth();
+                GlStateManagerCompat.enableDepth();
 
                 if (fam.hasDropdown()) {
                     nowHovered = fam.familyId;
@@ -371,15 +372,15 @@ private boolean shouldntShow() {
         if (dropDx < paneX) dropDx = paneX + PAD;
         if (dropDy + dropDh > paneY + paneH) dropDy = hoverSlotY - dropDh;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(0, 0, 300);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(0, 0, 300);
 
         Gui.drawRect(dropDx - 1, dropDy - 1, dropDx + dropDw + 1, dropDy, 0xFFFFAA00);
         Gui.drawRect(dropDx - 1, dropDy + dropDh, dropDx + dropDw + 1, dropDy + dropDh + 1, 0xFFFFAA00);
         Gui.drawRect(dropDx - 1, dropDy, dropDx, dropDy + dropDh, 0xFFFFAA00);
         Gui.drawRect(dropDx + dropDw, dropDy, dropDx + dropDw + 1, dropDy + dropDh, 0xFFFFAA00);
 
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), dropDx, dropDy, dropDw, dropDh, 6, 18);
 
         SkyblockItem hovered = null;
@@ -395,15 +396,15 @@ private boolean shouldntShow() {
 
             boolean h = isInBounds(mouseX, mouseY, sx, sy, S(), S());
             if (h) {
-                GlStateManager.enableBlend();
-                GlStateManager.disableDepth();
+                GlStateManagerCompat.enableBlend();
+                GlStateManagerCompat.disableDepth();
                 Gui.drawRect(sx, sy, sx + S(), sy + S(), 0x80FFFFFF);
-                GlStateManager.enableDepth();
+                GlStateManagerCompat.enableDepth();
                 hovered = mem;
             }
         }
 
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
         return hovered;
     }
 
@@ -424,7 +425,7 @@ private boolean shouldntShow() {
     public void handleMouseInput(int screenW, int screenH, int mouseX, int mouseY, ASMMouseEvent event) {
         if (shouldntShow()) return;
 
-        int dw = Mouse.getEventDWheel();
+        int dw = MouseCompat.getEventDWheel();
         if (dw != 0) {
             computeGeometry(screenW, screenH);
             if (isInBounds(mouseX, mouseY, paneX, paneY, paneW, paneH)) {
@@ -434,11 +435,11 @@ private boolean shouldntShow() {
             return;
         }
 
-        if (!Mouse.getEventButtonState()) return;
-        if (Mouse.getEventButton() != 0 && Mouse.getEventButton() != 1) return;
+        if (!MouseCompat.getEventButtonState()) return;
+        if (MouseCompat.getEventButton() != 0 && MouseCompat.getEventButton() != 1) return;
 
         computeGeometry(screenW, screenH);
-        handleClick(mouseX, mouseY, Mouse.getEventButton(), event);
+        handleClick(mouseX, mouseY, MouseCompat.getEventButton(), event);
     }
 
     public void handleClick(int mouseX, int mouseY, int btn, ASMMouseEvent event) {
@@ -446,7 +447,7 @@ private boolean shouldntShow() {
 
         if (mouseX < paneX || mouseX >= paneX + paneW || mouseY < paneY || mouseY >= paneY + paneH) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
         int navY = paneY + PAD, navBtnW = 40;
         int prevX = paneX + PAD, nextX = paneX + paneW - PAD - navBtnW;
@@ -524,8 +525,8 @@ private boolean shouldntShow() {
     }
 
     private boolean processKeyInput() {
-        if (!isGlobalSearch() && searchField != null && searchField.isFocused() && Keyboard.getEventKeyState()) {
-            if (SearchBar.handleStorageKeyTyped(searchField, Keyboard.getEventCharacter(), Keyboard.getEventKey(), localSearchText)) {
+        if (!isGlobalSearch() && searchField != null && searchField.isFocused() && KeyboardCompat.getEventKeyState()) {
+            if (SearchBar.handleStorageKeyTyped(searchField, KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey(), localSearchText)) {
                 updateSearch(localSearchText[0]);
                 return true;
             }

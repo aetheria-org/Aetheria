@@ -5,11 +5,12 @@ package io.hamlook.aetheria.core.moulconfig.gui;
 
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.utils.KeybindHelper;
-import net.minecraft.client.Minecraft;
 import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import java.util.function.Consumer;
@@ -39,7 +40,7 @@ public class GuiElementSlider extends GuiElement {
 
     @Override
     public void render() {
-        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int mouseX = KeybindHelper.getMouseCoords(sr)[0];
 
         float v = value;
@@ -50,40 +51,40 @@ public class GuiElementSlider extends GuiElement {
         float sliderAmt = Math.max(0, Math.min(1, (v - minValue) / (maxValue - minValue)));
         int   sliderAmtI = (int) (width * sliderAmt);
 
-        GlStateManager.color(1, 1, 1, 1);
+        GlStateManagerCompat.color(1, 1, 1, 1);
 
-        Minecraft.getMinecraft().getTextureManager().bindTexture(Resources.slider_on_cap);
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.slider_on_cap);
         Utils.drawTexturedRect(x, y, 4, HEIGHT, GL11.GL_NEAREST);
 
-        Minecraft.getMinecraft().getTextureManager().bindTexture(Resources.slider_off_cap);
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.slider_off_cap);
         Utils.drawTexturedRect(x + width - 4, y, 4, HEIGHT, GL11.GL_NEAREST);
 
         if (sliderAmtI > 5) {
-            Minecraft.getMinecraft().getTextureManager().bindTexture(Resources.slider_on_segment);
+            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.slider_on_segment);
             Utils.drawTexturedRect(x + 4, y, sliderAmtI - 4, HEIGHT, GL11.GL_NEAREST);
         }
         if (sliderAmtI < width - 5) {
-            Minecraft.getMinecraft().getTextureManager().bindTexture(Resources.slider_off_segment);
+            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.slider_off_segment);
             Utils.drawTexturedRect(x + sliderAmtI, y, width - 4 - sliderAmtI, HEIGHT, GL11.GL_NEAREST);
         }
 
         for (int i = 1; i < 4; i++) {
             int notchX = x + width * i / 4 - 1;
-            Minecraft.getMinecraft().getTextureManager().bindTexture(
+            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(
                     notchX > x + sliderAmtI ? Resources.slider_off_notch : Resources.slider_on_notch);
             Utils.drawTexturedRect(notchX, y + (HEIGHT - 4f) / 2, 2, 4, GL11.GL_NEAREST);
         }
 
-        Minecraft.getMinecraft().getTextureManager().bindTexture(Resources.slider_button_new);
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.slider_button_new);
         Utils.drawTexturedRect(x + sliderAmtI - 4, y, 8, HEIGHT, GL11.GL_NEAREST);
     }
 
     @Override
     public boolean mouseInput(int mouseX, int mouseY) {
-        if (!Mouse.isButtonDown(0)) clicked = false;
+        if (!MouseCompat.isButtonDown(0)) clicked = false;
 
-        if (Mouse.getEventButton() == 0) {
-            clicked = Mouse.getEventButtonState()
+        if (MouseCompat.getEventButton() == 0) {
+            clicked = MouseCompat.getEventButtonState()
                     && mouseX > x && mouseX < x + width
                     && mouseY > y && mouseY < y + HEIGHT;
             if (clicked) {
@@ -93,7 +94,7 @@ public class GuiElementSlider extends GuiElement {
             }
         }
 
-        if (!Mouse.getEventButtonState() && Mouse.getEventButton() == -1 && clicked) {
+        if (!MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == -1 && clicked) {
             value = snap((mouseX - x) * (maxValue - minValue) / width + minValue);
             setCallback.accept(value);
             return true;

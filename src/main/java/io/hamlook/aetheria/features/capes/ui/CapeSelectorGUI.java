@@ -1,47 +1,42 @@
 package io.hamlook.aetheria.features.capes.ui;
 
+import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.capes.Cape;
 import io.hamlook.aetheria.features.capes.CapeManager;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.util.ResourceLocation;
-import org.lwjgl.input.Mouse;
-import org.lwjgl.opengl.GL11;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.util.ResourceLocation;
+import org.lwjgl.opengl.GL11;
+
 import java.awt.*;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.hamlook.aetheria.Resources;
-
-public class CapeSelectorGUI extends GuiScreen {
-
-    public List<CapeDisplay> capes = new ArrayList<>();
+public class CapeSelectorGUI extends AetheriaBaseScreen {
 
     private static final ResourceLocation CONTAINER_BG = Resources.CAPES_UI;
-
+    private static final float SCROLL_FRICTION = 0.85f;
+    private static final int DRAG_THRESHOLD = 4;
+    public List<CapeDisplay> capes = new ArrayList<>();
     private float scrollOffset = 0f;
     private float scrollVelocity = 0f;
-    private static final float SCROLL_FRICTION = 0.85f;
-
     private boolean isDraggingBg = false;
     private int bgDragLastX = 0;
-
     private int mousePressX = 0;
     private int mousePressY = 0;
-    private static final int DRAG_THRESHOLD = 4;
 
     @Override
-    public void initGui() {
-        super.initGui();
+    protected void onInitGui() {
         capes.clear();
         CapeManager.capes.values().forEach(val -> capes.add(new CapeDisplay(val)));
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    protected void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         scrollOffset += scrollVelocity;
         scrollVelocity *= SCROLL_FRICTION;
         clampScroll();
@@ -60,15 +55,10 @@ public class CapeSelectorGUI extends GuiScreen {
         String localPlayer = mc.thePlayer != null ? mc.thePlayer.getGameProfile().getName() : "";
         Cape equipped = CapeManager.getCapeForPlayer(localPlayer);
         String equippedId = equipped != null ? equipped.id : null;
-        ScaledResolution sr = new ScaledResolution(mc);
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int scaleFactor = sr.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(
-                boxX * scaleFactor,
-                (sr.getScaledHeight() - (boxY + boxH)) * scaleFactor,
-                boxW * scaleFactor,
-                boxH * scaleFactor
-        );
+        GL11.glScissor(boxX * scaleFactor, (sr.getScaledHeight() - (boxY + boxH)) * scaleFactor, boxW * scaleFactor, boxH * scaleFactor);
 
         for (CapeDisplay card : capes) {
             if (cardX + card.width < boxX || cardX > boxX + boxW) {
@@ -84,27 +74,19 @@ public class CapeSelectorGUI extends GuiScreen {
 
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
         String title = "Select Cape";
-        mc.fontRendererObj.drawString(
-                title,
-                (int) (this.width / 2f - mc.fontRendererObj.getStringWidth(title) / 2f),
-                boxY - 14,new Color(255,255,255,255).getRGB()
-        );
-
-        super.drawScreen(mouseX, mouseY, partialTicks);
+        mc.fontRendererObj.drawString(title, (int) (this.width / 2f - mc.fontRendererObj.getStringWidth(title) / 2f), boxY - 14, new Color(255, 255, 255, 255).getRGB());
     }
 
     @Override
-    public void handleMouseInput() throws IOException {
-        super.handleMouseInput();
-
-        int wheel = Mouse.getEventDWheel();
+    protected void onHandleMouseInput() {
+        int wheel = MouseCompat.getEventDWheel();
         if (wheel != 0) {
             scrollVelocity += wheel > 0 ? 20f : -20f;
         }
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int button) throws IOException {
+    protected void onMouseClicked(int mouseX, int mouseY, int button) {
         if (button == 0) {
             mousePressX = mouseX;
             mousePressY = mouseY;
@@ -127,11 +109,10 @@ public class CapeSelectorGUI extends GuiScreen {
                 scrollVelocity = 0;
             }
         }
-        super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
-    protected void mouseReleased(int mouseX, int mouseY, int state) {
+    protected void onMouseReleased(int mouseX, int mouseY, int state) {
         isDraggingBg = false;
 
         int boxW = (int) ResolutionUtils.getXStatic(1200);
@@ -156,11 +137,10 @@ public class CapeSelectorGUI extends GuiScreen {
             }
         }
 
-        super.mouseReleased(mouseX, mouseY, state);
     }
 
     @Override
-    protected void mouseClickMove(int mouseX, int mouseY, int button, long timeSinceLastClick) {
+    protected void onMouseClickMove(int mouseX, int mouseY, int button, long timeSinceLastClick) {
         if (button == 0) {
             if (isDraggingBg) {
                 int dx = mouseX - bgDragLastX;
@@ -169,7 +149,6 @@ public class CapeSelectorGUI extends GuiScreen {
                 bgDragLastX = mouseX;
             }
         }
-        super.mouseClickMove(mouseX, mouseY, button, timeSinceLastClick);
     }
 
     private void clampScroll() {

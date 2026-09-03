@@ -1,18 +1,23 @@
 package io.hamlook.aetheria.features.farming.visitors;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.VisitorsConfig;
-import io.hamlook.aetheria.events.DebugReportEvent;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.features.price.PriceMap;
 import io.hamlook.aetheria.init.RegisterEvents;
-import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.ColorUtils;
-import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.InventoryCompatKt;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
@@ -23,23 +28,9 @@ import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntitySign;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.api.event.HandleEvent;
-
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import io.hamlook.aetheria.events.ASMTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
-import io.hamlook.aetheria.events.ASMServerJoinEvent;
-import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
+
+import java.util.*;
 
 @RegisterEvents
 public final class VisitorShoppingList {
@@ -109,8 +100,8 @@ public final class VisitorShoppingList {
     public void onBackgroundDrawn(ASMGuiBackgroundDrawEvent event) {
         if (!(event.gui instanceof GuiContainer)) return;
         GuiContainer gui = (GuiContainer) event.gui;
-        if (!(gui.inventorySlots instanceof ContainerChest)) return;
-        ContainerChest chest = (ContainerChest) gui.inventorySlots;
+        if (!(InventoryCompat.getContainer(gui) instanceof ContainerChest)) return;
+        ContainerChest chest = (ContainerChest) InventoryCompat.getContainer(gui);
         updateChestSignature(chest);
         if (lastParsedScreen == event.gui) return;
         attemptParse(chest, event.gui);
@@ -135,7 +126,7 @@ public final class VisitorShoppingList {
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
         // Delayed /bzs dispatch after closing the current menu
         if (pendingBzsCommand != null) {
@@ -299,8 +290,8 @@ public final class VisitorShoppingList {
         String name = stripped(stack);
         boolean accept = "Accept Offer".equals(name);
         if (!accept && !"Refuse Offer".equals(name)) return;
-        if (!(event.getGui().inventorySlots instanceof ContainerChest)) return;
-        ContainerChest chest = (ContainerChest) event.getGui().inventorySlots;
+        if (!(InventoryCompat.getContainer(event.getGui()) instanceof ContainerChest)) return;
+        ContainerChest chest = (ContainerChest) InventoryCompat.getContainer(event.getGui());
         String visitor = ContainerUtils.getTitle(chest);
         if (visitor == null || visitor.isEmpty()) return;
         if (accept && !canAcceptOffer(stack)) return;
@@ -608,10 +599,10 @@ public final class VisitorShoppingList {
         long now = System.currentTimeMillis();
         if (now - haveCountsAt < HAVE_CACHE_MS) return haveCounts;
         Map<String, Integer> counts = new HashMap<>();
-        EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayerSP player = MinecraftCompat.getMinecraft().thePlayer;
         if (player != null && player.inventory != null) {
             for (ItemStack stack : player.inventory.mainInventory) {
-                if (stack == null) continue;
+                if (!InventoryCompatKt.isStackNotEmpty(stack)) continue;
                 String id = ItemUtils.getEffectiveItemId(stack);
                 if (id == null) continue;
                 counts.merge(id, stack.stackSize, Integer::sum);
@@ -829,7 +820,7 @@ public final class VisitorShoppingList {
             }
         }
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.currentScreen instanceof GuiEditSign) {
             writeIntoSign(mc, missing);
             return;
@@ -901,11 +892,11 @@ public final class VisitorShoppingList {
 
     /** Empty slots across hotbar + main inventory (armor is a separate array). */
     public static int countEmptyMainInventorySlots() {
-        EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayerSP player = MinecraftCompat.getMinecraft().thePlayer;
         if (player == null || player.inventory == null) return 0;
         int empty = 0;
         for (ItemStack stack : player.inventory.mainInventory) {
-            if (stack == null || stack.stackSize <= 0) empty++;
+            if (!InventoryCompatKt.isStackNotEmpty(stack) || stack.stackSize <= 0) empty++;
         }
         return empty;
     }
@@ -918,8 +909,8 @@ public final class VisitorShoppingList {
     private static void writeIntoSign(Minecraft mc, int amount) {
         TileEntitySign sign = ((io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor) mc.currentScreen).ATHR$getTileSign();
         if (sign == null || sign.signText == null || sign.signText.length == 0) return;
-        if (!sign.signText[0].getUnformattedText().isEmpty()) return;
-        sign.signText[0] = new net.minecraft.util.ChatComponentText(String.valueOf(amount));
+        if (TextCompat.getUnformattedText(sign.signText[0]).isEmpty()) return;
+        sign.signText[0] = TextCompat.createText(String.valueOf(amount));
     }
 
     public static boolean isBazaarAmountSign(TileEntitySign sign) {
@@ -931,7 +922,7 @@ public final class VisitorShoppingList {
     }
 
     private static String text(net.minecraft.util.IChatComponent component) {
-        return component == null ? "" : ColorUtils.stripColor(component.getUnformattedText()).trim();
+        return component == null ? "" : ColorUtils.stripColor(TextCompat.getUnformattedText(component)).trim();
     }
 
     public static boolean hiddenAt(int mode) {

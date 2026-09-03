@@ -2,21 +2,21 @@ package io.hamlook.aetheria.features.dungeons.rooms;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.events.ActionBarUpdateEvent;
-import io.hamlook.aetheria.events.BlockBreakEvent;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.features.waypoints.WaypointRenderer;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import io.netty.util.internal.ConcurrentSet;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.World;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.item.EntityTNTPrimed;
 import net.minecraft.entity.passive.EntityBat;
 import net.minecraft.init.Blocks;
@@ -25,25 +25,20 @@ import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
-import io.hamlook.aetheria.events.ASMPlayerInteractEvent;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraft.world.World;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
-import java.awt.Color;
+
+import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.utils.chat.ChatUtils;
-import java.util.Map;
-import java.util.HashMap;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMChatEvent;
-import io.hamlook.aetheria.events.ASMEntityJoinWorldEvent;
-import io.hamlook.aetheria.events.ASMLivingDeathEvent;
 
 @RegisterEvents
 public class SecretRenderUtils {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static final ConcurrentSet<SecretWaypoint> currentSecrets = new ConcurrentSet<>();
     private static int periodicTickCounter = 0;
@@ -162,7 +157,7 @@ public class SecretRenderUtils {
             GL11.glPushMatrix();
             GL11.glTranslated(-vx, -vy, -vz);
             setDepth(!throughWalls);
-            GlStateManager.disableTexture2D();
+            GlStateManagerCompat.disableTexture2D();
             GL11.glLineWidth(3f);
             for (SecretWaypoint sw : currentSecrets) {
                 if (sw.collected) continue;
@@ -209,33 +204,33 @@ public class SecretRenderUtils {
         GL11.glDisable(GL11.GL_BLEND);
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glLineWidth(1f);
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        GlStateManager.disableTexture2D();
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableLighting();
-        GlStateManager.enableLighting();
-        GlStateManager.enableBlend();
-        GlStateManager.disableBlend();
-        GlStateManager.disableCull();
-        GlStateManager.enableCull();
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.enableLighting();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.disableCull();
+        GlStateManagerCompat.enableCull();
     }
 
     private static void resetGLState() {
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableLighting();
-        GlStateManager.enableDepth();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.enableLighting();
+        GlStateManagerCompat.enableDepth();
         GL11.glDepthMask(true);
-        GlStateManager.disableBlend();
-        GlStateManager.enableCull();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.enableCull();
     }
 
     private static void setDepth(boolean enable) {
         if (enable) {
             GL11.glDepthMask(true);
-            GlStateManager.enableDepth();
+            GlStateManagerCompat.enableDepth();
         } else {
             GL11.glDepthMask(false);
-            GlStateManager.disableDepth();
+            GlStateManagerCompat.disableDepth();
         }
     }
 
@@ -305,12 +300,12 @@ public class SecretRenderUtils {
                 if (sw.collected) continue;
                 sw.ticksExisted++;
                 if (!sw.everSeen) {
-                    if (mc.theWorld.getBlockState(sw.pos).getBlock() != Blocks.air) {
+                    if (!BlockCompat.isAir(mc.theWorld.getBlockState(sw.pos).getBlock())) {
                         sw.everSeen = true;
                     }
                 }
                 if("chest".equals(sw.category)){
-                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && mc.theWorld.getBlockState(sw.pos).getBlock() == Blocks.air) {
+                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && BlockCompat.isAir(mc.theWorld.getBlockState(sw.pos).getBlock())) {
                         sw.collected = true;
                     }
                     TileEntity tile = mc.theWorld.getTileEntity(sw.pos);
@@ -322,7 +317,7 @@ public class SecretRenderUtils {
 
                 }
                 if ("wither".equals(sw.category) || sw.secretName.contains("Essence")) {
-                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && mc.theWorld.getBlockState(sw.pos).getBlock() == Blocks.air) {
+                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && BlockCompat.isAir(mc.theWorld.getBlockState(sw.pos).getBlock())) {
                         sw.collected = true;
                     }
                 } else if ("item".equals(sw.category)) {
@@ -331,7 +326,7 @@ public class SecretRenderUtils {
                         sw.collected = true;
                     }
                 } else if ("superboom".equals(sw.category)) {
-                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && mc.theWorld.getBlockState(sw.pos).getBlock() == Blocks.air) {
+                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && BlockCompat.isAir(mc.theWorld.getBlockState(sw.pos).getBlock())) {
                         sw.collected = true;
                     }
                 }
@@ -385,7 +380,7 @@ public class SecretRenderUtils {
         if (event.pos == null || currentSecrets.isEmpty()) return;
 
         BlockPos clickedPos = event.pos;
-        World world = Minecraft.getMinecraft().theWorld;
+        World world = MinecraftCompat.getMinecraft().theWorld;
         if (world == null) return;
 
         double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.interactRemovalRange;
@@ -403,7 +398,7 @@ public class SecretRenderUtils {
                         chestPendingRestore.put(sw, 2);
                     }
             } else if ("lever".equals(sw.category)) {
-                if (world.getBlockState(clickedPos).getBlock() == Blocks.lever) {
+                if (BlockCompat.isLever(world.getBlockState(clickedPos).getBlock())) {
                     sw.collected = true;
                 }
             }

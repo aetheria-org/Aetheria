@@ -1,9 +1,11 @@
 package io.hamlook.aetheria.utils.chat;
 
+import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
 
@@ -12,7 +14,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMChatEvent;
 
 
 public class ChatUtils {
@@ -36,11 +37,11 @@ public class ChatUtils {
     }
 
     public static String clean(ASMChatEvent event) {
-        return StringUtils.stripControlCodes(event.message.getFormattedText()).trim();
+        return StringUtils.stripControlCodes(TextCompat.getFormattedText(event.message)).trim();
     }
 
     public static boolean isChatOpen() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         return mc != null && mc.currentScreen instanceof GuiChat;
     }
 
@@ -145,41 +146,41 @@ public class ChatUtils {
     }
 
     public static IChatComponent ensureSiblings(IChatComponent component) {
-        if (component.getSiblings().isEmpty()) {
-            ChatComponentText root = new ChatComponentText("");
-            ChatComponentText child = new ChatComponentText(component.getUnformattedTextForChat());
-            child.setChatStyle(component.getChatStyle().createDeepCopy());
-            root.appendSibling(child);
+        if (TextCompat.getSiblings(component).isEmpty()) {
+            IChatComponent root = TextCompat.createText("");
+            IChatComponent child = TextCompat.createText(component.getUnformattedTextForChat());
+            child.setChatStyle(TextCompat.createDeepCopy(TextCompat.getChatStyle(component)));
+            TextCompat.appendSibling(root, child);
             return root;
         }
         return component;
     }
 
     public static void sendMessage(String message) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer != null) {
-            mc.thePlayer.addChatMessage(new ChatComponentText(message));
+            mc.thePlayer.addChatMessage(TextCompat.createText(message));
         }
     }
 
     public static void sendMultilineMessage(String message) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer != null) {
             for (String line : message.split("\n")) {
-                mc.thePlayer.addChatMessage(new ChatComponentText(line));
+                mc.thePlayer.addChatMessage(TextCompat.createText(line));
             }
         }
     }
 
     public static void sendChatCommand(String message) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer != null) {
             mc.thePlayer.sendChatMessage(message);
         }
     }
 
     public static void sendPartyMessage(String message, long delayMs) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null) return;
 
         PARTY_MSG_EXECUTOR.schedule(() -> {

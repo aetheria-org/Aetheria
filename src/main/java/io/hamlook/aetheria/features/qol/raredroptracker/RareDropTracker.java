@@ -1,22 +1,23 @@
 package io.hamlook.aetheria.features.qol.raredroptracker;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.qol.RareDropTrackerConfig;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.features.misc.itemlog.ItemPickupLog;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.HashSet;
 import java.util.Set;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 /**
  * Rare Drop Tracker.
@@ -71,7 +72,7 @@ public class RareDropTracker {
         }
 
         if (config.titleAlert) {
-            Minecraft mc = Minecraft.getMinecraft();
+            Minecraft mc = MinecraftCompat.getMinecraft();
             if (mc.ingameGUI != null) {
                 mc.ingameGUI.displayTitle("§d§lRARE DROP!", name, 5, 40, 10);
             }

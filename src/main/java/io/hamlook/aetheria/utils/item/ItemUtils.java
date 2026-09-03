@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.utils.item;
 
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -19,21 +20,39 @@ public class ItemUtils {
     private ItemUtils() {
     }
 
+
+
+    public static @Nullable NBTTagCompound getExtraAttributes(@Nullable ItemStack item) {
+        if (item == null) return null;
+        return NbtCompat.getExtraAttributes(item);
+    }
+
+    public static @Nullable NBTTagCompound getDisplayCompound(@Nullable ItemStack item) {
+        if (item == null) return null;
+        return NbtCompat.getDisplayCompound(item);
+    }
+
+    public static @Nullable NBTTagCompound getEnchantments(@Nullable ItemStack item) {
+        NBTTagCompound extra = getExtraAttributes(item);
+        if (extra == null || !NbtCompat.hasKey(extra, "enchantments", NbtCompat.TAG_COMPOUND)) return null;
+        return extra.getCompoundTag("enchantments");
+    }
+
+
+
     public static @NotNull List<String> getLoreLines(@Nullable ItemStack item) {
-        if (item == null || !item.hasTagCompound()) return Collections.emptyList();
-        NBTTagCompound display = item.getTagCompound().getCompoundTag("display");
-        if (display == null || !display.hasKey("Lore")) return Collections.emptyList();
-        NBTTagList lore = display.getTagList("Lore", 8);
+        NBTTagCompound display = getDisplayCompound(item);
+        if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return Collections.emptyList();
+        NBTTagList lore = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
         List<String> lines = new ArrayList<>(lore.tagCount());
         for (int i = 0; i < lore.tagCount(); i++) lines.add(lore.getStringTagAt(i));
         return lines;
     }
 
     public static @NotNull List<String> getLoreLinesWithoutColor(@Nullable ItemStack item) {
-        if (item == null || !item.hasTagCompound()) return Collections.emptyList();
-        NBTTagCompound display = item.getTagCompound().getCompoundTag("display");
-        if (display == null || !display.hasKey("Lore")) return Collections.emptyList();
-        NBTTagList lore = display.getTagList("Lore", 8);
+        NBTTagCompound display = getDisplayCompound(item);
+        if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return Collections.emptyList();
+        NBTTagList lore = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
         List<String> lines = new ArrayList<>(lore.tagCount());
         for (int i = 0; i < lore.tagCount(); i++) lines.add(ColorUtils.stripColor(lore.getStringTagAt(i)));
         return lines;
@@ -55,18 +74,21 @@ public class ItemUtils {
         return null;
     }
 
+
+
     public static String getInternalName(@Nullable ItemStack item) {
-        if (item == null || !item.hasTagCompound()) return "";
-        NBTTagCompound extra = item.getTagCompound().getCompoundTag("ExtraAttributes");
-        return extra.hasKey("id") ? extra.getString("id") : "";
+        NBTTagCompound extra = getExtraAttributes(item);
+        return extra != null && extra.hasKey("id") ? extra.getString("id") : "";
     }
 
+
     public static String getSkullTexture(@Nullable ItemStack item) {
-        if (item == null || !item.hasTagCompound()) return "";
-        if (!item.getTagCompound().hasKey("SkullOwner")) return "";
-        NBTTagCompound skullOwner = item.getTagCompound().getCompoundTag("SkullOwner");
+        NBTTagCompound tag = NbtCompat.getTagCompound(item);
+        if (tag == null) return "";
+        if (!tag.hasKey("SkullOwner")) return "";
+        NBTTagCompound skullOwner = tag.getCompoundTag("SkullOwner");
         if (!skullOwner.hasKey("Properties")) return "";
-        NBTTagList textures = skullOwner.getCompoundTag("Properties").getTagList("textures", 10);
+        NBTTagList textures = skullOwner.getCompoundTag("Properties").getTagList("textures", NbtCompat.TAG_COMPOUND);
         if (textures.tagCount() == 0) return "";
         NBTTagCompound entry = textures.getCompoundTagAt(0);
         return entry.hasKey("Value") ? entry.getString("Value") : "";
@@ -91,8 +113,8 @@ public class ItemUtils {
 
 
     public static String getEffectiveItemId(@Nullable ItemStack item) {
-        if (item == null || !item.hasTagCompound()) return "";
-        NBTTagCompound extra = item.getTagCompound().getCompoundTag("ExtraAttributes");
+        NBTTagCompound extra = getExtraAttributes(item);
+        if (extra == null) return "";
         String baseId = extra.hasKey("id") ? extra.getString("id") : "";
         if ("PET".equals(baseId)) {
             NBTTagCompound petInfo = extra.getCompoundTag("petInfo");
@@ -105,7 +127,7 @@ public class ItemUtils {
         }
         if (!"ENCHANTED_BOOK".equals(baseId)){
             if(!"POTION".equals(baseId)) return baseId;
-            NBTTagList potionEffects = extra.getTagList("effects", 10);
+            NBTTagList potionEffects = extra.getTagList("effects", NbtCompat.TAG_COMPOUND);
 
             StringBuilder id = new StringBuilder("POTION");
             for (int i = 0; i < potionEffects.tagCount(); i++) {
@@ -141,8 +163,8 @@ public class ItemUtils {
     }
 
     public static boolean isSkyblockItem(@Nullable ItemStack item) {
-        if (item == null || !item.hasTagCompound()) return false;
-        return item.getTagCompound().getCompoundTag("ExtraAttributes").hasKey("id");
+        NBTTagCompound extra = getExtraAttributes(item);
+        return extra != null && extra.hasKey("id");
     }
 
     public static @NotNull NBTTagCompound getOrCreateTag(@NotNull ItemStack item) {
@@ -154,8 +176,7 @@ public class ItemUtils {
 
     @Nullable
     public static String getItemUuid(@Nullable ItemStack item) {
-        if (item == null || !item.hasTagCompound()) return null;
-        NBTTagCompound extra = item.getTagCompound().getCompoundTag("ExtraAttributes");
-        return extra.hasKey("uuid") ? extra.getString("uuid") : null;
+        NBTTagCompound extra = getExtraAttributes(item);
+        return extra != null && extra.hasKey("uuid") ? extra.getString("uuid") : null;
     }
 }

@@ -1,7 +1,7 @@
 package io.hamlook.aetheria.mixins.gui;
 
 import io.hamlook.aetheria.OptionsMenu;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiScreen;
@@ -37,7 +37,7 @@ public abstract class MixinGuiIngameMenu extends GuiScreen {
     @Inject(method = "actionPerformed", at = @At("HEAD"), cancellable = true)
     private void ATHR$actionPerformed(GuiButton button, CallbackInfo ci) {
         if (button.id == BTN_ATHR) {
-            Minecraft.getMinecraft().displayGuiScreen(new OptionsMenu());
+            MinecraftCompat.getMinecraft().displayGuiScreen(new OptionsMenu());
             ci.cancel();
         }
     }

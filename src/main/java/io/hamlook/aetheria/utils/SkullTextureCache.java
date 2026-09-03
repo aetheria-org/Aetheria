@@ -3,7 +3,7 @@ package io.hamlook.aetheria.utils;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.mojang.authlib.properties.Property;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.util.ResourceLocation;
 
 import java.util.HashMap;
@@ -24,7 +24,7 @@ public class SkullTextureCache {
         GameProfile profile = new GameProfile(UUID.randomUUID(), "");
         profile.getProperties().put("textures", new Property("textures", textureValue));
 
-        Minecraft.getMinecraft().getSkinManager().loadProfileTextures(profile, (type, location, texture) -> {
+        MinecraftCompat.getMinecraft().getSkinManager().loadProfileTextures(profile, (type, location, texture) -> {
             if (type == MinecraftProfileTexture.Type.SKIN) {
                 cache.put(textureValue, location);
             }

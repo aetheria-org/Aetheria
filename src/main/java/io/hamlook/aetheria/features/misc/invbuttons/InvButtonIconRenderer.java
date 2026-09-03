@@ -3,9 +3,9 @@ package io.hamlook.aetheria.features.misc.invbuttons;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -29,8 +29,8 @@ public class InvButtonIconRenderer {
         if (icon.startsWith("extra:")) {
             String name = icon.substring("extra:".length());
             ResourceLocation loc = new ResourceLocation("aetheria", "invbuttons/extraicons/" + name + ".png");
-            Minecraft.getMinecraft().getTextureManager().bindTexture(loc);
-            GlStateManager.color(1, 1, 1, 1);
+            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(loc);
+            GlStateManagerCompat.color(1, 1, 1, 1);
             Utils.drawTexturedRect(x, y, 16, 16);
         } else {
             ItemStack stack = getStack(icon);
@@ -38,12 +38,12 @@ public class InvButtonIconRenderer {
 
             float scale = icon.startsWith("skull:") ? 1.2f : 1f;
 
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(x + 8, y + 8, 0);
-            GlStateManager.scale(scale, scale, 1);
-            GlStateManager.translate(-8, -8, 0);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(x + 8, y + 8, 0);
+            GlStateManagerCompat.scale(scale, scale, 1);
+            GlStateManagerCompat.translate(-8, -8, 0);
             drawItemStack(stack, 0, 0);
-            GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
         }
     }
 

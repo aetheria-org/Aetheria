@@ -1,21 +1,20 @@
 package io.hamlook.aetheria.features.qol
 
+import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour
-import io.hamlook.aetheria.init.RegisterEvents
-import io.hamlook.aetheria.utils.chat.ChatUtils
-import io.hamlook.aetheria.utils.data.SkyblockData
-import io.hamlook.aetheria.utils.render.RenderUtils
-import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.inventory.GuiInventory
-import net.minecraft.client.renderer.GlStateManager
-import net.minecraft.inventory.Container
-import io.hamlook.aetheria.api.event.HandleEvent
-import org.lwjgl.input.Keyboard
-import io.hamlook.aetheria.events.ASMMouseEvent
-import io.hamlook.aetheria.events.ASMKeyEvent
 import io.hamlook.aetheria.events.ASMGuiDrawEvent
 import io.hamlook.aetheria.events.ASMGuiInitPreEvent
+import io.hamlook.aetheria.events.ASMKeyEvent
+import io.hamlook.aetheria.events.ASMMouseEvent
+import io.hamlook.aetheria.init.RegisterEvents
+import io.hamlook.aetheria.utils.chat.ChatUtils
+import io.hamlook.aetheria.utils.compat.*
+import io.hamlook.aetheria.utils.data.SkyblockData
+import io.hamlook.aetheria.utils.render.RenderUtils
+import net.minecraft.client.gui.inventory.GuiInventory
+import net.minecraft.inventory.Container
+import org.lwjgl.input.Keyboard
 
 @RegisterEvents
 class SlotBinds {
@@ -34,7 +33,8 @@ class SlotBinds {
     private fun Int.isHotbar() = this in 36..44
     private fun Int.isArmor() = this in 5..8
     private fun Int.isValidSlot() = this in 5 until 45
-    private fun isShiftDown() = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)
+    private fun isShiftDown() =
+        KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) || KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT)
 
     private fun canBind(a: Int, b: Int) = !(a.isArmor() && !b.isHotbar()) && !(b.isArmor() && !a.isHotbar())
 
@@ -60,15 +60,15 @@ class SlotBinds {
     fun onMouseClick(event: ASMMouseEvent) {
         if (!isEnabled() || !isShiftDown()) return
         val gui = event.gui as? GuiInventory ?: return
-        if (!org.lwjgl.input.Mouse.getEventButtonState() || org.lwjgl.input.Mouse.getEventButton() != 0) return
-        val clicked = gui.slotUnderMouse?.slotNumber?.takeIf { it.isValidSlot() } ?: return
+        if (!MouseCompat.getEventButtonState() || MouseCompat.getEventButton() != 0) return
+        val clicked = InventoryCompat.getSlotUnderMouse(gui)?.slotNumber?.takeIf { it.isValidSlot() } ?: return
         val bound = binds()?.get(clicked) ?: return
         if (!bound.isValidSlot() || bound == clicked) return
 
         val (from, to) = if (clicked.isHotbar()) bound to clicked else if (bound.isHotbar()) clicked to bound else return
 
-        Minecraft.getMinecraft().playerController.windowClick(
-            gui.inventorySlots.windowId, from, to - 36, 2, Minecraft.getMinecraft().thePlayer
+        InventoryCompat.windowClick(
+            InventoryCompat.getContainer(gui).windowId, from, to - 36, 2, MinecraftCompat.getLocalPlayer() ?: return
         )
         event.cancel()
     }
@@ -78,9 +78,9 @@ class SlotBinds {
         if (!isEnabled()) return
         val gui = event.gui as? GuiInventory ?: return
         val c = cfg() ?: return
-        if (c.bindKey == Keyboard.KEY_NONE || Keyboard.getEventKey() != c.bindKey || !Keyboard.getEventKeyState()) return
+        if (c.bindKey == Keyboard.KEY_NONE || KeyboardCompat.getEventKey() != c.bindKey || !KeyboardCompat.getEventKeyState()) return
 
-        val clicked = gui.slotUnderMouse?.slotNumber?.takeIf { it.isValidSlot() } ?: return
+        val clicked = InventoryCompat.getSlotUnderMouse(gui)?.slotNumber?.takeIf { it.isValidSlot() } ?: return
         event.cancel()
 
         val pending = pendingSlot
@@ -110,11 +110,11 @@ class SlotBinds {
         if (!isEnabled()) return
         val gui = event.gui as? GuiInventory ?: return
         val c = cfg() ?: return
-        val container = gui.inventorySlots ?: return
+        val container = InventoryCompat.getContainer(gui) ?: return
         val color = ChromaColour.specialToChromaRGB(c.lineColor)
 
-        GlStateManager.pushMatrix()
-        GlStateManager.translate(0f, 0f, 999f)
+        GlStateManagerCompat.pushMatrix()
+        GlStateManagerCompat.translate(0.0, 0.0, 999.0)
 
         try {
             val pending = pendingSlot
@@ -125,7 +125,7 @@ class SlotBinds {
             }
 
             if (c.alwaysShowLines) {
-                // Draw all binds, iterate unique pairs (avoid drawing A→B and B→A twice)
+                // Draw all binds, iterate unique pairs (avoid drawing Aâ†’B and Bâ†’A twice)
                 val drawn = mutableSetOf<Int>()
                 for ((from, to) in c.binds) {
                     if (drawn.contains(from)) continue
@@ -137,14 +137,14 @@ class SlotBinds {
                 }
             } else {
                 if (!isShiftDown()) return
-                val hovered = gui.slotUnderMouse?.slotNumber?.takeIf { it.isValidSlot() } ?: return
+                val hovered = InventoryCompat.getSlotUnderMouse(gui)?.slotNumber?.takeIf { it.isValidSlot() } ?: return
                 val bound = c.binds[hovered]?.takeIf { it.isValidSlot() && it != hovered } ?: return
                 val (sx, sy) = slotCenter(container, hovered, gui) ?: return
                 val (ex, ey) = slotCenter(container, bound, gui) ?: return
                 RenderUtils.drawLine(sx, sy, ex, ey, color, 2f)
             }
         } finally {
-            GlStateManager.popMatrix()
+            GlStateManagerCompat.popMatrix()
         }
     }
 

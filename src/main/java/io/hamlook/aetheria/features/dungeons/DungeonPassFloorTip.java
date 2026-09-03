@@ -7,7 +7,6 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.item.ItemStackUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 @RegisterEvents
 public class DungeonPassFloorTip {

@@ -3,10 +3,13 @@ package io.hamlook.aetheria.features.misc;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.events.PacketReceiveStatsEvent;
 import io.hamlook.aetheria.events.PacketReceiveTimeUpdateEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.overlay.OverlayUtils;
 import lombok.Getter;
@@ -14,14 +17,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.network.play.client.C16PacketClientStatus;
 import net.minecraft.util.EnumChatFormatting;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.List;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class PerformanceHUD extends Overlay {
@@ -130,7 +130,7 @@ public class PerformanceHUD extends Overlay {
     @HandleEvent
     public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null || mc.thePlayer.sendQueue == null) return;
 
         if (pingSentAt >= 0 && System.nanoTime() - pingSentAt > PING_TIMEOUT_NS) {
@@ -167,7 +167,7 @@ public class PerformanceHUD extends Overlay {
             if (preview) {
                 out.add(C_LABEL + "XYZ: " + C_VAL + "0 / 64 / 0");
             } else {
-                net.minecraft.entity.player.EntityPlayer p = Minecraft.getMinecraft().thePlayer;
+                net.minecraft.entity.player.EntityPlayer p = MinecraftCompat.getMinecraft().thePlayer;
                 if (p != null)
                     out.add(C_LABEL + "XYZ: " + C_VAL + (int) Math.floor(p.posX) + " / " + (int) Math.floor(p.posY) + " / " + (int) Math.floor(p.posZ));
             }
@@ -176,7 +176,7 @@ public class PerformanceHUD extends Overlay {
             if (preview) {
                 out.add(C_LABEL + "Yaw: " + C_VAL + "180.0  " + C_LABEL + "Pitch: " + C_VAL + "0.0");
             } else {
-                net.minecraft.entity.player.EntityPlayer p = Minecraft.getMinecraft().thePlayer;
+                net.minecraft.entity.player.EntityPlayer p = MinecraftCompat.getMinecraft().thePlayer;
                 if (p != null) {
                     float yaw = p.rotationYaw % 360.0f;
                     if (yaw >= 180.0f) yaw -= 360.0f;
@@ -195,7 +195,7 @@ public class PerformanceHUD extends Overlay {
         List<String> lines = getLines(preview);
         if (lines.isEmpty()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         float scale = getScale();
         boolean vert = ATHRConfig.feature.misc.performanceHudConfig.hudVertical;
 

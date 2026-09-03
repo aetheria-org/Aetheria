@@ -5,9 +5,10 @@ package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 
 public class GuiOptionEditorVersionDisplay extends GuiOptionEditor {
 
@@ -24,7 +25,7 @@ public class GuiOptionEditorVersionDisplay extends GuiOptionEditor {
 
     @Override
     public void render(int x, int y, int width) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
         RenderUtils.drawFloatingRectDark(x, y, width, HEIGHT, true);
 
@@ -34,13 +35,13 @@ public class GuiOptionEditorVersionDisplay extends GuiOptionEditor {
         int scaledHeight = fontHeight * 2;
 
         // ── CENTERED 2x VERSION TEXT ─────────────────
-        GlStateManager.pushMatrix();
+        GlStateManagerCompat.pushMatrix();
 
         int centerX = x + width / 2;
         int centerY = y + (HEIGHT - scaledHeight) / 2;
 
-        GlStateManager.translate(centerX, centerY, 0);
-        GlStateManager.scale(2f, 2f, 1f);
+        GlStateManagerCompat.translate(centerX, centerY, 0);
+        GlStateManagerCompat.scale(2f, 2f, 1f);
 
         int textWidth = mc.fontRendererObj.getStringWidth(versionText);
 
@@ -52,7 +53,7 @@ public class GuiOptionEditorVersionDisplay extends GuiOptionEditor {
                 false
         );
 
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     @Override

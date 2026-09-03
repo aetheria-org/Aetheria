@@ -3,8 +3,9 @@ package io.hamlook.aetheria.features.misc.itemList.recipe;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
@@ -55,10 +56,10 @@ public class NpcShopRecipe extends Recipe {
         int gridX = x + (width  - gridW) / 2;
         int gridY = y + (height - gridH) / 2;
 
-        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int sf = sr.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(gridX * sf, (Minecraft.getMinecraft().displayHeight - (gridY + gridH) * sf), gridW * sf, gridH * sf);
+        GL11.glScissor(gridX * sf, (MinecraftCompat.getMinecraft().displayHeight - (gridY + gridH) * sf), gridW * sf, gridH * sf);
 
         int startIdx = currentPage * itemsPerPage;
         int endIdx = Math.min(startIdx + itemsPerPage, recipes.size());

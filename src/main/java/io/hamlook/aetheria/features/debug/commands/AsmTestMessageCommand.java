@@ -3,14 +3,14 @@ package io.hamlook.aetheria.features.debug.commands;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
+import net.minecraftforge.common.MinecraftForge;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,7 +88,7 @@ public class AsmTestMessageCommand extends ASMCommand {
     }
 
     private void fire(String text, boolean isSilent) {
-        IChatComponent component = new ChatComponentText(text);
+        IChatComponent component = TextCompat.createText(text);
 
         if (!isSilent) {
             ChatUtils.sendMessage(EnumChatFormatting.GREEN + "Testing message: " + EnumChatFormatting.GRAY + text);

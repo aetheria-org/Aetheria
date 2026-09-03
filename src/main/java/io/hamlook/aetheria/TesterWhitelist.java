@@ -4,11 +4,11 @@ import com.google.gson.JsonParser;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.ASMServerJoinEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -34,7 +34,7 @@ public class TesterWhitelist {
     }
 
     private static void checkWhitelist() {
-        String playerName = Minecraft.getMinecraft().getSession().getProfile().getName().toLowerCase();
+        String playerName = MinecraftCompat.getMinecraft().getSession().getProfile().getName().toLowerCase();
 
         ThreadUtils.run(() -> {
             try {

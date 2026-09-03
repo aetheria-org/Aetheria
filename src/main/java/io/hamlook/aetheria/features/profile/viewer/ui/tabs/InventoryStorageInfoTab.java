@@ -9,17 +9,19 @@ import io.hamlook.aetheria.features.profile.data.storage.ContainerData;
 import io.hamlook.aetheria.features.profile.vars.EquipmentSlot;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
+import io.hamlook.aetheria.utils.compat.RenderHelperCompat;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
@@ -65,8 +67,8 @@ public class InventoryStorageInfoTab extends Tab {
         if (storageHovered != null) hoveredItem = storageHovered;
 
         // Cleanup GL state just in case
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderHelper.disableStandardItemLighting();
+        GlStateManagerCompat.color(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderHelperCompat.disableStandardItemLighting();
 
         // 3. Draw Tooltip at very top
         if (hoveredItem != null) {
@@ -278,21 +280,21 @@ public class InventoryStorageInfoTab extends Tab {
     }
 
     private int getMouseY() {
-        return KeybindHelper.getMouseCoords(Minecraft.getMinecraft().currentScreen.width, Minecraft.getMinecraft().currentScreen.height)[1];
+        return KeybindHelper.getMouseCoords(MinecraftCompat.getMinecraft().currentScreen.width, MinecraftCompat.getMinecraft().currentScreen.height)[1];
     }
 
     private boolean isMouseOver(float x, float y, float w, float h) {
-        int[] mouse = KeybindHelper.getMouseCoords(Minecraft.getMinecraft().currentScreen.width, Minecraft.getMinecraft().currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getMinecraft().currentScreen.width, MinecraftCompat.getMinecraft().currentScreen.height);
         int mouseX = mouse[0], mouseY = mouse[1];
         return mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
     }
 
     private void handleVerticalScroll(float x, float y, float w, float h, float contentH) {
-        int[] mouse = KeybindHelper.getMouseCoords(Minecraft.getMinecraft().currentScreen.width, Minecraft.getMinecraft().currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getMinecraft().currentScreen.width, MinecraftCompat.getMinecraft().currentScreen.height);
         int mx = mouse[0], my = mouse[1];
 
         if (mx >= x && mx <= x + w && my >= y && my <= y + h) {
-            int dWheel = Mouse.getDWheel();
+            int dWheel = MouseCompat.getDWheel();
             if (dWheel != 0) {
                 float step = 30f;
                 storageScrollTarget = Math.max(0, Math.min(storageScrollTarget + (dWheel > 0 ? -step : step), Math.max(0, contentH - h)));
@@ -301,14 +303,14 @@ public class InventoryStorageInfoTab extends Tab {
     }
 
     private void applyScissor(float x, float y, float w, float h) {
-        ScaledResolution res = new ScaledResolution(Minecraft.getMinecraft());
+        ScaledResolution res = GuiScreenUtils.getScaledResolution();
         int f = res.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor((int)(x * f), (int)(Minecraft.getMinecraft().displayHeight - (y + h) * f), (int)(w * f), (int)(h * f));
+        GL11.glScissor((int)(x * f), (int)(MinecraftCompat.getMinecraft().displayHeight - (y + h) * f), (int)(w * f), (int)(h * f));
     }
 
     private void drawSlot(Minecraft mc, ItemStack icon, int rarityScore, float x, float y, float size) {
-        net.minecraft.client.renderer.GlStateManager.color(1, 1, 1, 1);
+        GlStateManagerCompat.color(1, 1, 1, 1);
         mc.getTextureManager().bindTexture(Resources.storageSlot(1));
         Gui.drawModalRectWithCustomSizedTexture((int)x, (int)y, 0, 0, (int)size, (int)size, (int)size, (int)size);
 

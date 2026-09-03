@@ -1,16 +1,15 @@
 package io.hamlook.aetheria.features.profile.viewer.ui.tabs;
 
-import io.hamlook.aetheria.utils.StringUtils;
-import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.features.profile.data.HOTMData;
+import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
-import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import io.hamlook.aetheria.utils.StringUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
+import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 
@@ -83,14 +82,14 @@ public class HOTMInfoTab extends Tab {
         float green = (float)(hexColor >> 8 & 255) / 255.0F;
         float blue = (float)(hexColor & 255) / 255.0F;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.enableBlend();
-        GlStateManager.disableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
 
         GL11.glEnable(GL11.GL_LINE_SMOOTH);
         GL11.glLineWidth(thickness);
-        GlStateManager.color(red, green, blue, alpha);
+        GlStateManagerCompat.color(red, green, blue, alpha);
 
         GL11.glBegin(GL11.GL_LINE_STRIP);
 
@@ -105,8 +104,8 @@ public class HOTMInfoTab extends Tab {
         GL11.glEnd();
 
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.popMatrix();
     }
 }

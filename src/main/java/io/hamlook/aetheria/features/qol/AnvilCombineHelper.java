@@ -2,27 +2,26 @@ package io.hamlook.aetheria.features.qol;
 
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMGuiInitEvent;
+import io.hamlook.aetheria.events.ASMGuiInitPreEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.SlotClickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.HighlightUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMGuiInitEvent;
-import io.hamlook.aetheria.events.ASMGuiInitPreEvent;
 
 @RegisterEvents
 public class AnvilCombineHelper {
@@ -125,7 +124,7 @@ public class AnvilCombineHelper {
         if (!pendingRefresh) return;
         pendingRefresh = false;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         ContainerChest chest = ContainerUtils.getOpenChest();
         if (chest == null) return;
         if (isAnvilGui((GuiContainer) mc.currentScreen)) return;

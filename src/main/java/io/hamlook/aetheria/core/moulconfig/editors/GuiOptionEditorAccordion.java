@@ -4,15 +4,13 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import org.lwjgl.input.Mouse;
-import org.lwjgl.opengl.GL11;
 
 public class GuiOptionEditorAccordion extends GuiOptionEditor {
 
@@ -43,32 +41,30 @@ public class GuiOptionEditorAccordion extends GuiOptionEditor {
         int height = getHeight();
         RenderUtils.drawFloatingRectDark(x, y, width, height, true);
 
-        Tessellator tessellator = Tessellator.getInstance();
-        WorldRenderer worldrenderer = tessellator.getWorldRenderer();
-        GlStateManager.enableBlend();
-        GlStateManager.disableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.color(1, 1, 1, 1);
-        worldrenderer.begin(GL11.GL_TRIANGLES, DefaultVertexFormats.POSITION);
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.color(1, 1, 1, 1);
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.TRIANGLES, TessellatorCompat.POSITION);
         if (accordionToggled) {
-            worldrenderer.pos((double) x + 6, (double) y + 6, 0.0D).endVertex();
-            worldrenderer.pos((double) x + 9.75f, (double) y + 13.5f, 0.0D).endVertex();
-            worldrenderer.pos((double) x + 13.5f, (double) y + 6, 0.0D).endVertex();
+            vb.pos((double) x + 6, (double) y + 6, 0.0D).endVertex();
+            vb.pos((double) x + 9.75f, (double) y + 13.5f, 0.0D).endVertex();
+            vb.pos((double) x + 13.5f, (double) y + 6, 0.0D).endVertex();
         } else {
-            worldrenderer.pos((double) x + 6, (double) y + 13.5f, 0.0D).endVertex();
-            worldrenderer.pos((double) x + 13.5f, (double) y + 9.75f, 0.0D).endVertex();
-            worldrenderer.pos((double) x + 6, (double) y + 6, 0.0D).endVertex();
+            vb.pos((double) x + 6, (double) y + 13.5f, 0.0D).endVertex();
+            vb.pos((double) x + 13.5f, (double) y + 9.75f, 0.0D).endVertex();
+            vb.pos((double) x + 6, (double) y + 6, 0.0D).endVertex();
         }
-        tessellator.draw();
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
+        vb.draw();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.disableBlend();
 
-        TextRenderUtils.drawStringScaledMaxWidth(option.name, Minecraft.getMinecraft().fontRendererObj, x + 18, y + 6, false, width - 10, 0xc0c0c0);
+        TextRenderUtils.drawStringScaledMaxWidth(option.name, MinecraftCompat.getMinecraft().fontRendererObj, x + 18, y + 6, false, width - 10, 0xc0c0c0);
     }
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
-        if (Mouse.getEventButtonState() && mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + getHeight()) {
+        if (MouseCompat.getEventButtonState() && mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + getHeight()) {
             accordionToggled = !accordionToggled;
             return true;
         }

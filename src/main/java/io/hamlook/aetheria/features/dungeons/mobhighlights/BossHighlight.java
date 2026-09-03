@@ -3,20 +3,23 @@ package io.hamlook.aetheria.features.dungeons.mobhighlights;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
+import io.hamlook.aetheria.utils.compat.WorldCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.StringUtils;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -24,14 +27,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 @RegisterEvents
 public class BossHighlight {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private volatile Map<EntityLivingBase, BossType> bossMobs = new HashMap<>();
     private int tickCounter = 0;
 
@@ -53,7 +53,7 @@ public class BossHighlight {
 
         Map<EntityLivingBase, BossType> found = new HashMap<>();
 
-        for (Entity entity : mc.theWorld.loadedEntityList) {
+        for (Entity entity : WorldCompat.getAllEntities(mc.theWorld)) {
             if (!(entity instanceof EntityArmorStand)) continue;
             String raw = entity.getName();
             if (raw == null) continue;
@@ -181,47 +181,45 @@ public class BossHighlight {
 
     private void renderCleanOutline(RenderEntityModelEvent event, Color color) {
         EntityLivingBase entity = event.getEntity();
-        GlStateManager.pushMatrix();
-        GlStateManager.pushAttrib();
-        GlStateManager.disableLighting();
-        GlStateManager.disableTexture2D();
-        GlStateManager.disableDepth();
-        GlStateManager.enableBlend();
-        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlStateManager.depthMask(false);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.pushAttrib();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.disableDepth();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GlStateManagerCompat.depthMask(false);
 
         // Pass 1: faint fill
-        GlStateManager.color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 0.22f);
-        GlStateManager.scale(1.04f, 1.04f, 1.04f);
+        GlStateManagerCompat.color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 0.22f);
+        GlStateManagerCompat.scale(1.04f, 1.04f, 1.04f);
         event.getModel().render(entity, event.getLimbSwing(), event.getLimbSwingAmount(), event.getAgeInTicks(), event.getHeadYaw(), event.getHeadPitch(), event.getScaleFactor());
 
         // Pass 2: crisp edge
-        GlStateManager.color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 0.88f);
+        GlStateManagerCompat.color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 0.88f);
         float shrink = 1.025f / 1.04f;
-        GlStateManager.scale(shrink, shrink, shrink);
+        GlStateManagerCompat.scale(shrink, shrink, shrink);
         event.getModel().render(entity, event.getLimbSwing(), event.getLimbSwingAmount(), event.getAgeInTicks(), event.getHeadYaw(), event.getHeadPitch(), event.getScaleFactor());
 
-        GlStateManager.depthMask(true);
-        GlStateManager.enableDepth();
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableLighting();
-        GlStateManager.disableBlend();
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        GlStateManager.popAttrib();
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.depthMask(true);
+        GlStateManagerCompat.enableDepth();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.enableLighting();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.popAttrib();
+        GlStateManagerCompat.popMatrix();
     }
 
     private void drawBox(AxisAlignedBB bb, float r, float g, float b, float a) {
         double[][] edges = {{bb.minX, bb.minY, bb.minZ, bb.maxX, bb.minY, bb.minZ}, {bb.minX, bb.minY, bb.maxZ, bb.maxX, bb.minY, bb.maxZ}, {bb.minX, bb.minY, bb.minZ, bb.minX, bb.minY, bb.maxZ}, {bb.maxX, bb.minY, bb.minZ, bb.maxX, bb.minY, bb.maxZ}, {bb.minX, bb.maxY, bb.minZ, bb.maxX, bb.maxY, bb.minZ}, {bb.minX, bb.maxY, bb.maxZ, bb.maxX, bb.maxY, bb.maxZ}, {bb.minX, bb.maxY, bb.minZ, bb.minX, bb.maxY, bb.maxZ}, {bb.maxX, bb.maxY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ}, {bb.minX, bb.minY, bb.minZ, bb.minX, bb.maxY, bb.minZ}, {bb.maxX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.minZ}, {bb.minX, bb.minY, bb.maxZ, bb.minX, bb.maxY, bb.maxZ}, {bb.maxX, bb.minY, bb.maxZ, bb.maxX, bb.maxY, bb.maxZ},};
         int ri = (int) (r * 255), gi = (int) (g * 255), bi = (int) (b * 255), ai = (int) (a * 255);
-        Tessellator tess = Tessellator.getInstance();
-        WorldRenderer wr = tess.getWorldRenderer();
-        wr.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINES, TessellatorCompat.POSITION_COLOR);
         for (double[] e : edges) {
-            wr.pos(e[0], e[1], e[2]).color(ri, gi, bi, ai).endVertex();
-            wr.pos(e[3], e[4], e[5]).color(ri, gi, bi, ai).endVertex();
+            vb.pos(e[0], e[1], e[2]).color(ri, gi, bi, ai).endVertex();
+            vb.pos(e[3], e[4], e[5]).color(ri, gi, bi, ai).endVertex();
         }
-        tess.draw();
+        vb.draw();
     }
 
     private enum BossType {BONZO, SCARF, SCARF_MINION, PROFESSOR, PROFESSOR_GUARDIAN}

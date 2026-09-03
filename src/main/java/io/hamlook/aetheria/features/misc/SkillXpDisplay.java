@@ -1,22 +1,24 @@
 package io.hamlook.aetheria.features.misc;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.EnumChatFormatting;
-import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.input.Keyboard;
 
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class SkillXpDisplay {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static final Pattern XP_LINE = Pattern.compile("^([\\d,]+)/[\\d.,]+[KMBk]?$");
     private static final Pattern PROGRESS_LINE = Pattern.compile("Progress to Level (\\d+):");
@@ -113,7 +115,7 @@ public class SkillXpDisplay {
         long currentXp = parseCurrentXp(tooltip);
         if (currentLevel < 0 || currentXp < 0) return;
 
-        boolean shifting = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+        boolean shifting = KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) || KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT);
 
         if (!shifting) {
             if (!tooltip.contains(HINT)) tooltip.add(HINT);

@@ -1,9 +1,11 @@
 package io.hamlook.aetheria.features.qol;
 
 import io.hamlook.aetheria.DebugLogger;
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.ColoredBlockCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
@@ -70,7 +72,7 @@ public final class BetterContainers {
             return false;
         }
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         mc.getTextureManager().loadTexture(Resources.BETTER_CONTAINERS_DYNAMIC, dynamicTexture);
         mc.getTextureManager().bindTexture(Resources.BETTER_CONTAINERS_DYNAMIC);
         return true;
@@ -85,7 +87,7 @@ public final class BetterContainers {
 
     public static boolean isBlankPane(ItemStack stack) {
         if (stack == null) return false;
-        if (stack.getItem() != Item.getItemFromBlock(Blocks.stained_glass_pane)) return false;
+        if (stack.getItem() != ColoredBlockCompat.WHITE.createGlassPaneStack().getItem()) return false;
         if (stack.getItemDamage() != 15) return false;
         String name = stack.getDisplayName();
         if (name == null) return true;
@@ -109,7 +111,7 @@ public final class BetterContainers {
     }
 
     private static BufferedImage read(ResourceLocation rl) throws IOException {
-        try (InputStream is = Minecraft.getMinecraft().getResourceManager().getResource(rl).getInputStream()) {
+        try (InputStream is = MinecraftCompat.getMinecraft().getResourceManager().getResource(rl).getInputStream()) {
             return ImageIO.read(is);
         }
     }

@@ -3,8 +3,8 @@ package io.hamlook.aetheria.features.dungeons.caseopening;
 import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
@@ -44,10 +44,10 @@ public class GuiInterceptChest extends GuiContainer {
 
         if (rewardToOpen != null) {
             DebugLogger.log("[GuiInterceptChest] Launching animation for: " + rewardToOpen.item.name());
-            Minecraft.getMinecraft().displayGuiScreen(new CustomDropAnimationGui(rewardToOpen, floor, material));
+            MinecraftCompat.getMinecraft().displayGuiScreen(new CustomDropAnimationGui(rewardToOpen, floor, material));
         } else {
             DebugLogger.log("[GuiInterceptChest] No matching reward found — returning to chest GUI");
-            Minecraft.getMinecraft().displayGuiScreen(ChestListener.originalGui);
+            MinecraftCompat.getMinecraft().displayGuiScreen(ChestListener.originalGui);
         }
     }
 

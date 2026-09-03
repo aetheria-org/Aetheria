@@ -6,16 +6,18 @@ package io.hamlook.aetheria.core.moulconfig.editors;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.Utils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Keyboard;
 
-import java.io.IOException;
 import java.util.function.IntSupplier;
 
-public class GuiPositionEditor extends GuiScreen {
+public class GuiPositionEditor extends AetheriaBaseScreen {
 
     private final Position position;
     private final Position originalPosition;
@@ -65,18 +67,16 @@ public class GuiPositionEditor extends GuiScreen {
     private int scaledH() { return (int)(elementHeight.getAsInt() * overlayScale); }
 
     @Override
-    public void onGuiClosed() {
-        super.onGuiClosed();
+    public void guiClosed() {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        super.drawScreen(mouseX, mouseY, partialTicks);
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         ScaledResolution scaledResolution;
         if (guiScaleOverride >= 0) {
             scaledResolution = Utils.pushGuiScale(guiScaleOverride);
         } else {
-            scaledResolution = new ScaledResolution(Minecraft.getMinecraft());
+            scaledResolution = GuiScreenUtils.getScaledResolution();
         }
 
         this.width = scaledResolution.getScaledWidth();
@@ -105,21 +105,20 @@ public class GuiPositionEditor extends GuiScreen {
             Utils.pushGuiScale(-1);
         }
 
-        scaledResolution = new ScaledResolution(Minecraft.getMinecraft());
-        Utils.drawStringCentered("Position Editor", Minecraft.getMinecraft().fontRendererObj, scaledResolution.getScaledWidth() / 2, 8, true, 0xffffff);
-        Utils.drawStringCentered("R to Reset - Arrow keys/mouse to move", Minecraft.getMinecraft().fontRendererObj, (float) scaledResolution.getScaledWidth() / 2, 18, true, 0xffffff);
+        scaledResolution = GuiScreenUtils.getScaledResolution();
+        Utils.drawStringCentered("Position Editor", MinecraftCompat.getMinecraft().fontRendererObj, scaledResolution.getScaledWidth() / 2, 8, true, 0xffffff);
+        Utils.drawStringCentered("R to Reset - Arrow keys/mouse to move", MinecraftCompat.getMinecraft().fontRendererObj, (float) scaledResolution.getScaledWidth() / 2, 18, true, 0xffffff);
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        super.mouseClicked(mouseX, mouseY, mouseButton);
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
 
         if (mouseButton == 0) {
             ScaledResolution scaledResolution;
             if (guiScaleOverride >= 0) {
                 scaledResolution = Utils.pushGuiScale(guiScaleOverride);
             } else {
-                scaledResolution = new ScaledResolution(Minecraft.getMinecraft());
+                scaledResolution = GuiScreenUtils.getScaledResolution();
             }
             int[] coords = KeybindHelper.getMouseCoords(width, height);
             mouseX = coords[0];
@@ -143,8 +142,8 @@ public class GuiPositionEditor extends GuiScreen {
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        Keyboard.enableRepeatEvents(true);
+    protected void onKeyTyped(char typedChar, int keyCode) {
+        KeyboardCompat.enableRepeatEvents(true);
 
         if (keyCode == Keyboard.KEY_ESCAPE && parentScreen != null) {
             closedCallback.run();
@@ -155,38 +154,34 @@ public class GuiPositionEditor extends GuiScreen {
         if (keyCode == Keyboard.KEY_R) {
             position.set(originalPosition);
         } else if (!clicked) {
-            boolean shiftHeld = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+            boolean shiftHeld = KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) || KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT);
             int dist = shiftHeld ? 10 : 1;
             if (keyCode == Keyboard.KEY_DOWN) {
-                position.moveY(dist, scaledH(), new ScaledResolution(Minecraft.getMinecraft()));
+                position.moveY(dist, scaledH(), GuiScreenUtils.getScaledResolution());
             } else if (keyCode == Keyboard.KEY_UP) {
-                position.moveY(-dist, scaledH(), new ScaledResolution(Minecraft.getMinecraft()));
+                position.moveY(-dist, scaledH(), GuiScreenUtils.getScaledResolution());
             } else if (keyCode == Keyboard.KEY_LEFT) {
-                position.moveX(-dist, scaledW(), new ScaledResolution(Minecraft.getMinecraft()));
+                position.moveX(-dist, scaledW(), GuiScreenUtils.getScaledResolution());
             } else if (keyCode == Keyboard.KEY_RIGHT) {
-                position.moveX(dist, scaledW(), new ScaledResolution(Minecraft.getMinecraft()));
+                position.moveX(dist, scaledW(), GuiScreenUtils.getScaledResolution());
             }
         }
-
-        super.keyTyped(typedChar, keyCode);
     }
 
     @Override
-    protected void mouseReleased(int mouseX, int mouseY, int state) {
-        super.mouseReleased(mouseX, mouseY, state);
+    protected void onMouseReleased(int mouseX, int mouseY, int state) {
         clicked = false;
     }
 
     @Override
-    protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
-        super.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
+    protected void onMouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
 
         if (clicked) {
             ScaledResolution scaledResolution;
             if (guiScaleOverride >= 0) {
                 scaledResolution = Utils.pushGuiScale(guiScaleOverride);
             } else {
-                scaledResolution = new ScaledResolution(Minecraft.getMinecraft());
+                scaledResolution = GuiScreenUtils.getScaledResolution();
             }
             int[] coords = KeybindHelper.getMouseCoords(width, height);
             mouseX = coords[0];

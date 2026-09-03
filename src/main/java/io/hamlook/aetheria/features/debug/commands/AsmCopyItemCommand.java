@@ -3,9 +3,10 @@ package io.hamlook.aetheria.features.debug.commands;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.item.NBTFormatter;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -37,8 +38,8 @@ public class AsmCopyItemCommand extends ASMCommand {
 
     @Override
     public void execute(ICommandSender sender, String[] args) throws CommandException {
-        ItemStack item = Minecraft.getMinecraft().thePlayer != null
-            ? Minecraft.getMinecraft().thePlayer.getHeldItem()
+        ItemStack item = MinecraftCompat.getMinecraft().thePlayer != null
+            ? MinecraftCompat.getMinecraft().thePlayer.getHeldItem()
             : null;
 
         if (item == null) {
@@ -58,9 +59,10 @@ public class AsmCopyItemCommand extends ASMCommand {
             result.add(" '" + line + "'");
         }
         result.add("");
-        if (item.hasTagCompound()) {
+        net.minecraft.nbt.NBTTagCompound tag = NbtCompat.getTagCompound(item);
+        if (tag != null) {
             result.add("nbt:");
-            result.add(NBTFormatter.format(item.getTagCompound()));
+            result.add(NBTFormatter.format(tag));
         } else {
             result.add("This item has no NBT data.");
         }

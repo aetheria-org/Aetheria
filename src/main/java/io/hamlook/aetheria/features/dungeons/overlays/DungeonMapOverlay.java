@@ -1,9 +1,11 @@
 package io.hamlook.aetheria.features.dungeons.overlays;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.dungeons.DungeonMapConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapGrid;
 import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapRenderer;
@@ -11,19 +13,22 @@ import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonPlayerTracker;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomDetector;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.storage.MapData;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
-import java.util.*;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @RegisterEvents
 public class DungeonMapOverlay extends Overlay {
@@ -69,11 +74,11 @@ public class DungeonMapOverlay extends Overlay {
 
     public static MapData getDungeonMap(EntityPlayerSP player) {
         if (player == null || player.inventory == null) return null;
-        ItemStack[] inv = player.inventory.mainInventory;
+        ItemStack[] inv = ArrayNormalizationKt.normalizeAsArray(player.inventory.mainInventory);
         if (inv == null || inv.length < 9) return null;
         ItemStack stack = inv[8];
         if (stack == null) return null;
-        return Items.filled_map.getMapData(stack, Minecraft.getMinecraft().theWorld);
+        return Items.filled_map.getMapData(stack, MinecraftCompat.getMinecraft().theWorld);
     }
 
     @HandleEvent
@@ -97,7 +102,7 @@ public class DungeonMapOverlay extends Overlay {
         if (!preview && (!SkyblockData.isInDungeon() || dungeonRunEnded)) return;
         if (!preview && DungeonStats.isInBossFight()) return;
 
-        EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayerSP player = MinecraftCompat.getMinecraft().thePlayer;
         if (player == null) return;
 
         DungeonMapConfig cfg = ATHRConfig.feature.dungeons.dungeonMapConfig;
@@ -115,7 +120,7 @@ public class DungeonMapOverlay extends Overlay {
         if (info == null && !preview) return;
 
         float scale = getScale();
-        ScaledResolution sr = Overlay.sr != null ? Overlay.sr : new ScaledResolution(Minecraft.getMinecraft());
+        ScaledResolution sr = Overlay.sr != null ? Overlay.sr : GuiScreenUtils.getScaledResolution();
         Position pos = getPosition();
 
         int gridW = lastW;
@@ -156,8 +161,8 @@ public class DungeonMapOverlay extends Overlay {
 
         if (preview) {
             String txt = "Preview Map";
-            int tw = Minecraft.getMinecraft().fontRendererObj.getStringWidth(txt);
-            Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(txt, cx - tw / 2f, cy - 4f, 0xFFFFFFFF);
+            int tw = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(txt);
+            MinecraftCompat.getMinecraft().fontRendererObj.drawStringWithShadow(txt, cx - tw / 2f, cy - 4f, 0xFFFFFFFF);
         } else if (cachedGrid != null && cachedGrid.isValid()) {
             renderDungeonMap(cx, cy, scale, cfg.rooms.showVisitedRoomNames, cfg.rooms.mapColorText);
         }
@@ -165,7 +170,7 @@ public class DungeonMapOverlay extends Overlay {
 
     public void renderDungeonMap(float centerX, float centerY, float scale, boolean showRoomNames, boolean colorRoomNames) {
         if (cachedGrid == null || !cachedGrid.isValid()) return;
-        EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayerSP player = MinecraftCompat.getMinecraft().thePlayer;
         MapData info = player != null ? getDungeonMap(player) : null;
         if (info != null) playerTracker.matchDecorations(info.mapDecorations);
         DungeonMapRenderer.render(cachedGrid, centerX, centerY, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms(), showRoomNames, colorRoomNames, mapCalibrated);

@@ -1,9 +1,15 @@
 package io.hamlook.aetheria.features.dungeons.puzzles;
 
 import com.google.gson.JsonObject;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
+import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.block.*;
@@ -14,19 +20,15 @@ import net.minecraft.item.EnumDyeColor;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.Vec3;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.*;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
-import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 @Deprecated
 public class WaterSolver {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static final String[] LEVER_KEYS = {"minecraft:quartz_block", "minecraft:diamond_block", "minecraft:gold_block", "minecraft:emerald_block", "minecraft:coal_block", "minecraft:hardened_clay"};
 
@@ -123,7 +125,7 @@ public class WaterSolver {
         for (Map.Entry<String, BlockPos> entry : leverPositions.entrySet()) {
             String key = entry.getKey();
             BlockPos pos = entry.getValue();
-            if (mc.theWorld.getBlockState(pos).getBlock() != Blocks.lever) continue;
+            if (!BlockCompat.isLever(mc.theWorld.getBlockState(pos).getBlock())) continue;
             boolean powered = isLeverPowered(pos);
             Boolean prev = prevPowered.get(key);
             if (prev != null && powered != prev) clickCounts.merge(key, 1, Integer::sum);
@@ -252,7 +254,7 @@ public class WaterSolver {
             for (int z = pz - 25; z <= pz + 25; z++) {
                 Block b77 = mc.theWorld.getBlockState(new BlockPos(x, 77, z)).getBlock();
                 Block b78 = mc.theWorld.getBlockState(new BlockPos(x, 78, z)).getBlock();
-                if (b77 == Blocks.hardened_clay) return 0;
+                if (BlockCompat.isHardenedClay(b77)) return 0;
                 if (b78 == Blocks.emerald_block) return 1;
                 if (b78 == Blocks.diamond_block) return 2;
                 if (b78 == Blocks.quartz_block) return 3;
@@ -287,19 +289,19 @@ public class WaterSolver {
 
         for (BlockPos pos : BlockPos.getAllInBox(scan1, scan2)) {
             IBlockState state = mc.theWorld.getBlockState(pos);
-            if (state.getBlock() != Blocks.lever) continue;
+            if (!BlockCompat.isLever(state.getBlock())) continue;
 
             EnumFacing facing = state.getValue(BlockLever.FACING).getFacing();
             BlockPos behind = stepOpposite(pos, facing);
             if (behind == null) continue;
 
-            String name = Block.blockRegistry.getNameForObject(mc.theWorld.getBlockState(behind).getBlock()).toString();
+            String name = BlockCompat.getBlockName(mc.theWorld.getBlockState(behind).getBlock());
 
             if (isTargetBlock(name)) {
                 result.put(name, pos);
             } else if (facing == EnumFacing.UP) {
                 IBlockState belowState = mc.theWorld.getBlockState(behind);
-                if (belowState.getBlock() == Blocks.stone && belowState.getValue(BlockStone.VARIANT) == BlockStone.EnumType.ANDESITE_SMOOTH) {
+                if (BlockCompat.isSmoothAndesite(belowState)) {
                     waterLeverPos = pos;
                 }
             }
@@ -346,7 +348,7 @@ public class WaterSolver {
 
     private boolean isLeverPowered(BlockPos pos) {
         IBlockState s = mc.theWorld.getBlockState(pos);
-        return s.getBlock() == Blocks.lever && s.getValue(BlockLever.POWERED);
+        return BlockCompat.isLever(s.getBlock()) && s.getValue(BlockLever.POWERED);
     }
 
     @HandleEvent

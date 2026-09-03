@@ -5,16 +5,14 @@ import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.features.chat.globalchat.util.DiscordMarkdown;
 import io.hamlook.aetheria.features.chat.globalchat.vars.IEmoji;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,7 +32,7 @@ public class ChatInputField extends Gui {
     public static final int LINE_PAD = 2;
     public static final int MAX_LENGTH = 2000;
 
-    private final FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+    private final FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
 
     public int x, y, width, height;
 
@@ -124,8 +122,8 @@ public class ChatInputField extends Gui {
 
     /** Returns true if the key was consumed; plain Enter returns false so the caller can send the message. */
     public boolean keyTyped(char typedChar, int keyCode) {
-        boolean ctrl = Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL);
-        boolean shift = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+        boolean ctrl = KeyboardCompat.isKeyDown(Keyboard.KEY_LCONTROL) || KeyboardCompat.isKeyDown(Keyboard.KEY_RCONTROL);
+        boolean shift = KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) || KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT);
 
         if (ctrl && keyCode == Keyboard.KEY_A) { selectAll(); return true; }
         if (ctrl && keyCode == Keyboard.KEY_C) {
@@ -230,14 +228,14 @@ public class ChatInputField extends Gui {
     /** Called each tick; keeps the selection anchored while the left mouse button is held. */
     public void updateDrag() {
         if (!dragging) return;
-        if (!Mouse.isButtonDown(0)) {
+        if (!MouseCompat.isButtonDown(0)) {
             dragging = false;
             return;
         }
-        Minecraft mc = Minecraft.getMinecraft();
-        int scale = new ScaledResolution(mc).getScaleFactor();
-        int mx = Mouse.getX() / scale;
-        int my = mc.displayHeight / scale - Mouse.getY() / scale;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        int scale = GuiScreenUtils.getScaledResolution().getScaleFactor();
+        int mx = MouseCompat.getX() / scale;
+        int my = mc.displayHeight / scale - MouseCompat.getY() / scale;
         caret = xyToChar(mx, my);
     }
 
@@ -572,11 +570,11 @@ public class ChatInputField extends Gui {
         }
         ResourceLocation tex = img.getTextureToRender(false);
         if (tex == null) return;
-        Minecraft.getMinecraft().getTextureManager().bindTexture(tex);
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        GlStateManager.enableBlend();
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(tex);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.enableBlend();
         drawScaledCustomSizeModalRect(x, y, 0, 0, img.width, img.height,
                 DiscordMarkdown.EMOJI_SIZE, DiscordMarkdown.EMOJI_SIZE, img.width, img.height);
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.disableBlend();
     }
 }

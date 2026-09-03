@@ -2,8 +2,8 @@ package io.hamlook.aetheria.utils.render;
 
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
 import io.hamlook.aetheria.mixins.accessors.FontRendererAccessor;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.GlStateManager;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -75,13 +75,13 @@ public class ChromaTextRenderer {
             int b = (rgb & 255) / 4;
             rgb = (a << 24) | (r << 16) | (g << 8) | b;
         }
-        GlStateManager.color(((rgb >> 16) & 255) / 255F, ((rgb >> 8) & 255) / 255F, (rgb & 255) / 255F, ((rgb >> 24) & 255) / 255F);
+        GlStateManagerCompat.color(((rgb >> 16) & 255) / 255F, ((rgb >> 8) & 255) / 255F, (rgb & 255) / 255F, ((rgb >> 24) & 255) / 255F);
     }
 
     public static void endRenderString() {
         chromaActive = false;
         chromaOn = false;
         renderingShadow = false;
-        GlStateManager.color(1F, 1F, 1F, 1F);
+        GlStateManagerCompat.color(1F, 1F, 1F, 1F);
     }
 }

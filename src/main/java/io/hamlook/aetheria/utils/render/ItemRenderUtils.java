@@ -1,16 +1,17 @@
 package io.hamlook.aetheria.utils.render;
 
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
+import io.hamlook.aetheria.utils.compat.RenderHelperCompat;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
-import org.lwjgl.opengl.GL14;
 
 
 public class ItemRenderUtils {
@@ -28,10 +29,10 @@ public class ItemRenderUtils {
 
         beginGuiItemRender();
         try {
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(x, y, 0);
-            GlStateManager.scale(size / 16f, size / 16f, 1f);
-            GlStateManager.enableDepth();
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(x, y, 0);
+            GlStateManagerCompat.scale(size / 16f, size / 16f, 1f);
+            GlStateManagerCompat.enableDepth();
             mc.getRenderItem().renderItemIntoGUI(stack, 0, 0);
         } catch (Exception e) {
             // A broken item model must not leak the pushed attrib/matrix.
@@ -39,7 +40,7 @@ public class ItemRenderUtils {
                     "itemicon." + label, 5_000L,
                     "[ItemRenderUtils] icon render failed for " + label + ": " + e);
         } finally {
-            GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
             endGuiItemRender();
         }
 
@@ -47,9 +48,9 @@ public class ItemRenderUtils {
         // which broke depth-dependent rendering drawn afterwards (e.g. the
         // inventory player preview).
         if (depthWasOn) {
-            GlStateManager.enableDepth();
+            GlStateManagerCompat.enableDepth();
         } else {
-            GlStateManager.disableDepth();
+            GlStateManagerCompat.disableDepth();
         }
     }
 
@@ -65,8 +66,8 @@ public class ItemRenderUtils {
      * darkens everything drawn after it.
      */
     private static void beginGuiItemRender() {
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        RenderHelper.enableGUIStandardItemLighting();
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        RenderHelperCompat.enableGUIStandardItemLighting();
     }
 
     /**
@@ -75,20 +76,20 @@ public class ItemRenderUtils {
      * throws, or every later draw inherits the polluted state.
      */
     private static void endGuiItemRender() {
-        RenderHelper.disableStandardItemLighting();
-        GlStateManager.disableLighting();
-        GlStateManager.disableRescaleNormal();
-        GlStateManager.tryBlendFuncSeparate(
+        RenderHelperCompat.disableStandardItemLighting();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableRescaleNormal();
+        GlStateManagerCompat.tryBlendFuncSeparate(
                 GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
-        GlStateManager.enableTexture2D();
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        GlStateManager.enableBlend();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.enableBlend();
     }
 
     public static void drawItemStack(ItemStack stack, int x, int y) {
         if (stack == null) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         RenderItem ri = mc.getRenderItem();
         FontRenderer fr = mc.fontRendererObj;
 
@@ -105,36 +106,36 @@ public class ItemRenderUtils {
 
     public static void drawItemStackOverlay(ItemStack stack, int x, int y) {
         if (stack == null) return;
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(0, 0, 100);
-        GlStateManager.enableDepth();
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(0, 0, 100);
+        GlStateManagerCompat.enableDepth();
         drawItemStack(stack, x, y);
-        GlStateManager.disableDepth();
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.disableDepth();
+        GlStateManagerCompat.popMatrix();
     }
 
     public static void renderHeldCursorItem() {
-        ItemStack held = Minecraft.getMinecraft().thePlayer.inventory.getItemStack();
+        ItemStack held = MinecraftCompat.getMinecraft().thePlayer.inventory.getItemStack();
         if (held == null) return;
 
-        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int[] cursor = KeybindHelper.getMouseCoords(sr);
         int cursorX = cursor[0], cursorY = cursor[1];
 
         beginGuiItemRender();
-        GlStateManager.pushMatrix();
+        GlStateManagerCompat.pushMatrix();
         try {
-            GlStateManager.translate(0f, 0f, 300f);
-            RenderItem ri = Minecraft.getMinecraft().getRenderItem();
+            GlStateManagerCompat.translate(0f, 0f, 300f);
+            RenderItem ri = MinecraftCompat.getMinecraft().getRenderItem();
             ri.renderItemAndEffectIntoGUI(held, cursorX - 8, cursorY - 8);
             ri.renderItemOverlayIntoGUI(
-                    Minecraft.getMinecraft().fontRendererObj, held, cursorX - 8, cursorY - 8, null);
+                    MinecraftCompat.getMinecraft().fontRendererObj, held, cursorX - 8, cursorY - 8, null);
         } catch (Exception e) {
             io.hamlook.aetheria.utils.debug.GLDebugProbe.warnThrottled(
                     "itemrender.cursor", 5_000L,
                     "[ItemRenderUtils] cursor item render failed: " + e);
         } finally {
-            GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
             endGuiItemRender();
         }
     }

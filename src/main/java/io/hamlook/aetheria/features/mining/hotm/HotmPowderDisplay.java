@@ -1,23 +1,25 @@
 package io.hamlook.aetheria.features.mining.hotm;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.EnumChatFormatting;
-import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.input.Keyboard;
 
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class HotmPowderDisplay {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static final String HOTM_TITLE = "Heart of the Mountain";
 
@@ -75,7 +77,7 @@ public class HotmPowderDisplay {
 
         if (ATHRConfig.feature.mining.hotmPowder.hotmPowderFor10Levels && rawLevel < CoreOfTheMountainData.MAX_LEVEL) {
             int costIndex = indexOfCostLine(tip);
-            if (!Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) && !Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
+            if (!KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) && !KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT)) {
                 if (!tip.contains(SHIFT_HINT)) tip.add(SHIFT_HINT);
             } else {
                 tip.remove(SHIFT_HINT);
@@ -162,7 +164,7 @@ public class HotmPowderDisplay {
         if (ATHRConfig.feature.mining.hotmPowder.hotmPowderFor10Levels && rawLevel < perk.maxLevel) {
             int costIndex = indexOfCostLine(tip);
 
-            if (!Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) && !Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
+            if (!KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) && !KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT)) {
                 if (!tip.contains(SHIFT_HINT)) tip.add(SHIFT_HINT);
             } else {
                 tip.remove(SHIFT_HINT);

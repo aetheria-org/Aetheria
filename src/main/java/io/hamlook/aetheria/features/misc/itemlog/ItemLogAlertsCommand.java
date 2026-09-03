@@ -5,11 +5,10 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.misc.ItemLogAlertsConfig;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.event.ClickEvent;
-import net.minecraft.event.HoverEvent;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.IChatComponent;
 
 import java.util.*;
 
@@ -92,38 +91,38 @@ public class ItemLogAlertsCommand extends ASMCommand {
     }
 
     private void showAlertList(ICommandSender sender, Map<String, ItemLogAlertsConfig.AlertEntry> alerts) {
-        sender.addChatMessage(new ChatComponentText(""));
-        sender.addChatMessage(new ChatComponentText("§b§lItem Log Alerts"));
+        sender.addChatMessage(TextCompat.createText(""));
+        sender.addChatMessage(TextCompat.createText("§b§lItem Log Alerts"));
 
         if (alerts.isEmpty()) {
-            sender.addChatMessage(new ChatComponentText(" §7No alerts configured."));
+            sender.addChatMessage(TextCompat.createText(" §7No alerts configured."));
         } else {
             for (Map.Entry<String, ItemLogAlertsConfig.AlertEntry> e : alerts.entrySet()) {
                 String id = e.getKey();
                 ItemLogAlertsConfig.AlertEntry entry = e.getValue();
                 String text = entry.customText.isEmpty() ? "§o<display name>§r" : entry.customText.replace("§", "&");
-                ChatComponentText root = new ChatComponentText("");
-                ChatComponentText label = new ChatComponentText(" §7- §f" + id + " §8" + text);
-                root.appendSibling(label);
-                ChatComponentText del = new ChatComponentText(" §c§l[DEL]");
-                del.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ila remove " + id));
-                del.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§cRemove " + id)));
-                root.appendSibling(del);
+                IChatComponent root = TextCompat.createText("");
+                IChatComponent label = TextCompat.createText(" §7- §f" + id + " §8" + text);
+                TextCompat.appendSibling(root, label);
+                IChatComponent del = TextCompat.createText(" §c§l[DEL]");
+                TextCompat.setClickRunCommand(TextCompat.getChatStyle(del), "/ila remove " + id);
+                TextCompat.setHoverShowText(TextCompat.getChatStyle(del), "§cRemove " + id);
+                TextCompat.appendSibling(root, del);
 
                 sender.addChatMessage(root);
             }
         }
 
-        sender.addChatMessage(new ChatComponentText(""));
-        ChatComponentText addNew = new ChatComponentText("§a§l[ADD NEW]");
-        addNew.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/ila add "));
-        addNew.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§aAdd a new alert")));
+        sender.addChatMessage(TextCompat.createText(""));
+        IChatComponent addNew = TextCompat.createText("§a§l[ADD NEW]");
+        TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(addNew), "/ila add ");
+        TextCompat.setHoverShowText(TextCompat.getChatStyle(addNew), "§aAdd a new alert");
         sender.addChatMessage(addNew);
-        ChatComponentText clear = new ChatComponentText(" §c§l[CLEAR ALL]");
-        clear.getChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ila clear"));
-        clear.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§cRemove all alerts")));
+        IChatComponent clear = TextCompat.createText(" §c§l[CLEAR ALL]");
+        TextCompat.setClickRunCommand(TextCompat.getChatStyle(clear), "/ila clear");
+        TextCompat.setHoverShowText(TextCompat.getChatStyle(clear), "§cRemove all alerts");
         sender.addChatMessage(clear);
-        sender.addChatMessage(new ChatComponentText(""));
+        sender.addChatMessage(TextCompat.createText(""));
     }
 
     @Override

@@ -1,26 +1,25 @@
 package io.hamlook.aetheria;
 
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.features.chat.globalchat.ui.ChatUI;
-import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.features.capes.ui.CapeSelectorGUI;
+import io.hamlook.aetheria.features.chat.globalchat.ui.ChatUI;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.repo.data.UpdateData;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.renderer.GlStateManager;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
 
 import java.awt.*;
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class OptionsMenu extends GuiScreen {
+public class OptionsMenu extends AetheriaBaseScreen {
 
     private static final String TITLE = "Aetheria's Skyblock Mod";
     private static final Random RNG = new Random();
@@ -68,8 +67,7 @@ public class OptionsMenu extends GuiScreen {
     }
 
     @Override
-    public void initGui() {
-        super.initGui();
+    public void onInitGui() {
         openProgress = 0f;
         particles.clear();
         for (int i = 0; i < PARTICLE_COUNT; i++) particles.add(new Particle(width, height));
@@ -80,7 +78,7 @@ public class OptionsMenu extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         globalTime += 0.018f;
         splashBounce = (splashBounce + 0.02f) % (float) (Math.PI * 2);
         openProgress = Math.min(1f, openProgress + 0.045f);
@@ -89,9 +87,9 @@ public class OptionsMenu extends GuiScreen {
         drawRect(0, 0, width, height, 0x90000000);
 
         // Particles (additive blend)
-        GlStateManager.disableTexture2D();
-        GlStateManager.enableBlend();
-        GlStateManager.disableDepth();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableDepth();
         GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE, GL11.GL_ONE);
         drawSoftBloom(width / 2f, height / 2f, Math.min(width, height) * 0.55f);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
@@ -102,11 +100,11 @@ public class OptionsMenu extends GuiScreen {
             GL11.glColor4f(col.getRed() / 255f, col.getGreen() / 255f, col.getBlue() / 255f, alpha);
             drawDot(p.x, p.y, p.currentSize());
         }
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableBlend();
-        GlStateManager.enableDepth();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.enableDepth();
         GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         // Animated title
         float scale = Math.max(1.8f, Math.min(2.8f, width / 155f));
@@ -114,9 +112,9 @@ public class OptionsMenu extends GuiScreen {
         float titleX = (width - scaledW) / 2f;
         float titleY = height * 0.22f;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(titleX, titleY, 0f);
-        GlStateManager.scale(scale, scale, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(titleX, titleY, 0f);
+        GlStateManagerCompat.scale(scale, scale, 1f);
         int curX = 0;
         for (int i = 0; i < TITLE.length(); i++) {
             float t = (float) i / Math.max(1, TITLE.length() - 1);
@@ -126,14 +124,14 @@ public class OptionsMenu extends GuiScreen {
             Color col = Color.getHSBColor(hue, 0.75f - shimmer * 0.20f, 0.85f + shimmer * 0.15f);
             int argb = (0xFF << 24) | (col.getRed() << 16) | (col.getGreen() << 8) | col.getBlue();
             float bob = (float) (Math.sin(globalTime * 0.9f + i * 0.35f) * 0.6f);
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(0f, bob, 0f);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(0f, bob, 0f);
             String ch = String.valueOf(TITLE.charAt(i));
             fontRendererObj.drawStringWithShadow(ch, curX, 0, argb);
-            GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
             curX += fontRendererObj.getStringWidth(ch);
         }
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
 
         // Version string
         String ver = "v" + Aetheria.VERSION;
@@ -145,7 +143,7 @@ public class OptionsMenu extends GuiScreen {
         if (updateVersion != null) drawUpdateBadge();
 
         GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         int btnX = width / 2 - BTN_W / 2;
         int btnBaseY = height / 2 + 10;
@@ -167,20 +165,19 @@ public class OptionsMenu extends GuiScreen {
             int ix = iconStripX() + i * (ICON_SIZE + ICON_GAP);
             boolean hov = mouseX >= ix && mouseX <= ix + ICON_SIZE && mouseY >= iconY && mouseY <= iconY + ICON_SIZE;
 
-            GlStateManager.enableBlend();
+            GlStateManagerCompat.enableBlend();
             GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
-            GlStateManager.color(1f, 1f, 1f, hov ? 1f : 0.65f);
+            GlStateManagerCompat.color(1f, 1f, 1f, hov ? 1f : 0.65f);
             mc.getTextureManager().bindTexture(SOCIAL_ICONS[i]);
             RenderUtils.drawTexturedRect(ix, iconY, ICON_SIZE, ICON_SIZE, GL11.GL_LINEAR);
         }
 
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        super.mouseClicked(mouseX, mouseY, mouseButton);
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
 
         // Update badge
         if (updateVersion != null && mouseX >= updateButtonX && mouseX <= updateButtonX + updateButtonW && mouseY >= updateButtonY && mouseY <= updateButtonY + updateButtonH) {
@@ -247,12 +244,12 @@ public class OptionsMenu extends GuiScreen {
         updateButtonW = renderedW;
         updateButtonH = renderedH;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(anchorX, anchorY, 0f);
-        GlStateManager.rotate(-12f, 0f, 0f, 1f);
-        GlStateManager.scale(splashScale * bounce, splashScale * bounce, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(anchorX, anchorY, 0f);
+        GlStateManagerCompat.rotate(-12f, 0f, 0f, 1f);
+        GlStateManagerCompat.scale(splashScale * bounce, splashScale * bounce, 1f);
         fontRendererObj.drawStringWithShadow(updateText, -fontRendererObj.getStringWidth(updateText) / 2f, -fontRendererObj.FONT_HEIGHT / 2f, 0xFF00FFB3);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     private void drawDot(float cx, float cy, float r) {
@@ -297,7 +294,7 @@ public class OptionsMenu extends GuiScreen {
     }
 
     @Override
-    public void onGuiClosed() {
+    public void guiClosed() {
         particles.clear();
     }
 

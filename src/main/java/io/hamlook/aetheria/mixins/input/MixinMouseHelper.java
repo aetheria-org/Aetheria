@@ -1,14 +1,13 @@
 package io.hamlook.aetheria.mixins.input;
 
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.farming.mouse.LockMouse;
 import io.hamlook.aetheria.features.farming.sensitivityreducer.SensitivityReducer;
 import io.hamlook.aetheria.features.qol.CursorResetHandler;
 import io.hamlook.aetheria.features.storage.StorageManager;
-import io.hamlook.aetheria.core.ATHRConfig;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.util.MouseHelper;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,20 +24,20 @@ public class MixinMouseHelper {
     private void ATHR$ungrabMouseCursor(CallbackInfo ci) {
         if (StorageManager.isOverlayActive()) {
             ci.cancel();
-            Mouse.setGrabbed(false);
-            Mouse.setCursorPosition(CursorResetHandler.cachedX, CursorResetHandler.cachedY);
+            MouseCompat.setGrabbed(false);
+            MouseCompat.setCursorPosition(CursorResetHandler.cachedX, CursorResetHandler.cachedY);
             return;
         }
         if (ATHRConfig.feature.qol.preventCursorReset) {
             ci.cancel();
-            Mouse.setGrabbed(false);
-            Mouse.setCursorPosition(CursorResetHandler.cachedX, CursorResetHandler.cachedY);
+            MouseCompat.setGrabbed(false);
+            MouseCompat.setCursorPosition(CursorResetHandler.cachedX, CursorResetHandler.cachedY);
         }
     }
 
     @Inject(method = "mouseXYChange", at = @At("RETURN"))
     private void ATHR$lockMouse(CallbackInfo ci) {
-        if (LockMouse.isLocked() && Minecraft.getMinecraft().currentScreen == null) {
+        if (LockMouse.isLocked() && MinecraftCompat.getMinecraft().currentScreen == null) {
             deltaX = 0;
             deltaY = 0;
         }
@@ -46,7 +45,7 @@ public class MixinMouseHelper {
 
     @Inject(method = "mouseXYChange", at = @At("RETURN"))
     private void ATHR$reduceSensitivity(CallbackInfo ci) {
-        if (Minecraft.getMinecraft().currentScreen != null) return;
+        if (MinecraftCompat.getMinecraft().currentScreen != null) return;
         if (LockMouse.isLocked()) return;
         if (!SensitivityReducer.isActive()) return;
         float scale = SensitivityReducer.getSensitivityScale();

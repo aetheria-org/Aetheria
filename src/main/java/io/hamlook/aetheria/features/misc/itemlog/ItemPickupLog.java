@@ -1,23 +1,25 @@
 package io.hamlook.aetheria.features.misc.itemlog;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
-import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 
 @RegisterEvents
 public class ItemPickupLog extends Overlay {
@@ -113,20 +115,20 @@ public class ItemPickupLog extends Overlay {
     @HandleEvent
     public void onGuiOpen(ASMGuiOpenEvent event) {
         if (!SkyblockData.isOnSkyblock()) return;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null) return;
 
         if (event.gui == null) {
             if (preScreenSnapshot != null) {
-                ItemStack[] current = mc.thePlayer.inventory.mainInventory;
+                ItemStack[] current = ArrayNormalizationKt.normalizeAsArray(mc.thePlayer.inventory.mainInventory);
                 if (preScreenSnapshot.length == current.length) {
                     diffAndLog(preScreenSnapshot, current);
                 }
                 preScreenSnapshot = null;
             }
-            previousInventory = copyInventory(mc.thePlayer.inventory.mainInventory);
+            previousInventory = copyInventory(ArrayNormalizationKt.normalizeAsArray(mc.thePlayer.inventory.mainInventory));
         } else {
-            preScreenSnapshot = copyInventory(mc.thePlayer.inventory.mainInventory);
+            preScreenSnapshot = copyInventory(ArrayNormalizationKt.normalizeAsArray(mc.thePlayer.inventory.mainInventory));
             previousInventory = null;
         }
     }
@@ -135,7 +137,7 @@ public class ItemPickupLog extends Overlay {
     public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer == null || !SkyblockData.isOnSkyblock()) {
             previousInventory = null;
             return;
@@ -145,7 +147,7 @@ public class ItemPickupLog extends Overlay {
 
         if (mc.currentScreen != null) return;
 
-        ItemStack[] current = mc.thePlayer.inventory.mainInventory;
+        ItemStack[] current = ArrayNormalizationKt.normalizeAsArray(mc.thePlayer.inventory.mainInventory);
 
         if (previousInventory != null
                 && previousInventory.length == current.length

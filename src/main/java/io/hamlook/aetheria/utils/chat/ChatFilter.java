@@ -1,12 +1,13 @@
 package io.hamlook.aetheria.utils.chat;
 
-import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMChatEvent;
 
 
 @RegisterEvents
@@ -46,7 +47,7 @@ public class ChatFilter {
     public void onChat(ASMChatEvent event) {
         if (FILTERS.isEmpty()) return;
 
-        String raw = event.message.getFormattedText();
+        String raw = TextCompat.getFormattedText(event.message);
         for (Predicate<String> filter : FILTERS.values()) {
             if (filter.test(raw)) {
                 event.cancel();

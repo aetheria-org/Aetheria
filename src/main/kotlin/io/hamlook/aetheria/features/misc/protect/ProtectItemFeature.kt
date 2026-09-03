@@ -1,30 +1,31 @@
 package io.hamlook.aetheria.features.misc.protect
 
+import io.hamlook.aetheria.Resources
 import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
-import io.hamlook.aetheria.Resources
+import io.hamlook.aetheria.events.ASMTickEvent
 import io.hamlook.aetheria.events.ItemTossEvent
 import io.hamlook.aetheria.events.RenderItemOverlayEvent
 import io.hamlook.aetheria.events.SlotClickEvent
 import io.hamlook.aetheria.events.SlotClickEvent.ClickType
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.ContainerUtils
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
+import io.hamlook.aetheria.utils.compat.KeyboardCompat
+import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import io.hamlook.aetheria.utils.item.ItemUtils
-import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Gui
-import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.item.ItemStack
 import net.minecraft.util.ChatComponentText
 import net.minecraft.util.EnumChatFormatting
-import org.lwjgl.input.Keyboard
-import io.hamlook.aetheria.events.ASMTickEvent
 import net.minecraftforge.fml.common.gameevent.TickEvent
+import org.lwjgl.input.Keyboard
 
 @RegisterEvents
 class ProtectItemFeature {
 
     companion object {
-        private val mc = Minecraft.getMinecraft()
+        private val mc = MinecraftCompat.getMinecraft()
         private const val STAR_SIZE = 16
         private const val CLICK_OUTSIDE_WINDOW = -999
 
@@ -46,7 +47,7 @@ class ProtectItemFeature {
 
         private fun notifyRaw(message: String) {
             if (ATHRConfig.feature?.misc?.protectItem?.showChatNotifications != true) return
-            mc.thePlayer?.addChatMessage(ChatComponentText("${EnumChatFormatting.RED}[ATHR] §r$message"))
+            MinecraftCompat.getLocalPlayer()?.addChatMessage(ChatComponentText("${EnumChatFormatting.RED}[ATHR] §r$message"))
         }
     }
 
@@ -55,14 +56,14 @@ class ProtectItemFeature {
     @HandleEvent
     fun onClientTick(event: ASMTickEvent) {
         if (event.phase != TickEvent.Phase.END) return
-        if (mc.thePlayer == null || mc.currentScreen != null) return
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getMinecraft().currentScreen != null) return
 
         val key = ATHRConfig.feature?.misc?.protectItem?.protectionKey ?: return
         if (key == Keyboard.KEY_NONE) return
 
-        val keyDown = Keyboard.isKeyDown(key)
+        val keyDown = KeyboardCompat.isKeyDown(key)
         if (keyDown && !keyWasDown) {
-            val held = mc.thePlayer.heldItem
+            val held = MinecraftCompat.getLocalPlayer()?.heldItem
             if (held == null) {
                 notifyRaw("${EnumChatFormatting.RED}You are not holding an item!")
             } else {
@@ -109,7 +110,7 @@ class ProtectItemFeature {
     }
 
     private fun handleClickOutsideWindow(event: SlotClickEvent) {
-        val cursorItem = mc.thePlayer?.inventory?.itemStack ?: return
+        val cursorItem = MinecraftCompat.getLocalPlayer()?.inventory?.itemStack ?: return
         if (!isProtected(cursorItem)) return
 
         event.cancel()
@@ -150,7 +151,7 @@ class ProtectItemFeature {
         }
 
         // Check if the cursor has a protected item
-        val cursorItem = mc.thePlayer?.inventory?.itemStack
+        val cursorItem = MinecraftCompat.getLocalPlayer()?.inventory?.itemStack
         if (cursorItem != null && isProtected(cursorItem)) {
             event.cancel()
             notifyBlocked(cursorItem.displayName, "moved in this menu")
@@ -175,21 +176,21 @@ class ProtectItemFeature {
     private fun renderProtectionStar(x: Int, y: Int) {
         val opacity = getStarOpacity()
 
-        GlStateManager.pushMatrix()
-        GlStateManager.enableBlend()
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0)
-        GlStateManager.color(1f, 1f, 1f, opacity)
-        GlStateManager.disableDepth()
+        GlStateManagerCompat.pushMatrix()
+        GlStateManagerCompat.enableBlend()
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0)
+        GlStateManagerCompat.color(1f, 1f, 1f, opacity)
+        GlStateManagerCompat.disableDepth()
 
         mc.textureManager.bindTexture(Resources.PROTECT_ITEM_STAR)
         Gui.drawModalRectWithCustomSizedTexture(
             x, y, 0f, 0f, STAR_SIZE, STAR_SIZE, STAR_SIZE.toFloat(), STAR_SIZE.toFloat()
         )
 
-        GlStateManager.enableDepth()
-        GlStateManager.disableBlend()
-        GlStateManager.color(1f, 1f, 1f, 1f)
-        GlStateManager.popMatrix()
+        GlStateManagerCompat.enableDepth()
+        GlStateManagerCompat.disableBlend()
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f)
+        GlStateManagerCompat.popMatrix()
     }
 
     private fun getStarOpacity(): Float {

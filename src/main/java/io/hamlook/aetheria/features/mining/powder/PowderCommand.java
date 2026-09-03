@@ -2,9 +2,9 @@ package io.hamlook.aetheria.features.mining.powder;
 
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import java.util.Arrays;
@@ -34,7 +34,7 @@ public class PowderCommand extends ASMCommand {
     @Override
     public void execute(ICommandSender sender, String[] args) {
         if (args.length == 0) {
-            sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.YELLOW + "Usage: /pdt <reset|toggle>"));
+            sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.YELLOW + "Usage: /pdt <reset|toggle>"));
             return;
         }
 
@@ -43,16 +43,16 @@ public class PowderCommand extends ASMCommand {
         switch (args[0].toLowerCase()) {
             case "reset":
                 stats.reset();
-                sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.GREEN + "Powder tracker data has been reset."));
+                sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.GREEN + "Powder tracker data has been reset."));
                 break;
 
             case "toggle":
                 boolean now = stats.toggleTracking();
-                sender.addChatMessage(new ChatComponentText(PREFIX + (now ? EnumChatFormatting.GREEN + "Tracker enabled." : EnumChatFormatting.RED + "Tracker paused.")));
+                sender.addChatMessage(TextCompat.createText(PREFIX + (now ? EnumChatFormatting.GREEN + "Tracker enabled." : EnumChatFormatting.RED + "Tracker paused.")));
                 break;
 
             default:
-                sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.RED + "Unknown subcommand. Use: reset, toggle"));
+                sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.RED + "Unknown subcommand. Use: reset, toggle"));
         }
     }
 

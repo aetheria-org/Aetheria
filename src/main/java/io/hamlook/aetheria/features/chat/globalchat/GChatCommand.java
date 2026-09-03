@@ -3,14 +3,15 @@ package io.hamlook.aetheria.features.chat.globalchat;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.globalchat.ui.ChatUI;
-import io.hamlook.aetheria.features.chat.globalchat.vars.*;
+import io.hamlook.aetheria.features.chat.globalchat.vars.Channel;
+import io.hamlook.aetheria.features.chat.globalchat.vars.ChatMessage;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
-import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.CommunityAccess;
+import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 
@@ -81,7 +82,7 @@ public class GChatCommand extends ASMCommand {
         ChatUtils.sendMessage("§7Checking Global Chat access...");
         CompletableFuture.runAsync(() -> {
             CheckResult result = checkAccess();
-            Minecraft.getMinecraft().addScheduledTask(() -> {
+            MinecraftCompat.getMinecraft().addScheduledTask(() -> {
                 if (result.status == 403) {
                     GlobalChat.pushSystemNotice(result.message != null ? result.message : "You are banned from Global Chat.");
                 } else if (result.status == -1) {
@@ -115,7 +116,7 @@ public class GChatCommand extends ASMCommand {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("User-Agent", "Aetheria/" + io.hamlook.aetheria.Aetheria.VERSION);
-            connection.setRequestProperty("username", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
+            connection.setRequestProperty("username", MinecraftCompat.getMinecraft().getSession().getUsername().toLowerCase());
             connection.setRequestProperty("x-timezone-offset", String.valueOf(io.hamlook.aetheria.utils.TimeUtils.getLocalOffsetMinutes()));
             connection.setReadTimeout(10000);
             connection.setConnectTimeout(10000);

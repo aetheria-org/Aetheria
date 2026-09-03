@@ -1,10 +1,9 @@
 package io.hamlook.aetheria.utils.overlay;
 
-import io.hamlook.aetheria.core.ATHRConfig;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
 import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
+import net.minecraft.client.gui.ScaledResolution;
 
 public abstract class SimpleOverlay {
 

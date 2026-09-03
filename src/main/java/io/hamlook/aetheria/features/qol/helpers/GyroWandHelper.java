@@ -1,19 +1,20 @@
 package io.hamlook.aetheria.features.qol.helpers;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.utils.render.RenderUtils;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 import io.hamlook.aetheria.features.qol.timers.ItemCooldowns;
 import io.hamlook.aetheria.init.RegisterEvents;
-import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.RaycastUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
-import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
-import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 
 @RegisterEvents
 public class GyroWandHelper {
@@ -27,7 +28,7 @@ public class GyroWandHelper {
     private static final float[] COLOR_COOLDOWN = {1.0f, 0.2f, 0.2f, 0.6f};
 
     public static boolean isHoldingGyro() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         return mc.thePlayer != null && GYRO_ID.equals(ItemUtils.getInternalName(mc.thePlayer.getHeldItem()));
     }
 
@@ -45,7 +46,7 @@ public class GyroWandHelper {
     public void onRenderWorld(ASMRenderWorldEvent event) {
         if (!isEnabled() || !isHoldingGyro()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         EntityPlayer player = mc.thePlayer;
 
         Vec3 target = getTargetPos(player, event.partialTicks);
@@ -64,9 +65,9 @@ public class GyroWandHelper {
             RenderUtils.drawWorldCircle(RING_RADIUS, RING_STEPS, thickness, color[0], color[1], color[2], color[3]);
         } finally {
             GL11.glPopMatrix();
-            GlStateManager.enableDepth();
-            GlStateManager.enableTexture2D();
-            GlStateManager.disableBlend();
+            GlStateManagerCompat.enableDepth();
+            GlStateManagerCompat.enableTexture2D();
+            GlStateManagerCompat.disableBlend();
             GL11.glColor4f(1f, 1f, 1f, 1f);
         }
     }

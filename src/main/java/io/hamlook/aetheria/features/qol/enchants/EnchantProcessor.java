@@ -3,29 +3,30 @@ package io.hamlook.aetheria.features.qol.enchants;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.qol.EnchantParserConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
-import io.hamlook.aetheria.utils.render.ChromaTextRenderer;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.render.ChromaTextRenderer;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class EnchantProcessor {
@@ -62,7 +63,7 @@ public class EnchantProcessor {
         }
         LORE_CACHE.updateBefore(loreList);
         LORE_CACHE.signature = configSignature();
-        FontRenderer fontRenderer = Minecraft.getMinecraft().fontRendererObj;
+        FontRenderer fontRenderer = MinecraftCompat.getMinecraft().fontRendererObj;
 
         boolean isEnchantedBook = "ENCHANTED_BOOK".equals(ItemUtils.getInternalName(event.itemStack));
         int startEnchant = -1, endEnchant = -1, maxTooltipWidth = 0;
@@ -127,9 +128,7 @@ public class EnchantProcessor {
     }
 
     private NBTTagCompound getEnchantNBT(ItemStack stack) {
-        if (stack == null || !stack.hasTagCompound()) return null;
-        NBTTagCompound extra = stack.getTagCompound().getCompoundTag("ExtraAttributes");
-        return extra.hasKey("enchantments", 10) ? extra.getCompoundTag("enchantments") : null;
+        return ItemUtils.getEnchantments(stack);
     }
 
     private boolean containsEnchantment(NBTTagCompound enchantNBT, String line) {
@@ -180,7 +179,7 @@ public class EnchantProcessor {
     }
 
     private int correctTooltipWidth(int maxTooltipWidth) {
-        final ScaledResolution scaled = new ScaledResolution(Minecraft.getMinecraft());
+        final ScaledResolution scaled = GuiScreenUtils.getScaledResolution();
         final int mouseX = KeybindHelper.getMouseCoords(scaled)[0];
         int tooltipX = mouseX + 12;
         if (tooltipX + maxTooltipWidth + 4 > scaled.getScaledWidth()) {
@@ -201,7 +200,7 @@ public class EnchantProcessor {
         int layout = ATHRConfig.feature.qol.enchantParser.enchantLayout;
 
         if (layout == LAYOUT_SINGLE_LINE && enchants.size() > 1 && !(hasLore && isEnchantedBook)) {
-            FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+            FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
             int commaLength = fr.getStringWidth(GRAY_COMMA);
             int sum = 0;
             StringBuilder builder = new StringBuilder();
@@ -391,7 +390,7 @@ public class EnchantProcessor {
 
         private int renderLength() {
             if (cachedRenderLength == -1) {
-                cachedRenderLength = Minecraft.getMinecraft().fontRendererObj.getStringWidth(formatted());
+                cachedRenderLength = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(formatted());
             }
             return cachedRenderLength;
         }

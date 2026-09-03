@@ -3,7 +3,7 @@ package io.hamlook.aetheria.mixins.renderer;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
 import io.hamlook.aetheria.features.qol.DamageNameplates;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
@@ -38,7 +38,7 @@ public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> exte
     @Inject(method = "canRenderName(Lnet/minecraft/entity/EntityLivingBase;)Z", at = @At("HEAD"), cancellable = true)
     private void ATHR$showOwnNametag(T entity, CallbackInfoReturnable<Boolean> cir) {
         if (ATHRConfig.feature == null) return;
-        if (ATHRConfig.feature.misc.showOwnNametag && entity == Minecraft.getMinecraft().thePlayer)
+        if (ATHRConfig.feature.misc.showOwnNametag && entity == MinecraftCompat.getMinecraft().thePlayer)
             cir.setReturnValue(true);
     }
 

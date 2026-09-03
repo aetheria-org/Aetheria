@@ -3,10 +3,13 @@ package io.hamlook.aetheria.features.debug.commands;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.compat.WorldCompat;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -42,7 +45,7 @@ public class AsmCopyNearbyEntitiesCommand extends ASMCommand {
 
     @Override
     public void execute(ICommandSender sender, String[] args) throws CommandException {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.theWorld == null || mc.thePlayer == null) {
             ChatUtils.sendMessage(EnumChatFormatting.RED + "Not in a world.");
             return;
@@ -58,7 +61,7 @@ public class AsmCopyNearbyEntitiesCommand extends ASMCommand {
             }
         }
 
-        List<Entity> loaded = new ArrayList<>(mc.theWorld.loadedEntityList);
+        List<Entity> loaded = new ArrayList<>(WorldCompat.getAllEntities(mc.theWorld));
         List<String> result = new ArrayList<>();
         int count = 0;
 
@@ -111,7 +114,7 @@ public class AsmCopyNearbyEntitiesCommand extends ASMCommand {
     }
 
     private static String displayNameOf(Entity entity) {
-        if (entity instanceof EntityLivingBase) return ((EntityLivingBase) entity).getDisplayName().getFormattedText();
+        if (entity instanceof EntityLivingBase) return TextCompat.getFormattedText(((EntityLivingBase) entity).getDisplayName());
         return entity.getClass().getSimpleName();
     }
 }

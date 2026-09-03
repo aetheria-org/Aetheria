@@ -5,31 +5,27 @@ import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.VisitorsConfig;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
+import io.hamlook.aetheria.events.ASMMouseEvent;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.features.qol.BetterContainers;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.debug.GLDebugProbe;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
+import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiEditSign;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.event.ClickEvent;
-import net.minecraft.event.HoverEvent;
+import net.minecraft.util.IChatComponent;
 import net.minecraft.util.ResourceLocation;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import lombok.Getter;
-import org.lwjgl.input.Mouse;
 
 import java.util.ArrayList;
 import java.util.List;
-import io.hamlook.aetheria.events.ASMMouseEvent;
-import io.hamlook.aetheria.events.ASMGuiDrawEvent;
 
 public abstract class VisitorPanelBase {
 
@@ -106,7 +102,7 @@ public abstract class VisitorPanelBase {
         if (ls.isEmpty()) return;
         mouseX = -1;
         mouseY = -1;
-        drawPanel(ls, Minecraft.getMinecraft().currentScreen, false, false);
+        drawPanel(ls, MinecraftCompat.getMinecraft().currentScreen, false, false);
     }
 
     // GL diagnostics via the shared fail-safe probe (see utils/debug/GLDebugProbe).
@@ -126,7 +122,7 @@ public abstract class VisitorPanelBase {
                 && ATHRConfig.feature.debug.enableDebug
                 && GLDebugProbe.throttle("VisitorPanel", 1000L);
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         int w = PAD * 2;
         int h = PAD * 2;
         int[] rowHeights = new int[ls.size()];
@@ -139,7 +135,7 @@ public abstract class VisitorPanelBase {
         float scaledH = h * s;
 
         Position pos = pc != null ? pc.panelPos : new Position(-350, 120, false, false);
-        ScaledResolution sr = new ScaledResolution(mc);
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int x = pos.getAbsX(sr, Math.round(scaledW));
         int y = pos.getAbsY(sr, Math.round(scaledH));
         if (pos.isCenterX()) x -= Math.round(scaledW / 2f);
@@ -154,17 +150,17 @@ public abstract class VisitorPanelBase {
         boolean compensate = undoContainerTranslate && gui instanceof GuiContainer;
         glProbe("ENTER", live);
         if (compensate) {
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(-((GuiContainer) gui).guiLeft, -((GuiContainer) gui).guiTop, 50);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(-((GuiContainer) gui).guiLeft, -((GuiContainer) gui).guiTop, 50);
         }
         try {
-            GlStateManager.pushMatrix();
+            GlStateManagerCompat.pushMatrix();
             // Force an unlit white state: other container features leave the
             // lighting mode enabled, which shades the panel text darker.
-            GlStateManager.disableLighting();
-            GlStateManager.color(1f, 1f, 1f, 1f);
-            GlStateManager.translate(x, y, 0);
-            GlStateManager.scale(s, s, 1);
+            GlStateManagerCompat.disableLighting();
+            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+            GlStateManagerCompat.translate(x, y, 0);
+            GlStateManagerCompat.scale(s, s, 1);
 
             glProbe("PRE_BG", live);
             clickTargets.clear();
@@ -172,10 +168,10 @@ public abstract class VisitorPanelBase {
             // The nine-slice helper disables blending on exit; restore the
             // standard alpha blend or all following text/rects render unblended
             // (darker text, broken hover highlights).
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+            GlStateManagerCompat.enableBlend();
+            GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
             glProbe("POST_BG", live);
-            GlStateManager.color(1f, 1f, 1f, 1f);
+            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
             int dy = PAD;
             boolean iconProbed = false;
             for (int i = 0; i < ls.size(); i++) {
@@ -199,10 +195,10 @@ public abstract class VisitorPanelBase {
                         // after each icon, darkening the row text.
                         if (line.icon != null) {
                             ItemRenderUtils.renderItemIcon(mc, line.icon, tx, dy + ((ITEM_ROW_H - ICON_SIZE) / 2), ICON_SIZE);
-                            GlStateManager.disableLighting();
-                            GlStateManager.color(1f, 1f, 1f, 1f);
-                            GlStateManager.enableBlend();
-                            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+                            GlStateManagerCompat.disableLighting();
+                            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+                            GlStateManagerCompat.enableBlend();
+                            GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
                             if (!iconProbed) {
                                 glProbe("POST_ICON", live);
                                 iconProbed = true;
@@ -223,8 +219,8 @@ public abstract class VisitorPanelBase {
             }
             glProbe("POST_ROWS", live);
         } finally {
-            GlStateManager.popMatrix();
-            if (compensate) GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
+            if (compensate) GlStateManagerCompat.popMatrix();
         }
     }
 
@@ -240,15 +236,13 @@ public abstract class VisitorPanelBase {
 
         tipShownThisLaunch = true;
         io.hamlook.aetheria.utils.SoundUtils.playSound("note.pling");
-        ChatComponentText line1 = new ChatComponentText("§e[ASM] §7Tip: click an item in the shopping list to open it on the Bazaar.");
-        ChatComponentText line2 = new ChatComponentText("§7The order amount is filled for you automatically. ");
-        ChatComponentText hide = new ChatComponentText("§a[HIDE]");
-        hide.getChatStyle()
-                .setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                        new ChatComponentText("Never show this tip again")))
-                .setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/visitortip hide"));
-        line2.appendSibling(hide);
-        Minecraft mc = Minecraft.getMinecraft();
+        IChatComponent line1 = TextCompat.createText("§e[ASM] §7Tip: click an item in the shopping list to open it on the Bazaar.");
+        IChatComponent line2 = TextCompat.createText("§7The order amount is filled for you automatically. ");
+        IChatComponent hide = TextCompat.createText("§a[HIDE]");
+        TextCompat.setHoverShowText(TextCompat.getChatStyle(hide), "Never show this tip again");
+        TextCompat.setClickRunCommand(TextCompat.getChatStyle(hide), "/visitortip hide");
+        TextCompat.appendSibling(line2, hide);
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.thePlayer != null) {
             mc.thePlayer.addChatMessage(line1);
             mc.thePlayer.addChatMessage(line2);
@@ -280,11 +274,11 @@ public abstract class VisitorPanelBase {
         if (clickTargets.isEmpty()) return;
         boolean visible = panelEnabled();
         if (!visible) return;
-        if (!Mouse.getEventButtonState() || Mouse.getEventButton() != 0) return;
-        Minecraft mc = Minecraft.getMinecraft();
+        if (!MouseCompat.getEventButtonState() || MouseCompat.getEventButton() != 0) return;
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.currentScreen == null) return;
-        int mx = Mouse.getEventX() * mc.currentScreen.width / mc.displayWidth;
-        int my = mc.currentScreen.height - Mouse.getEventY() * mc.currentScreen.height / mc.displayHeight - 1;
+        int mx = MouseCompat.getEventX() * mc.currentScreen.width / mc.displayWidth;
+        int my = mc.currentScreen.height - MouseCompat.getEventY() * mc.currentScreen.height / mc.displayHeight - 1;
         for (Clickable clickable : clickTargets) {
             if (clickable.contains(mx, my)) {
                 event.cancel();
@@ -307,7 +301,7 @@ public abstract class VisitorPanelBase {
 
     private static int lineWidth(VisitorLine line) {
         String text = line.text == null ? "" : line.text;
-        int textWidth = Minecraft.getMinecraft().fontRendererObj.getStringWidth(text);
+        int textWidth = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(text);
         if (line.kind == VisitorLine.Kind.ITEM) textWidth += ICON_SIZE + ICON_GAP;
         return textWidth;
     }

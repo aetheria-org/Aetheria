@@ -1,21 +1,21 @@
 package io.hamlook.aetheria.features.misc
 
-import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.Resources
-import io.hamlook.aetheria.utils.render.RenderUtils
-import io.hamlook.aetheria.utils.overlay.SimpleOverlay
+import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.chat.ChatUtils
-import net.minecraft.client.Minecraft
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
+import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.overlay.SimpleOverlay
+import io.hamlook.aetheria.utils.render.RenderUtils
 import net.minecraft.client.gui.ScaledResolution
-import net.minecraft.client.renderer.GlStateManager
 import java.awt.Color
 
 @RegisterEvents
 object DVD : SimpleOverlay() {
 
     private const val ASPECT_RATIO = 0.553
-    private val mc = Minecraft.getMinecraft()
+    private val mc = MinecraftCompat.getMinecraft()
     private var lastUpdateTime = System.nanoTime()
     private var color = 0xFFFFFF
     private var x = 100.0
@@ -74,11 +74,11 @@ object DVD : SimpleOverlay() {
         val r = (color shr 16 and 0xFF) / 255f
         val g = (color shr 8 and 0xFF) / 255f
         val b = (color and 0xFF) / 255f
-        GlStateManager.color(r, g, b, 1f)
+        GlStateManagerCompat.color(r, g, b, 1f)
 
         RenderUtils.drawTexturedRect(x.toFloat(), y.toFloat(), boxWidth.toFloat(), boxHeight.toFloat())
 
-        GlStateManager.color(1f, 1f, 1f, 1f)
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f)
     }
 
     private fun updatePosition() {
@@ -128,8 +128,8 @@ object DVD : SimpleOverlay() {
         }
 
         if (hitCorner && !justInitialized) {
-            mc.thePlayer?.playSound("mob.enderdragon.growl", 1.0f, 1.0f)
-            ChatUtils.sendMessage("§d§l✦ §5§lLEGENDARY CORNER HIT! §d§l✦")
+            MinecraftCompat.getLocalPlayer()?.playSound("mob.enderdragon.growl", 1.0f, 1.0f)
+            ChatUtils.sendMessage("§d§lâœ¦ §5§lLEGENDARY CORNER HIT! §d§lâœ¦")
         }
 
         justInitialized = false

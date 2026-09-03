@@ -1,26 +1,27 @@
 package io.hamlook.aetheria.features.dungeons.caseopening;
 
 import io.hamlook.aetheria.DebugLogger;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.StringUtils;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
+import io.hamlook.aetheria.events.ASMMouseEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
+import io.hamlook.aetheria.utils.StringUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.data.DungeonUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.HashMap;
 import java.util.Map;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMGuiOpenEvent;
-import io.hamlook.aetheria.events.ASMMouseEvent;
-import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class ChestListener {
@@ -144,7 +145,7 @@ public class ChestListener {
         if (!ContainerUtils.isChestOpen()) return;
         if (!isCatacombsChestList) return;
 
-        GuiChest chest = (GuiChest) Minecraft.getMinecraft().currentScreen;
+        GuiChest chest = (GuiChest) MinecraftCompat.getMinecraft().currentScreen;
         Slot hovered = chest.getSlotUnderMouse();
         if (hovered == null || !hovered.getHasStack()) return;
 
@@ -173,7 +174,7 @@ public class ChestListener {
     public void onMouseClick(ASMMouseEvent event) {
         if (!ContainerUtils.isChestOpen(event.gui)) return;
         Slot slot = ((GuiChest) event.gui).getSlotUnderMouse();
-        if (slot != null && org.lwjgl.input.Mouse.getEventButtonState() && isCroesus && !isCatacombsChestList) {
+        if (slot != null && MouseCompat.getEventButtonState() && isCroesus && !isCatacombsChestList) {
             chestID = slot.slotNumber;
             DebugLogger.log("[ChestListener] Croesus slot clicked: chestID=" + chestID);
         }
@@ -182,7 +183,7 @@ public class ChestListener {
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        WorldClient currentWorld = Minecraft.getMinecraft().theWorld;
+        WorldClient currentWorld = MinecraftCompat.getMinecraft().theWorld;
         if (currentWorld != null && currentWorld != lastWorld) {
             lastWorld = currentWorld;
             isCroesus = false;

@@ -1,22 +1,24 @@
 package io.hamlook.aetheria.features.misc.itemlog;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.misc.ItemLogAlertsConfig;
+import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.SoundUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
-import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
 
 @RegisterEvents
 public class ItemLogAlerts {
@@ -72,20 +74,20 @@ public class ItemLogAlerts {
     public void onRenderOverlay(ASMRenderOverlayEvent event) {
         if (event.type != 11) return;
         if (System.currentTimeMillis() > endTime) return;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         FontRenderer fr = mc.fontRendererObj;
-        ScaledResolution sr = new ScaledResolution(mc);
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int screenWidth = sr.getScaledWidth();
         int screenHeight = sr.getScaledHeight();
         int textWidth = fr.getStringWidth(displayText);
         float scale = Math.min(6.0f, (screenWidth - 20f) / textWidth);
         scale = Math.max(1.0f, scale);
-        GlStateManager.pushMatrix();
-        GlStateManager.scale(scale, scale, scale);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.scale(scale, scale, scale);
         int x = (int) ((screenWidth / scale - textWidth) / 2);
         int y = (int) ((screenHeight / scale / 2) - 15);
         fr.drawStringWithShadow(displayText, x, y, 0xFF5555);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     @HandleEvent

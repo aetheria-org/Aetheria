@@ -3,6 +3,9 @@ package io.hamlook.aetheria.features.chat.emoji;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.chat.EmojiConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
@@ -11,7 +14,6 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import java.util.Collections;
@@ -217,7 +219,7 @@ public class EmojiSuggestionBar {
 
     public static void tickDrag(int mouseY) {
         if (!isDraggingScrollbar) return;
-        if (Mouse.isButtonDown(0)) {
+        if (MouseCompat.isButtonDown(0)) {
             updateScrollbarDrag(txMouseY(mouseY));
         } else {
             endScrollbarDrag();
@@ -286,7 +288,7 @@ public class EmojiSuggestionBar {
     private static ScaledResolution scaledResolution(Minecraft mc) {
         int key = mc.displayWidth * 31 + mc.displayHeight * 17 + mc.gameSettings.guiScale * 7;
         if (cachedSr == null || key != cachedSrKey) {
-            cachedSr = new ScaledResolution(mc);
+            cachedSr = GuiScreenUtils.getScaledResolution();
             cachedSrKey = key;
         }
         return cachedSr;
@@ -336,7 +338,7 @@ public class EmojiSuggestionBar {
         applyPendingIfReady();
         if (matches.isEmpty()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         ScaledResolution sr = scaledResolution(mc);
         lastMouseX = mouseX;
         lastMouseY = mouseY;

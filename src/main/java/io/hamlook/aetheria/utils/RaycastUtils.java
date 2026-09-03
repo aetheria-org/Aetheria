@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.utils;
 
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
@@ -43,7 +44,7 @@ public final class RaycastUtils {
 
         for (int i = 0; i < 1000; i++) {
             BlockPos pos = new BlockPos((int) x, (int) y, (int) z);
-            if (Minecraft.getMinecraft().theWorld.getBlockState(pos).getBlock() != Blocks.air) {
+            if (!BlockCompat.isAir(MinecraftCompat.getMinecraft().theWorld.getBlockState(pos).getBlock())) {
                 return pos;
             }
             if (x == endX && y == endY && z == endZ) return null;

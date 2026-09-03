@@ -3,8 +3,8 @@ package io.hamlook.aetheria.features.debug.commands;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -35,8 +35,8 @@ public class AsmCopyInternalNameCommand extends ASMCommand {
 
     @Override
     public void execute(ICommandSender sender, String[] args) throws CommandException {
-        ItemStack item = Minecraft.getMinecraft().thePlayer != null
-            ? Minecraft.getMinecraft().thePlayer.getHeldItem()
+        ItemStack item = MinecraftCompat.getMinecraft().thePlayer != null
+            ? MinecraftCompat.getMinecraft().thePlayer.getHeldItem()
             : null;
 
         if (item == null) {

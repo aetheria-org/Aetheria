@@ -1,11 +1,11 @@
 package io.hamlook.aetheria.features.misc.itemList.recipe;
 
+import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
-import io.hamlook.aetheria.Resources;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.GlStateManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,11 +21,11 @@ public final class RecipeUtils {
     public static void drawAmount(FontRenderer fr, String amount, int sx, int sy) {
         if (amount == null || amount.equals("1") || amount.isEmpty()) return;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(0, 0, 300); // Render above the item stack
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(0, 0, 300); // Render above the item stack
         int strW = fr.getStringWidth(amount);
         fr.drawStringWithShadow(amount, sx + 17 - strW, sy + 9, 0xFFFFFF);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     public static List<String> buildItemTooltip(SkyblockItem item) {

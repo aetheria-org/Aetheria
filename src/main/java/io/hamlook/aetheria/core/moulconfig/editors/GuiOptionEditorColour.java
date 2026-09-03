@@ -5,10 +5,10 @@ package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElementColour;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import org.lwjgl.input.Mouse;
 
 import java.util.function.Consumer;
 
@@ -39,8 +39,8 @@ public class GuiOptionEditorColour extends GuiOptionEditor {
         int r = (argb >> 16) & 0xFF;
         int g = (argb >> 8) & 0xFF;
         int b = argb & 0xFF;
-        GlStateManager.color(r / 255f, g / 255f, b / 255f, 1);
-        Minecraft.getMinecraft().getTextureManager().bindTexture(button_white);
+        GlStateManagerCompat.color(r / 255f, g / 255f, b / 255f, 1);
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(button_white);
         RenderUtils.drawTexturedRect(x + width / 6 - 24, y + height - 7 - 14, 48, 16);
     }
 
@@ -60,7 +60,7 @@ public class GuiOptionEditorColour extends GuiOptionEditor {
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
         int height = getHeight();
 
-        if (Mouse.getEventButtonState() && Mouse.getEventButton() == 0 && mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24 && mouseY > y + height - 7 - 14 && mouseY < y + height - 7 + 2) {
+        if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0 && mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24 && mouseY > y + height - 7 - 14 && mouseY < y + height - 7 + 2) {
             colourElement = new GuiElementColour(mouseX, mouseY, chromaColour, val -> {
                 setter.accept(val);
                 chromaColour = val;

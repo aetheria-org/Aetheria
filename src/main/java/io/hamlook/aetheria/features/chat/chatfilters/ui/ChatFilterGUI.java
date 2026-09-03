@@ -5,16 +5,16 @@ import io.hamlook.aetheria.features.chat.chatfilters.ChatFilter;
 import io.hamlook.aetheria.features.chat.chatfilters.ChatFilterManager;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterCase;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterMode;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.renderer.GlStateManager;
-import org.lwjgl.input.Mouse;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,7 +38,7 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
     private ListLayout cachedLayout;
 
     @Override
-    public void initGui() {
+    protected void onInitGui() {
         chatFilters = new ArrayList<>(ChatFilterManager.chatFilters);
 
         boxW = getScaledX(700);
@@ -48,7 +48,7 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
 
         textScale = ResolutionUtils.getXStatic(1) * 2.6f * configScale();
         cachedLayout = null;
-        org.lwjgl.input.Keyboard.enableRepeatEvents(true);
+        KeyboardCompat.enableRepeatEvents(true);
         String prevSearch = searchField != null ? searchField.getText() : "";
 
         int fieldH = getScaledY(BTN_H);
@@ -101,8 +101,8 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
     }
 
     @Override
-    public void onGuiClosed() {
-        org.lwjgl.input.Keyboard.enableRepeatEvents(false);
+    protected void guiClosed() {
+        KeyboardCompat.enableRepeatEvents(false);
         ChatFilterManager.saveToFile();
     }
 
@@ -112,7 +112,7 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void onKeyTyped(char typedChar, int keyCode) {
         if (keyCode == 1 && searchField.isFocused()) {
             searchField.setFocused(false);
             return;
@@ -120,8 +120,6 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
 
         if (searchField.isFocused()) {
             searchField.textboxKeyTyped(typedChar, keyCode);
-        } else {
-            super.keyTyped(typedChar, keyCode);
         }
     }
 
@@ -153,13 +151,13 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
     }
 
     private void updateScroll(ListLayout layout, int mouseY) {
-        if (Mouse.isButtonDown(0)) {
+        if (MouseCompat.isButtonDown(0)) {
             scrollY = applyDraggedScroll(mouseY, dragMode, dragStartY, dragStartScrollY, scrollY, layout.listH, layout.totalH, layout.maxScroll);
         } else {
             dragMode = 0;
         }
 
-        int dWheel = Mouse.getDWheel();
+        int dWheel = MouseCompat.getDWheel();
         if (dWheel != 0) {
             scrollY -= Integer.signum(dWheel) * getScaledY(20);
         }
@@ -167,19 +165,19 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    protected void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
-        GlStateManager.color(0.18f, 0.18f, 0.18f, 1f);
+        GlStateManagerCompat.color(0.18f, 0.18f, 0.18f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), boxX, boxY, boxW, boxH, 6, 18);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         List<ChatFilter> displayed = getDisplayedFilters();
         cachedLayout = buildLayout(displayed);
         ListLayout l = cachedLayout;
         updateScroll(l, mouseY);
 
-        GlStateManager.color(0.12f, 0.12f, 0.12f, 1f);
+        GlStateManagerCompat.color(0.12f, 0.12f, 0.12f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), boxX + getScaledX(10), l.listY - getScaledY(6), boxW - getScaledX(20), l.listH + getScaledY(12), 6, 18);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         RenderUtils.drawSearchBar(searchField, false);
 
         if (displayed.isEmpty()) {
@@ -189,11 +187,10 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
         }
 
         drawScrollbar(boxX + boxW - getScaledX(18), l.listY, l.listH, l.totalH, scrollY, l.maxScroll);
-        super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
     private void drawEmptyState(ListLayout l) {
-        GlStateManager.color(0.5f, 0.5f, 0.5f, 1f);
+        GlStateManagerCompat.color(0.5f, 0.5f, 0.5f, 1f);
         String msg = chatFilters.isEmpty() ? "No filters yet. Click \"Add Filter\" to create one." : "No filters match the current search.";
 
         float msgScale = textScale * 1.1f;
@@ -203,7 +200,7 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
         int centerY = l.listY + l.listH / 2 - getScaledY(6);
 
         TextRenderUtils.drawStringScaleAware(msg, centerX, centerY, msgScale, false);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
     }
 
     private void drawFilterList(int mouseX, int mouseY, List<ChatFilter> displayed, ListLayout l) {
@@ -216,9 +213,9 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
         int rightPad = getScaledX(30);
 
         for (ChatFilter cf : displayed) {
-            GlStateManager.color(0.22f, 0.22f, 0.22f, 1f);
+            GlStateManagerCompat.color(0.22f, 0.22f, 0.22f, 1f);
             NineSliceUtils.draw(Resources.storageBackground(1), boxX + getScaledX(18), curY + getScaledY(4), boxW - getScaledX(36), getScaledY(44), 6, 18);
-            GlStateManager.color(1f, 1f, 1f, 1f);
+            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
             String preview = String.join(", ", cf.filterWords);
 
             if (preview.length() > 55) {
@@ -239,7 +236,7 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         searchField.mouseClicked(mouseX, mouseY, mouseButton);
 
         List<ChatFilter> displayed = getDisplayedFilters();
@@ -284,8 +281,6 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
                 dragStartScrollY = scrollY;
             }
         }
-
-        super.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     private static class ListLayout {

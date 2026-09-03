@@ -5,28 +5,34 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.features.price.vars.AuctionEntry;
 import io.hamlook.aetheria.features.price.vars.BazaarEntry;
 import io.hamlook.aetheria.features.price.vars.PriceData;
 import io.hamlook.aetheria.features.price.vars.PriceType;
 import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.repo.OtherDataAPI;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.chat.ChatUtils;
-import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.ThreadUtils;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.*;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -38,10 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMGuiOpenEvent;
-import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 
 @RegisterEvents
 public class PriceDetector {
@@ -145,7 +147,7 @@ public class PriceDetector {
         || !ATHRConfig.feature.misc.itemPriceConfig.sendToDB) return;
         if (bazaarMap.isEmpty() && auctionMap.isEmpty()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         PriceData payload = new PriceData();
         payload.bazaar.putAll(bazaarMap);
         payload.auction.putAll(auctionMap);
@@ -364,8 +366,9 @@ public class PriceDetector {
             if (stack.hasTagCompound()) {
                 NBTTagCompound tag = stack.getTagCompound();
 
-                if (tag.hasKey("display", 10)) {
-                    NBTTagList loreList = tag.getCompoundTag("display").getTagList("Lore", 8);
+                NBTTagCompound display = NbtCompat.getDisplayCompound(stack);
+                if (display != null) {
+                    NBTTagList loreList = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
                     boolean cutLore = false;
 
                     for (int j = 0; j < loreList.tagCount(); j++) {
@@ -396,8 +399,9 @@ public class PriceDetector {
                     }
                 }
 
-                if (tag.hasKey("ExtraAttributes", 10)) {
-                    extraAttributes = nbtToJson(tag.getCompoundTag("ExtraAttributes"));
+                NBTTagCompound extra = NbtCompat.getExtraAttributes(stack);
+                if (extra != null) {
+                    extraAttributes = nbtToJson(extra);
                 }
             }
 

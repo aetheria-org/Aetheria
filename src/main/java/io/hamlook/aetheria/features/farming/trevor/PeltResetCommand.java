@@ -2,8 +2,8 @@ package io.hamlook.aetheria.features.farming.trevor;
 
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 @RegisterCommand
@@ -24,6 +24,6 @@ public class PeltResetCommand extends ASMCommand {
     @Override
     public void execute(ICommandSender sender, String[] args) {
         PeltOverlay.reset();
-        sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.GREEN + "Pelt tracker reset: pelts and active time cleared."));
+        sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.GREEN + "Pelt tracker reset: pelts and active time cleared."));
     }
 }

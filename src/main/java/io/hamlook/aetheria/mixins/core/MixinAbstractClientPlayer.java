@@ -2,7 +2,7 @@ package io.hamlook.aetheria.mixins.core;
 
 import io.hamlook.aetheria.features.capes.Cape;
 import io.hamlook.aetheria.features.capes.CapeManager;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.player.EntityPlayer;
@@ -23,9 +23,9 @@ public class MixinAbstractClientPlayer {
     private void ATHR$getLocationCape(CallbackInfoReturnable<ResourceLocation> cir) {
         if (this.playerInfo == null) return;
         String user = this.playerInfo.getGameProfile().getName();
-        EntityPlayer player = Minecraft.getMinecraft().theWorld.getPlayerEntityByName(user);
+        EntityPlayer player = MinecraftCompat.getMinecraft().theWorld.getPlayerEntityByName(user);
         if (player == null) return;
-        if (Minecraft.getMinecraft().thePlayer.getPosition().distanceSq(
+        if (MinecraftCompat.getMinecraft().thePlayer.getPosition().distanceSq(
                 player.getPosition()
         ) > 65536) return;
         Cape cape = CapeManager.getCapeForPlayer(user);

@@ -3,7 +3,7 @@ package io.hamlook.aetheria.features.chat.globalchat.vars;
 import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
 import io.hamlook.aetheria.features.chat.globalchat.util.MCChatFormatter;
 import io.hamlook.aetheria.repo.CapeAPI;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,7 +59,7 @@ public class ChatMessage {
         this.replyingMessage = replying ? repliedMessage.discordID : null;
         this.replyingTo = replying ? repliedMessage.author : null;
         this.discordID = null;
-        this.author = Minecraft.getMinecraft().getSession().getUsername();
+        this.author = MinecraftCompat.getMinecraft().getSession().getUsername();
         // Display name keeps the original capitalization (the server lowercases "author" for identity).
         this.authorDisplay = this.author;
         this.client = "minecraft";

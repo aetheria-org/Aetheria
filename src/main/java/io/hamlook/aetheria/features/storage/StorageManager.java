@@ -8,12 +8,15 @@ import io.hamlook.aetheria.features.storage.render.StorageRenderer;
 import io.hamlook.aetheria.features.storage.utils.SContainer;
 import io.hamlook.aetheria.features.storage.utils.StorageListener;
 import io.hamlook.aetheria.features.storage.utils.StorageParser;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.init.RegisterEvents;
-import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.SoundUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import lombok.Getter;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.inventory.ContainerChest;
 
 import java.util.LinkedHashMap;
@@ -154,15 +157,15 @@ public class StorageManager {
     public static void handleMouseInput() {
         if (renderer == null) return;
 
-        int dWheel = org.lwjgl.input.Mouse.getEventDWheel();
+        int dWheel = MouseCompat.getEventDWheel();
         if (dWheel != 0) {
             renderer.handleScroll(dWheel);
         }
 
-        if (org.lwjgl.input.Mouse.getEventButtonState()) {
-            int mouseButton = org.lwjgl.input.Mouse.getEventButton();
+        if (MouseCompat.getEventButtonState()) {
+            int mouseButton = MouseCompat.getEventButton();
             if (mouseButton == 0) {
-                net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(Minecraft.getMinecraft());
+                ScaledResolution sr = GuiScreenUtils.getScaledResolution();
                 int[] mouse = KeybindHelper.getMouseCoords(sr);
                 int mouseX = mouse[0], mouseY = mouse[1];
 
@@ -198,7 +201,7 @@ public class StorageManager {
         }
 
         StorageListener.setSwitchingContainer(true);
-        Minecraft.getMinecraft().thePlayer.closeScreen();
+        MinecraftCompat.getMinecraft().thePlayer.closeScreen();
 
         String command = buildContainerCommand(container);
         executeCommandDelayed(command);
@@ -219,7 +222,7 @@ public class StorageManager {
         cancelPendingSwitchCommand();
         pendingSwitchCommand = COMMAND_EXECUTOR.schedule(() -> {
             pendingSwitchCommand = null;
-            Minecraft.getMinecraft().addScheduledTask(() -> Minecraft.getMinecraft().thePlayer.sendChatMessage(command));
+            MinecraftCompat.getMinecraft().addScheduledTask(() -> MinecraftCompat.getMinecraft().thePlayer.sendChatMessage(command));
         }, 100, TimeUnit.MILLISECONDS);
     }
 
@@ -260,7 +263,7 @@ public class StorageManager {
     }
 
     public static boolean isStorageChest() {
-        net.minecraft.client.gui.GuiScreen screen = Minecraft.getMinecraft().currentScreen;
+        net.minecraft.client.gui.GuiScreen screen = MinecraftCompat.getMinecraft().currentScreen;
         if (!(screen instanceof net.minecraft.client.gui.inventory.GuiChest)) return false;
         String title = ContainerUtils.getContainerName(screen);
         return title != null && ("Storage".equals(title) || StorageParser.isStorageContainer(title));
@@ -270,7 +273,7 @@ public class StorageManager {
         if (!isOverlayActive() || renderer == null) return;
         if (!isStorageChest()) return;
 
-        boolean isPlayerSlot = slotIn.inventory == Minecraft.getMinecraft().thePlayer.inventory;
+        boolean isPlayerSlot = slotIn.inventory == MinecraftCompat.getMinecraft().thePlayer.inventory;
 
         if (isPlayerSlot) {
             cir.setReturnValue(renderer.isMouseOverPlayerInventorySlot(slotIn, mouseX, mouseY));

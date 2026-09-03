@@ -1,12 +1,12 @@
 package io.hamlook.aetheria.features.profile.viewer.ui.tabs;
 
-import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.features.profile.data.dungeon.Floor;
 import io.hamlook.aetheria.features.profile.data.dungeon.FloorData;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
-import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
+import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 
 public class DungeonInfoTab extends Tab {

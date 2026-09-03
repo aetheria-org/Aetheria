@@ -1,27 +1,28 @@
 package io.hamlook.aetheria.features.misc.pet;
 
 import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.ProfileManagedStorage;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 import io.hamlook.aetheria.events.SlotClickEvent;
 import io.hamlook.aetheria.events.SlotClickEvent.ClickType;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import lombok.Getter;
-import net.minecraft.client.Minecraft;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.StringUtils;
+
 import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.hamlook.aetheria.features.misc.pet.PetCache.normalizePetName;
-import io.hamlook.aetheria.events.ASMChatEvent;
-import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 
 @RegisterEvents
 public class CurrentPetTracker extends ProfileManagedStorage {
@@ -108,7 +109,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
 
     private void scanContainer(ContainerChest container) {
         for (Slot slot : container.inventorySlots) {
-            if (slot.inventory == Minecraft.getMinecraft().thePlayer.inventory) continue;
+            if (slot.inventory == MinecraftCompat.getMinecraft().thePlayer.inventory) continue;
 
             if (slot.slotNumber == CONVERT_SLOT_INDEX) {
                 ItemStack s = slot.getStack();
@@ -163,7 +164,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
             return;
         }
 
-        if (event.getSlot().inventory == Minecraft.getMinecraft().thePlayer.inventory) {
+        if (event.getSlot().inventory == MinecraftCompat.getMinecraft().thePlayer.inventory) {
             return;
         }
 
@@ -202,7 +203,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     @HandleEvent
     public void onChat(ASMChatEvent event) {
         if (!ChatUtils.isFromServer(event)) return;
-        Matcher am = AUTOPET.matcher(event.message.getFormattedText());
+        Matcher am = AUTOPET.matcher(TextCompat.getFormattedText(event.message));
         if (!am.find()) return;
 
         int level = Integer.parseInt(am.group(1));

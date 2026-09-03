@@ -4,7 +4,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.utils.ContainerUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.C0EPacketClickWindow;
@@ -31,7 +31,7 @@ public class SPacketHandler {
     public void handleOpenWindow(S2DPacketOpenWindow packet) {
         if (!ATHRConfig.feature.storage.enabled) return;
 
-        String windowTitle = packet.getWindowTitle().getUnformattedText();
+        String windowTitle = TextCompat.getUnformattedText(packet.getWindowTitle());
         windowTitle = windowTitle.replaceAll("§[0-9a-fk-or]", "");
 
         resetCurrentState();

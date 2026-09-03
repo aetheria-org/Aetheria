@@ -9,6 +9,7 @@ import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
@@ -152,8 +153,8 @@ public class ElectionUtils {
         GuiScreen screen = e.gui;
         if (screen instanceof GuiContainer) {
             GuiContainer container = (GuiContainer) screen;
-            if (container.inventorySlots instanceof ContainerChest) {
-                ContainerChest chest = (ContainerChest) container.inventorySlots;
+            if (InventoryCompat.getContainer(container) instanceof ContainerChest) {
+                ContainerChest chest = (ContainerChest) InventoryCompat.getContainer(container);
                 String title = ContainerUtils.getTitle(chest);
                 if (ColorUtils.stripColor(title).trim().equals("Calendar and Events")) {
                     if (System.currentTimeMillis() - lastParse < 1800000) return;

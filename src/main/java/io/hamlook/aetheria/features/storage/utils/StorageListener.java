@@ -1,28 +1,21 @@
 package io.hamlook.aetheria.features.storage.utils;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.features.storage.StorageManager;
-import io.hamlook.aetheria.utils.KeybindHelper;
-import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.features.storage.render.StorageRenderer;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import lombok.Setter;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.inventory.ContainerChest;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import org.lwjgl.input.Mouse;
-import io.hamlook.aetheria.events.ASMChatEvent;
-import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
-import io.hamlook.aetheria.events.ASMGuiOpenEvent;
-import io.hamlook.aetheria.events.ASMMouseEvent;
-import io.hamlook.aetheria.events.ASMKeyEvent;
-import io.hamlook.aetheria.events.ASMGuiDrawEvent;
-import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 
 @RegisterEvents
 public class StorageListener {
@@ -37,7 +30,7 @@ public class StorageListener {
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!shouldRenderOverlay || !overlayInitialized) return;
 
-        String message = event.message.getUnformattedText();
+        String message = TextCompat.getUnformattedText(event.message);
         if (message.contains("Slow down!") || message.contains("executing commands too fast")) {
             shouldRenderOverlay = false;
             overlayInitialized = false;
@@ -154,16 +147,16 @@ public class StorageListener {
     }
 
     private boolean handleScrollInput() {
-        int dWheel = Mouse.getEventDWheel();
+        int dWheel = MouseCompat.getEventDWheel();
         if (dWheel != 0) {
             // Don't scroll overlay if shift is held (for item moving)
-            if (org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_LSHIFT) ||
-                    org.lwjgl.input.Keyboard.isKeyDown(org.lwjgl.input.Keyboard.KEY_RSHIFT)) {
+            if (KeyboardCompat.isKeyDown(org.lwjgl.input.Keyboard.KEY_LSHIFT) ||
+                    KeyboardCompat.isKeyDown(org.lwjgl.input.Keyboard.KEY_RSHIFT)) {
                 return false;
             }
 
             // Only scroll if mouse is over the storage overlay area
-            GuiChest guiChest = (GuiChest) Minecraft.getMinecraft().currentScreen;
+            GuiChest guiChest = (GuiChest) MinecraftCompat.getMinecraft().currentScreen;
             int[] mouse = KeybindHelper.getMouseCoords(guiChest.width, guiChest.height);
             int mouseX = mouse[0], mouseY = mouse[1];
 
@@ -176,7 +169,7 @@ public class StorageListener {
     }
 
     private boolean handleClickInput(int mouseX, int mouseY, GuiChest guiChest) {
-        int button = Mouse.getEventButton();
+        int button = MouseCompat.getEventButton();
         if (button != 0 && button != 1) return false;
 
         if (isClickingPlayerInventory(mouseX, mouseY) || isClickingActiveContainerSlots(mouseX, mouseY, guiChest)) {
@@ -200,7 +193,7 @@ public class StorageListener {
         if (chest == null) return false;
         for (net.minecraft.inventory.Slot slot : chest.inventorySlots) {
             if (slot == null) continue;
-            if (slot.inventory == Minecraft.getMinecraft().thePlayer.inventory) continue;
+            if (slot.inventory == MinecraftCompat.getMinecraft().thePlayer.inventory) continue;
             if (r.isMouseOverActiveContainerSlot(slot, mouseX, mouseY)) return true;
         }
         return false;
@@ -213,12 +206,12 @@ public class StorageListener {
         if (!ContainerUtils.isChestOpen(event.gui)) return;
         if (!StorageManager.isStorageChest()) return;
 
-        int keyCode = org.lwjgl.input.Keyboard.getEventKey();
+        int keyCode = KeyboardCompat.getEventKey();
         if (keyCode == org.lwjgl.input.Keyboard.KEY_ESCAPE) return;
         if (StorageManager.isTransitioning()) return;
-        if (!org.lwjgl.input.Keyboard.getEventKeyState()) return;
+        if (!KeyboardCompat.getEventKeyState()) return;
 
-        char typedChar = org.lwjgl.input.Keyboard.getEventCharacter();
+        char typedChar = KeyboardCompat.getEventCharacter();
 
         if (StorageManager.handleKeyTyped(typedChar, keyCode)) {
             event.cancel();
@@ -241,19 +234,19 @@ public class StorageListener {
         if (event.type != 0) return;
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!switchingContainer || !overlayInitialized || !StorageManager.isOverlayActive()) return;
-        if (Minecraft.getMinecraft().currentScreen != null) return;
+        if (MinecraftCompat.getMinecraft().currentScreen != null) return;
 
-        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int width = sr.getScaledWidth();
         int height = sr.getScaledHeight();
 
         // Keep the background dim during container switch so the screen never flashes un-dimmed
-        net.minecraft.client.renderer.GlStateManager.disableLighting();
-        net.minecraft.client.renderer.GlStateManager.disableFog();
-        net.minecraft.client.renderer.GlStateManager.enableBlend();
-        net.minecraft.client.renderer.GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableFog();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
         RenderUtils.drawGradientRect(0, 0, 0, width, height, -1072689136, -804253680);
-        net.minecraft.client.renderer.GlStateManager.disableBlend();
+        GlStateManagerCompat.disableBlend();
 
         int[] mouse = KeybindHelper.getMouseCoords(width, height);
         int mouseX = mouse[0], mouseY = mouse[1];

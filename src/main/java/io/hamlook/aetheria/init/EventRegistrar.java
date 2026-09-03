@@ -2,6 +2,8 @@ package io.hamlook.aetheria.init;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.api.event.AetheriaEventBus;
+import io.hamlook.aetheria.utils.compat.CommandCompat;
+import io.hamlook.aetheria.utils.compat.KeybindCompat;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.command.ICommand;
 import net.minecraftforge.client.ClientCommandHandler;
@@ -104,7 +106,7 @@ public class EventRegistrar {
             return;
         }
         try {
-            ClientCommandHandler.instance.registerCommand((ICommand) newInstance(clazz));
+            CommandCompat.registerCommand((ICommand) newInstance(clazz));
         } catch (Throwable t) {
             Aetheria.logger.severe("[ATHR] Failed to register command: " + clazz.getName() + ": " + t.getMessage());
         }
@@ -130,7 +132,7 @@ public class EventRegistrar {
                     continue;
                 }
                 if (instance instanceof ICommand) {
-                    ClientCommandHandler.instance.registerCommand((ICommand) instance);
+                    CommandCompat.registerCommand((ICommand) instance);
                 } else {
                     MinecraftForge.EVENT_BUS.register(instance);
                     AetheriaEventBus.INSTANCE.register(instance);
@@ -165,7 +167,7 @@ public class EventRegistrar {
                     Aetheria.logger.severe("[ATHR] @RegisterKeybind field is null: " + field.getName());
                     continue;
                 }
-                ClientRegistry.registerKeyBinding(key);
+                KeybindCompat.registerKeyBinding(key);
             } catch (Throwable t) {
                 Aetheria.logger.severe("[ATHR] Failed to register keybind: " + field.getName() + ": " + t.getMessage());
             }

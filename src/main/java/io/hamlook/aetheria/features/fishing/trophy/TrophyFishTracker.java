@@ -1,29 +1,30 @@
 package io.hamlook.aetheria.features.fishing.trophy;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMChatEvent;
-import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
-import io.hamlook.aetheria.events.ASMTooltipEvent;
 
 @RegisterEvents
 public class TrophyFishTracker {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private static final String ODGER_TITLE = "Trophy Fishing";
 
     /**
@@ -68,7 +69,7 @@ public class TrophyFishTracker {
     public void onChat(ASMChatEvent event) {
         if (ATHRConfig.feature == null) return;
 
-        Matcher m = TROPHY_CHAT.matcher(event.message.getFormattedText());
+        Matcher m = TROPHY_CHAT.matcher(TextCompat.getFormattedText(event.message));
         if (!m.find()) return;
 
         String fishName = ColorUtils.stripColor(m.group("displayName").replace("§k", "")).trim();

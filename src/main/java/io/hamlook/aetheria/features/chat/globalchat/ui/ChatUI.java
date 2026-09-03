@@ -10,48 +10,31 @@ import io.hamlook.aetheria.features.chat.globalchat.util.DiscordMarkdown;
 import io.hamlook.aetheria.features.chat.globalchat.util.DiscordMarkdown.LineType;
 import io.hamlook.aetheria.features.chat.globalchat.util.DiscordMarkdown.RenderLine;
 import io.hamlook.aetheria.features.chat.globalchat.util.DiscordMarkdown.Span;
-import io.hamlook.aetheria.features.chat.globalchat.vars.Attachment;
-import io.hamlook.aetheria.features.chat.globalchat.vars.Channel;
-import io.hamlook.aetheria.features.chat.globalchat.vars.ChannelUser;
-import io.hamlook.aetheria.features.chat.globalchat.vars.ChatLine;
-import io.hamlook.aetheria.features.chat.globalchat.vars.ChatMessage;
-import io.hamlook.aetheria.features.chat.globalchat.vars.Embed;
-import io.hamlook.aetheria.features.chat.globalchat.vars.EmojiRef;
-import io.hamlook.aetheria.features.chat.globalchat.vars.IEmoji;
-import io.hamlook.aetheria.features.chat.globalchat.vars.Sticker;
+import io.hamlook.aetheria.features.chat.globalchat.vars.*;
 import io.hamlook.aetheria.repo.CapeAPI;
-import io.hamlook.aetheria.utils.MediaSaver;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.EmojiParser;
+import io.hamlook.aetheria.utils.MediaSaver;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
-
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
-
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
-import java.awt.Color;
-import java.io.IOException;
+import java.awt.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -62,14 +45,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * Written against the vanilla 1.8.9 GuiScreen/FontRenderer/GlStateManager API
  * (matches the fields already used elsewhere in this codebase, e.g. GCImage's
- * use of {@code Minecraft.getMinecraft().getTextureManager()}). If this mod
+ * use of {@code MinecraftCompat.getMinecraft().getTextureManager()}). If this mod
  * targets a different mapping set (e.g. {@code fontRenderer} instead of
  * {@code fontRendererObj} on newer versions), rename accordingly.
  * <p>
- * Open with {@code Minecraft.getMinecraft().displayGuiScreen(new ChatUI())}, or
+ * Open with {@code MinecraftCompat.getMinecraft().displayGuiScreen(new ChatUI())}, or
  * {@link #open()}.
  */
-public class ChatUI extends GuiScreen {
+public class ChatUI extends AetheriaBaseScreen {
 
     private static final int SIDEBAR_WIDTH = 240;
     private static final int HEADER_HEIGHT = 30;
@@ -187,9 +170,9 @@ public class ChatUI extends GuiScreen {
      *  emoji, stickers, attachments and embed thumbnails. Callers must restore full white afterward. */
     private void applyMsgGlColor() {
         if (msgFailed) {
-            GlStateManager.color(1f, 0.55f, 0.57f, 1f);
+            GlStateManagerCompat.color(1f, 0.55f, 0.57f, 1f);
         } else {
-            GlStateManager.color(1f, 1f, 1f, msgAlpha);
+            GlStateManagerCompat.color(1f, 1f, 1f, msgAlpha);
         }
     }
 
@@ -199,24 +182,24 @@ public class ChatUI extends GuiScreen {
      *  Only wrap with blend state when actually translucent — keeps the common (opaque) path cheap. */
     private void drawText(String text, float x, float y, int color) {
         if (msgAlpha < 0.999f && !msgFailed) {
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+            GlStateManagerCompat.enableBlend();
+            GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
             fontRendererObj.drawStringWithShadow(text, x, y, color);
-            GlStateManager.disableBlend();
+            GlStateManagerCompat.disableBlend();
         } else {
             fontRendererObj.drawStringWithShadow(text, x, y, color);
         }
     }
 
     public static void open() {
-        net.minecraft.client.Minecraft.getMinecraft().displayGuiScreen(new ChatUI());
+        io.hamlook.aetheria.utils.compat.MinecraftCompat.getMinecraft().displayGuiScreen(new ChatUI());
     }
 
     // ------------------------------------------------------------- lifecycle
 
     @Override
-    public void initGui() {
-        Keyboard.enableRepeatEvents(true);
+    protected void onInitGui() {
+        KeyboardCompat.enableRepeatEvents(true);
         if (selectedChannel == null && !GlobalChat.channels.isEmpty()) {
             selectChannel(GlobalChat.channels.values().iterator().next());
         } else if (selectedChannel != null) {
@@ -235,8 +218,8 @@ public class ChatUI extends GuiScreen {
     }
 
     @Override
-    public void onGuiClosed() {
-        Keyboard.enableRepeatEvents(false);
+    protected void guiClosed() {
+        KeyboardCompat.enableRepeatEvents(false);
         if (emojiSearchField != null) emojiSearchField.setFocused(false);
         if (selectedChannel != null) selectedChannel.active = false;
     }
@@ -300,8 +283,7 @@ public class ChatUI extends GuiScreen {
     // ---------------------------------------------------------------- input
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        super.mouseClicked(mouseX, mouseY, mouseButton);
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (editingMessage != null) {
             if (editBoxVisible && editField.mouseClicked(mouseX, mouseY, mouseButton)) return;
             editingMessage = null;
@@ -328,7 +310,7 @@ public class ChatUI extends GuiScreen {
     }
 
     @Override
-    protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
+    protected void onMouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
         if (clickedMouseButton == 0 && dragPanel >= 0 && panelOpen(dragPanel)) {
             int[] tr = panelTrackRect(dragPanel);
             int maxScroll = panelMaxScroll(dragPanel);
@@ -338,17 +320,15 @@ public class ChatUI extends GuiScreen {
             setPanelScroll(dragPanel, target);
             return;
         }
-        super.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
     }
 
     @Override
-    protected void mouseReleased(int mouseX, int mouseY, int state) {
+    protected void onMouseReleased(int mouseX, int mouseY, int state) {
         if (state == 0) dragPanel = -1;
-        super.mouseReleased(mouseX, mouseY, state);
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void onKeyTyped(char typedChar, int keyCode) {
         if (keyCode == Keyboard.KEY_ESCAPE) {
             if (editingMessage != null) {
                 editingMessage = null;
@@ -391,12 +371,11 @@ public class ChatUI extends GuiScreen {
     }
 
     @Override
-    public void handleMouseInput() throws IOException {
-        super.handleMouseInput();
-        int wheel = Mouse.getEventDWheel();
+    protected void onHandleMouseInput() {
+        int wheel = MouseCompat.getEventDWheel();
         if (wheel == 0) return;
-        int mx = Mouse.getEventX() * width / mc.displayWidth;
-        int my = Mouse.getEventY() * height / mc.displayHeight;
+        int mx = MouseCompat.getEventX() * width / mc.displayWidth;
+        int my = MouseCompat.getEventY() * height / mc.displayHeight;
         if (editingMessage != null && editBoxVisible && editField.isHovered(mx, my)) {
             editField.mouseWheel(wheel);
             return;
@@ -483,13 +462,13 @@ public class ChatUI extends GuiScreen {
 
     private static boolean isOwnMessage(ChatMessage msg) {
         return msg.author != null && msg.author.equalsIgnoreCase(
-                net.minecraft.client.Minecraft.getMinecraft().getSession().getUsername());
+                io.hamlook.aetheria.utils.compat.MinecraftCompat.getMinecraft().getSession().getUsername());
     }
 
     // --------------------------------------------------------------- render
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    protected void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         drawRect(0, 0, width, height, 0xFF313338);
 
         if (selectedChannel != null && GlobalChat.channels.get(selectedChannel.channelID) != selectedChannel) {
@@ -551,7 +530,6 @@ public class ChatUI extends GuiScreen {
             drawRect(SIDEBAR_WIDTH, toastY, width, toastY + 20, 0xE62B2D31);
             drawText(downloadMsg, SIDEBAR_WIDTH + PADDING, toastY + 6, 0xFFDCDDDE);
         }
-        super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
     private void drawReplyBanner(int mouseX, int mouseY) {
@@ -1369,7 +1347,7 @@ public class ChatUI extends GuiScreen {
      */
     private void handleLinkClick(String url) {
         if (url == null) return;
-        boolean shift = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+        boolean shift = KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) || KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT);
         if (!shift && url.startsWith("https://discord.com/channels/")) {
             String[] parts = url.split("/");
             if (parts.length >= 6) {
@@ -1658,11 +1636,11 @@ public class ChatUI extends GuiScreen {
 
         float scale = DiscordMarkdown.lineScale(line.type);
         if (scale != 1f) {
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(x, y, 0f);
-            GlStateManager.scale(scale, scale, 1f);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(x, y, 0f);
+            GlStateManagerCompat.scale(scale, scale, 1f);
             drawSpans(line.spans, 0, 0, color, false);
-            GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
         } else {
             drawSpans(line.spans, x, y, color, true);
         }
@@ -1881,9 +1859,9 @@ public class ChatUI extends GuiScreen {
             if (tex != null) {
                 mc.getTextureManager().bindTexture(tex);
                 applyMsgGlColor();
-                GlStateManager.enableBlend();
+                GlStateManagerCompat.enableBlend();
                 drawScaledCustomSizeModalRect(x, y, 0, 0, img.width, img.height, AVATAR_SIZE, AVATAR_SIZE, img.width, img.height);
-                GlStateManager.disableBlend();
+                GlStateManagerCompat.disableBlend();
                 return;
             }
         }
@@ -1912,10 +1890,10 @@ public class ChatUI extends GuiScreen {
         if (tex == null) return;
         mc.getTextureManager().bindTexture(tex);
         applyMsgGlColor();
-        GlStateManager.enableBlend();
+        GlStateManagerCompat.enableBlend();
         int size = DiscordMarkdown.EMOJI_SIZE;
         drawScaledCustomSizeModalRect(x, y - 2, 0, 0, img.width, img.height, size, size, img.width, img.height);
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.disableBlend();
     }
 
     /** Always reserves exactly boxHeight vertically, regardless of the image's real aspect ratio, so layout stays stable while media loads async. */
@@ -1957,9 +1935,9 @@ public class ChatUI extends GuiScreen {
         if (tex != null) {
             mc.getTextureManager().bindTexture(tex);
             applyMsgGlColor();
-            GlStateManager.enableBlend();
+            GlStateManagerCompat.enableBlend();
             drawScaledCustomSizeModalRect(x, y, 0, 0, img.width, img.height, drawW, drawH, img.width, img.height);
-            GlStateManager.disableBlend();
+            GlStateManagerCompat.disableBlend();
         }
     }
 
@@ -2020,9 +1998,9 @@ public class ChatUI extends GuiScreen {
                     else { srcW = srcH = img.width; srcY = (img.height - srcH) / 2; }
                     mc.getTextureManager().bindTexture(tex);
                     applyMsgGlColor();
-                    GlStateManager.enableBlend();
+                    GlStateManagerCompat.enableBlend();
                     drawScaledCustomSizeModalRect(cx, cy, srcX, srcY, srcW, srcH, cell, cell, img.width, img.height);
-                    GlStateManager.disableBlend();
+                    GlStateManagerCompat.disableBlend();
                 }
             }
 
@@ -2407,11 +2385,11 @@ public class ChatUI extends GuiScreen {
             }
             float scale = DiscordMarkdown.lineScale(line.type);
             if (scale != 1f) {
-                GlStateManager.pushMatrix();
-                GlStateManager.translate(x, y, 0f);
-                GlStateManager.scale(scale, scale, 1f);
+                GlStateManagerCompat.pushMatrix();
+                GlStateManagerCompat.translate(x, y, 0f);
+                GlStateManagerCompat.scale(scale, scale, 1f);
                 drawSpans(line.spans, 0, 0, color, true);
-                GlStateManager.popMatrix();
+                GlStateManagerCompat.popMatrix();
             } else {
                 drawSpans(line.spans, x, y, color, true);
             }
@@ -2451,9 +2429,9 @@ public class ChatUI extends GuiScreen {
         if (tex == null) return;
         mc.getTextureManager().bindTexture(tex);
         applyMsgGlColor();
-        GlStateManager.enableBlend();
+        GlStateManagerCompat.enableBlend();
         drawScaledCustomSizeModalRect(ox, oy, 0, 0, img.width, img.height, w, h, img.width, img.height);
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.disableBlend();
     }
 
     private static String hostOf(String url) {
@@ -2517,7 +2495,7 @@ public class ChatUI extends GuiScreen {
     }
 
     private void enableScissor(int x, int y, int w, int h) {
-        ScaledResolution sr = new ScaledResolution(mc);
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int scale = sr.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(x * scale, mc.displayHeight - (y + h) * scale, w * scale, h * scale);

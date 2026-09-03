@@ -1,18 +1,19 @@
 package io.hamlook.aetheria.utils.chat;
 
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.features.diana.DianaTracker;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class PartyCommands {
 
     private static final long HELP_COOLDOWN_MS = 10_000L;
-    private final Minecraft mc = Minecraft.getMinecraft();
+    private final Minecraft mc = MinecraftCompat.getMinecraft();
     private long lastHelpMs = 0L;
 
     private static String getATHRVersion() {

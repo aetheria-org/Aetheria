@@ -1,19 +1,20 @@
 package io.hamlook.aetheria.features.dungeons
 
+import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
-import io.hamlook.aetheria.utils.overlay.SimpleOverlay
+import io.hamlook.aetheria.events.ASMTickEvent
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.SoundUtils
 import io.hamlook.aetheria.utils.Utils
-import net.minecraft.client.Minecraft
+import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.compat.WorldCompat
+import io.hamlook.aetheria.utils.overlay.SimpleOverlay
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.entity.boss.EntityWither
 import net.minecraft.util.EnumChatFormatting
-import io.hamlook.aetheria.api.event.HandleEvent
+import net.minecraftforge.fml.common.gameevent.TickEvent
 import org.lwjgl.opengl.GL11
 import kotlin.math.sqrt
-import io.hamlook.aetheria.events.ASMTickEvent
-import net.minecraftforge.fml.common.gameevent.TickEvent
 
 @RegisterEvents
 class CrushAlert : SimpleOverlay() {
@@ -38,16 +39,16 @@ class CrushAlert : SimpleOverlay() {
             alertActive = false; return
         }
 
-        val mc = Minecraft.getMinecraft()
+        val mc = MinecraftCompat.getMinecraft()
         val stats = DungeonStats.getInstance()
 
-        if (mc.theWorld == null || stats == null || !stats.currentFloor.isF7orM7 || !stats.isInStormPhase) {
+        if (MinecraftCompat.getLocalWorld() == null || stats == null || !stats.currentFloor.isF7orM7 || !stats.isInStormPhase) {
             alertActive = false
             return
         }
 
-        val storm = mc.theWorld.loadedEntityList.filterIsInstance<EntityWither>()
-            .firstOrNull { EnumChatFormatting.getTextWithoutFormattingCodes(it.name) == "Storm" }
+        val storm = MinecraftCompat.getLocalWorld()?.let { WorldCompat.getAllEntities(it) }?.filterIsInstance<EntityWither>()
+            ?.firstOrNull { EnumChatFormatting.getTextWithoutFormattingCodes(it.name) == "Storm" }
 
         if (storm == null) {
             alertActive = false; return
@@ -70,8 +71,8 @@ class CrushAlert : SimpleOverlay() {
     override fun shouldRender() = alertActive && config?.enabled == true
 
     override fun render(sr: ScaledResolution) {
-        val mc = Minecraft.getMinecraft()
-        val fr = mc.fontRendererObj
+        val mc = MinecraftCompat.getMinecraft()
+        val fr = MinecraftCompat.getFontRenderer()
 
         val pillar = activePillar
         val pillarText = if (pillar != null) " ${pillar.color}${pillar.name}" else ""

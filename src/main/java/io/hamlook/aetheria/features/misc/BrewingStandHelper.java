@@ -1,21 +1,25 @@
 package io.hamlook.aetheria.features.misc;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMGuiDrawPreEvent;
+import io.hamlook.aetheria.events.ASMPlayerInteractEvent;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntityBrewingStand;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
-import io.hamlook.aetheria.events.ASMPlayerInteractEvent;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
@@ -23,15 +27,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMRenderWorldEvent;
-import io.hamlook.aetheria.events.ASMGuiDrawPreEvent;
 
 @RegisterEvents
 public class BrewingStandHelper {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private static final Pattern TIME_REGEX = Pattern.compile("§a(\\d+(?:\\.\\d)?)s");
     private final Map<BlockPos, Long> brewingStandToTimeMap = new HashMap<>();
     private TileEntityBrewingStand lastBrewingStand = null;
@@ -42,55 +42,52 @@ public class BrewingStandHelper {
     }
 
     private static void drawFilledBox(AxisAlignedBB bb, float r, float g, float b, float a) {
-        Tessellator tess = Tessellator.getInstance();
-        WorldRenderer wr = tess.getWorldRenderer();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableCull();
+        GlStateManagerCompat.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GlStateManagerCompat.depthMask(false);
 
-        GlStateManager.enableBlend();
-        GlStateManager.disableTexture2D();
-        GlStateManager.disableLighting();
-        GlStateManager.disableCull();
-        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlStateManager.depthMask(false);
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_COLOR);
 
-        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
+        vb.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.draw();
 
-        tess.draw();
-
-        GlStateManager.depthMask(true);
-        GlStateManager.enableCull();
-        GlStateManager.enableLighting();
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.depthMask(true);
+        GlStateManagerCompat.enableCull();
+        GlStateManagerCompat.enableLighting();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.disableBlend();
     }
 
     @HandleEvent

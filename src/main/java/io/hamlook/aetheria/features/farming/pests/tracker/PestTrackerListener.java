@@ -1,28 +1,25 @@
 package io.hamlook.aetheria.features.farming.pests.tracker;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.features.farming.data.Crop;
-import io.hamlook.aetheria.features.farming.pests.PestStats;
 import io.hamlook.aetheria.features.farming.data.PestType;
+import io.hamlook.aetheria.features.farming.pests.PestStats;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMChatEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
-import io.hamlook.aetheria.events.ASMServerJoinEvent;
-import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
 
 @RegisterEvents
 public class PestTrackerListener {
 
     private static final Pattern PEST_KILL = Pattern.compile("You received (\\d+)x (.+?) for killing (?:a|an) (.+?)!");
-    private final Minecraft mc = Minecraft.getMinecraft();
+    private final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static long parseLong(String s) {
         try {

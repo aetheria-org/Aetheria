@@ -7,7 +7,7 @@ import io.hamlook.aetheria.features.diana.party.DianaPartyConnector;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.TimeUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.io.IOException;
@@ -27,7 +27,7 @@ public class WebSocketClient extends org.java_websocket.client.WebSocketClient {
 
     public WebSocketClient() {
         super(URI.create(CapeAPI.getWebsocketURL()));
-        addHeader("username", Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
+        addHeader("username", MinecraftCompat.getMinecraft().getSession().getUsername().toLowerCase());
         addHeader("x-timezone-offset", String.valueOf(TimeUtils.getLocalOffsetMinutes()));
     }
 

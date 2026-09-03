@@ -1,16 +1,16 @@
 package io.hamlook.aetheria.features.misc.SkyblockExp;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.misc.Misc;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.data.TablistParser;
-import net.minecraft.client.Minecraft;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.events.ASMTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 @RegisterEvents
 public class SkyblockXpInChat {
@@ -45,9 +45,9 @@ public class SkyblockXpInChat {
     public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.misc.skyblockXpInChat) return;
-        if (Minecraft.getMinecraft().thePlayer == null) return;
+        if (MinecraftCompat.getMinecraft().thePlayer == null) return;
         if (!SkyblockData.isOnSkyblock()) return;
-        if (Minecraft.getMinecraft().thePlayer.ticksExisted % 10 != 0) return;
+        if (MinecraftCompat.getMinecraft().thePlayer.ticksExisted % 10 != 0) return;
 
         int currentXp = TablistParser.getSbCurrentXp();
         int maxXp = TablistParser.getSbMaxXp();

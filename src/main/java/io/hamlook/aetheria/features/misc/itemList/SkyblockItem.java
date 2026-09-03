@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.misc.itemList;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.utils.item.ItemUtils;
+import io.hamlook.aetheria.utils.compat.BlockCompat;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
@@ -81,7 +82,7 @@ public class SkyblockItem {
                 if (mcItem != null) {
                     this.itemStack = new ItemStack(mcItem, 1, this.damage);
                 } else {
-                    this.itemStack = new ItemStack(Blocks.stone);
+                    this.itemStack = BlockCompat.getStoneItem();
                 }
             }
         } else {
@@ -89,7 +90,7 @@ public class SkyblockItem {
             if (mcItem != null) {
                 this.itemStack = new ItemStack(mcItem, 1, this.damage);
             } else {
-                this.itemStack = new ItemStack(Blocks.stone);
+                this.itemStack = BlockCompat.getStoneItem();
             }
         }
         this.itemStack.stackSize = this.amount > 0 ? this.amount : 1;

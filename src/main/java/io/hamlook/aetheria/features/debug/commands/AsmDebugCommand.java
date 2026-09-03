@@ -8,6 +8,7 @@ import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.data.TablistParser;
 import net.minecraft.client.Minecraft;
@@ -83,7 +84,7 @@ public class AsmDebugCommand extends ASMCommand {
 
     private void player(DebugReportEvent event) {
         event.title("Player");
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         String name = mc.getSession() != null ? mc.getSession().getUsername() : "";
         String uuid = mc.thePlayer != null ? String.valueOf(mc.thePlayer.getUniqueID()) : "";
         event.addIrrelevant(
@@ -156,6 +157,6 @@ public class AsmDebugCommand extends ASMCommand {
     }
 
     private boolean mcWorldMissing() {
-        return Minecraft.getMinecraft().theWorld == null;
+        return MinecraftCompat.getMinecraft().theWorld == null;
     }
 }

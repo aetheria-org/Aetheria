@@ -4,9 +4,9 @@ import com.google.gson.reflect.TypeToken;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import io.hamlook.aetheria.core.ProfileManagedStorage;
-import java.io.File;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 
+import java.io.File;
 import java.lang.reflect.Type;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -63,7 +63,7 @@ public class PetCache extends ProfileManagedStorage {
             if (pet.textureValue.isEmpty()) continue;
             GameProfile profile = new GameProfile(UUID.randomUUID(), "");
             profile.getProperties().put("textures", new Property("textures", pet.textureValue));
-            Minecraft.getMinecraft().getSkinManager().loadProfileTextures(profile, null, false);
+            MinecraftCompat.getMinecraft().getSkinManager().loadProfileTextures(profile, null, false);
         }
     }
 

@@ -1,7 +1,10 @@
 package io.hamlook.aetheria.features.misc.invbuttons;
 
+
+import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMMouseEvent;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.features.farming.visitors.VisitorPanelBase;
 import io.hamlook.aetheria.features.storage.StorageManager;
@@ -10,25 +13,21 @@ import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.HighlightUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.ClientCommandHandler;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
-
-import io.hamlook.aetheria.Resources;
-import io.hamlook.aetheria.events.ASMMouseEvent;
 
 @RegisterEvents
 public class InvButtonRenderer {
@@ -54,7 +53,7 @@ public class InvButtonRenderer {
     }
 
     private static boolean isGuiEditor() {
-        return Minecraft.getMinecraft().currentScreen instanceof GuiInvButtonEditor;
+        return MinecraftCompat.getMinecraft().currentScreen instanceof GuiInvButtonEditor;
     }
 
     private static int btnX(InventoryButton btn, int gl, int gw) {
@@ -99,25 +98,25 @@ public class InvButtonRenderer {
         int gl = gui.guiLeft, gt = gui.guiTop, gw = gui.xSize, gh = gui.ySize;
         int mx = event.mouseX, my = event.mouseY;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(-gl, -gt, 50);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(-gl, -gt, 50);
         for (InventoryButton btn : InventoryButtonStorage.getInstance().getButtons()) {
             if (!isVisible(btn, gui)) continue;
             int bx = btnX(btn, gl, gw);
             int by = btnY(btn, gt, gh);
             if (VisitorPanelBase.isRectOverPanel(bx, by, 18, 18)) continue;
 
-            GlStateManager.color(1, 1, 1, 1f);
-            GlStateManager.enableDepth();
-            GlStateManager.enableAlpha();
-            Minecraft.getMinecraft().getTextureManager().bindTexture(EDITOR_TEX);
+            GlStateManagerCompat.color(1, 1, 1, 1f);
+            GlStateManagerCompat.enableDepth();
+            GlStateManagerCompat.enableAlpha();
+            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(EDITOR_TEX);
             Utils.drawTexturedRect(bx, by, 18, 18, btn.backgroundIndex * 18 / 256f, (btn.backgroundIndex * 18 + 18) / 256f, 18 / 256f, 36 / 256f, GL11.GL_NEAREST);
             if (btn.icon != null && !btn.icon.trim().isEmpty()) {
-                GlStateManager.enableDepth();
+                GlStateManagerCompat.enableDepth();
                 InvButtonIconRenderer.renderIcon(btn.icon, bx + 1, by + 1);
             }
         }
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
 
         InventoryButton newHovered = hitTest(mx, my, gl, gt, gw, gh, gui);
         long now = System.currentTimeMillis();
@@ -130,32 +129,32 @@ public class InvButtonRenderer {
 
         int bx = btnX(hovered, gl, gw);
         int by = btnY(hovered, gt, gh);
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(-gl, -gt, 60);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(-gl, -gt, 60);
         HighlightUtils.renderButtonHighlight(bx, by);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
 
         int delay = ATHRConfig.feature != null ? ATHRConfig.feature.misc.invButtons.invButtonTooltipDelay : 600;
         if (now - hoveredSince >= delay && drawHoveringTextMethod != null) {
             String cmd = hovered.command.trim();
             if (!cmd.startsWith("/")) cmd = "/" + cmd;
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(-gl, -gt, 400);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(-gl, -gt, 400);
             try {
-                drawHoveringTextMethod.invoke(gui, Collections.singletonList("§7" + cmd), mx, my, Minecraft.getMinecraft().fontRendererObj);
+                drawHoveringTextMethod.invoke(gui, Collections.singletonList("§7" + cmd), mx, my, MinecraftCompat.getMinecraft().fontRendererObj);
             } catch (Exception ignored) {
             }
-            GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
         }
 
-        GlStateManager.disableAlpha();
+        GlStateManagerCompat.disableAlpha();
     }
 
     @HandleEvent
     public void onMouseInput(ASMMouseEvent event) {
         if (!isEnabled() || isGuiEditor()) return;
         if (StorageManager.isOverlayActive()) return;
-        if (Mouse.getEventButton() < 0) return;
+        if (MouseCompat.getEventButton() < 0) return;
         if (!(event.gui instanceof GuiContainer)) return;
 
         GuiContainer gui = (GuiContainer) event.gui;
@@ -167,17 +166,17 @@ public class InvButtonRenderer {
         InventoryButton btn = hitTest(mx, my, gl, gt, gw, gh, gui);
         if (btn == null) return;
 
-        if (Minecraft.getMinecraft().thePlayer.inventory.getItemStack() != null) {
+        if (MinecraftCompat.getMinecraft().thePlayer.inventory.getItemStack() != null) {
             event.cancel();
             return;
         }
 
         int clickType = ATHRConfig.feature != null ? ATHRConfig.feature.misc.invButtons.invButtonClickType : 0;
-        boolean fire = (clickType == 0) == Mouse.getEventButtonState();
+        boolean fire = (clickType == 0) == MouseCompat.getEventButtonState();
         if (fire) {
             String cmd = btn.command.trim();
             if (!cmd.startsWith("/")) cmd = "/" + cmd;
-            if (ClientCommandHandler.instance.executeCommand(Minecraft.getMinecraft().thePlayer, cmd) == 0)
+            if (ClientCommandHandler.instance.executeCommand(MinecraftCompat.getMinecraft().thePlayer, cmd) == 0)
                 ChatUtils.sendChatCommand(cmd);
         }
     }

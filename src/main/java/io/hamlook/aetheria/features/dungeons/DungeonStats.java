@@ -1,24 +1,25 @@
 package io.hamlook.aetheria.features.dungeons;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.features.dungeons.overlays.PhaseOverlay;
 import io.hamlook.aetheria.features.dungeons.utils.*;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.DungeonUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import net.minecraft.client.Minecraft;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.List;
 import java.util.regex.Pattern;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMChatEvent;
-import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 
 
 @RegisterEvents
@@ -27,7 +28,7 @@ public class DungeonStats extends Overlay {
     public static final int OVERLAY_WIDTH = 160;
     public static final int OVERLAY_HEIGHT = 160;
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private static final Pattern TIME_ELAPSED = Pattern.compile("Time Elapsed: (\\d+)");
     private static final int[][] BOSS_COORDS = {{29, 71, 80},  // F1/M1
             {32, 69, 11},  // F2/M2

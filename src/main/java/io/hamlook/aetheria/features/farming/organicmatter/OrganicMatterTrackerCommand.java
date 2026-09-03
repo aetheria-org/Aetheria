@@ -3,9 +3,9 @@ package io.hamlook.aetheria.features.farming.organicmatter;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import java.util.Arrays;
@@ -30,7 +30,7 @@ public class OrganicMatterTrackerCommand extends ASMCommand {
     @Override
     public void execute(ICommandSender sender, String[] args) {
         if (args.length == 0 || ATHRConfig.feature == null) {
-            sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.YELLOW + "Usage: /asmorganicmatter <on|off|reset>"));
+            sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.YELLOW + "Usage: /asmorganicmatter <on|off|reset>"));
             return;
         }
 
@@ -38,22 +38,22 @@ public class OrganicMatterTrackerCommand extends ASMCommand {
             case "on":
                 ATHRConfig.feature.farming.organicMatterTracker.enabled = true;
                 ATHRConfig.saveConfig();
-                sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.GREEN + "Tracker enabled."));
+                sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.GREEN + "Tracker enabled."));
                 break;
 
             case "off":
                 ATHRConfig.feature.farming.organicMatterTracker.enabled = false;
                 ATHRConfig.saveConfig();
-                sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.RED + "Tracker disabled."));
+                sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.RED + "Tracker disabled."));
                 break;
 
             case "reset":
                 OrganicMatterTracker.reset();
-                sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.GREEN + "Tracker data has been reset."));
+                sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.GREEN + "Tracker data has been reset."));
                 break;
 
             default:
-                sender.addChatMessage(new ChatComponentText(PREFIX + EnumChatFormatting.RED + "Unknown subcommand. Use: on, off, reset"));
+                sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.RED + "Unknown subcommand. Use: on, off, reset"));
         }
     }
 

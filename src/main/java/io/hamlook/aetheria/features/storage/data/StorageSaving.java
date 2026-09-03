@@ -4,10 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.DataFile;
-import io.hamlook.aetheria.utils.data.DataPaths;
 import io.hamlook.aetheria.features.storage.utils.SContainer;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.data.DataPaths;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import net.minecraft.client.Minecraft;
 
 import java.io.File;
 import java.util.Collection;
@@ -23,7 +23,7 @@ public class StorageSaving {
         if (profile.isEmpty()) profile = "_unknown";
         File folder = DataPaths.storageDir(ATHRConfig.configDirectory, SkyblockData.getEnvironmentKey(), profile);
         if (!folder.exists()) {
-            String username = Minecraft.getMinecraft().getSession().getUsername();
+            String username = MinecraftCompat.getMinecraft().getSession().getUsername();
             DataPaths.migrate(
                     DataPaths.storageDir(ATHRConfig.configDirectory, "normal", profile),
                     new File(ATHRConfig.configDirectory, "profiles/" + profile + "/storage/" + username),

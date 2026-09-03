@@ -3,9 +3,9 @@ package io.hamlook.aetheria.features.custommenu.ui.sprites;
 import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
 import io.hamlook.aetheria.features.custommenu.Position;
 import io.hamlook.aetheria.features.custommenu.ui.CMMElement;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 
 import javax.annotation.Nullable;
@@ -49,10 +49,10 @@ public class Sprite extends CMMElement {
         ResourceLocation resource = getImage();
         if (resource == null) return;
         
-        GlStateManager.pushMatrix();
-        Minecraft.getMinecraft().getTextureManager().bindTexture(resource);
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        GlStateManagerCompat.pushMatrix();
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(resource);
+        GlStateManagerCompat.color(1.0F, 1.0F, 1.0F, 1.0F);
         RenderUtils.drawTexturedRect(xPos, yPos, width, height);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 }

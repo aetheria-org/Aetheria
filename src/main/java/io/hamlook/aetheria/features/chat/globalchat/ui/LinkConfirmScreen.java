@@ -1,13 +1,13 @@
 package io.hamlook.aetheria.features.chat.globalchat.ui;
 
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.gui.GuiScreen;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 
 import java.awt.Desktop;
 import java.net.URI;
 
 /** Small confirmation overlay shown before opening an external link from a chat message. */
-public class LinkConfirmScreen extends GuiScreen {
+public class LinkConfirmScreen extends AetheriaBaseScreen {
 
     private final String url;
 
@@ -21,7 +21,7 @@ public class LinkConfirmScreen extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         drawRect(0, 0, width, height, 0x99000000);
 
         int bw = 320, bh = 110;
@@ -42,12 +42,10 @@ public class LinkConfirmScreen extends GuiScreen {
         drawRect(noX, byy, noX + yw, byy + yh, noH ? 0xFF35373C : 0xFF2B2D31);
         drawCenteredString(fontRendererObj, "Yes", yesX + yw / 2, byy + 6, 0xFFFFFFFF);
         drawCenteredString(fontRendererObj, "No", noX + yw / 2, byy + 6, 0xFFFFFFFF);
-
-        super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (mouseButton != 0) return;
         int bw = 320, bh = 110;
         int bx = (width - bw) / 2, by = (height - bh) / 2;

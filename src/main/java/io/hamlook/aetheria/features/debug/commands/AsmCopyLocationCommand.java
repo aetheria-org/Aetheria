@@ -3,7 +3,7 @@ package io.hamlook.aetheria.features.debug.commands;
 import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.init.RegisterCommand;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -35,7 +35,7 @@ public class AsmCopyLocationCommand extends ASMCommand {
 
     @Override
     public void execute(ICommandSender sender, String[] args) throws CommandException {
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayer player = MinecraftCompat.getMinecraft().thePlayer;
         if (player == null) {
             ChatUtils.sendMessage(EnumChatFormatting.RED + "Not in a world.");
             return;

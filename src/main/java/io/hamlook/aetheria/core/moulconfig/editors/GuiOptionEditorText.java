@@ -5,9 +5,9 @@ package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElementTextField;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
-import net.minecraft.client.Minecraft;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 
 public class GuiOptionEditorText extends GuiOptionEditor {
 
@@ -27,7 +27,7 @@ public class GuiOptionEditorText extends GuiOptionEditor {
 
         int textFieldX = x + width / 6 - fullWidth / 2;
         if (textField.getFocus()) {
-            fullWidth = Math.max(fullWidth, Minecraft.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10);
+            fullWidth = Math.max(fullWidth, MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10);
         }
 
         textField.setSize(fullWidth, 16);
@@ -44,15 +44,15 @@ public class GuiOptionEditorText extends GuiOptionEditor {
         int textFieldX = x + width / 6 - fullWidth / 2;
 
         if (textField.getFocus()) {
-            fullWidth = Math.max(fullWidth, Minecraft.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10);
+            fullWidth = Math.max(fullWidth, MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10);
         }
 
         int textFieldY = y + height - 7 - 14;
         textField.setSize(fullWidth, 16);
 
-        if (Mouse.getEventButtonState() && (Mouse.getEventButton() == 0 || Mouse.getEventButton() == 1)) {
+        if (MouseCompat.getEventButtonState() && (MouseCompat.getEventButton() == 0 || MouseCompat.getEventButton() == 1)) {
             if (mouseX > textFieldX && mouseX < textFieldX + fullWidth && mouseY > textFieldY && mouseY < textFieldY + 16) {
-                textField.mouseClicked(mouseX, mouseY, Mouse.getEventButton());
+                textField.mouseClicked(mouseX, mouseY, MouseCompat.getEventButton());
                 return true;
             }
             textField.unfocus();
@@ -63,9 +63,9 @@ public class GuiOptionEditorText extends GuiOptionEditor {
 
     @Override
     public boolean keyboardInput() {
-        if (Keyboard.getEventKeyState() && textField.getFocus()) {
-            Keyboard.enableRepeatEvents(true);
-            textField.keyTyped(Keyboard.getEventCharacter(), Keyboard.getEventKey());
+        if (KeyboardCompat.getEventKeyState() && textField.getFocus()) {
+            KeyboardCompat.enableRepeatEvents(true);
+            textField.keyTyped(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
 
             try {
                 textField.setCustomBorderColour(0xffffffff);

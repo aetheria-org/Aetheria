@@ -72,16 +72,7 @@ public class PestFinderConfig {
 
     @Expose
     @ConfigOption(name = "Display Lines", desc = "Choose which pest finder lines to show and drag to reorder")
-    @ConfigEditorDraggableList(exampleText = {
-            "§7Total: §e2",
-            "§7Plots: §b1, §b5 §8x§c3",
-            "§7Spray: §7None",
-            "§7Repellent: §7None",
-            "§7Bonus: §c§lINACTIVE",
-            "§7Cooldown: §a§lACTIVE",
-            "§7Bonus Pest Chance: §245",
-            "§7Press §e<Key> §7to warp to §bPlot 4"
-    })
+    @ConfigEditorDraggableList(exampleText = {"§7Total: §e2", "§7Plots: §b1, §b5 §8x§c3", "§7Spray: §7None", "§7Repellent: §7None", "§7Bonus: §c§lINACTIVE", "§7Cooldown: §a§lACTIVE", "§7Bonus Pest Chance: §245", "§7Press §e<Key> §7to warp to §bPlot 4"})
     public List<Integer> pestFinderLines = new ArrayList<>(DEFAULT_LINES);
 
     @Expose

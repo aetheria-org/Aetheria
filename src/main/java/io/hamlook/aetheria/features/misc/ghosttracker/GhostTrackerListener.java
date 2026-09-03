@@ -1,20 +1,20 @@
 package io.hamlook.aetheria.features.misc.ghosttracker;
 
-import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.ActionBarUpdateEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import io.hamlook.aetheria.api.event.HandleEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.regex.Matcher;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class GhostTrackerListener {
@@ -43,7 +43,7 @@ public class GhostTrackerListener {
         boolean onSkyblock = SkyblockData.isOnSkyblock();
         boolean inDwarven = SkyblockData.getCurrentLocation() == SkyblockData.Location.DWARVEN;
         boolean inMist = SkyblockData.isInMist();
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         boolean posYValid = mc.thePlayer != null && mc.thePlayer.posY <= 100;
 
         return onSkyblock && inDwarven && inMist && posYValid;
@@ -94,12 +94,12 @@ public class GhostTrackerListener {
         String msg = ChatUtils.clean(event);
         if (isPlayerOrPartyMessage(msg)) return;
 
-        if (GhostTrackerConstants.COIN_DROP_MESSAGE.equals(event.message.getFormattedText())) {
+        if (GhostTrackerConstants.COIN_DROP_MESSAGE.equals(TextCompat.getFormattedText(event.message))) {
             GhostStats.getInstance().addDrop("Coins");
             return;
         }
 
-        Matcher matcher = GhostTrackerConstants.RARE_DROP_PATTERN.matcher(event.message.getFormattedText());
+        Matcher matcher = GhostTrackerConstants.RARE_DROP_PATTERN.matcher(TextCompat.getFormattedText(event.message));
         if (!matcher.find()) return;
 
         handleRareDrop(matcher);

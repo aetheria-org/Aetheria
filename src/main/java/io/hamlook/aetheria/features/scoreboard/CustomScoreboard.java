@@ -2,19 +2,20 @@ package io.hamlook.aetheria.features.scoreboard;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.utils.KeybindHelper;
-import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.features.mining.fetchur.FetchurData;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.ScoreboardCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.data.TablistParser;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.overlay.OverlayUtils;
 import lombok.Getter;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
 
 import java.util.*;
@@ -152,7 +153,7 @@ public class CustomScoreboard extends Overlay {
             if (vanillaTitle == null || vanillaTitle.isEmpty()) {
                 try {
                     net.minecraft.scoreboard.ScoreObjective obj =
-                            mc.theWorld.getScoreboard().getObjectiveInDisplaySlot(1);
+                            ScoreboardCompat.getSidebarObjective(mc.theWorld.getScoreboard());
                     if (obj != null) vanillaTitle = obj.getDisplayName();
                 } catch (Exception ignored) {}
             }
@@ -453,8 +454,8 @@ public class CustomScoreboard extends Overlay {
         GL11.glTranslatef(x, y, 0);
         GL11.glScalef(scale, scale, 1f);
 
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0)
@@ -485,7 +486,7 @@ public class CustomScoreboard extends Overlay {
             }
         }
 
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.disableBlend();
         GL11.glPopMatrix();
     }
 }

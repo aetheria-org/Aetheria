@@ -1,23 +1,25 @@
 package io.hamlook.aetheria.utils.overlay;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
+import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
-import io.hamlook.aetheria.api.event.HandleEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntUnaryOperator;
-import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
 
 public abstract class Overlay {
 
@@ -26,11 +28,11 @@ public abstract class Overlay {
     protected static final int ICON_SIZE = 8;
     protected static final int ICON_GAP = 2;
 
-    protected static final Minecraft mc = Minecraft.getMinecraft();
+    protected static final Minecraft mc = MinecraftCompat.getMinecraft();
     protected static ScaledResolution sr;
 
     protected static ScaledResolution currentSr() {
-        return sr != null ? sr : new ScaledResolution(mc);
+        return sr != null ? sr : GuiScreenUtils.getScaledResolution();
     }
 
     protected int lastW;
@@ -159,15 +161,15 @@ public abstract class Overlay {
         }
         boolean blendWasEnabled = GL11.glIsEnabled(GL11.GL_BLEND);
         if (!blendWasEnabled) {
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+            GlStateManagerCompat.enableBlend();
+            GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
         }
         GL11.glPushMatrix();
         float inv = 1f / supersample;
         GL11.glScalef(inv, inv, 1f);
         draw.run();
         GL11.glPopMatrix();
-        if (!blendWasEnabled) GlStateManager.disableBlend();
+        if (!blendWasEnabled) GlStateManagerCompat.disableBlend();
     }
 
     private static void drawRoundedRing(int x, int y, int w, int h, int r, int t, IntUnaryOperator colorForColumn) {

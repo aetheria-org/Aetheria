@@ -1,12 +1,13 @@
 package io.hamlook.aetheria.core.features.qol;
 
 import com.google.gson.annotations.Expose;
-import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigEditorBoolean;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigOption;
 
 public class DamageSplashesConfig {
 
     @Expose
-    @ConfigOption(name = "Hide Crit Splashes", desc = "Hides crit damage nametags (\u2727 stars)")
+    @ConfigOption(name = "Hide Crit Splashes", desc = "Hides crit damage nametags (✧ stars)")
     @ConfigEditorBoolean
     public boolean hideCritSplashes = false;
 

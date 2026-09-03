@@ -1,11 +1,11 @@
 package io.hamlook.aetheria.utils;
 
-import net.minecraftforge.fml.common.Loader;
+import io.hamlook.aetheria.utils.compat.ModCompat;
 
 public class ModFinder {
 
     public static boolean isModPresent(String modID){
-        return Loader.isModLoaded(modID);
+        return ModCompat.isModLoaded(modID);
     }
 
     public static boolean isLabyModPresent() {

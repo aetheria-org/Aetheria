@@ -4,10 +4,10 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.features.misc.SearchBar;
 import io.hamlook.aetheria.utils.ColorUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -52,43 +52,43 @@ public class HighlightUtils {
     }
 
     public static void renderSlotHighlight(int x, int y, int color) {
-        GlStateManager.disableLighting();
-        GlStateManager.disableDepth();
-        GlStateManager.disableTexture2D();
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.colorMask(true, true, true, false);
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableDepth();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.colorMask(true, true, true, false);
 
         Gui.drawRect(x, y, x + 16, y + 16, color);
 
-        GlStateManager.colorMask(true, true, true, true);
-        GlStateManager.disableBlend();
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableDepth();
-        GlStateManager.enableLighting();
+        GlStateManagerCompat.colorMask(true, true, true, true);
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.enableDepth();
+        GlStateManagerCompat.enableLighting();
     }
 
     public static void renderButtonHighlight(int x, int y) {
         boolean depthWasOn = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
         boolean lightingWasOn = GL11.glIsEnabled(GL11.GL_LIGHTING);
 
-        GlStateManager.disableLighting();
-        GlStateManager.disableDepth();
-        GlStateManager.colorMask(true, true, true, false);
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableDepth();
+        GlStateManagerCompat.colorMask(true, true, true, false);
         Gui.drawRect(x, y, x + 18, y + 18, 0x80ffffff);
-        GlStateManager.colorMask(true, true, true, true);
+        GlStateManagerCompat.colorMask(true, true, true, true);
 
-        if (depthWasOn) GlStateManager.enableDepth();
-        else GlStateManager.disableDepth();
-        if (lightingWasOn) GlStateManager.enableLighting();
-        else GlStateManager.disableLighting();
+        if (depthWasOn) GlStateManagerCompat.enableDepth();
+        else GlStateManagerCompat.disableDepth();
+        if (lightingWasOn) GlStateManagerCompat.enableLighting();
+        else GlStateManagerCompat.disableLighting();
     }
 
     private static boolean matches(ItemStack stack, String query) {
         String display = stack.getDisplayName();
         if (display != null && ColorUtils.stripColor(display).toLowerCase(Locale.ROOT).contains(query)) return true;
 
-        List<String> tooltip = stack.getTooltip(Minecraft.getMinecraft().thePlayer, false);
+        List<String> tooltip = stack.getTooltip(MinecraftCompat.getMinecraft().thePlayer, false);
         if (tooltip != null) for (String line : tooltip)
             if (line != null && ColorUtils.stripColor(line).toLowerCase(Locale.ROOT).contains(query)) return true;
 

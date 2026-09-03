@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.utils;
 
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.SoundCompat;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.PositionedSound;
 import net.minecraft.util.ResourceLocation;
@@ -11,12 +12,13 @@ public class SoundUtils {
 
     public static void playSound(String sound, float volume, float pitch) {
         try {
-            ISound s = new PositionedSound(new ResourceLocation(sound)) {{
+            String modern = SoundCompat.getModernSoundName(sound);
+            ISound s = new PositionedSound(new ResourceLocation(modern)) {{
                 repeat = false;
                 repeatDelay = 0;
                 attenuationType = ISound.AttenuationType.NONE;
             }};
-            Minecraft.getMinecraft().getSoundHandler().playSound(s);
+            MinecraftCompat.getMinecraft().getSoundHandler().playSound(s);
         } catch (Exception ignored) {}
     }
 

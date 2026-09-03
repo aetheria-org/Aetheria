@@ -4,7 +4,7 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.features.custommenu.Position;
 import io.hamlook.aetheria.features.custommenu.ui.buttons.CMMButton;
 import io.hamlook.aetheria.features.custommenu.util.GuiHelper;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.GuiScreen;
 
 public class GuiButton extends CMMButton {
@@ -32,6 +32,6 @@ public class GuiButton extends CMMButton {
             return;
         }
         Aetheria.logger.info("Opening GUI " + this.screen);
-        Minecraft.getMinecraft().displayGuiScreen(toOpen);
+        MinecraftCompat.getMinecraft().displayGuiScreen(toOpen);
     }
 }

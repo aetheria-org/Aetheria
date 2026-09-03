@@ -1,5 +1,7 @@
 package io.hamlook.aetheria.utils.data;
 
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ScoreboardCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
@@ -7,13 +9,7 @@ import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.util.BlockPos;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -26,21 +22,21 @@ public final class SkyblockData {
     }
 
     public static String getServerId() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.theWorld == null) return "";
         Scoreboard sb = mc.theWorld.getScoreboard();
         if (sb == null) return "";
-        ScoreObjective obj = sb.getObjectiveInDisplaySlot(1);
+        ScoreObjective obj = ScoreboardCompat.getSidebarObjective(sb);
         if (obj == null) return "";
         return net.minecraft.util.StringUtils.stripControlCodes(obj.getDisplayName());
     }
 
     public static String getScoreboardTitle() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.theWorld == null) return null;
         Scoreboard sb = mc.theWorld.getScoreboard();
         if (sb == null) return null;
-        ScoreObjective obj = sb.getObjectiveInDisplaySlot(1);
+        ScoreObjective obj = ScoreboardCompat.getSidebarObjective(sb);
         if (obj == null) return null;
         return obj.getDisplayName();
     }
@@ -50,13 +46,13 @@ public final class SkyblockData {
     }
 
     public static List<String> getScoreboardLines() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.theWorld == null) return Collections.emptyList();
 
         Scoreboard scoreboard = mc.theWorld.getScoreboard();
         if (scoreboard == null) return Collections.emptyList();
 
-        ScoreObjective objective = scoreboard.getObjectiveInDisplaySlot(1);
+        ScoreObjective objective = ScoreboardCompat.getSidebarObjective(scoreboard);
         if (objective == null) return Collections.emptyList();
 
         List<Score> scores;
@@ -86,7 +82,7 @@ public final class SkyblockData {
      * game tick so multiple consumers share one scoreboard read per tick.
      */
     public static String getPurseLine() {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.theWorld == null || mc.thePlayer == null) {
             purseLineCacheTick = -1;
             purseLineCache = null;
@@ -145,7 +141,7 @@ public final class SkyblockData {
     }
 
     public static String getIgn() {
-        String name = Minecraft.getMinecraft().getSession().getUsername();
+        String name = MinecraftCompat.getMinecraft().getSession().getUsername();
         return name == null ? "" : name;
     }
 

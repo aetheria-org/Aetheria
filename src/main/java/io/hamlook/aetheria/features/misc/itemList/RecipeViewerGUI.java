@@ -4,6 +4,10 @@ import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.misc.itemList.recipe.Recipe;
 import io.hamlook.aetheria.features.misc.itemList.recipe.RecipeFactory;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -11,12 +15,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 
-import java.io.IOException;
 import java.util.List;
 
-public class RecipeViewerGUI extends GuiScreen {
+public class RecipeViewerGUI extends AetheriaBaseScreen {
 
     private static final int MIN_W = 220;
     private static final int MIN_H = 130;
@@ -32,7 +34,7 @@ public class RecipeViewerGUI extends GuiScreen {
     private int boxX, boxY, boxW, boxH;
 
     public RecipeViewerGUI(SkyblockItem item) {
-        this(item, Minecraft.getMinecraft().currentScreen);
+        this(item, MinecraftCompat.getMinecraft().currentScreen);
     }
 
     public RecipeViewerGUI(SkyblockItem item, GuiScreen parentScreen) {
@@ -41,8 +43,8 @@ public class RecipeViewerGUI extends GuiScreen {
         this.parentScreen = parentScreen;
     }
 
-    @Override public void initGui()      { Keyboard.enableRepeatEvents(true);  recipeIndex = 0; scrollY = 0; }
-    @Override public void onGuiClosed() { Keyboard.enableRepeatEvents(false); }
+    @Override public void onInitGui()      { KeyboardCompat.enableRepeatEvents(true);  recipeIndex = 0; scrollY = 0; }
+    @Override public void guiClosed() { KeyboardCompat.enableRepeatEvents(false); }
     @Override public boolean doesGuiPauseGame() { return false; }
 
     private void close() {
@@ -78,14 +80,14 @@ public class RecipeViewerGUI extends GuiScreen {
     }
 
     @Override
-    protected void keyTyped(char c, int key) throws IOException {
+    protected void onKeyTyped(char c, int key) {
         if (ItemPaneRenderer.INSTANCE != null) ItemPaneRenderer.INSTANCE.handleKeyInput();
         if (key == Keyboard.KEY_ESCAPE || key == mc.gameSettings.keyBindInventory.getKeyCode())
             close();
     }
 
     @Override
-    protected void mouseClicked(int mx, int my, int btn) throws IOException {
+    protected void onMouseClicked(int mx, int my, int btn) {
         if (ItemPaneRenderer.INSTANCE != null)
             ItemPaneRenderer.INSTANCE.handleClick(mx, my, btn, null);
 
@@ -120,12 +122,11 @@ public class RecipeViewerGUI extends GuiScreen {
     }
 
     @Override
-    public void handleMouseInput() throws IOException {
-        super.handleMouseInput();
-        int dw = Mouse.getEventDWheel();
+    public void onHandleMouseInput() {
+        int dw = MouseCompat.getEventDWheel();
         if (dw != 0) {
             if (ItemPaneRenderer.INSTANCE != null) {
-                Minecraft mc = Minecraft.getMinecraft();
+                Minecraft mc = MinecraftCompat.getMinecraft();
                 int mx = KeybindHelper.getScaledEventX(width);
                 int my = KeybindHelper.getScaledEventY(height);
                 ItemPaneRenderer.INSTANCE.handleMouseInput(width, height, mx, my, null);
@@ -136,7 +137,7 @@ public class RecipeViewerGUI extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mx, int my, float pt) {
+    public void onDrawScreen(int mx, int my, float pt) {
         drawRect(0, 0, width, height, 0xA0000000);
         computeBox();
 
@@ -207,7 +208,6 @@ public class RecipeViewerGUI extends GuiScreen {
                 TextRenderUtils.drawHoveringText(tip, mx, my, fontRendererObj);
         }
 
-        super.drawScreen(mx, my, pt);
         if (ItemPaneRenderer.INSTANCE != null)
             ItemPaneRenderer.INSTANCE.drawPane(width, height, mx, my);
     }
