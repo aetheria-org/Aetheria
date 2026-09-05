@@ -24,7 +24,16 @@ public class ActionButton extends CMMButton {
     }
 
     public enum Action {
-        EXIT, CLOSE_MENU, OPEN_MAIN_MENU
+        EXIT, CLOSE_MENU, OPEN_MAIN_MENU;
+
+        public static String[] getNames() {
+            Action[] values = values();
+            String[] names = new String[values.length];
+            for (int i = 0; i < values.length; i++) {
+                names[i] = values[i].name();
+            }
+            return names;
+        }
     }
 
     public Action action;

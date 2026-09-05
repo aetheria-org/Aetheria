@@ -54,4 +54,8 @@ public class Position {
         ScreenHelper.Anchor vAnchor = ScreenHelper.Anchor.valueOf(verticalAnchor);
         return ScreenHelper.getAnchoredY(vAnchor, yOffset);
     }
+
+    public static String[] getAnchors() {
+        return new String[]{"LEFT", "CENTER", "RIGHT", "TOP", "BOTTOM"};
+    }
 }

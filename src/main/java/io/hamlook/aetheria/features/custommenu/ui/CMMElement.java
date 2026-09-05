@@ -8,6 +8,7 @@ public class CMMElement {
     public Position position;
     public int width, height;
     public int xPos, yPos;
+    public boolean locked = false;
 
     public CMMElement() {}
 

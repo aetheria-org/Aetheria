@@ -7,6 +7,7 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
@@ -162,25 +163,50 @@ public class GCImage {
         return gcImage.id;
     }
 
-    /** Loads a user-selected local image into the same dynamic texture pipeline as remote images. */
     public static String createGCImageFromFile(String filePath) {
         GCImage gcImage = new GCImage(new ArrayList<>(), -1);
         gcImage.url = filePath == null ? "" : filePath;
         ImageManager.images.put(gcImage.id, gcImage);
+
         ThreadUtils.run("GCImage-FileLoader-" + gcImage.id, () -> {
             try {
                 BufferedImage image = ImageIO.read(new File(filePath));
-                if (image == null) throw new IOException("Unsupported image format");
-                gcImage.images.add(image);
-                gcImage.width = image.getWidth();
-                gcImage.height = image.getHeight();
-                finalizeLoad(gcImage);
+                handleLoadedImage(gcImage, image);
             } catch (Exception e) {
-                gcImage.loadFailed = true;
-                Aetheria.logger.warning("[GCImage] Failed to load local image: " + e.getMessage());
+                handleFailure(gcImage, e);
             }
         });
         return gcImage.id;
+    }
+
+    public static String createGCImageFromResource(ResourceLocation loc) {
+        GCImage gcImage = new GCImage(new ArrayList<>(), -1);
+        gcImage.url = loc.toString();
+        ImageManager.images.put(gcImage.id, gcImage);
+
+        ThreadUtils.run("GCImage-ResourceLoader-" + gcImage.id, () -> {
+            try {
+                InputStream stream = Minecraft.getMinecraft().getResourceManager().getResource(loc).getInputStream();
+                BufferedImage image = ImageIO.read(stream);
+                handleLoadedImage(gcImage, image);
+            } catch (Exception e) {
+                handleFailure(gcImage, e);
+            }
+        });
+        return gcImage.id;
+    }
+
+    private static void handleLoadedImage(GCImage gcImage, BufferedImage image) throws IOException {
+        if (image == null) throw new IOException("Unsupported image format");
+        gcImage.images.add(image);
+        gcImage.width = image.getWidth();
+        gcImage.height = image.getHeight();
+        finalizeLoad(gcImage);
+    }
+
+    private static void handleFailure(GCImage gcImage, Exception e) {
+        gcImage.loadFailed = true;
+        Aetheria.logger.warning("[GCImage] Failed to load image: " + e.getMessage());
     }
 
     /**

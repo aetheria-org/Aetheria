@@ -2,6 +2,7 @@
 
 import net.minecraft.client.Minecraft
 import net.minecraft.client.entity.EntityPlayerSP
+import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.multiplayer.WorldClient
 import net.minecraft.client.settings.GameSettings
 import net.minecraft.entity.Entity
@@ -53,4 +54,10 @@ object MinecraftCompat {
     @JvmStatic
     fun getRenderGlobal(): net.minecraft.client.renderer.RenderGlobal =
         Minecraft.getMinecraft().renderGlobal
+
+    @JvmStatic
+    fun isCtrlKeyDown(): Boolean = GuiScreen.isCtrlKeyDown()
+
+    @JvmStatic
+    fun isShiftKeyDown(): Boolean = GuiScreen.isShiftKeyDown()
 }

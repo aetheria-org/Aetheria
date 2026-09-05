@@ -4,6 +4,7 @@ import io.hamlook.aetheria.OptionsMenu;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
+import io.hamlook.aetheria.features.custommenu.selector.CMMSelectorGUI;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.*;
 
@@ -35,6 +36,10 @@ public class GuiHelper {
                     return new GuiScreenElementWrapper(new ConfigEditor(ATHRConfig.feature));
                 case "ASM Options Menu":
                     return new OptionsMenu();
+                case "CMM Editor":
+                case "CMM Editor Menu":
+                case "CMM Selector":
+                    return new CMMSelectorGUI();
                 default:
                     return null;
             }

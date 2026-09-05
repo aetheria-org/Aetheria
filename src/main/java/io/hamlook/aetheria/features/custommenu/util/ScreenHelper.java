@@ -87,6 +87,13 @@ public class ScreenHelper {
         LEFT, CENTER, RIGHT, TOP, BOTTOM
     }
 
+    public static int getStaticWidth(int width) {
+        return (int) ((float) getWidth() / getScaledWidth() * width);
+    }
+    public static int getStaticHeight(int height) {
+        return (int) ((float) getHeight() / getScaledHeight() * height);
+    }
+
     public static class Position {
         public final Anchor horizontalAnchor;
         public final Anchor verticalAnchor;

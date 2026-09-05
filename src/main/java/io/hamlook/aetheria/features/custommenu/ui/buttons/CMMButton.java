@@ -12,7 +12,7 @@ import net.minecraft.client.gui.GuiScreen;
 public abstract class CMMButton extends CMMElement {
 
     public String displayString;
-    public ButtonStyle style = ButtonStyle.DARK;
+    public ButtonStyle style = ButtonStyle.DEFAULT;
 
     public CMMButton(int xPos, int yPos, String displayString) {
         this(xPos, yPos, 200, 20, displayString);

@@ -13,7 +13,7 @@ import io.hamlook.aetheria.features.custommenu.ui.text.Text;
 public class DefaultCMMPreset extends CustomMMConfig {
 
     public DefaultCMMPreset() {
-        super("default");
+        super("Default");
         addElement(new GuiButton(
                         new Position("CENTER", "CENTER", -100, 0),
                         200, 20, "Singleplayer","Singleplayer Menu"));
@@ -29,6 +29,10 @@ public class DefaultCMMPreset extends CustomMMConfig {
         addElement(new GuiButton(
                         new Position("CENTER", "CENTER", 2, -50),
                         98, 20, "Aetheria Mod","ASM Options Menu"));
+        addElement(new GuiButton(
+                new Position("CENTER","CENTER",-100,-75),
+                200,20,"Change Menu Style","CMM Editor"
+        ));
 
         addElement(new ActionButton(
                         new Position("RIGHT", "TOP", -18, -2),
@@ -38,7 +42,7 @@ public class DefaultCMMPreset extends CustomMMConfig {
                 160, 160, null, Resources.ASM_LOGO));
 
         addElement(new Text(new Position("CENTER","CENTER",0,12), true,"<gradient:#E0FF91>Minecraft</gradient:#7dd1f5> <gradient:#7dd1f5>- Aetheria's Skyblock Mod</gradient:E0FF91>",-1,1.2f));
-        this.background = ImageManager.images.get(GCImage.createGCImage("https://hypixel.net/attachments/2021-01-26_13-52-16-png.2297033/"));
+        this.background = ImageManager.images.get(GCImage.createGCImageFromResource(Resources.CMM_DEFAULT_BG));
 
     }
 

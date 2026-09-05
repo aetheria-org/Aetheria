@@ -46,7 +46,7 @@ public final class Resources {
     public static final ResourceLocation CAPES_UI = new ResourceLocation("aetheria", "textures/gui/capesUI.png");
     public static final ResourceLocation DVD_LOGO = new ResourceLocation("aetheria", "textures/dvd.png");
     public static final ResourceLocation ASM_LOGO = new ResourceLocation("aetheria", "logo.png");
-
+    public static final ResourceLocation CMM_DEFAULT_BG = new ResourceLocation("aetheria","cmm/default_bg.png");
     public static final ResourceLocation GHOSTTRACKER_KILLS = new ResourceLocation("aetheria", "ghosttracker/kills.png");
     public static final ResourceLocation GHOSTTRACKER_SORROW = new ResourceLocation("aetheria", "ghosttracker/sorrow.png");
     public static final ResourceLocation GHOSTTRACKER_VOLTA = new ResourceLocation("aetheria", "ghosttracker/volta.png");

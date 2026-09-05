@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class CMMHelper {
 
     public static Map<String, CustomMMConfig> configList = new ConcurrentHashMap<>();
-    public static String selectedConfig = "default";
+    public static String selectedConfig = "Default";
 
     public static File CONFIG_FOLDER = new File(ATHRConfig.configDirectory, "cmmConfigs");
     public static Gson GSON = new GsonBuilder()
@@ -37,7 +37,7 @@ public class CMMHelper {
 
 
     public static boolean isModPreset(String presetID) {
-        return "default".equals(presetID); // Add here for all default presets
+        return "default".equalsIgnoreCase(presetID); // Add here for all default presets
     }
 
     public static void initialise() {

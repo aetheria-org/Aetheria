@@ -24,4 +24,12 @@ public enum ButtonStyle {
         for (ButtonStyle style : values()) if (style.index == index) return style;
         return DEFAULT;
     }
+
+    public static String[] getLabels() {
+        String[] labels = new String[values().length];
+        for (int i = 0; i < values().length; i++) {
+            labels[i] = values()[i].label + " (" + values()[i].index + ")";
+        }
+        return labels;
+    }
 }
