@@ -88,7 +88,7 @@ public class HighlightUtils {
         String display = stack.getDisplayName();
         if (display != null && ColorUtils.stripColor(display).toLowerCase(Locale.ROOT).contains(query)) return true;
 
-        List<String> tooltip = stack.getTooltip(MinecraftCompat.getMinecraft().thePlayer, false);
+        List<String> tooltip = stack.getTooltip(MinecraftCompat.getLocalPlayer(), false);
         if (tooltip != null) for (String line : tooltip)
             if (line != null && ColorUtils.stripColor(line).toLowerCase(Locale.ROOT).contains(query)) return true;
 

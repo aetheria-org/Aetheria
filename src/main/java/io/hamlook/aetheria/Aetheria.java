@@ -16,6 +16,7 @@ import io.hamlook.aetheria.features.farming.visitors.VisitorShoppingList;
 import io.hamlook.aetheria.features.misc.pet.PetCache;
 import io.hamlook.aetheria.features.profile.GuiWaiter;
 import io.hamlook.aetheria.features.trackers.TrackerManager;
+import io.hamlook.aetheria.command.brigadier.CommandsRegistry;
 import io.hamlook.aetheria.init.EventRegistrar;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
@@ -77,6 +78,7 @@ public class Aetheria {
         MinecraftForge.EVENT_BUS.register(this);
         AetheriaEventBus.INSTANCE.register(this);
         EventRegistrar.registerAll();
+        CommandsRegistry.INSTANCE.registerAll();
         CMMHelper.initialise();
     }
 

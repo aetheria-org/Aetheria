@@ -68,7 +68,7 @@ public class CurrentPetOverlay extends Overlay {
 
     @Override
     protected int getBaseWidth() {
-        return SKULL_SIZE + GAP + MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth("§7[Lvl 100] §6Tiger") + PADDING * 2;
+        return SKULL_SIZE + GAP + MinecraftCompat.getFontRenderer().getStringWidth("§7[Lvl 100] §6Tiger") + PADDING * 2;
     }
 
     @Override
@@ -96,7 +96,7 @@ public class CurrentPetOverlay extends Overlay {
         }
 
         float scale = getScale();
-        int textW = mc.fontRendererObj.getStringWidth(formattedName);
+        int textW = MinecraftCompat.getFontRenderer().getStringWidth(formattedName);
         int w = SKULL_SIZE + GAP + textW + PADDING * 2;
         int h = SKULL_SIZE + PADDING * 2;
         lastW = w;
@@ -122,8 +122,8 @@ public class CurrentPetOverlay extends Overlay {
             Gui.drawRect(0, 0, SKULL_SIZE, SKULL_SIZE, 0xFF555555);
         }
 
-        int textY = (SKULL_SIZE - mc.fontRendererObj.FONT_HEIGHT) / 2;
-        mc.fontRendererObj.drawStringWithShadow(formattedName, SKULL_SIZE + GAP, textY, 0xFFFFFF);
+        int textY = (SKULL_SIZE - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2;
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(formattedName, SKULL_SIZE + GAP, textY, 0xFFFFFF);
 
         GL11.glPopMatrix();
     }

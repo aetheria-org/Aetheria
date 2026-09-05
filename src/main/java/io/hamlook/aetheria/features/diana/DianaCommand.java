@@ -1,61 +1,41 @@
 package io.hamlook.aetheria.features.diana;
 
-import io.hamlook.aetheria.command.ASMCommand;
-import io.hamlook.aetheria.init.RegisterCommand;
-import io.hamlook.aetheria.utils.compat.TextCompat;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.util.BlockPos;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
+import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import net.minecraft.util.EnumChatFormatting;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-
-@RegisterCommand
-public class DianaCommand extends ASMCommand {
+@RegisterEvents
+public class DianaCommand {
 
     private static final String PREFIX = EnumChatFormatting.DARK_AQUA + "[Diana] " + EnumChatFormatting.RESET;
 
-    @Override
-    public String getName() {
-        return "diana";
-    }
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("diana", builder -> {
+            builder.description = "Diana tracker commands";
+            builder.setCategory(CommandCategory.USERS_ACTIVE);
 
-    @Override
-    public String getUsage() {
-        return "/diana <reset|toggle>";
-    }
+            builder.literal("reset", resetBuilder -> {
+                resetBuilder.description = "Reset diana stats";
+                resetBuilder.simpleCallback(() -> {
+                    DianaStats s = DianaStats.getInstance();
+                    s.reset();
+                    s.save();
+                    ChatUtils.sendMessage(PREFIX + EnumChatFormatting.GREEN + "Diana stats have been reset.");
+                });
+            });
 
-    @Override
-    public void execute(ICommandSender sender, String[] args) {
-        DianaStats s = DianaStats.getInstance();
-
-        if (args.length == 0) {
-            sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.YELLOW + "Usage: /diana <reset|toggle>"));
-            return;
-        }
-
-        switch (args[0].toLowerCase()) {
-            case "reset":
-                s.reset();
-                s.save();
-                sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.GREEN + "Diana stats have been reset."));
-                break;
-
-            case "toggle":
-                boolean now = s.toggleTracking();
-                sender.addChatMessage(TextCompat.createText(PREFIX + (now ? EnumChatFormatting.GREEN + "Tracking enabled." : EnumChatFormatting.RED + "Tracking paused.")));
-                break;
-
-            default:
-                sender.addChatMessage(TextCompat.createText(PREFIX + EnumChatFormatting.RED + "Unknown subcommand. Use: reset, toggle"));
-        }
-    }
-
-    @Override
-    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
-        if (args.length == 1) return Arrays.asList("reset", "toggle");
-        return Collections.emptyList();
+            builder.literal("toggle", toggleBuilder -> {
+                toggleBuilder.description = "Toggle diana tracking";
+                toggleBuilder.simpleCallback(() -> {
+                    DianaStats s = DianaStats.getInstance();
+                    boolean now = s.toggleTracking();
+                    ChatUtils.sendMessage(PREFIX + (now ? EnumChatFormatting.GREEN + "Tracking enabled." : EnumChatFormatting.RED + "Tracking paused."));
+                });
+            });
+        });
     }
 }

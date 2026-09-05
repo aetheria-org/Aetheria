@@ -44,7 +44,7 @@ public final class TextRenderUtils {
 
         GlStateManagerCompat.translate(xPos, yPos, 0);
         GlStateManagerCompat.scale(finalScale, finalScale, 1f);
-        MinecraftCompat.getMinecraft().fontRendererObj.drawString(text, 0, 0, color);
+        MinecraftCompat.getFontRenderer().drawString(text, 0, 0, color);
         GlStateManagerCompat.popMatrix();
     }
 
@@ -67,7 +67,7 @@ public final class TextRenderUtils {
         GlStateManagerCompat.translate(xPos, yPos, 0);
         GlStateManagerCompat.scale(finalScale, finalScale, 1f);
 
-        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         fr.drawString(text, -fr.getStringWidth(text) / 2f, -fr.FONT_HEIGHT / 2f, color, false);
         GlStateManagerCompat.popMatrix();
     }
@@ -173,7 +173,7 @@ public final class TextRenderUtils {
     public static void drawItemTooltip(net.minecraft.item.ItemStack stack, int mouseX, int mouseY, FontRenderer font) {
         if (stack == null) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
-        List<String> tooltip = stack.getTooltip(mc.thePlayer, mc.gameSettings.advancedItemTooltips);
+        List<String> tooltip = stack.getTooltip(MinecraftCompat.getLocalPlayer(), mc.gameSettings.advancedItemTooltips);
         drawHoveringText(tooltip, mouseX, mouseY, font);
     }
 
@@ -191,7 +191,7 @@ public final class TextRenderUtils {
         GlStateManagerCompat.translate(xPos, yPos, 0);
         GlStateManagerCompat.scale(finalScale, finalScale, 1f);
 
-        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         float currentX = 0;
         int len = text.length();
         for (int i = 0; i < len; i++) {
@@ -208,7 +208,7 @@ public final class TextRenderUtils {
     public static void drawCenteredStringGradientScaleAware(String text, float xPos, float yPos,
                                                             int startColor, int endColor,
                                                             float uiScale, boolean displayScale) {
-        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         // compute total width at scale 1
         int totalWidth = fr.getStringWidth(text);
         float halfWidth = totalWidth / 2f;

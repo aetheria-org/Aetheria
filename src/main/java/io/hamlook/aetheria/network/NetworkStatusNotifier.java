@@ -32,17 +32,17 @@ public class NetworkStatusNotifier {
     public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null || ATHRConfig.feature == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null || ATHRConfig.feature == null) return;
 
         tickCounter++;
         if (tickCounter % 40 == 0) {
-            if (ATHRConfig.feature.network.smartSocketLifecycle && WebSocketClient.isConnected && Aetheria.webSocketClient != null && System.currentTimeMillis() - WebSocketClient.lastActivityMs > WebSocketClient.IDLE_TIMEOUT_MS && !(mc.currentScreen instanceof ChatUI) && !(mc.currentScreen instanceof DPartyGUI)) {
+            if (ATHRConfig.feature.network.smartSocketLifecycle && WebSocketClient.isConnected && Aetheria.webSocketClient != null && System.currentTimeMillis() - WebSocketClient.lastActivityMs > WebSocketClient.IDLE_TIMEOUT_MS && !(MinecraftCompat.getCurrentScreen() instanceof ChatUI) && !(MinecraftCompat.getCurrentScreen() instanceof DPartyGUI)) {
                 Aetheria.webSocketClient.close(1000, "Idle timeout");
             }
         }
 
         if (pendingShow) {
-            if (mc.currentScreen == null && SkyblockData.isOnSkyblock()) {
+            if (MinecraftCompat.getCurrentScreen() == null && SkyblockData.isOnSkyblock()) {
                 pendingShow = false;
                 ackedThisLaunch = true;
                 ATHRConfig.screenToOpen = new NetworkStatusScreen();

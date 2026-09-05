@@ -97,7 +97,7 @@ public class GardenPlotNumber {
     }
 
     private static PlotInfo info(ItemStack stack) {
-        GuiScreen screen = MinecraftCompat.getMinecraft().currentScreen;
+        GuiScreen screen = MinecraftCompat.getCurrentScreen();
         if (screen != cacheScreen) {
             cacheScreen = screen;
             PLOT_CACHE.clear();

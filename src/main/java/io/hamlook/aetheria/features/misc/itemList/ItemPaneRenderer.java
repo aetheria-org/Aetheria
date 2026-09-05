@@ -145,7 +145,7 @@ private boolean shouldntShow() {
         if (ATHRConfig.feature == null) return true;
         if (!ATHRConfig.feature.misc.itemList.enabled) return true;
         if (StorageManager.isOverlayActive()) return true;
-        if (ATHRConfig.feature.misc.itemList.inventoryOnly && !(MinecraftCompat.getMinecraft().currentScreen instanceof GuiInventory)) return true;
+        if (ATHRConfig.feature.misc.itemList.inventoryOnly && !(MinecraftCompat.getCurrentScreen() instanceof GuiInventory)) return true;
         if (ATHRConfig.feature.misc.itemList.itemListSOnly && isGlobalSearch()) return !SearchBar.isSendToItemList();
         return !ItemRegistry.isLoaded || ItemRegistry.familyRegistry.isEmpty();
     }
@@ -211,7 +211,7 @@ private boolean shouldntShow() {
         if (!globalSearch) {
             int sbY = paneH - 20 - PAD;
             if (searchField == null) {
-                searchField = new GuiTextField(2, mc.fontRendererObj, paneX + PAD, sbY, paneW - PAD * 2, 20);
+                searchField = new GuiTextField(2, MinecraftCompat.getFontRenderer(), paneX + PAD, sbY, paneW - PAD * 2, 20);
                 searchField.setCanLoseFocus(true);
                 searchField.setMaxStringLength(50);
                 searchField.setEnableBackgroundDrawing(false);
@@ -348,12 +348,12 @@ private boolean shouldntShow() {
             List<String> tip = new ArrayList<>();
             tip.add(tipItem.displayName);
             if (tipItem.baseLore != null) tip.addAll(tipItem.baseLore);
-            TextRenderUtils.drawHoveringText(tip, mouseX, mouseY, mc.fontRendererObj);
+            TextRenderUtils.drawHoveringText(tip, mouseX, mouseY, MinecraftCompat.getFontRenderer());
         } else if (tooltipFamily != null) {
             List<String> tip = new ArrayList<>();
             tip.add(tooltipFamily.displayName);
             tip.add("§7" + tooltipFamily.members.size() + " variants – click/hover to expand");
-            TextRenderUtils.drawHoveringText(tip, mouseX, mouseY, mc.fontRendererObj);
+            TextRenderUtils.drawHoveringText(tip, mouseX, mouseY, MinecraftCompat.getFontRenderer());
         }
     }
 
@@ -409,7 +409,7 @@ private boolean shouldntShow() {
     }
 
     private void drawCenteredText(Minecraft mc, String text, int x, int y, int color) {
-        mc.fontRendererObj.drawStringWithShadow(text, x - mc.fontRendererObj.getStringWidth(text) / 2f, y, color);
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(text, x - MinecraftCompat.getFontRenderer().getStringWidth(text) / 2f, y, color);
     }
 
     @HandleEvent
@@ -500,7 +500,7 @@ private boolean shouldntShow() {
                     int sy = dropDy + PAD + (i / cols) * (S() + 2);
                     if (isInBounds(mouseX, mouseY, sx, sy, S(), S())) {
                         if (btn == 1) WikiPane.open(fam.members.get(i));
-                        else mc.displayGuiScreen(new RecipeViewerGUI(fam.members.get(i), mc.currentScreen));
+                        else mc.displayGuiScreen(new RecipeViewerGUI(fam.members.get(i), MinecraftCompat.getCurrentScreen()));
                         if (event != null) event.cancel();
                         return;
                     }
@@ -517,7 +517,7 @@ private boolean shouldntShow() {
             if (isInBounds(mouseX, mouseY, sx, sy, S(), S())) {
                 if (btn == 1) WikiPane.open(fam.representative());
                 else if (!fam.hasDropdown() && fam.representative() != null)
-                    mc.displayGuiScreen(new RecipeViewerGUI(fam.representative(), mc.currentScreen));
+                    mc.displayGuiScreen(new RecipeViewerGUI(fam.representative(), MinecraftCompat.getCurrentScreen()));
                 if (event != null) event.cancel();
                 return;
             }

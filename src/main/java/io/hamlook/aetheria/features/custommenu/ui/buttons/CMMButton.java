@@ -45,7 +45,7 @@ public abstract class CMMButton extends CMMElement {
     }
 
     public static void drawCenteredString(String displayString, int xPos, int yPos, int width, int height, int color, boolean shadow) {
-        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         float x = xPos + (width / 2f) - (fr.getStringWidth(displayString) / 2f);
         float y = (yPos + (height / 2f) - (fr.FONT_HEIGHT / 2f)) + 1;
         fr.drawString(displayString, x, y, color, shadow);

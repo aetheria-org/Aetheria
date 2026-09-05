@@ -78,7 +78,7 @@ public class DungeonMapOverlay extends Overlay {
         if (inv == null || inv.length < 9) return null;
         ItemStack stack = inv[8];
         if (stack == null) return null;
-        return Items.filled_map.getMapData(stack, MinecraftCompat.getMinecraft().theWorld);
+        return Items.filled_map.getMapData(stack, MinecraftCompat.getLocalWorld());
     }
 
     @HandleEvent
@@ -102,7 +102,7 @@ public class DungeonMapOverlay extends Overlay {
         if (!preview && (!SkyblockData.isInDungeon() || dungeonRunEnded)) return;
         if (!preview && DungeonStats.isInBossFight()) return;
 
-        EntityPlayerSP player = MinecraftCompat.getMinecraft().thePlayer;
+        EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
         if (player == null) return;
 
         DungeonMapConfig cfg = ATHRConfig.feature.dungeons.dungeonMapConfig;
@@ -161,8 +161,8 @@ public class DungeonMapOverlay extends Overlay {
 
         if (preview) {
             String txt = "Preview Map";
-            int tw = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(txt);
-            MinecraftCompat.getMinecraft().fontRendererObj.drawStringWithShadow(txt, cx - tw / 2f, cy - 4f, 0xFFFFFFFF);
+            int tw = MinecraftCompat.getFontRenderer().getStringWidth(txt);
+            MinecraftCompat.getFontRenderer().drawStringWithShadow(txt, cx - tw / 2f, cy - 4f, 0xFFFFFFFF);
         } else if (cachedGrid != null && cachedGrid.isValid()) {
             renderDungeonMap(cx, cy, scale, cfg.rooms.showVisitedRoomNames, cfg.rooms.mapColorText);
         }
@@ -170,7 +170,7 @@ public class DungeonMapOverlay extends Overlay {
 
     public void renderDungeonMap(float centerX, float centerY, float scale, boolean showRoomNames, boolean colorRoomNames) {
         if (cachedGrid == null || !cachedGrid.isValid()) return;
-        EntityPlayerSP player = MinecraftCompat.getMinecraft().thePlayer;
+        EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
         MapData info = player != null ? getDungeonMap(player) : null;
         if (info != null) playerTracker.matchDecorations(info.mapDecorations);
         DungeonMapRenderer.render(cachedGrid, centerX, centerY, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms(), showRoomNames, colorRoomNames, mapCalibrated);

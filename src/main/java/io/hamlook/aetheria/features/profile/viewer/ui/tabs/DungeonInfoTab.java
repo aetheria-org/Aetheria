@@ -5,6 +5,7 @@ import io.hamlook.aetheria.features.profile.data.dungeon.Floor;
 import io.hamlook.aetheria.features.profile.data.dungeon.FloorData;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.StringUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
@@ -78,9 +79,9 @@ public class DungeonInfoTab extends Tab {
         String title = "§c§l" + floor.floorName;
         TextRenderUtils.drawStringScaleAware(title, x + pad, y + pad, titleScale, false);
 
-        float currentY = y + pad + (titleScale * mc.fontRendererObj.FONT_HEIGHT) + ProfileViewerGUI.getScaledF(4);
+        float currentY = y + pad + (titleScale * MinecraftCompat.getFontRenderer().FONT_HEIGHT) + ProfileViewerGUI.getScaledF(4);
 
-        float lineSpc = statScale * mc.fontRendererObj.FONT_HEIGHT + ProfileViewerGUI.getScaledF(1.5f);
+        float lineSpc = statScale * MinecraftCompat.getFontRenderer().FONT_HEIGHT + ProfileViewerGUI.getScaledF(1.5f);
 
         if (fData == null || fData.bossKills == 0) {
             TextRenderUtils.drawStringScaleAware("§8Not Completed", x + pad, currentY, statScale, false);

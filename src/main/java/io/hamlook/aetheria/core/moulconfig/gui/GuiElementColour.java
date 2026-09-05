@@ -182,9 +182,9 @@ public class GuiElementColour extends GuiElement {
         GlStateManagerCompat.color(1, 1, 1, 1);
         RenderUtils.drawTexturedRect(x+5+32+selX-4, y+5+32+selY-4, 8, 8, GL11.GL_NEAREST);
 
-        TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + Math.round(hsv[2]*100), MinecraftCompat.getMinecraft().fontRendererObj, x+5+64+5+5-(Math.round(hsv[2]*100)==100?1:0), y+5+64+5+5, true, 13, -1);
-        if (opacitySlider) TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + Math.round(c.getAlpha()/255f*100), MinecraftCompat.getMinecraft().fontRendererObj, x+5+64+5+valueOffset+5, y+5+64+5+5, true, 13, -1);
-        if (chromaSpeed > 0) TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + (int)ChromaColour.getSecondsForSpeed(chromaSpeed) + "s", MinecraftCompat.getMinecraft().fontRendererObj, x+5+64+5+valueOffset+opacityOffset+6, y+5+64+5+5, true, 13, -1);
+        TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + Math.round(hsv[2]*100), MinecraftCompat.getFontRenderer(), x+5+64+5+5-(Math.round(hsv[2]*100)==100?1:0), y+5+64+5+5, true, 13, -1);
+        if (opacitySlider) TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + Math.round(c.getAlpha()/255f*100), MinecraftCompat.getFontRenderer(), x+5+64+5+valueOffset+5, y+5+64+5+5, true, 13, -1);
+        if (chromaSpeed > 0) TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + (int)ChromaColour.getSecondsForSpeed(chromaSpeed) + "s", MinecraftCompat.getFontRenderer(), x+5+64+5+valueOffset+opacityOffset+6, y+5+64+5+5, true, 13, -1);
 
         hexField.setSize(48, 10);
         if (!hexField.getFocus()) hexField.setText(Integer.toHexString(c.getRGB() & 0xFFFFFF).toUpperCase());

@@ -27,7 +27,7 @@ public class GuiOptionEditorText extends GuiOptionEditor {
 
         int textFieldX = x + width / 6 - fullWidth / 2;
         if (textField.getFocus()) {
-            fullWidth = Math.max(fullWidth, MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10);
+            fullWidth = Math.max(fullWidth, MinecraftCompat.getFontRenderer().getStringWidth(textField.getText()) + 10);
         }
 
         textField.setSize(fullWidth, 16);
@@ -44,7 +44,7 @@ public class GuiOptionEditorText extends GuiOptionEditor {
         int textFieldX = x + width / 6 - fullWidth / 2;
 
         if (textField.getFocus()) {
-            fullWidth = Math.max(fullWidth, MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10);
+            fullWidth = Math.max(fullWidth, MinecraftCompat.getFontRenderer().getStringWidth(textField.getText()) + 10);
         }
 
         int textFieldY = y + height - 7 - 14;

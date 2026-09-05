@@ -8,6 +8,7 @@ import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.*;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -361,7 +362,7 @@ public class SearchBar {
             }
             if (isCalcMode() && lastCalcResult != null) {
                 if (ATHRConfig.feature.misc.searchBarConfig.calcEnterCopyResult)
-                    GuiScreen.setClipboardString(lastCalcResult);
+                    ClipboardCompat.setClipboard(lastCalcResult);
                 if (ATHRConfig.feature.misc.searchBarConfig.calcEnterClearText) {
                     searchText = lastCalcResultPlain;
                     searchBar.setText(lastCalcResultPlain);

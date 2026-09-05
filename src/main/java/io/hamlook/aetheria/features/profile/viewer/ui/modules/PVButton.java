@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.profile.viewer.ui.modules;
 
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
@@ -18,7 +19,7 @@ public class PVButton extends GuiButton {
     @Override
     public void drawButton(Minecraft mc, int mouseX, int mouseY) {
         if (this.visible) {
-            FontRenderer fontrenderer = mc.fontRendererObj;
+            FontRenderer fontrenderer = MinecraftCompat.getFontRenderer();
             GlStateManagerCompat.color(1.0F, 1.0F, 1.0F, 1.0F);
             this.hovered = mouseX >= this.xPosition && mouseY >= this.yPosition && mouseX < this.xPosition + this.width && mouseY < this.yPosition + this.height;
             GlStateManagerCompat.enableBlend();

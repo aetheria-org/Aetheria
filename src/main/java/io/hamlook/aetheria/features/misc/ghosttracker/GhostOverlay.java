@@ -137,12 +137,12 @@ public class GhostOverlay extends Overlay {
         int maxW = 0;
         for (HudEntry e : entries) {
             String plain = e.label + e.value.replaceAll("§.", "");
-            int w = mc.fontRendererObj.getStringWidth(plain) + ICON_SIZE + ICON_PAD * 3 + 4;
+            int w = MinecraftCompat.getFontRenderer().getStringWidth(plain) + ICON_SIZE + ICON_PAD * 3 + 4;
             maxW = Math.max(maxW, w);
         }
 
         String header = "§8Ghost Tracker";
-        int headerW = mc.fontRendererObj.getStringWidth(header) + 6;
+        int headerW = MinecraftCompat.getFontRenderer().getStringWidth(header) + 6;
         int w = Math.max(maxW + 6, headerW);
         int h = entries.size() * LINE_HEIGHT + LINE_HEIGHT + 4; // header + entries
         lastW = w;
@@ -164,21 +164,21 @@ public class GhostOverlay extends Overlay {
         GlStateManagerCompat.enableAlpha();
         GlStateManagerCompat.enableBlend();
 
-        mc.fontRendererObj.drawStringWithShadow(header, 3, 3, 0xFFFFFF);
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(header, 3, 3, 0xFFFFFF);
 
         int dy = 3 + LINE_HEIGHT;
         for (HudEntry e : entries) {
             mc.getTextureManager().bindTexture(e.icon);
             Utils.drawTexturedRect(ICON_PAD, dy + 1, ICON_SIZE, ICON_SIZE);
             int textX = ICON_SIZE + ICON_PAD * 2;
-            mc.fontRendererObj.drawStringWithShadow(e.label, textX, dy, 0xFFFFFF);
+            MinecraftCompat.getFontRenderer().drawStringWithShadow(e.label, textX, dy, 0xFFFFFF);
             String[] parts = e.value.split(" §7\\(");
             String mainVal = parts[0];
-            int labelEnd = textX + mc.fontRendererObj.getStringWidth(e.label);
-            mc.fontRendererObj.drawStringWithShadow(mainVal, labelEnd, dy, e.color);
+            int labelEnd = textX + MinecraftCompat.getFontRenderer().getStringWidth(e.label);
+            MinecraftCompat.getFontRenderer().drawStringWithShadow(mainVal, labelEnd, dy, e.color);
             if (parts.length > 1) {
-                int mainEnd = labelEnd + mc.fontRendererObj.getStringWidth(mainVal);
-                mc.fontRendererObj.drawStringWithShadow(" §7(" + parts[1], mainEnd, dy, 0xFFFFFF);
+                int mainEnd = labelEnd + MinecraftCompat.getFontRenderer().getStringWidth(mainVal);
+                MinecraftCompat.getFontRenderer().drawStringWithShadow(" §7(" + parts[1], mainEnd, dy, 0xFFFFFF);
             }
             dy += LINE_HEIGHT;
         }

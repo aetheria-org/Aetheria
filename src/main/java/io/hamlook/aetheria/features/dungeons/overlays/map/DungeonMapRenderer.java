@@ -4,6 +4,7 @@ import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.dungeons.DungeonMapConfig;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoom;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
@@ -139,7 +140,7 @@ public class DungeonMapRenderer {
         float invScale = 1f / Math.max(scale, 0.01f);
         DungeonMapConfig.Self selfCfg = cfg.players.self;
         DungeonMapConfig.Teammates teammatesCfg = cfg.players.teammates;
-        String selfName = mc.thePlayer != null ? mc.thePlayer.getName() : null;
+        String selfName = MinecraftCompat.getLocalPlayer() != null ? MinecraftCompat.getLocalPlayer().getName() : null;
         int teammateOrdinal = 0;
 
         for (String name : playerNames) {
@@ -159,7 +160,7 @@ public class DungeonMapRenderer {
             // before the entrance latch the fallback origin would pin the marker
             // to the entrance pixel, so uncalibrated runs draw self from its
             // decoration (same as teammates) until calibration completes.
-            if (isSelf && mapCalibrated && cfg.players.accurateSelfPosition && entity != null && !entity.isDead) {
+            if (isSelf && mapCalibrated && cfg.players.accurateSelfPosition && entity != null && !EntityCompat.isDead(entity)) {
                 px = grid.worldToPixelX(entity.posX);
                 pz = grid.worldToPixelZ(entity.posZ);
                 // Same +180 convention as the decoration decode (vanilla parity).

@@ -1,17 +1,19 @@
 package io.hamlook.aetheria.features.misc
 
-import io.hamlook.aetheria.command.ASMCommand
-import io.hamlook.aetheria.init.RegisterCommand
-import net.minecraft.command.ICommandSender
+import io.hamlook.aetheria.api.event.HandleEvent
+import io.hamlook.aetheria.command.brigadier.CommandCategory
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent
+import io.hamlook.aetheria.init.RegisterEvents
 
-@RegisterCommand
-class PretendThisDoesntExist : ASMCommand() {
-    
-    override fun getName() = "ATHRthisisatestdontusethispls"
-    
-    override fun getUsage() = "/ATHRthisisatestdontusethispls"
-    
-    override fun execute(sender: ICommandSender, args: Array<String>) {
-        DVD.forceCornerHit()
+@RegisterEvents
+class PretendThisDoesntExist {
+
+    @HandleEvent
+    fun onCommandRegistration(event: CommandRegistrationEvent) {
+        event.registerBrigadier("ATHRthisisatestdontusethispls") {
+            description = "Easter egg test command"
+            category = CommandCategory.INTERNAL
+            simpleCallback { DVD.forceCornerHit() }
+        }
     }
 }

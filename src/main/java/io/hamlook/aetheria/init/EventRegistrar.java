@@ -2,11 +2,8 @@ package io.hamlook.aetheria.init;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.api.event.AetheriaEventBus;
-import io.hamlook.aetheria.utils.compat.CommandCompat;
 import io.hamlook.aetheria.utils.compat.KeybindCompat;
 import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.command.ICommand;
-import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 
@@ -23,10 +20,7 @@ import java.util.List;
  * <ul>
  *   <li>{@link RegisterEvents {@code @RegisterEvents}} → {@link
  *       MinecraftForge#EVENT_BUS}</li>
- *   <li>{@link RegisterCommand {@code @RegisterCommand}} → {@link
- *       ClientCommandHandler}</li>
- *   <li>{@link RegisterInstance {@code @RegisterInstance}} → command or event bus
- *       depending on field type</li>
+ *   <li>{@link RegisterInstance {@code @RegisterInstance}} → event bus listener</li>
  *   <li>{@link RegisterKeybind {@code @RegisterKeybind}} → {@link
  *       ClientRegistry#registerKeyBinding}</li>
  * </ul>
@@ -72,7 +66,6 @@ public class EventRegistrar {
         List<Class<?>> classes = ClasspathScanner.loadClasses(classNames, EventRegistrar.class.getClassLoader());
         for (Class<?> clazz : classes) {
             tryRegisterEvents(clazz);
-            tryRegisterCommand(clazz);
             tryRegisterInstanceFields(clazz);
             tryRegisterKeybindFields(clazz);
         }
@@ -95,24 +88,6 @@ public class EventRegistrar {
     }
 
     /**
-     * If {@code clazz} is annotated with {@code @RegisterCommand} and implements
-     * {@link ICommand}, instantiate and register it with
-     * {@link ClientCommandHandler}.
-     */
-    private static void tryRegisterCommand(Class<?> clazz) {
-        if (!clazz.isAnnotationPresent(RegisterCommand.class)) return;
-        if (!ICommand.class.isAssignableFrom(clazz)) {
-            Aetheria.logger.severe("[ATHR] @RegisterCommand class does not implement ICommand: " + clazz.getName());
-            return;
-        }
-        try {
-            CommandCompat.registerCommand((ICommand) newInstance(clazz));
-        } catch (Throwable t) {
-            Aetheria.logger.severe("[ATHR] Failed to register command: " + clazz.getName() + ": " + t.getMessage());
-        }
-    }
-
-    /**
      * For every {@code @RegisterInstance} static field in {@code clazz}, read the
      * field value and register it, as a command if it implements {@link ICommand},
      * otherwise as an event-bus listener.
@@ -131,13 +106,9 @@ public class EventRegistrar {
                     Aetheria.logger.severe("[ATHR] @RegisterInstance field is null: " + field.getName());
                     continue;
                 }
-                if (instance instanceof ICommand) {
-                    CommandCompat.registerCommand((ICommand) instance);
-                } else {
-                    MinecraftForge.EVENT_BUS.register(instance);
-                    AetheriaEventBus.INSTANCE.register(instance);
-                    REGISTERED_EVENT_INSTANCES.add(instance);
-                }
+                MinecraftForge.EVENT_BUS.register(instance);
+                AetheriaEventBus.INSTANCE.register(instance);
+                REGISTERED_EVENT_INSTANCES.add(instance);
             } catch (Throwable t) {
                 Aetheria.logger.severe("[ATHR] Failed to register instance field: " + field.getName() + ": " + t.getMessage());
             }

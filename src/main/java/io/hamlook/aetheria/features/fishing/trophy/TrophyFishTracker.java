@@ -114,12 +114,12 @@ public class TrophyFishTracker {
     }
 
     private void scanOdger(ContainerChest container) {
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
         TrophyFishStorage storage = TrophyFishStorage.getInstance();
         boolean changed = false;
 
         for (Slot slot : container.inventorySlots) {
-            if (slot.inventory == mc.thePlayer.inventory) continue;
+            if (slot.inventory == MinecraftCompat.getLocalPlayer().inventory) continue;
             ItemStack item = slot.getStack();
             if (item == null) continue;
 

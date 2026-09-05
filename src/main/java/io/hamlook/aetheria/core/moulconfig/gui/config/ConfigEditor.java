@@ -426,7 +426,7 @@ public class ConfigEditor extends GuiElement {
 
         RenderUtils.drawFloatingRectDark(x + 5, y + 5, xSize - 10, 20, false);
 
-        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         TextRenderUtils.drawStringCenteredScaledMaxWidth("Aetheria" + " " + Aetheria.VERSION + " by " + EnumChatFormatting.RED + "h4mlock", fr, x + xSize / 2f, y + 15, false, 380, 0xa0a0a0);
         RenderUtils.drawFloatingRectDark(x + 4, y + 49 - 20, 180, ySize - 54 + 20, false);
 
@@ -527,7 +527,7 @@ public class ConfigEditor extends GuiElement {
 
         int rightStuffLen = 20;
         if (minimumSearchSize.getValue() > 1) {
-            int strLen = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(searchField.getText()) + 10;
+            int strLen = MinecraftCompat.getFontRenderer().getStringWidth(searchField.getText()) + 10;
             if (!shouldShow) strLen = 0;
 
             int len = Math.max(strLen, minimumSearchSize.getValue());
@@ -787,7 +787,7 @@ public class ConfigEditor extends GuiElement {
             searchField.setFocus(mouseX >= innerRight - 20 && mouseX <= innerRight - 2 && mouseY >= searchFieldCenterY - 9 && mouseY <= searchFieldCenterY + 9);
 
             if (minimumSearchSize.getValue() > 1) {
-                int strLen = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(searchField.getText()) + 10;
+                int strLen = MinecraftCompat.getFontRenderer().getStringWidth(searchField.getText()) + 10;
                 int len = Math.max(strLen, minimumSearchSize.getValue());
 
                 if (mouseX >= innerRight - 25 - len && mouseX <= innerRight - 25 && mouseY >= searchFieldCenterY - 9 && mouseY <= searchFieldCenterY + 9) {
@@ -999,7 +999,7 @@ public class ConfigEditor extends GuiElement {
         if (KeyboardCompat.getEventKeyState()) {
             String old = searchField.getText();
             searchField.keyTyped(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
-            searchField.setText(MinecraftCompat.getMinecraft().fontRendererObj.trimStringToWidth(searchField.getText(), innerWidth / 2 - 20));
+            searchField.setText(MinecraftCompat.getFontRenderer().trimStringToWidth(searchField.getText(), innerWidth / 2 - 20));
 
             if (!searchField.getText().equals(old)) search();
         }

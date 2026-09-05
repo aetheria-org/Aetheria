@@ -47,7 +47,7 @@ public class PestAlertOverlay extends SimpleOverlay {
             nextSoundAtMs = now + SOUND_REPEAT_MS;
         }
 
-        if (mc.theWorld == null || mc.thePlayer == null
+        if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null
                 || SkyblockData.getCurrentLocation() != SkyblockData.Location.GARDEN) {
             armed = true;
             lastRemainingMs = -1L;
@@ -120,7 +120,7 @@ public class PestAlertOverlay extends SimpleOverlay {
             text = formatRemaining(remainMs);
         }
 
-        net.minecraft.client.gui.FontRenderer fr = mc.fontRendererObj;
+        net.minecraft.client.gui.FontRenderer fr = MinecraftCompat.getFontRenderer();
         String main = "§c§lPEST ALERT! §r" + text;
         String sub = "§7" + Math.max(1, windowSec) + "s";
         float subScale = Math.max(0.75f, scale * 0.5f);

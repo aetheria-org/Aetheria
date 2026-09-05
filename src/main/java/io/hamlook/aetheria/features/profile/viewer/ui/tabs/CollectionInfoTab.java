@@ -6,6 +6,7 @@ import io.hamlook.aetheria.features.profile.data.collection.CollectionData;
 import io.hamlook.aetheria.features.profile.data.collection.CollectionType;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.BlockCompat;
 import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
@@ -182,7 +183,7 @@ public class CollectionInfoTab extends Tab {
 
         if (!notUnlocked) {
             String lvlText = (isMaxed ? "§d" : "§a") + "LVL " + cData.level;
-            float lvlWidth = mc.fontRendererObj.getStringWidth(lvlText) * textScale * 0.95f;
+            float lvlWidth = MinecraftCompat.getFontRenderer().getStringWidth(lvlText) * textScale * 0.95f;
             TextRenderUtils.drawStringScaleAware(lvlText, x + w - pad - lvlWidth, textYTop, textScale * 0.95f, false);
         }
     }
@@ -288,7 +289,7 @@ public class CollectionInfoTab extends Tab {
 
         NineSliceUtils.draw(ProfileViewerGUI.CONTAINER_BG, (int) dropX, (int) dropY, (int) dropW, (int) dropH, 6, 18);
 
-        int[] mouse = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
         int mouseX = mouse[0], mouseY = mouse[1];
 
         for (int i = 0; i < categories.length; i++) {
@@ -310,7 +311,7 @@ public class CollectionInfoTab extends Tab {
     }
 
     private void handleInputEvents(Minecraft mc, float xPos, float yPos, int width, int height, float maxScroll) {
-        int[] mouse = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
         int mouseX = mouse[0], mouseY = mouse[1];
 
         boolean isMouseDown = MouseCompat.isButtonDown(0);

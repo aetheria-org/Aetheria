@@ -132,9 +132,9 @@ public final class WorldRenderUtils {
     }
 
     public static void drawTracer(Vec3 target, float partialTicks, Color color, float lineWidth) {
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
         double[] v = viewerPos();
-        Vec3 eyes = mc.thePlayer.getPositionEyes(partialTicks);
+        Vec3 eyes = MinecraftCompat.getLocalPlayer().getPositionEyes(partialTicks);
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue(), a = color.getAlpha();
 
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
@@ -154,8 +154,8 @@ public final class WorldRenderUtils {
     }
 
     public static void drawTextInWorld(String text, double x, double y, double z) {
-        if (mc.fontRendererObj == null) return;
-        int w = mc.fontRendererObj.getStringWidth(net.minecraft.util.StringUtils.stripControlCodes(text));
+        if (MinecraftCompat.getFontRenderer() == null) return;
+        int w = MinecraftCompat.getFontRenderer().getStringWidth(net.minecraft.util.StringUtils.stripControlCodes(text));
         float scale = 0.04f;
         GL11.glPushMatrix();
         GL11.glTranslated(x, y, z);
@@ -163,7 +163,7 @@ public final class WorldRenderUtils {
         GL11.glRotatef(mc.getRenderManager().playerViewX, 1f, 0f, 0f);
         GL11.glScalef(-scale, -scale, scale);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
-        mc.fontRendererObj.drawStringWithShadow(text, -w / 2f, 0f, 0xFFFFFF);
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(text, -w / 2f, 0f, 0xFFFFFF);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glPopMatrix();
     }
@@ -246,7 +246,7 @@ public final class WorldRenderUtils {
      * beam is occluded by terrain and never renders through blocks.
      */
     public static void drawBeaconBeam(double x, double y, double z, Color color, float partialTicks, double height) {
-        if (mc.theWorld == null || mc.getRenderManager() == null) return;
+        if (MinecraftCompat.getLocalWorld() == null || mc.getRenderManager() == null) return;
         double[] v = viewerPos();
 
         GlStateManagerCompat.pushMatrix();
@@ -264,7 +264,7 @@ public final class WorldRenderUtils {
         GlStateManagerCompat.depthFunc(GL11.GL_LEQUAL);
         GlStateManagerCompat.depthMask(false);
 
-        double time = mc.theWorld.getTotalWorldTime() + partialTicks;
+        double time = MinecraftCompat.getLocalWorld().getTotalWorldTime() + partialTicks;
         double texShift = -time * 0.2 - Math.floor(-time * 0.1);
         texShift -= Math.floor(texShift);
 

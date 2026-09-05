@@ -1,24 +1,21 @@
 package io.hamlook.aetheria.features.farming.mouse;
 
-import io.hamlook.aetheria.command.ASMCommand;
-import io.hamlook.aetheria.init.RegisterCommand;
-import net.minecraft.command.ICommandSender;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
+import io.hamlook.aetheria.init.RegisterEvents;
 
-@RegisterCommand
-public class LockMouseCommand extends ASMCommand {
+@RegisterEvents
+public class LockMouseCommand {
 
-    @Override
-    public String getName() {
-        return "lockyp";
-    }
-
-    @Override
-    public String getUsage() {
-        return "/lockyp";
-    }
-
-    @Override
-    public void execute(ICommandSender sender, String[] args) {
-        LockMouse.setLocked(!LockMouse.isLocked());
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("lockyp", builder -> {
+            builder.description = "Toggle mouse lock";
+            builder.setCategory(CommandCategory.USERS_ACTIVE);
+            builder.simpleCallback(() -> {
+                LockMouse.setLocked(!LockMouse.isLocked());
+            });
+        });
     }
 }

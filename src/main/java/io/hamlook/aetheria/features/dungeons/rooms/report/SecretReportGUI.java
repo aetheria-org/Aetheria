@@ -184,10 +184,10 @@ public class SecretReportGUI extends AetheriaBaseScreen {
         cancelButton = new GuiButton(1,xCenter + 25,yCenter+yOffset,100,20,"Cancel");
         this.buttonList.add(submitButton);
         this.buttonList.add(cancelButton);
-        searchField = new GuiDropdownTextField(5, mc.fontRendererObj, xCenter - 100, yCenter - 50, 200, 20, secretNames);
+        searchField = new GuiDropdownTextField(5, MinecraftCompat.getFontRenderer(), xCenter - 100, yCenter - 50, 200, 20, secretNames);
 
-        xField = new GuiTextField(2,mc.fontRendererObj,xCenter - 175,yCenter,100,20);
-        yField = new GuiTextField(3,mc.fontRendererObj,xCenter - 50, yCenter,100,20);
-        zField = new GuiTextField(4,mc.fontRendererObj,xCenter + 75, yCenter,100,20);
+        xField = new GuiTextField(2,MinecraftCompat.getFontRenderer(),xCenter - 175,yCenter,100,20);
+        yField = new GuiTextField(3,MinecraftCompat.getFontRenderer(),xCenter - 50, yCenter,100,20);
+        zField = new GuiTextField(4,MinecraftCompat.getFontRenderer(),xCenter + 75, yCenter,100,20);
     }
 }

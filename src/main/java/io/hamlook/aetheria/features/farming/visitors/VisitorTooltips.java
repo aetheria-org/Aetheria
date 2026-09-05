@@ -44,7 +44,7 @@ public final class VisitorTooltips {
     }
 
     private static String openVisitorName() {
-        GuiScreen screen = MinecraftCompat.getMinecraft().currentScreen;
+        GuiScreen screen = MinecraftCompat.getCurrentScreen();
         if (!(screen instanceof GuiContainer)) return null;
         if (!(InventoryCompat.getContainer((GuiContainer) screen) instanceof ContainerChest)) return null;
         ContainerChest chest = (ContainerChest) InventoryCompat.getContainer((GuiContainer) screen);

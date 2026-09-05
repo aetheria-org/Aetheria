@@ -425,7 +425,7 @@ public class EmojiSuggestionBar {
         if (hovered >= 0) {
             String emojiShortcode = matches.get(hovered);
             String tooltip = ":" + emojiShortcode + ":";
-            FontRenderer fr = mc.fontRendererObj;
+            FontRenderer fr = MinecraftCompat.getFontRenderer();
             int tw = fr.getStringWidth(tooltip);
             int tx = Math.max(2, Math.min(Math.round(cx - tw / 2f), snapW - tw - 2));
             int ty = Math.round(cy - halfH) - 11;

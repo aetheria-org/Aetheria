@@ -29,7 +29,7 @@ public class GyroWandHelper {
 
     public static boolean isHoldingGyro() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        return mc.thePlayer != null && GYRO_ID.equals(ItemUtils.getInternalName(mc.thePlayer.getHeldItem()));
+        return MinecraftCompat.getLocalPlayer() != null && GYRO_ID.equals(ItemUtils.getInternalName(MinecraftCompat.getLocalPlayer().getHeldItem()));
     }
 
     private boolean isEnabled() {
@@ -47,7 +47,7 @@ public class GyroWandHelper {
         if (!isEnabled() || !isHoldingGyro()) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        EntityPlayer player = mc.thePlayer;
+        EntityPlayer player = MinecraftCompat.getLocalPlayer();
 
         Vec3 target = getTargetPos(player, event.partialTicks);
         if (target == null) return;

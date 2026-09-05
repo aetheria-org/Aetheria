@@ -154,7 +154,7 @@ public class PriceDetector {
 
         String json = gson.toJson(payload);
 
-        if (mc.thePlayer != null) {
+        if (MinecraftCompat.getLocalPlayer() != null) {
             Aetheria.logger.info("Sending " + bazaarMap.size() + " bazaar and " + auctionMap.size() + " auction entries to API");
         }
 

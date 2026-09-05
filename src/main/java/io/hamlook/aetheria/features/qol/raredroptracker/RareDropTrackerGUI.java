@@ -52,7 +52,7 @@ public class RareDropTrackerGUI extends GuiElement {
     private int px, py, pw, ph;
 
     public RareDropTrackerGUI() {
-        this.parentScreen = MinecraftCompat.getMinecraft().currentScreen;
+        this.parentScreen = MinecraftCompat.getCurrentScreen();
         buildCacheIfNeeded();
         if (allNamesCache == null) {
             message = "Item database is still loading, hang on...";
@@ -168,7 +168,7 @@ public class RareDropTrackerGUI extends GuiElement {
         if (editingItemId != null) commitEdit();
         editingItemId = id;
         editingField = "goal";
-        editField = new GuiTextField(1, MinecraftCompat.getMinecraft().fontRendererObj, 0, 0, 0, 0);
+        editField = new GuiTextField(1, MinecraftCompat.getFontRenderer(), 0, 0, 0, 0);
         editField.setMaxStringLength(10);
         editField.setText(String.valueOf(item.goal));
         selectAllInEditField();
@@ -180,7 +180,7 @@ public class RareDropTrackerGUI extends GuiElement {
         if (editingItemId != null) commitEdit();
         editingItemId = id;
         editingField = "command";
-        editField = new GuiTextField(2, MinecraftCompat.getMinecraft().fontRendererObj, 0, 0, 0, 0);
+        editField = new GuiTextField(2, MinecraftCompat.getFontRenderer(), 0, 0, 0, 0);
         editField.setMaxStringLength(64);
         editField.setText(item.command != null ? item.command : "");
         selectAllInEditField();
@@ -234,7 +234,7 @@ public class RareDropTrackerGUI extends GuiElement {
     public void render() {
         Minecraft mc = MinecraftCompat.getMinecraft();
         ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        FontRenderer fr = mc.fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         updatePanel(sr);
 
         Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0xaa050508);
@@ -446,7 +446,7 @@ public class RareDropTrackerGUI extends GuiElement {
         boolean shift = KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) || KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT);
         int step = shift ? GOAL_STEP_SHIFT : GOAL_STEP;
 
-        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         int rowY = listTop - scrollOffset;
         for (Map.Entry<String, RareDropTrackerConfig.TrackedItem> e : entries) {
             if (rowY + ROW_H > listTop && rowY < listBottom) {

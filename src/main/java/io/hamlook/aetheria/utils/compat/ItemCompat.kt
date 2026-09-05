@@ -9,7 +9,7 @@ fun ItemStack.getTooltipCompat(player: EntityPlayer?, advanced: Boolean): Mutabl
 }
 
 fun ItemStack.getTooltipCompat(advanced: Boolean): MutableList<String> {
-    return this.getTooltip(MinecraftCompat.getMinecraft().thePlayer, advanced)
+    return this.getTooltip(MinecraftCompat.getLocalPlayer(), advanced)
 }
 
 fun Item.getIdentifierString(): String {

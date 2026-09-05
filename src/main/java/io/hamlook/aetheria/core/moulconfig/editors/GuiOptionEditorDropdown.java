@@ -33,7 +33,7 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
         if (!open) {
             int height = getHeight();
 
-            FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+            FontRenderer fr = MinecraftCompat.getFontRenderer();
             int dropdownWidth = Math.min(width / 3 - 10, 80);
             int left = x + width / 6 - dropdownWidth / 2;
             int top = y + height - 7 - 14;
@@ -60,7 +60,7 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
             int height = getHeight();
 
-            FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+            FontRenderer fr = MinecraftCompat.getFontRenderer();
             int dropdownWidth = Math.min(width / 3 - 10, 80);
             int left = x + width / 6 - dropdownWidth / 2;
             int top = y + height - 7 - 14;

@@ -13,6 +13,7 @@ import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
 import io.hamlook.aetheria.utils.compat.NefSlotClickCompat;
+import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.NBTFormatter;
@@ -84,12 +85,12 @@ public abstract class MixinGuiContainer extends GuiScreen {
                     net.minecraft.nbt.NBTTagCompound tag = NbtCompat.getTagCompound(stack);
                     if (tag != null) {
                         String prettyNbt = NBTFormatter.format(tag);
-                    GuiScreen.setClipboardString(prettyNbt);
-                    MinecraftCompat.getMinecraft().thePlayer.addChatMessage(
+                    ClipboardCompat.setClipboard(prettyNbt);
+                    TextCompat.addChatMessage(
                             TextCompat.createText(EnumChatFormatting.GREEN + "Copied NBT to clipboard!")
                     );
                 } else {
-                    MinecraftCompat.getMinecraft().thePlayer.addChatMessage(
+                    TextCompat.addChatMessage(
                             TextCompat.createText(EnumChatFormatting.RED + "This item has no NBT data.")
                     );
                 }

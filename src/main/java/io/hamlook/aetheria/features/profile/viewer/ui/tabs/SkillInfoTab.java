@@ -6,6 +6,7 @@ import io.hamlook.aetheria.features.profile.data.skills.SkillData;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -113,7 +114,7 @@ public class SkillInfoTab extends Tab {
         }
 
         String lvlText = (isMaxed ? "§d" : "§a") + "LVL " + currentLevel;
-        float lvlWidth = mc.fontRendererObj.getStringWidth(lvlText) * textScale;
+        float lvlWidth = MinecraftCompat.getFontRenderer().getStringWidth(lvlText) * textScale;
         TextRenderUtils.drawStringScaleAware(lvlText, x + w - pad - lvlWidth, textYTop, textScale, false);
     }
 

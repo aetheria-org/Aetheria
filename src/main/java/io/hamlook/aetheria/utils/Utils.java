@@ -34,7 +34,7 @@ public class Utils {
         Minecraft mc = MinecraftCompat.getMinecraft();
         for (boolean aBoolean : booleans) if (!aBoolean) return false;
         if (hideOnf3) {
-            if (mc.gameSettings.showDebugInfo || (mc.gameSettings.keyBindPlayerList.isKeyDown() && (!mc.isIntegratedServerRunning() || mc.thePlayer.sendQueue.getPlayerInfoMap().size() > 1))) {
+            if (mc.gameSettings.showDebugInfo || (mc.gameSettings.keyBindPlayerList.isKeyDown() && (!mc.isIntegratedServerRunning() || MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap().size() > 1))) {
                 return false;
             }
         }

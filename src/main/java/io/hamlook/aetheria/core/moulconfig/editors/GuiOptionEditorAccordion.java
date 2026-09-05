@@ -59,7 +59,7 @@ public class GuiOptionEditorAccordion extends GuiOptionEditor {
         GlStateManagerCompat.enableTexture2D();
         GlStateManagerCompat.disableBlend();
 
-        TextRenderUtils.drawStringScaledMaxWidth(option.name, MinecraftCompat.getMinecraft().fontRendererObj, x + 18, y + 6, false, width - 10, 0xc0c0c0);
+        TextRenderUtils.drawStringScaledMaxWidth(option.name, MinecraftCompat.getFontRenderer(), x + 18, y + 6, false, width - 10, 0xc0c0c0);
     }
 
     @Override

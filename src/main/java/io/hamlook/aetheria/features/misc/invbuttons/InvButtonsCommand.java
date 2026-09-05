@@ -1,27 +1,25 @@
 package io.hamlook.aetheria.features.misc.invbuttons;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.command.ASMCommand;
-import io.hamlook.aetheria.init.RegisterCommand;
-import net.minecraft.command.ICommandSender;
+import io.hamlook.aetheria.init.RegisterEvents;
+
 import java.util.Arrays;
-import java.util.List;
 
-@RegisterCommand
-public class InvButtonsCommand extends ASMCommand {
-    @Override
-    public String getName() { return "athrbuttons"; }
+@RegisterEvents
+public class InvButtonsCommand {
 
-    @Override
-    public List<String> getAliases() { return Arrays.asList("aetheriabuttons", "jefbuttons", "asmbuttons"); }
-
-    @Override
-    public String getUsage() {
-        return "/athrbuttons";
-    }
-
-    @Override
-    public void execute(ICommandSender sender, String[] args) {
-        ATHRConfig.openInvButtonEditor();
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("athrbuttons", builder -> {
+            builder.setAliases(Arrays.asList("aetheriabuttons", "jefbuttons", "asmbuttons"));
+            builder.description = "Open the inventory button editor";
+            builder.setCategory(CommandCategory.USERS_ACTIVE);
+            builder.simpleCallback(() -> {
+                ATHRConfig.openInvButtonEditor();
+            });
+        });
     }
 }

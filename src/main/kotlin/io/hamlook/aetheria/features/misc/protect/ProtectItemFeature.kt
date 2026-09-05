@@ -13,6 +13,7 @@ import io.hamlook.aetheria.utils.ContainerUtils
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
 import io.hamlook.aetheria.utils.compat.KeyboardCompat
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.compat.TextCompat
 import io.hamlook.aetheria.utils.item.ItemUtils
 import net.minecraft.client.gui.Gui
 import net.minecraft.item.ItemStack
@@ -47,7 +48,7 @@ class ProtectItemFeature {
 
         private fun notifyRaw(message: String) {
             if (ATHRConfig.feature?.misc?.protectItem?.showChatNotifications != true) return
-            MinecraftCompat.getLocalPlayer()?.addChatMessage(ChatComponentText("${EnumChatFormatting.RED}[ATHR] §r$message"))
+            TextCompat.addChatMessage(TextCompat.createText("${EnumChatFormatting.RED}[ATHR] §r$message"))
         }
     }
 

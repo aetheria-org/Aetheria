@@ -119,7 +119,7 @@ public class UptimeOverlay extends Overlay {
 
     private void renderExpiryMessage() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         // Only show the big on-screen pop for the first EXPIRY_TITLE_TICKS ticks
         int titleTicksLeft = expiryTicksLeft - (EXPIRY_SHOW_TICKS - EXPIRY_TITLE_TICKS);
@@ -140,8 +140,8 @@ public class UptimeOverlay extends Overlay {
         GL11.glScalef(2f, 2f, 1f);
 
         int white = (a << 24) | 0x00FFFFFF;
-        mc.fontRendererObj.drawStringWithShadow(line1, -mc.fontRendererObj.getStringWidth(line1) / 2f, -12f, white);
-        mc.fontRendererObj.drawStringWithShadow(line2, -mc.fontRendererObj.getStringWidth(line2) / 2f, 2f, white);
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(line1, -MinecraftCompat.getFontRenderer().getStringWidth(line1) / 2f, -12f, white);
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(line2, -MinecraftCompat.getFontRenderer().getStringWidth(line2) / 2f, 2f, white);
 
         GL11.glPopMatrix();
     }

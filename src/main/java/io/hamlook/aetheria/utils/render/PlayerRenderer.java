@@ -30,7 +30,7 @@ public class PlayerRenderer {
         if(cachedModels.containsKey(username)){
             player = cachedModels.get(username);
         }else {
-            player = new AbstractClientPlayer(MinecraftCompat.getMinecraft().theWorld,
+            player = new AbstractClientPlayer(MinecraftCompat.getLocalWorld(),
                     new GameProfile(UUID.nameUUIDFromBytes((username).getBytes()), username)) {
                 @Override
                 public ResourceLocation getLocationSkin() {

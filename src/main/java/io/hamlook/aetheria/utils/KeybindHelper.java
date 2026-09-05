@@ -82,7 +82,7 @@ public final class KeybindHelper {
     }
 
     private static void rollTickCache() {
-        EntityPlayer player = MC.thePlayer;
+        EntityPlayer player = MinecraftCompat.getLocalPlayer();
         int tick = player == null ? -1 : player.ticksExisted;
         if (player != cacheAnchor || tick != cacheTick) {
             PREV_DOWN.clear();

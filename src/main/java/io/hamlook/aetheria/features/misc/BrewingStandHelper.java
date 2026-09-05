@@ -94,13 +94,13 @@ public class BrewingStandHelper {
     public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.colorBrewingStands) return;
-        if (mc.theWorld == null) return;
+        if (MinecraftCompat.getLocalWorld() == null) return;
         if (!isOnPrivateIsland()) return;
         if (++tickCounter % 100 != 0) return;
 
         Iterator<Map.Entry<BlockPos, Long>> it = brewingStandToTimeMap.entrySet().iterator();
         while (it.hasNext()) {
-            if (!(mc.theWorld.getTileEntity(it.next().getKey()) instanceof TileEntityBrewingStand)) it.remove();
+            if (!(MinecraftCompat.getLocalWorld().getTileEntity(it.next().getKey()) instanceof TileEntityBrewingStand)) it.remove();
         }
     }
 
@@ -109,9 +109,9 @@ public class BrewingStandHelper {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.colorBrewingStands) return;
         if (!isOnPrivateIsland()) return;
         if (event.action != 1) return;
-        if (mc.theWorld == null) return;
-        if (mc.theWorld.getTileEntity(event.pos) instanceof TileEntityBrewingStand)
-            lastBrewingStand = (TileEntityBrewingStand) mc.theWorld.getTileEntity(event.pos);
+        if (MinecraftCompat.getLocalWorld() == null) return;
+        if (MinecraftCompat.getLocalWorld().getTileEntity(event.pos) instanceof TileEntityBrewingStand)
+            lastBrewingStand = (TileEntityBrewingStand) MinecraftCompat.getLocalWorld().getTileEntity(event.pos);
     }
 
     @HandleEvent
@@ -154,12 +154,12 @@ public class BrewingStandHelper {
     public void onRenderWorld(ASMRenderWorldEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.colorBrewingStands) return;
         if (!isOnPrivateIsland()) return;
-        if (mc.theWorld == null || mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null) return;
 
         float pt = event.partialTicks;
-        double vx = mc.thePlayer.lastTickPosX + (mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * pt;
-        double vy = mc.thePlayer.lastTickPosY + (mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * pt;
-        double vz = mc.thePlayer.lastTickPosZ + (mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * pt;
+        double vx = MinecraftCompat.getLocalPlayer().lastTickPosX + (MinecraftCompat.getLocalPlayer().posX - MinecraftCompat.getLocalPlayer().lastTickPosX) * pt;
+        double vy = MinecraftCompat.getLocalPlayer().lastTickPosY + (MinecraftCompat.getLocalPlayer().posY - MinecraftCompat.getLocalPlayer().lastTickPosY) * pt;
+        double vz = MinecraftCompat.getLocalPlayer().lastTickPosZ + (MinecraftCompat.getLocalPlayer().posZ - MinecraftCompat.getLocalPlayer().lastTickPosZ) * pt;
 
         long now = System.currentTimeMillis();
 

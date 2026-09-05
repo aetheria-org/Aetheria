@@ -41,7 +41,7 @@ public final class GLDebugProbe {
             GL11.glGetFloat(GL11.GL_CURRENT_COLOR, COLOR);
             MASK.rewind();
             GL11.glGetBoolean(GL11.GL_COLOR_WRITEMASK, MASK);
-            GuiScreen screen = MinecraftCompat.getMinecraft().currentScreen;
+            GuiScreen screen = MinecraftCompat.getCurrentScreen();
             String screenName = screen == null ? "null" : screen.getClass().getSimpleName();
             return "[" + screenName + "]"
                     + " light=" + GL11.glIsEnabled(GL11.GL_LIGHTING)

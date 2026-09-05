@@ -286,7 +286,7 @@ public class StorageRenderer extends Gui {
         hoveredX = -1;
         hoveredY = -1;
 
-        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
 
         int curWidth = ResolutionUtils.getWidth();
         int curHeight = ResolutionUtils.getHeight();
@@ -401,7 +401,7 @@ public class StorageRenderer extends Gui {
     }
 
     private void renderPlayerInventory(int mouseX, int mouseY) {
-        ItemStack[] playerItems = ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getMinecraft().thePlayer.inventory.mainInventory);
+        ItemStack[] playerItems = ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getLocalPlayer().inventory.mainInventory);
 
         drawInventoryBackground();
         renderInventorySlots(playerItems, mouseX, mouseY);

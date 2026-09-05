@@ -2,6 +2,7 @@
 
 import net.minecraft.client.Minecraft
 import net.minecraft.client.entity.EntityPlayerSP
+import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.multiplayer.WorldClient
 import net.minecraft.client.settings.GameSettings
 import net.minecraft.entity.Entity
@@ -49,6 +50,9 @@ object MinecraftCompat {
     @JvmStatic
     fun getFontRenderer(): net.minecraft.client.gui.FontRenderer =
         Minecraft.getMinecraft().fontRendererObj
+
+    @JvmStatic
+    fun getCurrentScreen(): GuiScreen? = Minecraft.getMinecraft().currentScreen
 
     @JvmStatic
     fun getRenderGlobal(): net.minecraft.client.renderer.RenderGlobal =

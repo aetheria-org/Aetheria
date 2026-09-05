@@ -53,7 +53,7 @@ public class InvButtonRenderer {
     }
 
     private static boolean isGuiEditor() {
-        return MinecraftCompat.getMinecraft().currentScreen instanceof GuiInvButtonEditor;
+        return MinecraftCompat.getCurrentScreen() instanceof GuiInvButtonEditor;
     }
 
     private static int btnX(InventoryButton btn, int gl, int gw) {
@@ -141,7 +141,7 @@ public class InvButtonRenderer {
             GlStateManagerCompat.pushMatrix();
             GlStateManagerCompat.translate(-gl, -gt, 400);
             try {
-                drawHoveringTextMethod.invoke(gui, Collections.singletonList("§7" + cmd), mx, my, MinecraftCompat.getMinecraft().fontRendererObj);
+                drawHoveringTextMethod.invoke(gui, Collections.singletonList("§7" + cmd), mx, my, MinecraftCompat.getFontRenderer());
             } catch (Exception ignored) {
             }
             GlStateManagerCompat.popMatrix();
@@ -166,7 +166,7 @@ public class InvButtonRenderer {
         InventoryButton btn = hitTest(mx, my, gl, gt, gw, gh, gui);
         if (btn == null) return;
 
-        if (MinecraftCompat.getMinecraft().thePlayer.inventory.getItemStack() != null) {
+        if (MinecraftCompat.getLocalPlayer().inventory.getItemStack() != null) {
             event.cancel();
             return;
         }
@@ -176,7 +176,7 @@ public class InvButtonRenderer {
         if (fire) {
             String cmd = btn.command.trim();
             if (!cmd.startsWith("/")) cmd = "/" + cmd;
-            if (ClientCommandHandler.instance.executeCommand(MinecraftCompat.getMinecraft().thePlayer, cmd) == 0)
+            if (ClientCommandHandler.instance.executeCommand(MinecraftCompat.getLocalPlayer(), cmd) == 0)
                 ChatUtils.sendChatCommand(cmd);
         }
     }

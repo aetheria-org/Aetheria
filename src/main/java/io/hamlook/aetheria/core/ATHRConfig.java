@@ -3,7 +3,6 @@ package io.hamlook.aetheria.core;
 import io.hamlook.aetheria.OptionsMenu;
 import io.hamlook.aetheria.api.event.AetheriaEventBus;
 import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.command.Command;
 import io.hamlook.aetheria.core.moulconfig.editors.GuiPositionEditor;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
@@ -113,7 +112,6 @@ public class ATHRConfig {
         MinecraftForge.EVENT_BUS.register(new ATHRConfig());
         AetheriaEventBus.INSTANCE.register(new ATHRConfig());
         KeybindCompat.registerKeyBinding(openGuiKey);
-        CommandCompat.registerCommand(new Command());
         registered = true;
     }
 
@@ -267,63 +265,63 @@ public class ATHRConfig {
         if (feature == null) return;
         RareDropTrackerOverlay overlay = RareDropTrackerOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.qol.rareDropTracker.overlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.qol.rareDropTracker.overlayScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.qol.rareDropTracker.overlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.qol.rareDropTracker.overlayScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openNotificationsOverlayEditor() {
         if (feature == null) return;
         NotificationOverlay overlay = NotificationOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.network.globalChatConfig.notificationsPosition, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.network.globalChatConfig.notificationsPosition, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openStatsEditor() {
         if (feature == null) return;
         DungeonStats stats = DungeonStats.getInstance();
-        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonOverlay.statsPos, stats::getOverlayWidth, stats::getOverlayHeight, () -> stats.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonOverlay.statsScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonOverlay.statsPos, stats::getOverlayWidth, stats::getOverlayHeight, () -> stats.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonOverlay.statsScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openDungeonRoomOverlayEditor() {
         if (feature == null) return;
         DungeonRoomOverlay overlay = DungeonRoomOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonRoomOverlayConfig.dungeonRoomOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonRoomOverlayConfig.dungeonRoomOverlayScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonRoomOverlayConfig.dungeonRoomOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonRoomOverlayConfig.dungeonRoomOverlayScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openDungeonAnalyzerOverlayEditor() {
         if (feature == null) return;
         RewardAnalyzerOverlay overlay = RewardAnalyzerOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.dungeons.priceEstimator.analyzerPosition, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.priceEstimator.overlayScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.dungeons.priceEstimator.analyzerPosition, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.priceEstimator.overlayScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openHudEditor() {
         if (feature == null) return;
         PerformanceHUD hud = PerformanceHUD.getInstance();
-        screenToOpen = new GuiPositionEditor(feature.misc.performanceHudConfig.hudPos, hud::getOverlayWidth, hud::getOverlayHeight, () -> hud.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.performanceHudConfig.hudScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.misc.performanceHudConfig.hudPos, hud::getOverlayWidth, hud::getOverlayHeight, () -> hud.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.performanceHudConfig.hudScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openFetchurEditor() {
         if (feature == null) return;
         FetchurOverlay fetchur = FetchurOverlay.getInstance();
-        screenToOpen = new GuiPositionEditor(feature.mining.fetchur.fetchurOverlayPos, fetchur::getOverlayWidth, fetchur::getOverlayHeight, () -> fetchur.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.mining.fetchur.fetchurOverlayScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.mining.fetchur.fetchurOverlayPos, fetchur::getOverlayWidth, fetchur::getOverlayHeight, () -> fetchur.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.mining.fetchur.fetchurOverlayScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openDianaOverlayEditor() {
         if (feature == null) return;
-        screenToOpen = new GuiDianaOverlayEditor(MinecraftCompat.getMinecraft().currentScreen, ATHRConfig::markConfigDirty);
+        screenToOpen = new GuiDianaOverlayEditor(MinecraftCompat.getCurrentScreen(), ATHRConfig::markConfigDirty);
     }
 
     public static void openScoreboardEditor() {
         if (feature == null) return;
         CustomScoreboard sb = CustomScoreboard.getInstance();
-        screenToOpen = new GuiPositionEditor(feature.scoreboard.position, sb::getOverlayWidth, sb::getOverlayHeight, () -> sb.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.scoreboard.scale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.scoreboard.position, sb::getOverlayWidth, sb::getOverlayHeight, () -> sb.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.scoreboard.scale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openSearchBarEditor() {
         if (feature == null) return;
         SearchBar sb = SearchBar.getInstance();
-        screenToOpen = new GuiPositionEditor(feature.misc.searchBarConfig.searchBarPos, sb::getOverlayWidth, sb::getOverlayHeight, () -> sb.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.misc.searchBarConfig.searchBarPos, sb::getOverlayWidth, sb::getOverlayHeight, () -> sb.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openCurrentPetEditor() {
@@ -331,7 +329,7 @@ public class ATHRConfig {
         CurrentPetOverlay overlay = CurrentPetOverlay.getInstance();
         if (overlay == null) return;
         overlay.render(true);
-        screenToOpen = new GuiPositionEditor(feature.misc.currentPet.currentPetPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.currentPet.currentPetScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.misc.currentPet.currentPetPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.currentPet.currentPetScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openItemPickupLogEditor() {
@@ -339,49 +337,49 @@ public class ATHRConfig {
         ItemPickupLog overlay = ItemPickupLog.getInstance();
         if (overlay == null) return;
         overlay.render(true);
-        screenToOpen = new GuiPositionEditor(feature.misc.itemPickupLogConfig.itemPickupLogPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.itemPickupLogConfig.itemPickupLogScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.misc.itemPickupLogConfig.itemPickupLogPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.itemPickupLogConfig.itemPickupLogScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openItemCooldownEditor() {
         if (feature == null) return;
         ItemCooldownOverlay overlay = ItemCooldownOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.qol.itemCooldown.itemCooldownPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.qol.itemCooldown.itemCooldownScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.qol.itemCooldown.itemCooldownPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.qol.itemCooldown.itemCooldownScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openItemAbilityTimerEditor() {
         if (feature == null) return;
         ItemAbilityTimerOverlay overlay = ItemAbilityTimerOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.qol.abilityTimer.itemAbilityTimerPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.qol.abilityTimer.itemAbilityTimerScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.qol.abilityTimer.itemAbilityTimerPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.qol.abilityTimer.itemAbilityTimerScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openItemInvincibilityEditor() {
         if (feature == null) return;
         ItemInvincibilityOverlay overlay = ItemInvincibilityOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.qol.invincibility.itemInvincibilityPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.qol.invincibility.itemInvincibilityScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.qol.invincibility.itemInvincibilityPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.qol.invincibility.itemInvincibilityScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openPowderEditor() {
         if (feature == null) return;
         PowderOverlay overlay = PowderOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.mining.powderTrackerConfig.powderOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.mining.powderTrackerConfig.powderOverlayScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.mining.powderTrackerConfig.powderOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.mining.powderTrackerConfig.powderOverlayScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openDungeonBreakerEditor() {
         if (feature == null) return;
         DungeonBreakerOverlay overlay = DungeonBreakerOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonBreaker.dungeonBreakerPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonBreaker.dungeonBreakerScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonBreaker.dungeonBreakerPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonBreaker.dungeonBreakerScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openDungeonMapEditor() {
         if (feature == null) return;
         DungeonMapOverlay overlay = DungeonMapOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonMapConfig.dungeonMapPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonMapConfig.appearance.scale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.dungeons.dungeonMapConfig.dungeonMapPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.dungeons.dungeonMapConfig.appearance.scale).withParent(MinecraftCompat.getCurrentScreen());
 
     }
 
@@ -398,14 +396,14 @@ public class ATHRConfig {
         if (feature == null) return;
         TrophyFishOverlay overlay = TrophyFishOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.fishing.trophyFish.trophyFishPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.fishing.trophyFish.trophyFishScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.fishing.trophyFish.trophyFishPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.fishing.trophyFish.trophyFishScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openBpsEditor() {
         if (feature == null) return;
         BPSOverlay overlay = BPSOverlay.getInstance();
         assert overlay != null;
-        screenToOpen = new GuiPositionEditor(feature.farming.bps.bpsPosition, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.bps.bpsScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.farming.bps.bpsPosition, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.bps.bpsScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void resetPowderTracker() {
@@ -416,7 +414,7 @@ public class ATHRConfig {
         if (feature == null) return;
         GoldTrackerOverlay overlay = GoldTrackerOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.mining.goldTracker.goldOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.mining.goldTracker.scale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.mining.goldTracker.goldOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.mining.goldTracker.scale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void resetGoldTracker() {
@@ -428,7 +426,7 @@ public class ATHRConfig {
         if (feature == null) return;
         FarmingTrackerOverlay overlay = FarmingTrackerOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.farming.farmingTracker.farmingTrackerPosition, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.farmingTracker.farmingTrackerScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.farming.farmingTracker.farmingTrackerPosition, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.farmingTracker.farmingTrackerScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void resetFarmingTracker() {
@@ -439,7 +437,7 @@ public class ATHRConfig {
         if (feature == null) return;
         OrganicMatterTrackerOverlay overlay = OrganicMatterTrackerOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.farming.organicMatterTracker.organicMatterTrackerPosition, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.organicMatterTracker.organicMatterTrackerScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.farming.organicMatterTracker.organicMatterTrackerPosition, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.organicMatterTracker.organicMatterTrackerScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void resetOrganicMatterTracker() {
@@ -450,20 +448,20 @@ public class ATHRConfig {
         if (feature == null) return;
         PestTrackerOverlay overlay = PestTrackerOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.farming.pests.pestTracker.pestOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.pests.pestTracker.scale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.farming.pests.pestTracker.pestOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.pests.pestTracker.scale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openPestFinderEditor() {
         if (feature == null) return;
         PestFinderOverlay overlay = PestFinderOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.farming.pests.pestFinder.pestFinderPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.pests.pestFinder.scale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.farming.pests.pestFinder.pestFinderPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.pests.pestFinder.scale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openGardenPlotWarpGridEditor() {
         if (feature == null) return;
         GardenPlotWarpGrid grid = GardenPlotWarpGrid.getInstance();
-        screenToOpen = new GuiPositionEditor(feature.farming.gardenPlotWarpGrid.pos, grid::getOverlayWidth, grid::getOverlayHeight, () -> grid.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.farming.gardenPlotWarpGrid.pos, grid::getOverlayWidth, grid::getOverlayHeight, () -> grid.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void resetPestTracker() {
@@ -474,14 +472,14 @@ public class ATHRConfig {
         if (feature == null) return;
         io.hamlook.aetheria.features.farming.visitors.VisitorShoppingListOverlay overlay = io.hamlook.aetheria.features.farming.visitors.VisitorShoppingListOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.farming.visitors.overlay.overlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.visitors.overlay.scale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.farming.visitors.overlay.overlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.visitors.overlay.scale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openVisitorPanelEditor() {
         if (feature == null) return;
         io.hamlook.aetheria.features.farming.visitors.VisitorPanel panel = io.hamlook.aetheria.features.farming.visitors.VisitorPanel.getInstance();
         if (panel == null) return;
-        screenToOpen = new GuiPositionEditor(feature.farming.visitors.panel.panelPos, panel::getLastWidth, panel::getLastHeight, panel::renderPreview, ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.visitors.panel.scale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.farming.visitors.panel.panelPos, panel::getLastWidth, panel::getLastHeight, panel::renderPreview, ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.visitors.panel.scale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void resetVisitorList() {
@@ -492,7 +490,7 @@ public class ATHRConfig {
         if (feature == null) return;
         PristineOverlay overlay = PristineOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.mining.pristineTrackerConfig.pristineOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.mining.pristineTrackerConfig.pristineOverlayScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.mining.pristineTrackerConfig.pristineOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.mining.pristineTrackerConfig.pristineOverlayScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void resetPristineTracker() {
@@ -504,21 +502,21 @@ public class ATHRConfig {
         if (feature == null) return;
         KillComboOverlay overlay = KillComboOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.misc.killCombo.killComboPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.killCombo.scale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.misc.killCombo.killComboPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.killCombo.scale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openUptimeEditor() {
         if (feature == null) return;
         UptimeOverlay overlay = UptimeOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.misc.uptimeConfig.uptimePos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.uptimeConfig.uptimeScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.misc.uptimeConfig.uptimePos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.uptimeConfig.uptimeScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openPeltTrackerEditor() {
         if (feature == null) return;
         io.hamlook.aetheria.features.farming.trevor.PeltOverlay overlay = io.hamlook.aetheria.features.farming.trevor.PeltOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.farming.trevor.peltTrackerPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.farming.trevor.peltTrackerPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void resetPeltTracker() {
@@ -529,14 +527,14 @@ public class ATHRConfig {
         if (feature == null) return;
         PitchYawOverlay overlay = PitchYawOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.farming.sensitivityReducer.pitchYawOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.sensitivityReducer.pitchYawOverlayScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.farming.sensitivityReducer.pitchYawOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.sensitivityReducer.pitchYawOverlayScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openGhostEditor() {
         if (feature == null) return;
         GhostOverlay overlay = GhostOverlay.getInstance();
         if (overlay == null) return;
-        screenToOpen = new GuiPositionEditor(feature.misc.ghostTrackerConfig.ghostOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.ghostTrackerConfig.ghostScale).withParent(MinecraftCompat.getMinecraft().currentScreen);
+        screenToOpen = new GuiPositionEditor(feature.misc.ghostTrackerConfig.ghostOverlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.misc.ghostTrackerConfig.ghostScale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void resetGhostTracker() {
@@ -559,7 +557,7 @@ public class ATHRConfig {
 
     public static void openPrivacyNotice() {
         if (feature == null) return;
-        MinecraftCompat.getMinecraft().displayGuiScreen(new PrivacyNoticeScreen(MinecraftCompat.getMinecraft().currentScreen));
+        MinecraftCompat.getMinecraft().displayGuiScreen(new PrivacyNoticeScreen(MinecraftCompat.getCurrentScreen()));
     }
 
 
@@ -591,43 +589,43 @@ public class ATHRConfig {
             }
         }
 
-        if (MinecraftCompat.getMinecraft().thePlayer == null) return;
-        if (openGuiKey.isPressed() && MinecraftCompat.getMinecraft().currentScreen == null) openOptionsGui();
+        if (MinecraftCompat.getLocalPlayer() == null) return;
+        if (openGuiKey.isPressed() && MinecraftCompat.getCurrentScreen() == null) openOptionsGui();
 
         boolean managerKeyDown = feature != null && isKeyOrMouseDown(feature.waypoints.waypointManagerKey);
-        if (managerKeyDown && !waypointManagerKeyWasDown && MinecraftCompat.getMinecraft().currentScreen == null)
+        if (managerKeyDown && !waypointManagerKeyWasDown && MinecraftCompat.getCurrentScreen() == null)
             openWaypointGroupGui();
         waypointManagerKeyWasDown = managerKeyDown;
 
         boolean rdtKeyDown = feature != null && isKeyOrMouseDown(feature.qol.rareDropTracker.trackerGuiKey);
-        if (rdtKeyDown && !rareDropTrackerGuiKeyWasDown && MinecraftCompat.getMinecraft().currentScreen == null)
+        if (rdtKeyDown && !rareDropTrackerGuiKeyWasDown && MinecraftCompat.getCurrentScreen() == null)
             openRareDropTrackerGui();
         rareDropTrackerGuiKeyWasDown = rdtKeyDown;
 
-        if (feature != null && isKeyOrMouseDown(feature.mining.powderTrackerConfig.powderToggleKey) && !powderToggleKeyWasDown && MinecraftCompat.getMinecraft().currentScreen == null) {
+        if (feature != null && isKeyOrMouseDown(feature.mining.powderTrackerConfig.powderToggleKey) && !powderToggleKeyWasDown && MinecraftCompat.getCurrentScreen() == null) {
             PowderStats.getInstance().toggleTracking();
         }
 
         powderToggleKeyWasDown = feature != null && isKeyOrMouseDown(feature.mining.powderTrackerConfig.powderToggleKey);
 
-        if (feature != null && isKeyOrMouseDown(feature.mining.pristineTrackerConfig.pristineToggleKey) && !pristineToggleKeyWasDown && MinecraftCompat.getMinecraft().currentScreen == null) {
+        if (feature != null && isKeyOrMouseDown(feature.mining.pristineTrackerConfig.pristineToggleKey) && !pristineToggleKeyWasDown && MinecraftCompat.getCurrentScreen() == null) {
             PristineStats.getInstance().toggleTracking();
         }
 
         pristineToggleKeyWasDown = feature != null && isKeyOrMouseDown(feature.mining.pristineTrackerConfig.pristineToggleKey);
 
-        if (feature != null && isKeyOrMouseDown(feature.misc.ghostTrackerConfig.ghostToggleKey) && !ghostToggleKeyWasDown && MinecraftCompat.getMinecraft().currentScreen == null) {
+        if (feature != null && isKeyOrMouseDown(feature.misc.ghostTrackerConfig.ghostToggleKey) && !ghostToggleKeyWasDown && MinecraftCompat.getCurrentScreen() == null) {
             GhostStats.getInstance().toggleTracking();
         }
         ghostToggleKeyWasDown = feature != null && isKeyOrMouseDown(feature.misc.ghostTrackerConfig.ghostToggleKey);
 
-        if (feature != null && isKeyOrMouseDown(feature.misc.ghostTrackerConfig.ghostResetKey) && !ghostResetKeyWasDown && MinecraftCompat.getMinecraft().currentScreen == null) {
+        if (feature != null && isKeyOrMouseDown(feature.misc.ghostTrackerConfig.ghostResetKey) && !ghostResetKeyWasDown && MinecraftCompat.getCurrentScreen() == null) {
             resetGhostTracker();
         }
         ghostResetKeyWasDown = feature != null && isKeyOrMouseDown(feature.misc.ghostTrackerConfig.ghostResetKey);
 
         boolean globalChatOpenKeyDown = feature != null && isKeyOrMouseDown(feature.network.globalChatConfig.openChatKey);
-        if (globalChatOpenKeyDown && !globalChatOpenKeyWasDown && MinecraftCompat.getMinecraft().currentScreen == null) {
+        if (globalChatOpenKeyDown && !globalChatOpenKeyWasDown && MinecraftCompat.getCurrentScreen() == null) {
             io.hamlook.aetheria.features.chat.globalchat.GChatCommand.tryOpen();
         }
         globalChatOpenKeyWasDown = globalChatOpenKeyDown;

@@ -7,6 +7,7 @@ import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterCase;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterMode;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
@@ -195,7 +196,7 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
 
         float msgScale = textScale * 1.1f;
 
-        int msgW = (int) (mc.fontRendererObj.getStringWidth(msg) * msgScale);
+        int msgW = (int) (MinecraftCompat.getFontRenderer().getStringWidth(msg) * msgScale);
         int centerX = boxX + (boxW - msgW) / 2;
         int centerY = l.listY + l.listH / 2 - getScaledY(6);
 

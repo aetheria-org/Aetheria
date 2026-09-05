@@ -239,7 +239,7 @@ public class SecretRenderUtils {
         double nearestDist = Double.MAX_VALUE;
         for (SecretWaypoint sw : currentSecrets) {
             if (sw.collected) continue;
-            double dist = mc.thePlayer.getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
+            double dist = MinecraftCompat.getLocalPlayer().getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
             if (dist < nearestDist) {
                 nearestDist = dist;
                 nearest = sw;
@@ -261,7 +261,7 @@ public class SecretRenderUtils {
     @HandleEvent
     public void onPlayerTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
-        if (mc.thePlayer == null || !isInDungeonContext()) return;
+        if (MinecraftCompat.getLocalPlayer() == null || !isInDungeonContext()) return;
 
         // Decrement chest restore timers
         java.util.Iterator<java.util.Map.Entry<SecretWaypoint,Integer>> it = chestPendingRestore.entrySet().iterator();
@@ -281,8 +281,8 @@ public class SecretRenderUtils {
 
             if (!"entrance".equals(sw.category)) continue;
 
-            double dx = mc.thePlayer.posX - (sw.pos.getX() + 0.5);
-            double dz = mc.thePlayer.posZ - (sw.pos.getZ() + 0.5);
+            double dx = MinecraftCompat.getLocalPlayer().posX - (sw.pos.getX() + 0.5);
+            double dz = MinecraftCompat.getLocalPlayer().posZ - (sw.pos.getZ() + 0.5);
             double horizDist = Math.sqrt(dx * dx + dz * dz);
 
             double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.entranceRemovalRange;
@@ -300,15 +300,15 @@ public class SecretRenderUtils {
                 if (sw.collected) continue;
                 sw.ticksExisted++;
                 if (!sw.everSeen) {
-                    if (!BlockCompat.isAir(mc.theWorld.getBlockState(sw.pos).getBlock())) {
+                    if (!BlockCompat.isAir(MinecraftCompat.getLocalWorld().getBlockState(sw.pos).getBlock())) {
                         sw.everSeen = true;
                     }
                 }
                 if("chest".equals(sw.category)){
-                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && BlockCompat.isAir(mc.theWorld.getBlockState(sw.pos).getBlock())) {
+                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && BlockCompat.isAir(MinecraftCompat.getLocalWorld().getBlockState(sw.pos).getBlock())) {
                         sw.collected = true;
                     }
-                    TileEntity tile = mc.theWorld.getTileEntity(sw.pos);
+                    TileEntity tile = MinecraftCompat.getLocalWorld().getTileEntity(sw.pos);
                     if(!(tile instanceof TileEntityChest)) continue;
                     TileEntityChest teChest = (TileEntityChest)tile;
                     if(teChest.numPlayersUsing > 0){
@@ -317,16 +317,16 @@ public class SecretRenderUtils {
 
                 }
                 if ("wither".equals(sw.category) || sw.secretName.contains("Essence")) {
-                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && BlockCompat.isAir(mc.theWorld.getBlockState(sw.pos).getBlock())) {
+                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && BlockCompat.isAir(MinecraftCompat.getLocalWorld().getBlockState(sw.pos).getBlock())) {
                         sw.collected = true;
                     }
                 } else if ("item".equals(sw.category)) {
-                    double dist = mc.thePlayer.getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
+                    double dist = MinecraftCompat.getLocalPlayer().getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
                     if (dist <= itemRange) {
                         sw.collected = true;
                     }
                 } else if ("superboom".equals(sw.category)) {
-                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && BlockCompat.isAir(mc.theWorld.getBlockState(sw.pos).getBlock())) {
+                    if (sw.everSeen && sw.ticksExisted >= WAYPOINT_REMOVAL_GRACE_TICKS && BlockCompat.isAir(MinecraftCompat.getLocalWorld().getBlockState(sw.pos).getBlock())) {
                         sw.collected = true;
                     }
                 }
@@ -336,7 +336,7 @@ public class SecretRenderUtils {
 
     @HandleEvent
     public void onActionBar(ActionBarUpdateEvent event) {
-        if (mc.thePlayer == null || currentSecrets.isEmpty()) return;
+        if (MinecraftCompat.getLocalPlayer() == null || currentSecrets.isEmpty()) return;
 
         String cleanText = net.minecraft.util.StringUtils.stripControlCodes(event.getText());
         Matcher m = SECRETS_FOUND_PATTERN.matcher(cleanText);
@@ -351,7 +351,7 @@ public class SecretRenderUtils {
                 double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.itemRemovalRange;
                 for (SecretWaypoint sw : currentSecrets) {
                     if (sw.collected || !"item".equals(sw.category)) continue;
-                    double dist = mc.thePlayer.getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
+                    double dist = MinecraftCompat.getLocalPlayer().getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
                     if (dist <= range) {
                         sw.collected = true;
                     }
@@ -380,7 +380,7 @@ public class SecretRenderUtils {
         if (event.pos == null || currentSecrets.isEmpty()) return;
 
         BlockPos clickedPos = event.pos;
-        World world = MinecraftCompat.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         if (world == null) return;
 
         double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.interactRemovalRange;
@@ -407,7 +407,7 @@ public class SecretRenderUtils {
 
     @HandleEvent
     public void onBlockBreak(BlockBreakEvent event) {
-        if (mc.theWorld == null || currentSecrets.isEmpty()) return;
+        if (MinecraftCompat.getLocalWorld() == null || currentSecrets.isEmpty()) return;
 
         for (SecretWaypoint sw : currentSecrets) {
             if (sw.collected || !"stonk".equals(sw.category)) continue;
@@ -419,7 +419,7 @@ public class SecretRenderUtils {
 
     @HandleEvent
     public void onEntityJoinWorld(ASMEntityJoinWorldEvent event) {
-        if (mc.theWorld == null || currentSecrets.isEmpty()) return;
+        if (MinecraftCompat.getLocalWorld() == null || currentSecrets.isEmpty()) return;
         if (!(event.entity instanceof EntityTNTPrimed)) return;
 
         EntityTNTPrimed tnt = (EntityTNTPrimed) event.entity;
@@ -437,7 +437,7 @@ public class SecretRenderUtils {
 
     @HandleEvent
     public void onLivingDeath(ASMLivingDeathEvent event) {
-        if (mc.theWorld == null || currentSecrets.isEmpty()) return;
+        if (MinecraftCompat.getLocalWorld() == null || currentSecrets.isEmpty()) return;
         if (!(event.entity instanceof EntityBat)) return;
         if (!DungeonRoomDetector.roomBoundsValid) return;
 

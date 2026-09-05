@@ -127,7 +127,7 @@ public class DungeonStats extends Overlay {
     public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END || ++tickCounter % 10 != 0) return;
         if (ATHRConfig.feature == null) return;
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         if (!timers.isInDungeon()) {
             detectDungeonStart();
@@ -204,9 +204,9 @@ public class DungeonStats extends Overlay {
 
         int[] c = getBossCoords(timers.getCurrentFloor());
         if (c != null) {
-            double dx = mc.thePlayer.posX - c[0];
-            double dy = mc.thePlayer.posY - c[1];
-            double dz = mc.thePlayer.posZ - c[2];
+            double dx = MinecraftCompat.getLocalPlayer().posX - c[0];
+            double dy = MinecraftCompat.getLocalPlayer().posY - c[1];
+            double dz = MinecraftCompat.getLocalPlayer().posZ - c[2];
             if (dx * dx + dy * dy + dz * dz <= 30 * 30) {
                 timers.setBossTime(timers.elapsed());
                 if (timers.getClearedTime() == 0) {

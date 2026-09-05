@@ -15,6 +15,7 @@ import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import lombok.Getter;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.inventory.ContainerChest;
@@ -201,7 +202,7 @@ public class StorageManager {
         }
 
         StorageListener.setSwitchingContainer(true);
-        MinecraftCompat.getMinecraft().thePlayer.closeScreen();
+        MinecraftCompat.getLocalPlayer().closeScreen();
 
         String command = buildContainerCommand(container);
         executeCommandDelayed(command);
@@ -222,7 +223,7 @@ public class StorageManager {
         cancelPendingSwitchCommand();
         pendingSwitchCommand = COMMAND_EXECUTOR.schedule(() -> {
             pendingSwitchCommand = null;
-            MinecraftCompat.getMinecraft().addScheduledTask(() -> MinecraftCompat.getMinecraft().thePlayer.sendChatMessage(command));
+            MinecraftCompat.getMinecraft().addScheduledTask(() -> TextCompat.sendChatMessage(command));
         }, 100, TimeUnit.MILLISECONDS);
     }
 
@@ -263,7 +264,7 @@ public class StorageManager {
     }
 
     public static boolean isStorageChest() {
-        net.minecraft.client.gui.GuiScreen screen = MinecraftCompat.getMinecraft().currentScreen;
+        net.minecraft.client.gui.GuiScreen screen = MinecraftCompat.getCurrentScreen();
         if (!(screen instanceof net.minecraft.client.gui.inventory.GuiChest)) return false;
         String title = ContainerUtils.getContainerName(screen);
         return title != null && ("Storage".equals(title) || StorageParser.isStorageContainer(title));
@@ -273,7 +274,7 @@ public class StorageManager {
         if (!isOverlayActive() || renderer == null) return;
         if (!isStorageChest()) return;
 
-        boolean isPlayerSlot = slotIn.inventory == MinecraftCompat.getMinecraft().thePlayer.inventory;
+        boolean isPlayerSlot = slotIn.inventory == MinecraftCompat.getLocalPlayer().inventory;
 
         if (isPlayerSlot) {
             cir.setReturnValue(renderer.isMouseOverPlayerInventorySlot(slotIn, mouseX, mouseY));

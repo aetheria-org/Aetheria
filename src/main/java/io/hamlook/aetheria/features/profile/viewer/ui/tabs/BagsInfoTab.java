@@ -59,7 +59,7 @@ public class BagsInfoTab extends Tab {
         RenderHelperCompat.disableStandardItemLighting();
 
         if (hoveredItem != null) {
-            int[] mouse = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
+            int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
             int mouseX = mouse[0], mouseY = mouse[1];
             drawItemTooltip(mc, hoveredItem, mouseX, mouseY);
         }
@@ -91,7 +91,7 @@ public class BagsInfoTab extends Tab {
         GlStateManagerCompat.translate(0, -accScrollY, 0);
 
         int index = 0;
-        int[] mouse = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
         int mouseX = mouse[0], mouseY = mouse[1];
         ItemData hoveredAcc = null;
 
@@ -192,7 +192,7 @@ public class BagsInfoTab extends Tab {
     }
 
     private void handleVerticalScroll(float x, float y, float w, float h, float contentH) {
-        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getMinecraft().currentScreen.width, MinecraftCompat.getMinecraft().currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
         int mx = mouse[0], my = mouse[1];
 
         if (mx >= x && mx <= x + w && my >= y && my <= y + h) {
@@ -221,8 +221,8 @@ public class BagsInfoTab extends Tab {
         lines.add("§8Item SB_ID: §7" + data.skyblockID);
         lines.add("§8ItemRegistry SB_ID: §7" + io.hamlook.aetheria.features.misc.itemList.ItemResolver.resolveId(data.skyblockID, data.displayName));
 
-        if (mc.currentScreen instanceof ProfileViewerGUI) {
-            ((ProfileViewerGUI) mc.currentScreen).drawTooltip(lines, mouseX, mouseY);
+        if (MinecraftCompat.getCurrentScreen() instanceof ProfileViewerGUI) {
+            ((ProfileViewerGUI) MinecraftCompat.getCurrentScreen()).drawTooltip(lines, mouseX, mouseY);
         }
     }
 

@@ -168,7 +168,7 @@ public class DungeonLeapOverlay {
 
             ResourceLocation skin = getPlayerSkin(player, mc);
             RenderUtils.renderPlayerHead(bounds.x + 3, bounds.y + 3, -1, 2f, skin, 0);
-            mc.fontRendererObj.drawStringWithShadow(player, bounds.x + 22, bounds.y + 6, 0xFFFFFFFF);
+            MinecraftCompat.getFontRenderer().drawStringWithShadow(player, bounds.x + 22, bounds.y + 6, 0xFFFFFFFF);
         }
     }
 
@@ -239,7 +239,7 @@ public class DungeonLeapOverlay {
             String displayName = ColorUtils.stripColor(stack.getDisplayName());
 
             if (pattern.matcher(displayName).matches()) {
-                InventoryCompat.windowClick(leapChest.windowId, slot, 0, 0, mc.thePlayer);
+                InventoryCompat.windowClick(leapChest.windowId, slot, 0, 0, MinecraftCompat.getLocalPlayer());
                 break;
             }
         }
@@ -247,7 +247,7 @@ public class DungeonLeapOverlay {
 
     private List<String> getFilteredPartyMembers() {
         List<String> players = new ArrayList<>(tracker.playerNames);
-        EntityPlayer player = MinecraftCompat.getMinecraft().thePlayer;
+        EntityPlayer player = MinecraftCompat.getLocalPlayer();
         if (player != null) {
             players.remove(player.getGameProfile().getName());
         }
@@ -310,7 +310,7 @@ public class DungeonLeapOverlay {
 
 
     private boolean isSelf(String player) {
-        return MinecraftCompat.getMinecraft().thePlayer.getGameProfile().getName().equalsIgnoreCase(player);
+        return MinecraftCompat.getLocalPlayer().getGameProfile().getName().equalsIgnoreCase(player);
     }
 
     private int getArrowColor(String player){

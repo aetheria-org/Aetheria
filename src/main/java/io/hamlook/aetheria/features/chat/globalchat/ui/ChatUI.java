@@ -16,6 +16,7 @@ import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.EmojiParser;
 import io.hamlook.aetheria.utils.MediaSaver;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
@@ -1693,7 +1694,7 @@ public class ChatUI extends AetheriaBaseScreen {
         if (!copied) {
             clickRects.add(new ClickRect(bx, by, bw, bh, () -> {
                 lastCopyTime = System.currentTimeMillis();
-                GuiScreen.setClipboardString(codeText);
+                ClipboardCompat.setClipboard(codeText);
             }));
         }
     }

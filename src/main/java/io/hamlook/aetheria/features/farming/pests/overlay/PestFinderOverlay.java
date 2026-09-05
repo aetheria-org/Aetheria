@@ -11,6 +11,7 @@ import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -212,7 +213,7 @@ public class PestFinderOverlay extends Overlay {
         PestFinderConfig config = config();
         int warpKey = config != null ? config.warpKey : 0;
         boolean active = config != null && config.enabled && warpKey != Keyboard.KEY_NONE
-                && mc.thePlayer != null && mc.currentScreen == null
+                && MinecraftCompat.getLocalPlayer() != null && MinecraftCompat.getCurrentScreen() == null
                 && SkyblockData.getCurrentLocation() == SkyblockData.Location.GARDEN;
         if (!active || !KeybindHelper.isKeyTapped(warpKey)) {
             KeybindHelper.resetKeyTap(warpKey);

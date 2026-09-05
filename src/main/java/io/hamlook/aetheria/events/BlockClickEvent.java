@@ -17,6 +17,6 @@ public class BlockClickEvent extends AetheriaEvent {
     }
 
     public IBlockState getBlockState() {
-        return MinecraftCompat.getMinecraft().theWorld.getBlockState(pos);
+        return MinecraftCompat.getLocalWorld().getBlockState(pos);
     }
 }

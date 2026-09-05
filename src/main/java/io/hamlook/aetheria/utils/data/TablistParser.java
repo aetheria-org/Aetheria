@@ -81,13 +81,13 @@ public class TablistParser {
      * alphabetical). Debug dumps must use this, not raw getPlayerInfoMap() order.
      */
     public static List<NetworkPlayerInfo> getParserOrderedInfos(Minecraft mc) {
-        return PLAYER_ORDERING.sortedCopy(mc.thePlayer.sendQueue.getPlayerInfoMap());
+        return PLAYER_ORDERING.sortedCopy(MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap());
     }
 
     private static net.minecraft.util.IChatComponent getTabFooter() {
         try {
             Minecraft mc = MinecraftCompat.getMinecraft();
-            if (mc.thePlayer == null) return null;
+            if (MinecraftCompat.getLocalPlayer() == null) return null;
             java.lang.reflect.Field f = mc.ingameGUI.getTabList().getClass().getDeclaredField("field_175255_h");
             f.setAccessible(true);
             return (net.minecraft.util.IChatComponent) f.get(mc.ingameGUI.getTabList());
@@ -98,9 +98,9 @@ public class TablistParser {
 
     public static String readGems() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return null;
+        if (MinecraftCompat.getLocalPlayer() == null) return null;
         GuiPlayerTabOverlay tab = mc.ingameGUI.getTabList();
-        List<NetworkPlayerInfo> infos = PLAYER_ORDERING.sortedCopy(mc.thePlayer.sendQueue.getPlayerInfoMap());
+        List<NetworkPlayerInfo> infos = PLAYER_ORDERING.sortedCopy(MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap());
         boolean inServer = false;
         for (NetworkPlayerInfo info : infos) {
             String raw = tab.getPlayerName(info);
@@ -446,7 +446,7 @@ public class TablistParser {
         if ((tickCounter = (tickCounter + 1) % interval) != 0) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         parseTablist(mc);
     }

@@ -125,10 +125,10 @@ public class ExtraWearableInfoTab extends Tab {
         RenderHelperCompat.disableStandardItemLighting();
 
         if (hoveredPet != null) {
-            int[] m1 = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
+            int[] m1 = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
             drawPetTooltip(mc, hoveredPet, m1[0], m1[1]);
         } else if (hoveredWardrobe != null) {
-            int[] m2 = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
+            int[] m2 = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
             drawItemTooltip(mc, hoveredWardrobe, m2[0], m2[1]);
         }
     }
@@ -153,7 +153,7 @@ public class ExtraWearableInfoTab extends Tab {
         GlStateManagerCompat.translate(x + offsetX - petScrollX, 0, 0);
 
         int totalSlots = cols * rows;
-        int[] mouse = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
         int mouseX = mouse[0], mouseY = mouse[1];
         RenderablePet hoveredPet = null;
 
@@ -205,7 +205,7 @@ public class ExtraWearableInfoTab extends Tab {
         GlStateManagerCompat.translate(x + offsetX - wardScrollX, 0, 0);
 
         int index = 0;
-        int[] mouse = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
         int mouseX = mouse[0], mouseY = mouse[1];
         ItemData hoveredWardrobe = null;
 
@@ -280,8 +280,8 @@ public class ExtraWearableInfoTab extends Tab {
         lines.add("§8Item SB_ID: §7" + pet.raw.data.skyblockID);
         lines.add("§8ItemRegistry SB_ID: §7" + pet.debugRegistryID);
 
-        if (mc.currentScreen instanceof ProfileViewerGUI) {
-            ((ProfileViewerGUI) mc.currentScreen).drawTooltip(lines, mouseX, mouseY);
+        if (MinecraftCompat.getCurrentScreen() instanceof ProfileViewerGUI) {
+            ((ProfileViewerGUI) MinecraftCompat.getCurrentScreen()).drawTooltip(lines, mouseX, mouseY);
         }
     }
 
@@ -295,13 +295,13 @@ public class ExtraWearableInfoTab extends Tab {
         lines.add("§8Item SB_ID: §7" + data.skyblockID);
         lines.add("§8ItemRegistry SB_ID: §7" + io.hamlook.aetheria.features.misc.itemList.ItemResolver.resolveId(data.skyblockID, data.displayName));
 
-        if (mc.currentScreen instanceof ProfileViewerGUI) {
-            ((ProfileViewerGUI) mc.currentScreen).drawTooltip(lines, mouseX, mouseY);
+        if (MinecraftCompat.getCurrentScreen() instanceof ProfileViewerGUI) {
+            ((ProfileViewerGUI) MinecraftCompat.getCurrentScreen()).drawTooltip(lines, mouseX, mouseY);
         }
     }
 
     private void handleHorizontalScroll(float x, float y, float w, float h, float contentW, boolean isPet) {
-        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getMinecraft().currentScreen.width, MinecraftCompat.getMinecraft().currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
         int mx = mouse[0], my = mouse[1];
 
         if (mx >= x && mx <= x + w && my >= y && my <= y + h) {

@@ -6,6 +6,7 @@ import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.features.chat.globalchat.util.DiscordMarkdown;
 import io.hamlook.aetheria.features.chat.globalchat.vars.IEmoji;
 import io.hamlook.aetheria.utils.compat.*;
+import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -32,7 +33,7 @@ public class ChatInputField extends Gui {
     public static final int LINE_PAD = 2;
     public static final int MAX_LENGTH = 2000;
 
-    private final FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+    private final FontRenderer fr = MinecraftCompat.getFontRenderer();
 
     public int x, y, width, height;
 
@@ -127,18 +128,18 @@ public class ChatInputField extends Gui {
 
         if (ctrl && keyCode == Keyboard.KEY_A) { selectAll(); return true; }
         if (ctrl && keyCode == Keyboard.KEY_C) {
-            if (hasSelection()) GuiScreen.setClipboardString(getSelectedText());
+            if (hasSelection()) ClipboardCompat.setClipboard(getSelectedText());
             return true;
         }
         if (ctrl && keyCode == Keyboard.KEY_X) {
             if (hasSelection()) {
-                GuiScreen.setClipboardString(getSelectedText());
+                ClipboardCompat.setClipboard(getSelectedText());
                 replaceSelection("");
             }
             return true;
         }
         if (ctrl && keyCode == Keyboard.KEY_V) {
-            String clip = GuiScreen.getClipboardString();
+            String clip = ClipboardCompat.getClipboard();
             if (clip != null) replaceSelection(clip.replace("\r\n", "\n").replace('\r', '\n'));
             return true;
         }

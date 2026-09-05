@@ -6,7 +6,7 @@ import io.hamlook.aetheria.features.custommenu.util.ScreenHelper;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.renderer.GlStateManager;
@@ -17,7 +17,7 @@ import java.awt.*;
 public class CreateConfigElement {
 
     public boolean enabled = false;
-    public GuiTextField nameField = new GuiTextField(0, Minecraft.getMinecraft().fontRendererObj, 0,0,0,0);
+    public GuiTextField nameField = new GuiTextField(0, MinecraftCompat.getMinecraft().fontRendererObj, 0,0,0,0);
     public CMMButton createButton = new CMMButton(0, 0, 0, 0, "Create") {
         @Override
         public void onClick(GuiScreen screen) {
@@ -109,12 +109,12 @@ public class CreateConfigElement {
         nameField.mouseClicked(mouseX,mouseY,mouseButton);
         if(isHovering(cancelButton,mouseX,mouseY)){
             SoundUtils.playSound("gui.button.press");
-            cancelButton.onClick(Minecraft.getMinecraft().currentScreen);
+            cancelButton.onClick(MinecraftCompat.getMinecraft().currentScreen);
             return true;
         }
         if(isHovering(createButton,mouseX,mouseY)){
             SoundUtils.playSound("gui.button.press");
-            createButton.onClick(Minecraft.getMinecraft().currentScreen);
+            createButton.onClick(MinecraftCompat.getMinecraft().currentScreen);
             return true;
         }
         return false;

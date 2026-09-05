@@ -116,19 +116,19 @@ public class ItemPickupLog extends Overlay {
     public void onGuiOpen(ASMGuiOpenEvent event) {
         if (!SkyblockData.isOnSkyblock()) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         if (event.gui == null) {
             if (preScreenSnapshot != null) {
-                ItemStack[] current = ArrayNormalizationKt.normalizeAsArray(mc.thePlayer.inventory.mainInventory);
+                ItemStack[] current = ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getLocalPlayer().inventory.mainInventory);
                 if (preScreenSnapshot.length == current.length) {
                     diffAndLog(preScreenSnapshot, current);
                 }
                 preScreenSnapshot = null;
             }
-            previousInventory = copyInventory(ArrayNormalizationKt.normalizeAsArray(mc.thePlayer.inventory.mainInventory));
+            previousInventory = copyInventory(ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getLocalPlayer().inventory.mainInventory));
         } else {
-            preScreenSnapshot = copyInventory(ArrayNormalizationKt.normalizeAsArray(mc.thePlayer.inventory.mainInventory));
+            preScreenSnapshot = copyInventory(ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getLocalPlayer().inventory.mainInventory));
             previousInventory = null;
         }
     }
@@ -138,16 +138,16 @@ public class ItemPickupLog extends Overlay {
         if (event.phase != TickEvent.Phase.END) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null || !SkyblockData.isOnSkyblock()) {
+        if (MinecraftCompat.getLocalPlayer() == null || !SkyblockData.isOnSkyblock()) {
             previousInventory = null;
             return;
         }
 
         log.removeIf(LogEntry::isExpired);
 
-        if (mc.currentScreen != null) return;
+        if (MinecraftCompat.getCurrentScreen() != null) return;
 
-        ItemStack[] current = ArrayNormalizationKt.normalizeAsArray(mc.thePlayer.inventory.mainInventory);
+        ItemStack[] current = ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getLocalPlayer().inventory.mainInventory);
 
         if (previousInventory != null
                 && previousInventory.length == current.length

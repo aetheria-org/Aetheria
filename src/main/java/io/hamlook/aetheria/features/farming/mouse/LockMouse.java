@@ -37,7 +37,7 @@ public class LockMouse extends SimpleOverlay {
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        if (ATHRConfig.feature == null || mc.thePlayer == null || mc.currentScreen != null) return;
+        if (ATHRConfig.feature == null || MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getCurrentScreen() != null) return;
 
         boolean keyDown = KeybindHelper.isKeyDown(ATHRConfig.feature.farming.lockMouseConfig.lockMouseKey);
         if (keyDown && !keyWasDown) setLocked(!isLocked());
@@ -46,7 +46,7 @@ public class LockMouse extends SimpleOverlay {
 
     @Override
     public boolean shouldRender() {
-        return isLocked() && mc.currentScreen == null;
+        return isLocked() && MinecraftCompat.getCurrentScreen() == null;
     }
 
     @Override
@@ -63,8 +63,8 @@ public class LockMouse extends SimpleOverlay {
 
         if (ATHRConfig.feature.farming.lockMouseConfig.showUnlockHint) {
             String hint = "Use /lockyp to unlock mouse";
-            float textX = (w - mc.fontRendererObj.getStringWidth(hint)) / 2f;
-            mc.fontRendererObj.drawStringWithShadow(hint, textX, iconY + iconSize + 4, 0xFFFFFF);
+            float textX = (w - MinecraftCompat.getFontRenderer().getStringWidth(hint)) / 2f;
+            MinecraftCompat.getFontRenderer().drawStringWithShadow(hint, textX, iconY + iconSize + 4, 0xFFFFFF);
         }
     }
 }

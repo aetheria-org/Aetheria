@@ -195,8 +195,8 @@ public class DungeonRoomDetector {
      */
     public static void updateAllPlayerRooms() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.theWorld == null) return;
-        for (EntityPlayer player : WorldCompat.getLoadedPlayers(mc.theWorld)) {
+        if (MinecraftCompat.getLocalWorld() == null) return;
+        for (EntityPlayer player : WorldCompat.getLoadedPlayers(MinecraftCompat.getLocalWorld())) {
             boolean known = false;
             for (DungeonRoom dr : visitedRooms.values()) {
                 if (isPlayerInRoom(player, dr)) {
@@ -326,7 +326,7 @@ public class DungeonRoomDetector {
         if (++tickCount % 30 != 0) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null || mc.theWorld == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) return;
 
         if (roomsJson == null) loadRoomsJson();
         if (roomsJson == null) return;
@@ -337,9 +337,9 @@ public class DungeonRoomDetector {
                 dungeonBottomCache.clear();
                 endOfRoomCache.clear();
 
-                int x = (int) Math.floor(mc.thePlayer.posX);
-                int y = (int) Math.floor(mc.thePlayer.posY);
-                int z = (int) Math.floor(mc.thePlayer.posZ);
+                int x = (int) Math.floor(MinecraftCompat.getLocalPlayer().posX);
+                int y = (int) Math.floor(MinecraftCompat.getLocalPlayer().posY);
+                int z = (int) Math.floor(MinecraftCompat.getLocalPlayer().posZ);
 
                 // If player is still inside the last detected room, skip full scan.
                 // Fall through if secrets need origin detection (first tick after room enter clears it)
@@ -501,7 +501,7 @@ public class DungeonRoomDetector {
     }
 
     private void checkCorner(BlockPos blockPos) {
-        World world = MinecraftCompat.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         if (world == null) return;
         if (BlockCompat.isStainedHardenedClay(world.getBlockState(blockPos).getBlock())) {
             Block northBlock = world.getBlockState(new BlockPos(blockPos.getX(), blockPos.getY(), blockPos.getZ() - 1)).getBlock();
@@ -566,7 +566,7 @@ public class DungeonRoomDetector {
         long key = ((long) x << 32) | (z & 0xFFFFFFFFL);
         Integer cached = dungeonTopCache.get(key);
         if (cached != null) return cached;
-        World world = MinecraftCompat.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         for (int i = 255; i >= 78; i--) {
             Block b = world.getBlockState(new BlockPos(x, i, z)).getBlock();
             if (!BlockCompat.isAir(b) && checkPlatform(x, i, z)) {
@@ -582,7 +582,7 @@ public class DungeonRoomDetector {
         long key = ((long) x << 32) | (z & 0xFFFFFFFFL);
         Integer cached = dungeonBottomCache.get(key);
         if (cached != null) return cached;
-        World world = MinecraftCompat.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         for (int i = 0; i <= 68; i++) {
             Block b = world.getBlockState(new BlockPos(x, i, z)).getBlock();
             if (b == Blocks.bedrock || b == Blocks.stone) {
@@ -599,7 +599,7 @@ public class DungeonRoomDetector {
     }
 
     private boolean checkPlatform(int x, int y, int z) {
-        World world = MinecraftCompat.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         int n = 0, s = 0, e = 0, w = 0;
         for (int j = 0; j < 10; j++) {
             if (!BlockCompat.isAir(world.getBlockState(new BlockPos(x, y, z - j)).getBlock())) n++;
@@ -614,7 +614,7 @@ public class DungeonRoomDetector {
         String key = x + "," + y + "," + z + "," + dir;
         Integer cached = endOfRoomCache.get(key);
         if (cached != null) return cached;
-        World world = MinecraftCompat.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         int result = -1;
         for (int i = 1; i <= 200; i++) {
             switch (dir) {
@@ -691,7 +691,7 @@ public class DungeonRoomDetector {
 
     private String blockFrequency(int x, int y, int z) {
         if (y == -1) return null;
-        World world = MinecraftCompat.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         Map<String, Integer> freqMap = new HashMap<>();
 
         int nw = northWidth(x, y, z), sw = southWidth(x, y, z), ew = eastWidth(x, y, z), ww = westWidth(x, y, z);
@@ -750,7 +750,7 @@ public class DungeonRoomDetector {
 
     private String floorFrequency(int x, int y, int z) {
         if (y == -1) return null;
-        World world = MinecraftCompat.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         Map<String, Integer> freqMap = new HashMap<>();
 
         if (northWidth(x, y, z) == southWidth(x, y, z) && eastWidth(x, y, z) == westWidth(x, y, z)) {

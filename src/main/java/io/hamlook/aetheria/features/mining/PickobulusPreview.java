@@ -42,13 +42,13 @@ public class PickobulusPreview {
 
     private boolean isHoldingPickobulus() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return false;
+        if (MinecraftCompat.getLocalPlayer() == null) return false;
 
-        int currentHash = System.identityHashCode(mc.thePlayer.getHeldItem());
+        int currentHash = System.identityHashCode(MinecraftCompat.getLocalPlayer().getHeldItem());
         if (currentHash != lastHeldItemHash) {
             lastHeldItemHash = currentHash;
-            if (mc.thePlayer.getHeldItem() != null) {
-                for (String line : ItemUtils.getLoreLines(mc.thePlayer.getHeldItem())) {
+            if (MinecraftCompat.getLocalPlayer().getHeldItem() != null) {
+                for (String line : ItemUtils.getLoreLines(MinecraftCompat.getLocalPlayer().getHeldItem())) {
                     if (ColorUtils.stripColor(line).contains(PICKOBULUS_LORE_MARKER)) {
                         cachedIsHoldingPickobulus = true;
                         return true;
@@ -80,12 +80,12 @@ public class PickobulusPreview {
         }
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null || mc.theWorld == null) {
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) {
             previewBox = null;
             return;
         }
 
-        BlockPos hit = raycast(mc.thePlayer);
+        BlockPos hit = raycast(MinecraftCompat.getLocalPlayer());
         if (hit == null) {
             previewBox = null;
             return;

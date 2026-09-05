@@ -109,7 +109,7 @@ public class DianaTracker {
 
     @HandleEvent
     public void onChat(ASMChatEvent event) {
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         String msg = ChatUtils.clean(event);
 

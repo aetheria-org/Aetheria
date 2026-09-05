@@ -45,9 +45,9 @@ public class SkyblockXpInChat {
     public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.misc.skyblockXpInChat) return;
-        if (MinecraftCompat.getMinecraft().thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
         if (!SkyblockData.isOnSkyblock()) return;
-        if (MinecraftCompat.getMinecraft().thePlayer.ticksExisted % 10 != 0) return;
+        if (MinecraftCompat.getLocalPlayer().ticksExisted % 10 != 0) return;
 
         int currentXp = TablistParser.getSbCurrentXp();
         int maxXp = TablistParser.getSbMaxXp();

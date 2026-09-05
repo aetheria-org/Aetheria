@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.chat.chatfilters.ui;
 
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -32,7 +33,7 @@ public class CFButton extends GuiButton {
     @Override
     public void drawButton(Minecraft mc, int mouseX, int mouseY) {
         if (this.visible) {
-            FontRenderer fontrenderer = mc.fontRendererObj;
+            FontRenderer fontrenderer = MinecraftCompat.getFontRenderer();
             this.hovered = mouseX >= this.xPosition && mouseY >= this.yPosition && mouseX < this.xPosition + this.width && mouseY < this.yPosition + this.height;
 
             float r, g, b;

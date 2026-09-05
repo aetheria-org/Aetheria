@@ -139,7 +139,7 @@ public class CapeManager {
         }
         if (capeID == null || capeID.equals("pending")) return null;
         if (capeID.equals("none")) {
-            EntityPlayer self = MinecraftCompat.getMinecraft().thePlayer;
+            EntityPlayer self = MinecraftCompat.getLocalPlayer();
             if (self != null && pl.equals(self.getGameProfile().getName()) && !CLIENT_SIDE_CAPE_ID.isEmpty()) {
                 return getCape(CLIENT_SIDE_CAPE_ID);
             }

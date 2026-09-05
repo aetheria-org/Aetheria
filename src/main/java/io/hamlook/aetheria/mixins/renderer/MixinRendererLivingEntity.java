@@ -38,7 +38,7 @@ public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> exte
     @Inject(method = "canRenderName(Lnet/minecraft/entity/EntityLivingBase;)Z", at = @At("HEAD"), cancellable = true)
     private void ATHR$showOwnNametag(T entity, CallbackInfoReturnable<Boolean> cir) {
         if (ATHRConfig.feature == null) return;
-        if (ATHRConfig.feature.misc.showOwnNametag && entity == MinecraftCompat.getMinecraft().thePlayer)
+        if (ATHRConfig.feature.misc.showOwnNametag && entity == MinecraftCompat.getLocalPlayer())
             cir.setReturnValue(true);
     }
 

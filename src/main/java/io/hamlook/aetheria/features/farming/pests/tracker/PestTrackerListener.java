@@ -55,7 +55,7 @@ public class PestTrackerListener {
         PestStats stats = PestStats.getInstance();
         if (!stats.isTracking()) return;
         if (!ChatUtils.isFromServer(event)) return;
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         String msg = ColorUtils.stripColor(ChatUtils.clean(event));
         if (ChatUtils.isPlayerChat(msg)) return;

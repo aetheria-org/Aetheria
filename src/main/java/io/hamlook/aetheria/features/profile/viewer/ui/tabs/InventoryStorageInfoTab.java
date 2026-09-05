@@ -72,7 +72,7 @@ public class InventoryStorageInfoTab extends Tab {
 
         // 3. Draw Tooltip at very top
         if (hoveredItem != null) {
-            int[] mouse = KeybindHelper.getMouseCoords(mc.currentScreen.width, mc.currentScreen.height);
+            int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
             int mouseX = mouse[0], mouseY = mouse[1];
             drawItemTooltip(mc, hoveredItem, mouseX, mouseY);
         }
@@ -280,17 +280,17 @@ public class InventoryStorageInfoTab extends Tab {
     }
 
     private int getMouseY() {
-        return KeybindHelper.getMouseCoords(MinecraftCompat.getMinecraft().currentScreen.width, MinecraftCompat.getMinecraft().currentScreen.height)[1];
+        return KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height)[1];
     }
 
     private boolean isMouseOver(float x, float y, float w, float h) {
-        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getMinecraft().currentScreen.width, MinecraftCompat.getMinecraft().currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
         int mouseX = mouse[0], mouseY = mouse[1];
         return mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
     }
 
     private void handleVerticalScroll(float x, float y, float w, float h, float contentH) {
-        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getMinecraft().currentScreen.width, MinecraftCompat.getMinecraft().currentScreen.height);
+        int[] mouse = KeybindHelper.getMouseCoords(MinecraftCompat.getCurrentScreen().width, MinecraftCompat.getCurrentScreen().height);
         int mx = mouse[0], my = mouse[1];
 
         if (mx >= x && mx <= x + w && my >= y && my <= y + h) {
@@ -399,8 +399,8 @@ public class InventoryStorageInfoTab extends Tab {
         lines.add("§8Item SB_ID: §7" + data.skyblockID);
         lines.add("§8ItemRegistry SB_ID: §7" + io.hamlook.aetheria.features.misc.itemList.ItemResolver.resolveId(data.skyblockID, data.displayName));
 
-        if (mc.currentScreen instanceof ProfileViewerGUI) {
-            ((ProfileViewerGUI) mc.currentScreen).drawTooltip(lines, mouseX, mouseY);
+        if (MinecraftCompat.getCurrentScreen() instanceof ProfileViewerGUI) {
+            ((ProfileViewerGUI) MinecraftCompat.getCurrentScreen()).drawTooltip(lines, mouseX, mouseY);
         }
     }
 

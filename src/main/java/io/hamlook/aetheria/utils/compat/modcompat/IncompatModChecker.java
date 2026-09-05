@@ -5,8 +5,9 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.ASMServerJoinEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
-import net.minecraft.client.Minecraft;
+
 import net.minecraft.util.IChatComponent;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -53,7 +54,7 @@ public class IncompatModChecker {
             TextCompat.setHoverShowText(TextCompat.getChatStyle(hide), "§cHide this warning for " + mod.displayName);
             TextCompat.appendSibling(root, hide);
         }
-        Minecraft.getMinecraft().thePlayer.addChatMessage(root);
+        TextCompat.addChatMessage(root);
     }
 
     public static boolean dismiss(String key) {
@@ -92,7 +93,7 @@ public class IncompatModChecker {
     public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (pending == null) return;
-        if (Minecraft.getMinecraft().thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
         sendWarning(pending);
         pending = null;
     }

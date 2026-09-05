@@ -109,7 +109,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
 
     private void scanContainer(ContainerChest container) {
         for (Slot slot : container.inventorySlots) {
-            if (slot.inventory == MinecraftCompat.getMinecraft().thePlayer.inventory) continue;
+            if (slot.inventory == MinecraftCompat.getLocalPlayer().inventory) continue;
 
             if (slot.slotNumber == CONVERT_SLOT_INDEX) {
                 ItemStack s = slot.getStack();
@@ -164,7 +164,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
             return;
         }
 
-        if (event.getSlot().inventory == MinecraftCompat.getMinecraft().thePlayer.inventory) {
+        if (event.getSlot().inventory == MinecraftCompat.getLocalPlayer().inventory) {
             return;
         }
 

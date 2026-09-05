@@ -70,7 +70,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
         MinecraftCompat.getMinecraft().getTextureManager().bindTexture(button_tex);
         RenderUtils.drawTexturedRect(x + width / 6 - 24, y + 45 - 7 - 14, 48, 16);
 
-        TextRenderUtils.drawStringCenteredScaledMaxWidth("Add", MinecraftCompat.getMinecraft().fontRendererObj, x + width / 6, y + 45 - 7 - 6, false, 44, 0xFF303030);
+        TextRenderUtils.drawStringCenteredScaledMaxWidth("Add", MinecraftCompat.getFontRenderer(), x + width / 6, y + 45 - 7 - 6, false, 44, 0xFF303030);
 
         long currentTime = System.currentTimeMillis();
         if (trashHoverTime < 0) {
@@ -102,9 +102,9 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
             if (i++ != dragStartIndex) {
                 for (int multilineIndex = 0; multilineIndex < multilines.length; multilineIndex++) {
                     String line = multilines[multilineIndex];
-                    Utils.drawStringScaledMaxWidth(line + EnumChatFormatting.RESET, MinecraftCompat.getMinecraft().fontRendererObj, x + 20, y + 50 + yOff + multilineIndex * 10, true, width - 20, 0xffffffff);
+                    Utils.drawStringScaledMaxWidth(line + EnumChatFormatting.RESET, MinecraftCompat.getFontRenderer(), x + 20, y + 50 + yOff + multilineIndex * 10, true, width - 20, 0xffffffff);
                 }
-                MinecraftCompat.getMinecraft().fontRendererObj.drawString("≡", x + 10, y + 50 + yOff + ySize / 2 - 4, 0xffffff, true);
+                MinecraftCompat.getFontRenderer().drawString("≡", x + 10, y + 50 + yOff + ySize / 2 - 4, 0xffffff, true);
             }
 
             yOff += ySize;
@@ -122,7 +122,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
             }
             remaining.removeAll(activeText);
 
-            FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+            FontRenderer fr = MinecraftCompat.getFontRenderer();
             int dropdownWidth = Math.min(width / 2 - 10, 150);
             int left = dragOffsetX;
             int top = dragOffsetY;
@@ -170,12 +170,12 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
             GlStateManagerCompat.enableBlend();
             for (int multilineIndex = 0; multilineIndex < multilines.length; multilineIndex++) {
                 String line = multilines[multilineIndex];
-                Utils.drawStringScaledMaxWidth(line + EnumChatFormatting.RESET, MinecraftCompat.getMinecraft().fontRendererObj, dragOffsetX + mouseX + 10, dragOffsetY + mouseY + multilineIndex * 10, true, width - 20, 0xffffff | (opacity << 24));
+                Utils.drawStringScaledMaxWidth(line + EnumChatFormatting.RESET, MinecraftCompat.getFontRenderer(), dragOffsetX + mouseX + 10, dragOffsetY + mouseY + multilineIndex * 10, true, width - 20, 0xffffff | (opacity << 24));
             }
 
             int ySize = multilines.length * 10;
 
-            MinecraftCompat.getMinecraft().fontRendererObj.drawString("\u2261", dragOffsetX + mouseX, dragOffsetY + mouseY + ySize / 2 - 4, 0xffffff, true);
+            MinecraftCompat.getFontRenderer().drawString("\u2261", dragOffsetX + mouseX, dragOffsetY + mouseY + ySize / 2 - 4, 0xffffff, true);
         }
     }
 

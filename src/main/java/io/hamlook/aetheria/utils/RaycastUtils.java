@@ -44,7 +44,7 @@ public final class RaycastUtils {
 
         for (int i = 0; i < 1000; i++) {
             BlockPos pos = new BlockPos((int) x, (int) y, (int) z);
-            if (!BlockCompat.isAir(MinecraftCompat.getMinecraft().theWorld.getBlockState(pos).getBlock())) {
+            if (!BlockCompat.isAir(MinecraftCompat.getLocalWorld().getBlockState(pos).getBlock())) {
                 return pos;
             }
             if (x == endX && y == endY && z == endZ) return null;

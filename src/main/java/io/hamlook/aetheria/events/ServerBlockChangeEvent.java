@@ -16,6 +16,6 @@ public class ServerBlockChangeEvent extends AetheriaEvent {
     }
 
     public IBlockState getOldState() {
-        return MinecraftCompat.getMinecraft().theWorld.getBlockState(pos);
+        return MinecraftCompat.getLocalWorld().getBlockState(pos);
     }
 }

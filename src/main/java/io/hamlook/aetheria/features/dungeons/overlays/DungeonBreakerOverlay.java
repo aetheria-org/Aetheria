@@ -44,8 +44,8 @@ public class DungeonBreakerOverlay extends Overlay {
 
     private static ItemStack findBreakerInHotbar() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return null;
-        ItemStack[] hotbar = ArrayNormalizationKt.normalizeAsArray(mc.thePlayer.inventory.mainInventory);
+        if (MinecraftCompat.getLocalPlayer() == null) return null;
+        ItemStack[] hotbar = ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getLocalPlayer().inventory.mainInventory);
         for (int i = 0; i < 9; i++) {
             ItemStack stack = hotbar[i];
             if (stack != null && ITEM_ID.equals(ItemUtils.getInternalName(stack))) return stack;

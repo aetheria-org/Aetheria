@@ -91,7 +91,7 @@ public class ItemRenderUtils {
 
         Minecraft mc = MinecraftCompat.getMinecraft();
         RenderItem ri = mc.getRenderItem();
-        FontRenderer fr = mc.fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
 
         beginGuiItemRender();
         try {
@@ -115,7 +115,7 @@ public class ItemRenderUtils {
     }
 
     public static void renderHeldCursorItem() {
-        ItemStack held = MinecraftCompat.getMinecraft().thePlayer.inventory.getItemStack();
+        ItemStack held = MinecraftCompat.getLocalPlayer().inventory.getItemStack();
         if (held == null) return;
 
         ScaledResolution sr = GuiScreenUtils.getScaledResolution();
@@ -129,7 +129,7 @@ public class ItemRenderUtils {
             RenderItem ri = MinecraftCompat.getMinecraft().getRenderItem();
             ri.renderItemAndEffectIntoGUI(held, cursorX - 8, cursorY - 8);
             ri.renderItemOverlayIntoGUI(
-                    MinecraftCompat.getMinecraft().fontRendererObj, held, cursorX - 8, cursorY - 8, null);
+                    MinecraftCompat.getFontRenderer(), held, cursorX - 8, cursorY - 8, null);
         } catch (Exception e) {
             io.hamlook.aetheria.utils.debug.GLDebugProbe.warnThrottled(
                     "itemrender.cursor", 5_000L,

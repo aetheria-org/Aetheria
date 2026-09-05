@@ -33,8 +33,8 @@ class DrawContext {
     fun enableScissor(x: Int, y: Int, width: Int, height: Int) {
         GL11.glEnable(GL11.GL_SCISSOR_TEST)
         val factor = GuiScreenUtils.getScaleFactor()
-        val mc = MinecraftCompat.getMinecraft()
-        GL11.glScissor(x * factor, (mc.displayHeight - (y + height) * factor), width * factor, height * factor)
+        val displayHeight = GuiScreenUtils.getDisplayHeight()
+        GL11.glScissor(x * factor, (displayHeight - (y + height) * factor), width * factor, height * factor)
     }
 
     fun disableScissor() {

@@ -26,7 +26,7 @@ public class CursorResetHandler {
 
     @HandleEvent
     public void onGuiOpen(ASMGuiOpenEvent event) {
-        GuiScreen oldGui = mc.currentScreen;
+        GuiScreen oldGui = MinecraftCompat.getCurrentScreen();
         if (oldGui != null) {
             cacheMouse();
         }

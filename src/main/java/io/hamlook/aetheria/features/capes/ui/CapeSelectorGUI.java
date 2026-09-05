@@ -5,6 +5,7 @@ import io.hamlook.aetheria.features.capes.Cape;
 import io.hamlook.aetheria.features.capes.CapeManager;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
@@ -52,7 +53,7 @@ public class CapeSelectorGUI extends AetheriaBaseScreen {
         int cardX = boxX + PADDING + (int) scrollOffset;
         int cardY = boxY + (boxH / 2) - (capes.isEmpty() ? 0 : capes.get(0).height / 2);
 
-        String localPlayer = mc.thePlayer != null ? mc.thePlayer.getGameProfile().getName() : "";
+        String localPlayer = MinecraftCompat.getLocalPlayer() != null ? MinecraftCompat.getLocalPlayer().getGameProfile().getName() : "";
         Cape equipped = CapeManager.getCapeForPlayer(localPlayer);
         String equippedId = equipped != null ? equipped.id : null;
         ScaledResolution sr = GuiScreenUtils.getScaledResolution();
@@ -74,7 +75,7 @@ public class CapeSelectorGUI extends AetheriaBaseScreen {
 
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
         String title = "Select Cape";
-        mc.fontRendererObj.drawString(title, (int) (this.width / 2f - mc.fontRendererObj.getStringWidth(title) / 2f), boxY - 14, new Color(255, 255, 255, 255).getRGB());
+        MinecraftCompat.getFontRenderer().drawString(title, (int) (this.width / 2f - MinecraftCompat.getFontRenderer().getStringWidth(title) / 2f), boxY - 14, new Color(255, 255, 255, 255).getRGB());
     }
 
     @Override
@@ -122,7 +123,7 @@ public class CapeSelectorGUI extends AetheriaBaseScreen {
 
         int dragDist = Math.abs(mouseX - mousePressX) + Math.abs(mouseY - mousePressY);
         if (dragDist < DRAG_THRESHOLD) {
-            String localPlayerName = mc.thePlayer.getGameProfile().getName();
+            String localPlayerName = MinecraftCompat.getLocalPlayer().getGameProfile().getName();
             for (CapeDisplay card : capes) {
                 if (card.isOverClamped(mouseX, mouseY, boxX, boxY, boxX + boxW, boxY + boxH)) {
                     Cape selected = CapeManager.getCape(card.capeID);

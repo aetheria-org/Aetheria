@@ -23,7 +23,7 @@ public class ContainerUtils {
     }
 
     public static boolean isChestOpen() {
-        return mc.currentScreen instanceof GuiChest;
+        return MinecraftCompat.getCurrentScreen() instanceof GuiChest;
     }
 
     public static boolean isChestOpen(GuiScreen gui) {
@@ -31,7 +31,7 @@ public class ContainerUtils {
     }
 
     public static boolean isInventoryOpen() {
-        return mc.currentScreen instanceof GuiInventory;
+        return MinecraftCompat.getCurrentScreen() instanceof GuiInventory;
     }
 
     public static boolean isInventoryOpen(GuiScreen gui) {
@@ -39,14 +39,14 @@ public class ContainerUtils {
     }
 
     public static boolean isGuiContainerOpen() {
-        return mc.currentScreen instanceof net.minecraft.client.gui.inventory.GuiContainer;
+        return MinecraftCompat.getCurrentScreen() instanceof net.minecraft.client.gui.inventory.GuiContainer;
     }
 
     @Nullable
     public static ContainerChest getOpenChest() {
         if (!isChestOpen()) return null;
-        if (!(InventoryCompat.getContainer((GuiChest) mc.currentScreen) instanceof ContainerChest)) return null;
-        return (ContainerChest) InventoryCompat.getContainer((GuiChest) mc.currentScreen);
+        if (!(InventoryCompat.getContainer((GuiChest) MinecraftCompat.getCurrentScreen()) instanceof ContainerChest)) return null;
+        return (ContainerChest) InventoryCompat.getContainer((GuiChest) MinecraftCompat.getCurrentScreen());
     }
 
     @Nullable
@@ -69,12 +69,12 @@ public class ContainerUtils {
 
     public static int getWindowId() {
         if (!isChestOpen()) return -1;
-        return InventoryCompat.getContainer((GuiChest) mc.currentScreen).windowId;
+        return InventoryCompat.getContainer((GuiChest) MinecraftCompat.getCurrentScreen()).windowId;
     }
 
     @Nullable
     public static String getContainerName() {
-        GuiScreen screen = mc.currentScreen;
+        GuiScreen screen = MinecraftCompat.getCurrentScreen();
         if (screen == cachedScreen) return cachedContainerName;
         cachedScreen = screen;
         IInventory inv = getLowerInventory(getOpenChest(screen));

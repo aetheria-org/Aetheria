@@ -57,7 +57,7 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
 
     public CustomDropAnimationGui(DungeonDropData.Rule rewardItem, DungeonDropData.Floor floor, DungeonDropData.CaseMaterial material) {
         SoundUtils.playSound("gui.button.press");
-        this.floatFont = new FloatFontRenderer(mc.fontRendererObj);
+        this.floatFont = new FloatFontRenderer(MinecraftCompat.getFontRenderer());
         this.rewardItem = rewardItem;
         this.floor = floor;
         this.material = material;
@@ -166,7 +166,7 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
         setupStencil(frameBufferLayer1);
         setupStencil(frameBufferLayer2);
         GL11.glPopMatrix();
-        if (blurShader != null) blurShader.createBindFramebuffers(mc.displayWidth, mc.displayHeight);
+        if (blurShader != null) blurShader.createBindFramebuffers(GuiScreenUtils.getDisplayWidth(), GuiScreenUtils.getDisplayHeight());
     }
 
     private void setupStencil(Framebuffer fb) {
@@ -189,7 +189,7 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
         DebugLogger.log("[ATHR ANIMATION] initGui called - initializing animation GUI");
         try {
             blurShader = new ShaderGroup(mc.getTextureManager(), mc.getResourceManager(), mc.getFramebuffer(), Resources.CASE_BLUR_SHADER);
-            blurShader.createBindFramebuffers(mc.displayWidth, mc.displayHeight);
+            blurShader.createBindFramebuffers(GuiScreenUtils.getDisplayWidth(), GuiScreenUtils.getDisplayHeight());
             DebugLogger.log("[ATHR ANIMATION] Blur shader initialized successfully");
         } catch (Exception e) {
             DebugLogger.log("[ATHR ANIMATION] ERROR: Failed to initialize blur shader: " + e.getMessage());

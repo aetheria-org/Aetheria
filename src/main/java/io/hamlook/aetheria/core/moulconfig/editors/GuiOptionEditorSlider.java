@@ -71,7 +71,7 @@ public class GuiOptionEditorSlider extends GuiOptionEditor {
 
         if (textField.getFocus()) {
             textField.setOptions(GuiElementTextField.NO_SPACE | GuiElementTextField.NUM_ONLY);
-            textField.setSize(MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10, 16);
+            textField.setSize(MinecraftCompat.getFontRenderer().getStringWidth(textField.getText()) + 10, 16);
         } else {
             textField.setSize(textFieldWidth, 16);
             textField.setOptions(GuiElementTextField.NO_SPACE | GuiElementTextField.NUM_ONLY | GuiElementTextField.SCALE_TEXT);
@@ -97,7 +97,7 @@ public class GuiOptionEditorSlider extends GuiOptionEditor {
         }
 
         if (textField.getFocus()) {
-            textFieldWidth = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(textField.getText()) + 10;
+            textFieldWidth = MinecraftCompat.getFontRenderer().getStringWidth(textField.getText()) + 10;
         }
 
         int textFieldX = x + width / 6 - fullWidth / 2 + sliderWidth + 5;

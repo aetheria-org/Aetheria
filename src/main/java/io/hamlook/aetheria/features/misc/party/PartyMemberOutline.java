@@ -34,7 +34,7 @@ public class PartyMemberOutline {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.misc.partyMemberOutline.enabled) return;
 
         EntityLivingBase entity = event.getEntity();
-        if (!(entity instanceof EntityPlayer) || entity == mc.thePlayer || entity.isInvisible()) return;
+        if (!(entity instanceof EntityPlayer) || entity == MinecraftCompat.getLocalPlayer() || entity.isInvisible()) return;
 
         if (ATHRConfig.feature.misc.partyMemberOutline.disableInDungeons && SkyblockData.isInDungeon()) return;
 

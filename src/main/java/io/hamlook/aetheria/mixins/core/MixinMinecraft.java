@@ -16,7 +16,7 @@ public class MixinMinecraft {
     @Inject(method = "runTick", at = @At("HEAD"))
     private void ATHR$consumeInputDuringTransition(CallbackInfo ci) {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (StorageManager.isTransitioning() && mc.currentScreen == null) {
+        if (StorageManager.isTransitioning() && MinecraftCompat.getCurrentScreen() == null) {
             while (MouseCompat.next()) {
             }
             while (KeyboardCompat.next()) {

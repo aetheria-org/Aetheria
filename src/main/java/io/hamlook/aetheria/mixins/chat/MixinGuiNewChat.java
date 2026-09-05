@@ -4,6 +4,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.*;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.*;
@@ -99,8 +100,8 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
     private void athr$computeHoveredLine(int updateCounter, CallbackInfo ci) {
         athr$hoveredLine = null;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.chatCopyEnabled) return;
-        if (!(mc.currentScreen instanceof GuiChat)) return;
-        if (!((GuiChatHook) mc.currentScreen).athr$isTypingMode()) return;
+        if (!(MinecraftCompat.getCurrentScreen() instanceof GuiChat)) return;
+        if (!((GuiChatHook) MinecraftCompat.getCurrentScreen()).athr$isTypingMode()) return;
         athr$hoveredLine = athr$getHoveredChatLine(
                 MouseCompat.getX(), GuiScreenUtils.getDisplayHeight() - MouseCompat.getY() - 1);
     }
@@ -201,9 +202,9 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
         if (y < 0) return null;
 
         int visibleLines = Math.min(getLineCount(), drawnChatLines.size());
-        int lineHeight   = mc.fontRendererObj.FONT_HEIGHT + 1;
+        int lineHeight   = MinecraftCompat.getFontRenderer().FONT_HEIGHT + 1;
 
-        if (y < mc.fontRendererObj.FONT_HEIGHT * visibleLines + visibleLines) {
+        if (y < MinecraftCompat.getFontRenderer().FONT_HEIGHT * visibleLines + visibleLines) {
             int index = y / lineHeight + scrollPos;
             if (index >= 0 && index < drawnChatLines.size()) {
                 return drawnChatLines.get(index);

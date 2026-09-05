@@ -21,11 +21,11 @@ public class BlockOverlay {
     private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static AxisAlignedBB getSelectionAABB(BlockPos pos) {
-        if (mc.theWorld == null) {
+        if (MinecraftCompat.getLocalWorld() == null) {
             return new AxisAlignedBB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1);
         }
-        Block block = mc.theWorld.getBlockState(pos).getBlock();
-        AxisAlignedBB aabb = block.getSelectedBoundingBox(mc.theWorld, pos);
+        Block block = MinecraftCompat.getLocalWorld().getBlockState(pos).getBlock();
+        AxisAlignedBB aabb = block.getSelectedBoundingBox(MinecraftCompat.getLocalWorld(), pos);
         return aabb != null ? aabb : new AxisAlignedBB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1);
     }
 

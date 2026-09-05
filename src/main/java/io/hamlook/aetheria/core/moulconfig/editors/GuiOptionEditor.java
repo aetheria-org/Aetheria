@@ -22,7 +22,7 @@ public abstract class GuiOptionEditor {
     public void render(int x, int y, int width) {
         int height = getHeight();
 
-        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         RenderUtils.drawFloatingRectDark(x, y, width, height, true);
         TextRenderUtils.drawStringCenteredScaledMaxWidth(option.name, fr, x + width / 6, y + 13, true, width / 3 - 10, 0xc0c0c0);
 

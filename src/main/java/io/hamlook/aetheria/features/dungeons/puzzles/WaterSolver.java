@@ -112,7 +112,7 @@ public class WaterSolver {
         if (event.phase != TickEvent.Phase.START) return;
         if (!ATHRConfig.feature.dungeons.dungeonBreaker.dungeonBreakerOverlay) return;
         if (!SkyblockData.isInDungeon()) return;
-        if (mc.thePlayer == null || mc.theWorld == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) return;
 
         tickCounter++;
 
@@ -125,7 +125,7 @@ public class WaterSolver {
         for (Map.Entry<String, BlockPos> entry : leverPositions.entrySet()) {
             String key = entry.getKey();
             BlockPos pos = entry.getValue();
-            if (!BlockCompat.isLever(mc.theWorld.getBlockState(pos).getBlock())) continue;
+            if (!BlockCompat.isLever(MinecraftCompat.getLocalWorld().getBlockState(pos).getBlock())) continue;
             boolean powered = isLeverPowered(pos);
             Boolean prev = prevPowered.get(key);
             if (prev != null && powered != prev) clickCounts.merge(key, 1, Integer::sum);
@@ -140,7 +140,7 @@ public class WaterSolver {
     public void onRenderWorld(ASMRenderWorldEvent event) {
         if (!ATHRConfig.feature.dungeons.dungeonBreaker.dungeonBreakerOverlay) return;
         if (!inWaterRoom || solutions.isEmpty()) return;
-        if (mc.thePlayer == null || mc.theWorld == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) return;
 
         double vx = mc.getRenderManager().viewerPosX;
         double vy = mc.getRenderManager().viewerPosY;
@@ -215,7 +215,7 @@ public class WaterSolver {
     }
 
     private void detectWaterRoom() {
-        if (mc.thePlayer == null || mc.theWorld == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) return;
 
         if (checkForBlock(Blocks.sticky_piston, 20, 57) == null) {
             if (inWaterRoom) reset();
@@ -249,11 +249,11 @@ public class WaterSolver {
     }
 
     private int detectPattern() {
-        int px = (int) mc.thePlayer.posX, pz = (int) mc.thePlayer.posZ;
+        int px = (int) MinecraftCompat.getLocalPlayer().posX, pz = (int) MinecraftCompat.getLocalPlayer().posZ;
         for (int x = px - 25; x <= px + 25; x++) {
             for (int z = pz - 25; z <= pz + 25; z++) {
-                Block b77 = mc.theWorld.getBlockState(new BlockPos(x, 77, z)).getBlock();
-                Block b78 = mc.theWorld.getBlockState(new BlockPos(x, 78, z)).getBlock();
+                Block b77 = MinecraftCompat.getLocalWorld().getBlockState(new BlockPos(x, 77, z)).getBlock();
+                Block b78 = MinecraftCompat.getLocalWorld().getBlockState(new BlockPos(x, 78, z)).getBlock();
                 if (BlockCompat.isHardenedClay(b77)) return 0;
                 if (b78 == Blocks.emerald_block) return 1;
                 if (b78 == Blocks.diamond_block) return 2;
@@ -269,11 +269,11 @@ public class WaterSolver {
         BlockPos scan2 = new BlockPos(origin.getX() - 5, origin.getY(), origin.getZ() - 5);
 
         for (BlockPos pos : BlockPos.getAllInBox(scan1, scan2)) {
-            IBlockState state = mc.theWorld.getBlockState(pos);
+            IBlockState state = MinecraftCompat.getLocalWorld().getBlockState(pos);
             if (state.getBlock() != Blocks.piston_head) continue;
             EnumFacing facing = state.getValue(BlockPistonExtension.FACING);
             BlockPos woolPos = stepInDirection(pos, facing);
-            if (woolPos != null) found.add(mc.theWorld.getBlockState(woolPos).getValue(BlockColored.COLOR));
+            if (woolPos != null) found.add(MinecraftCompat.getLocalWorld().getBlockState(woolPos).getValue(BlockColored.COLOR));
         }
 
         List<EnumDyeColor> sorted = new ArrayList<>();
@@ -288,19 +288,19 @@ public class WaterSolver {
         BlockPos scan2 = new BlockPos(origin.getX() - 16, origin.getY() - 1, origin.getZ() - 16);
 
         for (BlockPos pos : BlockPos.getAllInBox(scan1, scan2)) {
-            IBlockState state = mc.theWorld.getBlockState(pos);
+            IBlockState state = MinecraftCompat.getLocalWorld().getBlockState(pos);
             if (!BlockCompat.isLever(state.getBlock())) continue;
 
             EnumFacing facing = state.getValue(BlockLever.FACING).getFacing();
             BlockPos behind = stepOpposite(pos, facing);
             if (behind == null) continue;
 
-            String name = BlockCompat.getBlockName(mc.theWorld.getBlockState(behind).getBlock());
+            String name = BlockCompat.getBlockName(MinecraftCompat.getLocalWorld().getBlockState(behind).getBlock());
 
             if (isTargetBlock(name)) {
                 result.put(name, pos);
             } else if (facing == EnumFacing.UP) {
-                IBlockState belowState = mc.theWorld.getBlockState(behind);
+                IBlockState belowState = MinecraftCompat.getLocalWorld().getBlockState(behind);
                 if (BlockCompat.isSmoothAndesite(belowState)) {
                     waterLeverPos = pos;
                 }
@@ -337,17 +337,17 @@ public class WaterSolver {
     }
 
     private BlockPos checkForBlock(Block target, int radius, int yLevel) {
-        int px = (int) mc.thePlayer.posX, pz = (int) mc.thePlayer.posZ;
+        int px = (int) MinecraftCompat.getLocalPlayer().posX, pz = (int) MinecraftCompat.getLocalPlayer().posZ;
         for (int x = px - radius; x <= px + radius; x++)
             for (int z = pz - radius; z <= pz + radius; z++) {
                 BlockPos pos = new BlockPos(x, yLevel, z);
-                if (mc.theWorld.getBlockState(pos).getBlock() == target) return pos;
+                if (MinecraftCompat.getLocalWorld().getBlockState(pos).getBlock() == target) return pos;
             }
         return null;
     }
 
     private boolean isLeverPowered(BlockPos pos) {
-        IBlockState s = mc.theWorld.getBlockState(pos);
+        IBlockState s = MinecraftCompat.getLocalWorld().getBlockState(pos);
         return BlockCompat.isLever(s.getBlock()) && s.getValue(BlockLever.POWERED);
     }
 

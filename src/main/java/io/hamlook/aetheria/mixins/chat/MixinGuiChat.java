@@ -8,6 +8,7 @@ import io.hamlook.aetheria.features.chat.emoji.EmojiSuggestionBar;
 import io.hamlook.aetheria.features.qol.ChatStateManager;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
+import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.ChatLine;
 import net.minecraft.client.gui.GuiChat;
@@ -62,7 +63,7 @@ public abstract class MixinGuiChat implements GuiChatHook {
             String raw = TextCompat.getFormattedText(src);
             text = formatted ? raw : EnumChatFormatting.getTextWithoutFormattingCodes(raw);
         }
-        GuiScreen.setClipboardString(text);
+        ClipboardCompat.setClipboard(text);
         ci.cancel();
     }
 

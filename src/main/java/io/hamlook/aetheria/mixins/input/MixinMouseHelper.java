@@ -37,7 +37,7 @@ public class MixinMouseHelper {
 
     @Inject(method = "mouseXYChange", at = @At("RETURN"))
     private void ATHR$lockMouse(CallbackInfo ci) {
-        if (LockMouse.isLocked() && MinecraftCompat.getMinecraft().currentScreen == null) {
+        if (LockMouse.isLocked() && MinecraftCompat.getCurrentScreen() == null) {
             deltaX = 0;
             deltaY = 0;
         }
@@ -45,7 +45,7 @@ public class MixinMouseHelper {
 
     @Inject(method = "mouseXYChange", at = @At("RETURN"))
     private void ATHR$reduceSensitivity(CallbackInfo ci) {
-        if (MinecraftCompat.getMinecraft().currentScreen != null) return;
+        if (MinecraftCompat.getCurrentScreen() != null) return;
         if (LockMouse.isLocked()) return;
         if (!SensitivityReducer.isActive()) return;
         float scale = SensitivityReducer.getSensitivityScale();

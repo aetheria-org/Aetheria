@@ -127,7 +127,7 @@ public class AnvilCombineHelper {
         Minecraft mc = MinecraftCompat.getMinecraft();
         ContainerChest chest = ContainerUtils.getOpenChest();
         if (chest == null) return;
-        if (isAnvilGui((GuiContainer) mc.currentScreen)) return;
+        if (isAnvilGui((GuiContainer) MinecraftCompat.getCurrentScreen())) return;
 
         refreshSlots(chest);
     }

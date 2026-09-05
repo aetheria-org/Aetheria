@@ -46,18 +46,18 @@ public class PlayerJoinLeaveNotifier {
         if (!isEnabled()) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
-        String selfName = mc.thePlayer.getGameProfile().getName().toLowerCase();
+        String selfName = MinecraftCompat.getLocalPlayer().getGameProfile().getName().toLowerCase();
         Set<String> watch = watchList();
 
         Set<String> lobby = new HashSet<>();
-        for (NetworkPlayerInfo info : mc.thePlayer.sendQueue.getPlayerInfoMap()) {
+        for (NetworkPlayerInfo info : MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap()) {
             String name = info.getGameProfile().getName().toLowerCase();
             if (!name.equals(selfName)) lobby.add(name);
         }
 
-        for (NetworkPlayerInfo info : mc.thePlayer.sendQueue.getPlayerInfoMap()) {
+        for (NetworkPlayerInfo info : MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap()) {
             String lower = info.getGameProfile().getName().toLowerCase();
             if (watch.contains(lower) && lobby.contains(lower) && notified.add(lower)) {
                 String display = info.getGameProfile().getName();

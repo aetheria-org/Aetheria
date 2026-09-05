@@ -1,34 +1,31 @@
 package io.hamlook.aetheria.features.profile.viewer.cmd;
 
-import io.hamlook.aetheria.command.ASMCommand;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
-import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayer;
 
-@RegisterCommand
-public class ProfileViewCommand extends ASMCommand {
-    @Override
-    public String getName() {
-        return "pv";
-    }
+@RegisterEvents
+public class ProfileViewCommand {
 
-    @Override
-    public String getUsage() {
-        return "/" + getName();
-    }
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("pv", builder -> {
+            builder.description = "Open the profile viewer";
+            builder.setCategory(CommandCategory.USERS_ACTIVE);
 
-    @Override
-    public void execute(ICommandSender sender, String[] args) throws CommandException {
-        if(!(sender instanceof EntityPlayer)) return;
-        if(args.length < 1){
-            ATHRConfig.screenToOpen = new ProfileViewerGUI(MinecraftCompat.getMinecraft().getSession().getUsername());
-            return;
-        }
-        String user = args[0];
-        ATHRConfig.screenToOpen = new ProfileViewerGUI(user);
+            builder.legacyCallbackArgs(args -> {
+                if (MinecraftCompat.getLocalPlayer() == null) return;
+                if (args.length < 1) {
+                    ATHRConfig.screenToOpen = new ProfileViewerGUI(MinecraftCompat.getMinecraft().getSession().getUsername());
+                    return;
+                }
+                String user = args[0];
+                ATHRConfig.screenToOpen = new ProfileViewerGUI(user);
+            });
+        });
     }
 }

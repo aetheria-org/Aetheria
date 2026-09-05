@@ -23,8 +23,8 @@ public final class SkyblockData {
 
     public static String getServerId() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.theWorld == null) return "";
-        Scoreboard sb = mc.theWorld.getScoreboard();
+        if (MinecraftCompat.getLocalWorld() == null) return "";
+        Scoreboard sb = MinecraftCompat.getLocalWorld().getScoreboard();
         if (sb == null) return "";
         ScoreObjective obj = ScoreboardCompat.getSidebarObjective(sb);
         if (obj == null) return "";
@@ -33,8 +33,8 @@ public final class SkyblockData {
 
     public static String getScoreboardTitle() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.theWorld == null) return null;
-        Scoreboard sb = mc.theWorld.getScoreboard();
+        if (MinecraftCompat.getLocalWorld() == null) return null;
+        Scoreboard sb = MinecraftCompat.getLocalWorld().getScoreboard();
         if (sb == null) return null;
         ScoreObjective obj = ScoreboardCompat.getSidebarObjective(sb);
         if (obj == null) return null;
@@ -47,9 +47,9 @@ public final class SkyblockData {
 
     public static List<String> getScoreboardLines() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.theWorld == null) return Collections.emptyList();
+        if (MinecraftCompat.getLocalWorld() == null) return Collections.emptyList();
 
-        Scoreboard scoreboard = mc.theWorld.getScoreboard();
+        Scoreboard scoreboard = MinecraftCompat.getLocalWorld().getScoreboard();
         if (scoreboard == null) return Collections.emptyList();
 
         ScoreObjective objective = ScoreboardCompat.getSidebarObjective(scoreboard);
@@ -83,13 +83,13 @@ public final class SkyblockData {
      */
     public static String getPurseLine() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.theWorld == null || mc.thePlayer == null) {
+        if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null) {
             purseLineCacheTick = -1;
             purseLineCache = null;
             return null;
         }
-        if (purseLineCacheTick != mc.thePlayer.ticksExisted) {
-            purseLineCacheTick = mc.thePlayer.ticksExisted;
+        if (purseLineCacheTick != MinecraftCompat.getLocalPlayer().ticksExisted) {
+            purseLineCacheTick = MinecraftCompat.getLocalPlayer().ticksExisted;
             purseLineCache = getCleanScoreboardLines().stream()
                     .filter(l -> l.contains("Purse") || l.contains("Piggy"))
                     .findFirst().orElse(null);

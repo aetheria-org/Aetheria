@@ -1,14 +1,15 @@
 package io.hamlook.aetheria.features.waypoints;
 
-import io.hamlook.aetheria.command.ASMCommand;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.util.BlockPos;
+import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 
@@ -17,381 +18,374 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@RegisterCommand
-public class WaypointCommand extends ASMCommand {
+@RegisterEvents
+public class WaypointCommand {
 
     public static final String PREFIX = "§3[ATHRW]§b ";
     private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private static final List<String> SUBCOMMANDS = Arrays.asList("list", "load", "unload", "setup", "reset", "skip", "unskip", "skipto", "enable", "disable", "create", "delete", "add", "insert", "remove", "rename", "export", "import", "range", "time", "save", "info", "manage", "guide");
 
-    @Override
-    public String getName() {
-        return "jw";
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("jw", builder -> {
+            builder.setAliases(Arrays.asList("athrw", "waypoints", "asmw"));
+            builder.description = "Waypoint commands";
+            builder.setCategory(CommandCategory.USERS_ACTIVE);
+
+            builder.legacyCallbackArgs(args -> {
+                WaypointState state = WaypointState.getInstance();
+                WaypointStorage storage = WaypointStorage.getInstance();
+
+                if (args.length == 0) {
+                    showGroupList();
+                    return;
+                }
+
+                switch (args[0].toLowerCase()) {
+
+                    case "load": {
+                        if (args.length < 2) {
+                            error("Usage: /athrw load <group>");
+                            return;
+                        }
+                        WaypointGroup g = storage.getGroup(args[1]);
+                        if (g == null) {
+                            error("Group '" + args[1] + "' not found");
+                            return;
+                        }
+                        state.load(g);
+                        success("Loaded group: &e" + g.name + " &7(&e" + g.waypoints.size() + " waypoints&7)");
+                        break;
+                    }
+
+                    case "unload":
+                    case "clear":
+                        state.unload();
+                        success("Waypoints unloaded");
+                        break;
+
+                    case "skip": {
+                        if (!state.hasGroup()) {
+                            error("No group loaded");
+                            return;
+                        }
+                        int n = args.length >= 2 ? parseIntSafe(args[1], 1) : 1;
+                        state.skip(n);
+                        success("Skipped " + n + " – now at &e" + (state.currentIndex + 1) + "&7/&e" + state.size());
+                        break;
+                    }
+
+                    case "unskip": {
+                        if (!state.hasGroup()) {
+                            error("No group loaded");
+                            return;
+                        }
+                        int n = args.length >= 2 ? parseIntSafe(args[1], 1) : 1;
+                        state.skip(-n);
+                        success("Went back " + n + " – now at &e" + (state.currentIndex + 1) + "&7/&e" + state.size());
+                        break;
+                    }
+
+                    case "skipto": {
+                        if (!state.hasGroup()) {
+                            error("No group loaded");
+                            return;
+                        }
+                        if (args.length < 2) {
+                            error("Usage: /athrw skipto <number>");
+                            return;
+                        }
+                        int n = parseIntSafe(args[1], -1);
+                        if (n < 1 || n > state.size()) {
+                            error("Index out of range (1–" + state.size() + ")");
+                            return;
+                        }
+                        state.skipTo(n - 1);
+                        success("Jumped to waypoint &e" + n);
+                        break;
+                    }
+
+                    case "reset":
+                        if (!state.hasGroup()) {
+                            error("No group loaded");
+                            return;
+                        }
+                        state.reset();
+                        success("Reset to waypoint 1");
+                        break;
+
+                    case "list":
+                        showGroupList();
+                        break;
+
+                    case "create": {
+                        if (args.length < 2) {
+                            error("Usage: /athrw create <n> [description]");
+                            return;
+                        }
+                        String name = args[1].toLowerCase();
+                        if (storage.getGroup(name) != null) {
+                            error("Group '" + name + "' already exists");
+                            return;
+                        }
+                        storage.putGroup(new WaypointGroup(name, args.length > 2 ? joinFrom(args, 2) : ""));
+                        storage.saveIfDirty();
+                        success("Created group: &e" + name);
+                        break;
+                    }
+
+                    case "delete": {
+                        if (args.length < 2) {
+                            error("Usage: /athrw delete <group>");
+                            return;
+                        }
+                        String name = args[1].toLowerCase();
+                        if (state.loadedGroup != null && state.loadedGroup.name.equalsIgnoreCase(name)) state.unload();
+                        if (storage.removeGroup(name)) {
+                            storage.saveIfDirty();
+                            success("Deleted group: &e" + name);
+                        } else error("Group not found: " + name);
+                        break;
+                    }
+
+                    case "rename": {
+                        if (args.length < 3) {
+                            error("Usage: /athrw rename <old> <new>");
+                            return;
+                        }
+                        String oldName = args[1].toLowerCase(), newName = args[2].toLowerCase();
+                        WaypointGroup g = storage.getGroup(oldName);
+                        if (g == null) {
+                            error("Group not found: " + oldName);
+                            return;
+                        }
+                        storage.removeGroup(oldName);
+                        g.name = newName;
+                        storage.putGroup(g);
+                        storage.saveIfDirty();
+                        if (state.loadedGroup != null && state.loadedGroup.name.equalsIgnoreCase(oldName))
+                            state.loadedGroup.name = newName;
+                        success("Renamed &e" + oldName + " &a→ &e" + newName);
+                        break;
+                    }
+
+                    case "add": {
+                        WaypointGroup target = state.loadedGroup;
+                        if (target == null) {
+                            error("No group loaded. Use /athrw load <n> first");
+                            return;
+                        }
+                        if (args.length >= 4 && isDouble(args[1]) && isDouble(args[2]) && isDouble(args[3])) {
+                            double x = parseDoubleSafe(args[1], 0);
+                            double y = parseDoubleSafe(args[2], 0);
+                            double z = parseDoubleSafe(args[3], 0);
+                            String name = args.length >= 5 ? joinFrom(args, 4) : String.valueOf(target.waypoints.size() + 1);
+                            addWaypointAt(target, x, y, z, name);
+                        } else {
+                            String name = args.length >= 2 ? joinFrom(args, 1) : String.valueOf(target.waypoints.size() + 1);
+                            addWaypoint(target, name);
+                        }
+                        storage.markDirty();
+                        storage.saveIfDirty();
+                        break;
+                    }
+
+                    case "insert": {
+                        if (!state.hasGroup()) {
+                            error("No group loaded");
+                            return;
+                        }
+                        if (args.length < 2) {
+                            error("Usage: /athrw insert <index> [name]");
+                            return;
+                        }
+                        int idx = parseIntSafe(args[1], -1);
+                        if (idx < 1 || idx > state.size() + 1) {
+                            error("Index out of range (1–" + (state.size() + 1) + ")");
+                            return;
+                        }
+                        String wpName = args.length >= 3 ? args[2] : String.valueOf(idx);
+                        double bx = Math.floor(MinecraftCompat.getLocalPlayer().posX), by = Math.floor(MinecraftCompat.getLocalPlayer().posY) - 1, bz = Math.floor(MinecraftCompat.getLocalPlayer().posZ);
+                        state.loadedGroup.waypoints.add(idx - 1, new WaypointPoint(bx, by, bz, wpName));
+                        renumberNumericNames(state.loadedGroup, idx);
+                        storage.markDirty();
+                        storage.saveIfDirty();
+                        success("Inserted &e" + wpName + " &aat index &e" + idx + " &7(" + (int) bx + ", " + (int) by + ", " + (int) bz + ")");
+                        break;
+                    }
+
+                    case "remove": {
+                        if (!state.hasGroup()) {
+                            error("No group loaded");
+                            return;
+                        }
+                        if (args.length < 2) {
+                            error("Usage: /athrw remove <index>");
+                            return;
+                        }
+                        int idx = parseIntSafe(args[1], -1);
+                        if (idx < 1 || idx > state.size()) {
+                            error("Index out of range (1–" + state.size() + ")");
+                            return;
+                        }
+                        WaypointPoint removed = state.loadedGroup.waypoints.remove(idx - 1);
+                        storage.markDirty();
+                        storage.saveIfDirty();
+                        success("Removed &e" + (removed.name != null ? removed.name : String.valueOf(idx)));
+                        break;
+                    }
+
+                    case "export": {
+                        if (args.length < 2) {
+                            error("Usage: /athrw export <group>");
+                            return;
+                        }
+                        WaypointGroup g = storage.getGroup(args[1]);
+                        if (g == null) {
+                            error("Group not found: " + args[1]);
+                            return;
+                        }
+                        ClipboardCompat.setClipboard(exportSoopy(g));
+                        success("Copied group '" + g.name + "' to clipboard");
+                        break;
+                    }
+
+                    case "import": {
+                        if (args.length < 2) {
+                            error("Usage: /athrw import <groupname>");
+                            return;
+                        }
+                        String name = args[1].toLowerCase();
+                        String clip = ClipboardCompat.getClipboard();
+                        if (clip == null || clip.trim().isEmpty()) {
+                            error("Clipboard is empty");
+                            return;
+                        }
+                        List<WaypointPoint> wps = parseSoopy(clip.trim());
+                        if (wps == null) {
+                            error("Could not parse clipboard as soopy waypoints");
+                            return;
+                        }
+                        WaypointGroup g = storage.getGroup(name);
+                        if (g == null) g = new WaypointGroup(name);
+                        g.waypoints = wps;
+                        storage.putGroup(g);
+                        storage.saveIfDirty();
+                        success("Imported &e" + wps.size() + " &awaypoints into &e" + name);
+                        break;
+                    }
+
+                    case "setup":
+                        state.setupMode = !state.setupMode;
+                        success("Setup mode: " + (state.setupMode ? "&2ON" : "&4OFF"));
+                        break;
+
+                    case "enable":
+                        state.enabled = true;
+                        success("Waypoints enabled");
+                        break;
+
+                    case "disable":
+                        state.enabled = false;
+                        error("Waypoints disabled");
+                        break;
+
+                    case "range": {
+                        if (args.length < 2) {
+                            data("Advance range", state.advanceRange + " blocks");
+                            return;
+                        }
+                        double r = parseDoubleSafe(args[1], -1);
+                        if (r <= 0) {
+                            error("Invalid range");
+                            return;
+                        }
+                        state.advanceRange = r;
+                        success("Advance range set to &e" + r + " blocks");
+                        break;
+                    }
+
+                    case "time": {
+                        if (args.length < 2) {
+                            data("Advance delay", state.advanceDelayMs + "ms");
+                            return;
+                        }
+                        long t = parseLongSafe(args[1]);
+                        if (t <= 0) {
+                            error("Invalid delay");
+                            return;
+                        }
+                        state.advanceDelayMs = t;
+                        success("Advance delay set to &e" + t + "ms");
+                        break;
+                    }
+
+                    case "save":
+                        storage.saveForce();
+                        success("Saved all groups to config");
+                        break;
+
+                    case "info": {
+                        if (!state.hasGroup()) {
+                            error("No group loaded");
+                            return;
+                        }
+                        WaypointGroup g = state.loadedGroup;
+                        blank();
+                        header("Group Information");
+                        data("Name", g.name);
+                        data("Position", (state.currentIndex + 1) + "/" + g.waypoints.size());
+                        data("Setup mode", String.valueOf(state.setupMode));
+                        data("Advance range", state.advanceRange + "m");
+                        data("Delay", state.advanceDelayMs + "ms");
+                        blank();
+                        break;
+                    }
+
+                    case "manage":
+                        ATHRConfig.openWaypointGroupGui();
+                        break;
+
+                    case "guide": {
+                        blank();
+                        header("Waypoints Guide");
+                        line("/athrw list", "Show all waypoint groups");
+                        line("/athrw create <n>", "Create a new group");
+                        line("/athrw delete <n>", "Delete a group");
+                        line("/athrw rename <old> <new>", "Rename a group");
+                        line("/athrw load <n>", "Load a group");
+                        line("/athrw add [name]", "Add waypoint at your position");
+                        line("/athrw insert <index>", "Insert waypoint at index");
+                        line("/athrw remove <index>", "Remove waypoint");
+                        line("/athrw skip [n]", "Skip forward");
+                        line("/athrw unskip [n]", "Go backward");
+                        line("/athrw skipto <n>", "Jump to waypoint");
+                        line("/athrw reset", "Reset to first waypoint");
+                        line("/athrw setup", "Toggle setup mode");
+                        line("/athrw enable / disable", "Toggle rendering");
+                        line("/athrw export <n>", "Copy group to clipboard");
+                        line("/athrw import <n>", "Import from clipboard");
+                        line("/athrw range <blocks>", "Set auto-advance range");
+                        line("/athrw time <ms>", "Set auto-advance delay");
+                        line("/athrw manage", "Open group manager GUI");
+                        blank();
+                        break;
+                    }
+
+                    default:
+                        error("Unknown subcommand '&e" + args[0] + "&c'. Try &e/athrw guide &cfor help.");
+                }
+            });
+        });
     }
 
-    @Override
-    public List<String> getAliases() {
-        return Arrays.asList("athrw", "waypoints", "asmw");
-    }
-
-    @Override
-    public String getUsage() {
-        return "/athrw <subcommand>";
-    }
-
-    @Override
-    public void execute(ICommandSender sender, String[] args) throws net.minecraft.command.CommandException {
-        WaypointState state = WaypointState.getInstance();
-        WaypointStorage storage = WaypointStorage.getInstance();
-
-        if (args.length == 0) {
-            showGroupList(sender);
-            return;
-        }
-
-        switch (args[0].toLowerCase()) {
-
-            case "load": {
-                if (args.length < 2) {
-                    error(sender, "Usage: /athrw load <group>");
-                    return;
-                }
-                WaypointGroup g = storage.getGroup(args[1]);
-                if (g == null) {
-                    error(sender, "Group '" + args[1] + "' not found");
-                    return;
-                }
-                state.load(g);
-                success(sender, "Loaded group: &e" + g.name + " &7(&e" + g.waypoints.size() + " waypoints&7)");
-                break;
-            }
-
-            case "unload":
-            case "clear":
-                state.unload();
-                success(sender, "Waypoints unloaded");
-                break;
-
-            case "skip": {
-                if (!state.hasGroup()) {
-                    error(sender, "No group loaded");
-                    return;
-                }
-                int n = args.length >= 2 ? parseIntSafe(args[1], 1) : 1;
-                state.skip(n);
-                success(sender, "Skipped " + n + " – now at &e" + (state.currentIndex + 1) + "&7/&e" + state.size());
-                break;
-            }
-
-            case "unskip": {
-                if (!state.hasGroup()) {
-                    error(sender, "No group loaded");
-                    return;
-                }
-                int n = args.length >= 2 ? parseIntSafe(args[1], 1) : 1;
-                state.skip(-n);
-                success(sender, "Went back " + n + " – now at &e" + (state.currentIndex + 1) + "&7/&e" + state.size());
-                break;
-            }
-
-            case "skipto": {
-                if (!state.hasGroup()) {
-                    error(sender, "No group loaded");
-                    return;
-                }
-                if (args.length < 2) {
-                    error(sender, "Usage: /athrw skipto <number>");
-                    return;
-                }
-                int n = parseIntSafe(args[1], -1);
-                if (n < 1 || n > state.size()) {
-                    error(sender, "Index out of range (1–" + state.size() + ")");
-                    return;
-                }
-                state.skipTo(n - 1);
-                success(sender, "Jumped to waypoint &e" + n);
-                break;
-            }
-
-            case "reset":
-                if (!state.hasGroup()) {
-                    error(sender, "No group loaded");
-                    return;
-                }
-                state.reset();
-                success(sender, "Reset to waypoint 1");
-                break;
-
-            case "list":
-                showGroupList(sender);
-                break;
-
-            case "create": {
-                if (args.length < 2) {
-                    error(sender, "Usage: /athrw create <n> [description]");
-                    return;
-                }
-                String name = args[1].toLowerCase();
-                if (storage.getGroup(name) != null) {
-                    error(sender, "Group '" + name + "' already exists");
-                    return;
-                }
-                storage.putGroup(new WaypointGroup(name, args.length > 2 ? joinFrom(args, 2) : ""));
-                storage.saveIfDirty();
-                success(sender, "Created group: &e" + name);
-                break;
-            }
-
-            case "delete": {
-                if (args.length < 2) {
-                    error(sender, "Usage: /athrw delete <group>");
-                    return;
-                }
-                String name = args[1].toLowerCase();
-                if (state.loadedGroup != null && state.loadedGroup.name.equalsIgnoreCase(name)) state.unload();
-                if (storage.removeGroup(name)) {
-                    storage.saveIfDirty();
-                    success(sender, "Deleted group: &e" + name);
-                } else error(sender, "Group not found: " + name);
-                break;
-            }
-
-            case "rename": {
-                if (args.length < 3) {
-                    error(sender, "Usage: /athrw rename <old> <new>");
-                    return;
-                }
-                String oldName = args[1].toLowerCase(), newName = args[2].toLowerCase();
-                WaypointGroup g = storage.getGroup(oldName);
-                if (g == null) {
-                    error(sender, "Group not found: " + oldName);
-                    return;
-                }
-                storage.removeGroup(oldName);
-                g.name = newName;
-                storage.putGroup(g);
-                storage.saveIfDirty();
-                if (state.loadedGroup != null && state.loadedGroup.name.equalsIgnoreCase(oldName))
-                    state.loadedGroup.name = newName;
-                success(sender, "Renamed &e" + oldName + " &a→ &e" + newName);
-                break;
-            }
-
-            case "add": {
-                WaypointGroup target = state.loadedGroup;
-                if (target == null) {
-                    error(sender, "No group loaded. Use /athrw load <n> first");
-                    return;
-                }
-                if (args.length >= 4 && isDouble(args[1]) && isDouble(args[2]) && isDouble(args[3])) {
-                    double x = parseDoubleSafe(args[1], 0);
-                    double y = parseDoubleSafe(args[2], 0);
-                    double z = parseDoubleSafe(args[3], 0);
-                    String name = args.length >= 5 ? joinFrom(args, 4) : String.valueOf(target.waypoints.size() + 1);
-                    addWaypointAt(sender, target, x, y, z, name);
-                } else {
-                    String name = args.length >= 2 ? joinFrom(args, 1) : String.valueOf(target.waypoints.size() + 1);
-                    addWaypoint(sender, target, name);
-                }
-                storage.markDirty();
-                storage.saveIfDirty();
-                break;
-            }
-
-            case "insert": {
-                if (!state.hasGroup()) {
-                    error(sender, "No group loaded");
-                    return;
-                }
-                if (args.length < 2) {
-                    error(sender, "Usage: /athrw insert <index> [name]");
-                    return;
-                }
-                int idx = parseIntSafe(args[1], -1);
-                if (idx < 1 || idx > state.size() + 1) {
-                    error(sender, "Index out of range (1–" + (state.size() + 1) + ")");
-                    return;
-                }
-                String wpName = args.length >= 3 ? args[2] : String.valueOf(idx);
-                double bx = Math.floor(mc.thePlayer.posX), by = Math.floor(mc.thePlayer.posY) - 1, bz = Math.floor(mc.thePlayer.posZ);
-                state.loadedGroup.waypoints.add(idx - 1, new WaypointPoint(bx, by, bz, wpName));
-                renumberNumericNames(state.loadedGroup, idx);
-                storage.markDirty();
-                storage.saveIfDirty();
-                success(sender, "Inserted &e" + wpName + " &aat index &e" + idx + " &7(" + (int) bx + ", " + (int) by + ", " + (int) bz + ")");
-                break;
-            }
-
-            case "remove": {
-                if (!state.hasGroup()) {
-                    error(sender, "No group loaded");
-                    return;
-                }
-                if (args.length < 2) {
-                    error(sender, "Usage: /athrw remove <index>");
-                    return;
-                }
-                int idx = parseIntSafe(args[1], -1);
-                if (idx < 1 || idx > state.size()) {
-                    error(sender, "Index out of range (1–" + state.size() + ")");
-                    return;
-                }
-                WaypointPoint removed = state.loadedGroup.waypoints.remove(idx - 1);
-                storage.markDirty();
-                storage.saveIfDirty();
-                success(sender, "Removed &e" + (removed.name != null ? removed.name : String.valueOf(idx)));
-                break;
-            }
-
-            case "export": {
-                if (args.length < 2) {
-                    error(sender, "Usage: /athrw export <group>");
-                    return;
-                }
-                WaypointGroup g = storage.getGroup(args[1]);
-                if (g == null) {
-                    error(sender, "Group not found: " + args[1]);
-                    return;
-                }
-                GuiScreen.setClipboardString(exportSoopy(g));
-                success(sender, "Copied group '" + g.name + "' to clipboard");
-                break;
-            }
-
-            case "import": {
-                if (args.length < 2) {
-                    error(sender, "Usage: /athrw import <groupname>");
-                    return;
-                }
-                String name = args[1].toLowerCase();
-                String clip = GuiScreen.getClipboardString();
-                if (clip == null || clip.trim().isEmpty()) {
-                    error(sender, "Clipboard is empty");
-                    return;
-                }
-                List<WaypointPoint> wps = parseSoopy(clip.trim());
-                if (wps == null) {
-                    error(sender, "Could not parse clipboard as soopy waypoints");
-                    return;
-                }
-                WaypointGroup g = storage.getGroup(name);
-                if (g == null) g = new WaypointGroup(name);
-                g.waypoints = wps;
-                storage.putGroup(g);
-                storage.saveIfDirty();
-                success(sender, "Imported &e" + wps.size() + " &awaypoints into &e" + name);
-                break;
-            }
-
-            case "setup":
-                state.setupMode = !state.setupMode;
-                success(sender, "Setup mode: " + (state.setupMode ? "&2ON" : "&4OFF"));
-                break;
-
-            case "enable":
-                state.enabled = true;
-                success(sender, "Waypoints enabled");
-                break;
-
-            case "disable":
-                state.enabled = false;
-                error(sender, "Waypoints disabled");
-                break;
-
-            case "range": {
-                if (args.length < 2) {
-                    data(sender, "Advance range", state.advanceRange + " blocks");
-                    return;
-                }
-                double r = parseDoubleSafe(args[1], -1);
-                if (r <= 0) {
-                    error(sender, "Invalid range");
-                    return;
-                }
-                state.advanceRange = r;
-                success(sender, "Advance range set to &e" + r + " blocks");
-                break;
-            }
-
-            case "time": {
-                if (args.length < 2) {
-                    data(sender, "Advance delay", state.advanceDelayMs + "ms");
-                    return;
-                }
-                long t = parseLongSafe(args[1]);
-                if (t <= 0) {
-                    error(sender, "Invalid delay");
-                    return;
-                }
-                state.advanceDelayMs = t;
-                success(sender, "Advance delay set to &e" + t + "ms");
-                break;
-            }
-
-            case "save":
-                storage.saveForce();
-                success(sender, "Saved all groups to config");
-                break;
-
-            case "info": {
-                if (!state.hasGroup()) {
-                    error(sender, "No group loaded");
-                    return;
-                }
-                WaypointGroup g = state.loadedGroup;
-                blank(sender);
-                header(sender, "Group Information");
-                data(sender, "Name", g.name);
-                data(sender, "Position", (state.currentIndex + 1) + "/" + g.waypoints.size());
-                data(sender, "Setup mode", String.valueOf(state.setupMode));
-                data(sender, "Advance range", state.advanceRange + "m");
-                data(sender, "Delay", state.advanceDelayMs + "ms");
-                blank(sender);
-                break;
-            }
-
-            case "manage":
-                ATHRConfig.openWaypointGroupGui();
-                break;
-
-            case "guide": {
-                blank(sender);
-                header(sender, "Waypoints Guide");
-                line(sender, "/athrw list", "Show all waypoint groups");
-                line(sender, "/athrw create <n>", "Create a new group");
-                line(sender, "/athrw delete <n>", "Delete a group");
-                line(sender, "/athrw rename <old> <new>", "Rename a group");
-                line(sender, "/athrw load <n>", "Load a group");
-                line(sender, "/athrw add [name]", "Add waypoint at your position");
-                line(sender, "/athrw insert <index>", "Insert waypoint at index");
-                line(sender, "/athrw remove <index>", "Remove waypoint");
-                line(sender, "/athrw skip [n]", "Skip forward");
-                line(sender, "/athrw unskip [n]", "Go backward");
-                line(sender, "/athrw skipto <n>", "Jump to waypoint");
-                line(sender, "/athrw reset", "Reset to first waypoint");
-                line(sender, "/athrw setup", "Toggle setup mode");
-                line(sender, "/athrw enable / disable", "Toggle rendering");
-                line(sender, "/athrw export <n>", "Copy group to clipboard");
-                line(sender, "/athrw import <n>", "Import from clipboard");
-                line(sender, "/athrw range <blocks>", "Set auto-advance range");
-                line(sender, "/athrw time <ms>", "Set auto-advance delay");
-                line(sender, "/athrw manage", "Open group manager GUI");
-                blank(sender);
-                break;
-            }
-
-            default:
-                error(sender, "Unknown subcommand '&e" + args[0] + "&c'. Try &e/athrw guide &cfor help.");
-        }
-    }
-
-    private void showGroupList(ICommandSender sender) {
+    private void showGroupList() {
         Map<String, WaypointGroup> groups = WaypointStorage.getInstance().getGroups();
-        blank(sender);
-        header(sender, "Waypoint Groups");
+        blank();
+        header("Waypoint Groups");
         if (groups.isEmpty()) {
-            error(sender, "No groups saved");
-            blank(sender);
+            error("No groups saved");
+            blank();
             return;
         }
         for (WaypointGroup g : groups.values()) {
@@ -417,19 +411,19 @@ public class WaypointCommand extends ASMCommand {
             TextCompat.setHoverShowText(TextCompat.getChatStyle(del), "Delete " + g.name);
             TextCompat.appendSibling(root, del);
 
-            sender.addChatMessage(root);
+            ChatUtils.sendMessage(root);
         }
-        blank(sender);
+        blank();
     }
 
-    private void addWaypoint(ICommandSender sender, WaypointGroup group, String name) {
-        double bx = Math.floor(mc.thePlayer.posX), by = Math.floor(mc.thePlayer.posY) - 1, bz = Math.floor(mc.thePlayer.posZ);
-        addWaypointAt(sender, group, bx, by, bz, name);
+    private void addWaypoint(WaypointGroup group, String name) {
+        double bx = Math.floor(MinecraftCompat.getLocalPlayer().posX), by = Math.floor(MinecraftCompat.getLocalPlayer().posY) - 1, bz = Math.floor(MinecraftCompat.getLocalPlayer().posZ);
+        addWaypointAt(group, bx, by, bz, name);
     }
 
-    private void addWaypointAt(ICommandSender sender, WaypointGroup group, double x, double y, double z, String name) {
+    private void addWaypointAt(WaypointGroup group, double x, double y, double z, String name) {
         group.waypoints.add(new WaypointPoint(x, y, z, name));
-        success(sender, "Added &e" + name + " &aat (" + (int) x + ", " + (int) y + ", " + (int) z + ") to &e" + group.name + " &7(&e" + group.waypoints.size() + "&7 total)");
+        success("Added &e" + name + " &aat (" + (int) x + ", " + (int) y + ", " + (int) z + ") to &e" + group.name + " &7(&e" + group.waypoints.size() + "&7 total)");
     }
 
     private boolean isDouble(String s) {
@@ -462,28 +456,28 @@ public class WaypointCommand extends ASMCommand {
         return WaypointGroupGui.parseSoopy(json);
     }
 
-    private void header(ICommandSender s, String text) {
-        s.addChatMessage(TextCompat.createText(color(PREFIX + "&6" + text)));
+    private void header(String text) {
+        ChatUtils.sendMessage(color(PREFIX + "&6" + text));
     }
 
-    private void line(ICommandSender s, String cmd, String desc) {
-        s.addChatMessage(TextCompat.createText(color(PREFIX + "&b" + cmd + " &7- " + desc)));
+    private void line(String cmd, String desc) {
+        ChatUtils.sendMessage(color(PREFIX + "&b" + cmd + " &7- " + desc));
     }
 
-    private void data(ICommandSender s, String key, String value) {
-        s.addChatMessage(TextCompat.createText(color(PREFIX + "&b" + key + ": &e" + value)));
+    private void data(String key, String value) {
+        ChatUtils.sendMessage(color(PREFIX + "&b" + key + ": &e" + value));
     }
 
-    private void success(ICommandSender s, String text) {
-        s.addChatMessage(TextCompat.createText(color(PREFIX + "&a" + text)));
+    private void success(String text) {
+        ChatUtils.sendMessage(color(PREFIX + "&a" + text));
     }
 
-    private void error(ICommandSender s, String text) {
-        s.addChatMessage(TextCompat.createText(color(PREFIX + "&c" + text)));
+    private void error(String text) {
+        ChatUtils.sendMessage(color(PREFIX + "&c" + text));
     }
 
-    private void blank(ICommandSender s) {
-        s.addChatMessage(TextCompat.createText(""));
+    private void blank() {
+        ChatUtils.sendMessage("");
     }
 
     private String color(String s) {
@@ -516,17 +510,5 @@ public class WaypointCommand extends ASMCommand {
 
     private String joinFrom(String[] args, int from) {
         return String.join(" ", Arrays.copyOfRange(args, from, args.length));
-    }
-
-
-    @Override
-    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
-        if (args.length == 1) return getListOfStringsMatchingLastWord(args, SUBCOMMANDS);
-        if (args.length == 2) {
-            String sub = args[0].toLowerCase();
-            if (sub.equals("load") || sub.equals("delete") || sub.equals("export") || sub.equals("rename") || sub.equals("import"))
-                return getListOfStringsMatchingLastWord(args, WaypointStorage.getInstance().getGroups().keySet());
-        }
-        return Collections.emptyList();
     }
 }

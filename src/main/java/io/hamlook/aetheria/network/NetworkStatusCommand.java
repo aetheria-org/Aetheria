@@ -1,60 +1,52 @@
 package io.hamlook.aetheria.network;
 
-import io.hamlook.aetheria.command.ASMCommand;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 
-@RegisterCommand
-public class NetworkStatusCommand extends ASMCommand {
+@RegisterEvents
+public class NetworkStatusCommand {
 
-    @Override
-    public String getName() {
-        return "athrnet";
-    }
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("athrnet", builder -> {
+            builder.setAliases(Collections.singletonList("anet"));
+            builder.description = "Network privacy and offline mode control";
+            builder.setCategory(CommandCategory.INTERNAL);
 
-    @Override
-    public String getUsage() {
-        return "/athrnet <enable api|github|offline | hide <token> | unhide <token> | reset | list>";
-    }
-
-    @Override
-    public List<String> getAliases() {
-        return Collections.singletonList("anet");
-    }
-
-    @Override
-    public void execute(ICommandSender sender, String[] args) throws CommandException {
-        if (args.length < 1) {
-            ChatUtils.sendMessage("§eUsage: " + getUsage());
-            return;
-        }
-        switch (args[0].toLowerCase()) {
-            case "enable":
-                enable(args);
-                break;
-            case "hide":
-                setHidden(args, true);
-                break;
-            case "unhide":
-                setHidden(args, false);
-                break;
-            case "reset":
-                reset();
-                break;
-            case "list":
-                list();
-                break;
-            default:
-                ChatUtils.sendMessage("§eUsage: " + getUsage());
-        }
+            builder.legacyCallbackArgs(args -> {
+                if (args.length < 1) {
+                    ChatUtils.sendMessage("§eUsage: /athrnet <enable api|github|offline | hide <token> | unhide <token> | reset | list>");
+                    return;
+                }
+                switch (args[0].toLowerCase()) {
+                    case "enable":
+                        enable(args);
+                        break;
+                    case "hide":
+                        setHidden(args, true);
+                        break;
+                    case "unhide":
+                        setHidden(args, false);
+                        break;
+                    case "reset":
+                        reset();
+                        break;
+                    case "list":
+                        list();
+                        break;
+                    default:
+                        ChatUtils.sendMessage("§eUsage: /athrnet <enable api|github|offline | hide <token> | unhide <token> | reset | list>");
+                }
+            });
+        });
     }
 
     private void enable(String[] args) {

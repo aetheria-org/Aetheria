@@ -10,15 +10,15 @@ public class ItemStackFinder {
 
     public static ItemStack findItemStack(String itemId) {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return null;
+        if (MinecraftCompat.getLocalPlayer() == null) return null;
 
-        for (ItemStack stack : mc.thePlayer.inventory.mainInventory) {
+        for (ItemStack stack : MinecraftCompat.getLocalPlayer().inventory.mainInventory) {
             if (InventoryCompatKt.isStackNotEmpty(stack) && itemId.equals(ItemUtils.getInternalName(stack))) {
                 return stack;
             }
         }
 
-        for (ItemStack stack : mc.thePlayer.inventory.armorInventory) {
+        for (ItemStack stack : MinecraftCompat.getLocalPlayer().inventory.armorInventory) {
             if (InventoryCompatKt.isStackNotEmpty(stack) && itemId.equals(ItemUtils.getInternalName(stack))) {
                 return stack;
             }

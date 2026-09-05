@@ -6,6 +6,7 @@ import io.hamlook.aetheria.features.profile.data.slayer.SlayerData;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -89,7 +90,7 @@ public class SlayerInfoTab extends Tab {
 
         float textStartX = centerX + radius + pad + ProfileViewerGUI.getScaledF(6);
         float currentY = y + pad;
-        float lineSpc = textScale * mc.fontRendererObj.FONT_HEIGHT + ProfileViewerGUI.getScaledF(3);
+        float lineSpc = textScale * MinecraftCompat.getFontRenderer().FONT_HEIGHT + ProfileViewerGUI.getScaledF(3);
 
         String colorPrefix = getTitleColor(slayer);
         TextRenderUtils.drawStringScaleAware(colorPrefix + "§l" + slayer.itemName.toUpperCase(), textStartX, currentY, textScale * 1.1f, false);
@@ -107,7 +108,7 @@ public class SlayerInfoTab extends Tab {
         currentY += lineSpc + ProfileViewerGUI.getScaledF(4);
 
         float statScale = textScale * 0.85f;
-        float killSpc = statScale * mc.fontRendererObj.FONT_HEIGHT + ProfileViewerGUI.getScaledF(2);
+        float killSpc = statScale * MinecraftCompat.getFontRenderer().FONT_HEIGHT + ProfileViewerGUI.getScaledF(2);
 
         String killsRow1 = "§7T1: §a" + sData.t1Kills + "  §7T2: §a" + sData.t2Kills + "  §7T3: §a" + sData.t3Kills;
         TextRenderUtils.drawStringScaleAware(killsRow1, textStartX, currentY, statScale, false);

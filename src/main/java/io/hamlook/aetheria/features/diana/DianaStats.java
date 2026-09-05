@@ -51,9 +51,9 @@ public class DianaStats extends ProfileManagedStorage implements StorageManager.
     }
 
     public static boolean hasSpadeInHotbar() {
-        if (mc.thePlayer == null) return false;
+        if (MinecraftCompat.getLocalPlayer() == null) return false;
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = ArrayNormalizationKt.normalizeAsArray(mc.thePlayer.inventory.mainInventory)[i];
+            ItemStack stack = ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getLocalPlayer().inventory.mainInventory)[i];
             if (stack != null && stack.hasDisplayName() && StringUtils.stripControlCodes(stack.getDisplayName()).contains("Ancestral Spade")) {
                 return true;
             }

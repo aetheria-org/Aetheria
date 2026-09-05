@@ -102,7 +102,7 @@ public abstract class VisitorPanelBase {
         if (ls.isEmpty()) return;
         mouseX = -1;
         mouseY = -1;
-        drawPanel(ls, MinecraftCompat.getMinecraft().currentScreen, false, false);
+        drawPanel(ls, MinecraftCompat.getCurrentScreen(), false, false);
     }
 
     // GL diagnostics via the shared fail-safe probe (see utils/debug/GLDebugProbe).
@@ -211,7 +211,7 @@ public abstract class VisitorPanelBase {
                                 line.itemId, line.amount);
                     }
                     if (line.text != null && !line.text.isEmpty()) {
-                        mc.fontRendererObj.drawStringWithShadow(line.text, tx, dy + 2, 0xFFFFFF);
+                        MinecraftCompat.getFontRenderer().drawStringWithShadow(line.text, tx, dy + 2, 0xFFFFFF);
                     }
                 }
                 if (clickable != null) clickTargets.add(clickable);
@@ -242,10 +242,9 @@ public abstract class VisitorPanelBase {
         TextCompat.setHoverShowText(TextCompat.getChatStyle(hide), "Never show this tip again");
         TextCompat.setClickRunCommand(TextCompat.getChatStyle(hide), "/visitortip hide");
         TextCompat.appendSibling(line2, hide);
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer != null) {
-            mc.thePlayer.addChatMessage(line1);
-            mc.thePlayer.addChatMessage(line2);
+        if (MinecraftCompat.getLocalPlayer() != null) {
+            TextCompat.addChatMessage(line1);
+            TextCompat.addChatMessage(line2);
         }
     }
 
@@ -275,10 +274,9 @@ public abstract class VisitorPanelBase {
         boolean visible = panelEnabled();
         if (!visible) return;
         if (!MouseCompat.getEventButtonState() || MouseCompat.getEventButton() != 0) return;
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.currentScreen == null) return;
-        int mx = MouseCompat.getEventX() * mc.currentScreen.width / GuiScreenUtils.getDisplayWidth();
-        int my = mc.currentScreen.height - MouseCompat.getEventY() * mc.currentScreen.height / GuiScreenUtils.getDisplayHeight() - 1;
+        if (MinecraftCompat.getCurrentScreen() == null) return;
+        int mx = MouseCompat.getEventX() * MinecraftCompat.getCurrentScreen().width / GuiScreenUtils.getDisplayWidth();
+        int my = MinecraftCompat.getCurrentScreen().height - MouseCompat.getEventY() * MinecraftCompat.getCurrentScreen().height / GuiScreenUtils.getDisplayHeight() - 1;
         for (Clickable clickable : clickTargets) {
             if (clickable.contains(mx, my)) {
                 event.cancel();
@@ -301,7 +299,7 @@ public abstract class VisitorPanelBase {
 
     private static int lineWidth(VisitorLine line) {
         String text = line.text == null ? "" : line.text;
-        int textWidth = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(text);
+        int textWidth = MinecraftCompat.getFontRenderer().getStringWidth(text);
         if (line.kind == VisitorLine.Kind.ITEM) textWidth += ICON_SIZE + ICON_GAP;
         return textWidth;
     }

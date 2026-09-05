@@ -42,7 +42,7 @@ public class ChatUtils {
 
     public static boolean isChatOpen() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        return mc != null && mc.currentScreen instanceof GuiChat;
+        return mc != null && MinecraftCompat.getCurrentScreen() instanceof GuiChat;
     }
 
     public static boolean isFromServer(ASMChatEvent event) {
@@ -157,37 +157,25 @@ public class ChatUtils {
     }
 
     public static void sendMessage(String message) {
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer != null) {
-            mc.thePlayer.addChatMessage(TextCompat.createText(message));
-        }
+        TextCompat.addChatMessage(TextCompat.createText(message));
+    }
+
+    public static void sendMessage(IChatComponent component) {
+        TextCompat.addChatMessage(component);
     }
 
     public static void sendMultilineMessage(String message) {
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer != null) {
-            for (String line : message.split("\n")) {
-                mc.thePlayer.addChatMessage(TextCompat.createText(line));
-            }
+        for (String line : message.split("\n")) {
+            TextCompat.addChatMessage(TextCompat.createText(line));
         }
     }
 
     public static void sendChatCommand(String message) {
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer != null) {
-            mc.thePlayer.sendChatMessage(message);
-        }
+        TextCompat.sendChatMessage(message);
     }
 
     public static void sendPartyMessage(String message, long delayMs) {
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return;
-
-        PARTY_MSG_EXECUTOR.schedule(() -> {
-            if (mc.thePlayer != null) {
-                mc.thePlayer.sendChatMessage("/pc " + message);
-            }
-        }, delayMs, TimeUnit.MILLISECONDS);
+        PARTY_MSG_EXECUTOR.schedule(() -> TextCompat.sendChatMessage("/pc " + message), delayMs, TimeUnit.MILLISECONDS);
     }
 
     public static void sendPartyMessage(String message) {

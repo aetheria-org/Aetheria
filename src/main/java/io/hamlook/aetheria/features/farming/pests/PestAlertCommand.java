@@ -1,40 +1,59 @@
 package io.hamlook.aetheria.features.farming.pests;
 
-import io.hamlook.aetheria.command.ASMCommand;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.PestAlertConfig;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.features.farming.pests.overlay.PestAlertOverlay;
-import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.time.TimeFormatter;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumChatFormatting;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
-@RegisterCommand
-public class PestAlertCommand extends ASMCommand {
+@RegisterEvents
+public class PestAlertCommand {
 
     private static final String PREFIX = EnumChatFormatting.GOLD + "[ASM] " + EnumChatFormatting.RESET;
     private static final String USAGE = "Usage: /asmpest <time|off|status|test>";
 
-    @Override
-    public String getName() {
-        return "asmpest";
-    }
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("asmpest", builder -> {
+            builder.setAliases(Collections.singletonList("pestcd"));
+            builder.description = "Pest cooldown alert commands";
+            builder.setCategory(CommandCategory.USERS_ACTIVE);
 
-    @Override
-    public String getUsage() {
-        return "/asmpest <time|off|status|test>";
-    }
+            builder.legacyCallbackArgs(args -> {
+                if (args.length == 0) {
+                    printUsage();
+                    return;
+                }
 
-    @Override
-    public List<String> getAliases() {
-        return Collections.singletonList("pestcd");
+                switch (args[0].toLowerCase()) {
+                    case "off":
+                        setEnabled(false);
+                        break;
+                    case "status":
+                        printStatus();
+                        break;
+                    case "test":
+                        PestAlertOverlay.fireTest();
+                        ChatUtils.sendMessage(PREFIX + EnumChatFormatting.GREEN + "Test alert fired through your enabled channels.");
+                        break;
+                    case "cd":
+                        setTime(Arrays.copyOfRange(args, 1, args.length));
+                        break;
+                    default:
+                        setTime(args);
+                        break;
+                }
+            });
+        });
     }
 
     private static PestAlertConfig config() {
@@ -43,33 +62,6 @@ public class PestAlertCommand extends ASMCommand {
             return null;
         }
         return ATHRConfig.feature.farming.pests.pestAlert;
-    }
-
-    @Override
-    public void execute(ICommandSender sender, String[] args) {
-        if (args.length == 0) {
-            printUsage();
-            return;
-        }
-
-        switch (args[0].toLowerCase()) {
-            case "off":
-                setEnabled(false);
-                break;
-            case "status":
-                printStatus();
-                break;
-            case "test":
-                PestAlertOverlay.fireTest();
-                ChatUtils.sendMessage(PREFIX + EnumChatFormatting.GREEN + "Test alert fired through your enabled channels.");
-                break;
-            case "cd":
-                setTime(Arrays.copyOfRange(args, 1, args.length));
-                break;
-            default:
-                setTime(args);
-                break;
-        }
     }
 
     private void setTime(String[] timeArgs) {
@@ -138,11 +130,5 @@ public class PestAlertCommand extends ASMCommand {
     private void printExamples() {
         ChatUtils.sendMessage(PREFIX + EnumChatFormatting.GRAY + "Examples: §e/asmpest 45§7, §e/asmpest 2m30s§7, "
                 + "§e/asmpest 2min 45§7, §e/asmpest off");
-    }
-
-    @Override
-    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
-        if (args.length <= 1) return Arrays.asList("off", "status", "test", "<time>");
-        return Collections.emptyList();
     }
 }

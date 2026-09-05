@@ -42,7 +42,7 @@ public final class VisitorPanel extends VisitorPanelBase {
         if (OverlayUtils.isStorageActive()) return blocked("storage overlay active");
         if (VisitorShoppingList.hiddenAt(cfg.panel.visible))
             return blocked("hidden here (mode " + cfg.panel.visible + ", loc=" + SkyblockData.getCurrentLocation() + ", skyblock=" + SkyblockData.isOnSkyblock() + ")");
-        GuiScreen screen = MinecraftCompat.getMinecraft().currentScreen;
+        GuiScreen screen = MinecraftCompat.getCurrentScreen();
         if (screen == null) return blocked("no screen open");
         if (cfg.panel.onlyShowWithData && !FarmingApi.hasVisitorData()) return blocked("no visitor data learned yet");
 
@@ -88,8 +88,7 @@ public final class VisitorPanel extends VisitorPanelBase {
 
     @Override
     protected List<VisitorLine> lines() {
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.currentScreen instanceof GuiEditSign && VisitorShoppingList.isOrderFlowActive()) {
+        if (MinecraftCompat.getCurrentScreen() instanceof GuiEditSign && VisitorShoppingList.isOrderFlowActive()) {
             return VisitorShoppingList.buildSingleEntryLines();
         }
         return VisitorShoppingList.buildMainLines(false);

@@ -106,8 +106,8 @@ public class GuiPositionEditor extends AetheriaBaseScreen {
         }
 
         scaledResolution = GuiScreenUtils.getScaledResolution();
-        Utils.drawStringCentered("Position Editor", MinecraftCompat.getMinecraft().fontRendererObj, scaledResolution.getScaledWidth() / 2, 8, true, 0xffffff);
-        Utils.drawStringCentered("R to Reset - Arrow keys/mouse to move", MinecraftCompat.getMinecraft().fontRendererObj, (float) scaledResolution.getScaledWidth() / 2, 18, true, 0xffffff);
+        Utils.drawStringCentered("Position Editor", MinecraftCompat.getFontRenderer(), scaledResolution.getScaledWidth() / 2, 8, true, 0xffffff);
+        Utils.drawStringCentered("R to Reset - Arrow keys/mouse to move", MinecraftCompat.getFontRenderer(), (float) scaledResolution.getScaledWidth() / 2, 18, true, 0xffffff);
     }
 
     @Override

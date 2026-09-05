@@ -28,6 +28,6 @@ public class MixinGuiScreen {
         List<String> lines = VisitorTooltips.replaceToolTip(stack);
         if (lines == null) return;
         ci.cancel();
-        TextRenderUtils.drawHoveringText(lines, x, y, MinecraftCompat.getMinecraft().fontRendererObj);
+        TextRenderUtils.drawHoveringText(lines, x, y, MinecraftCompat.getFontRenderer());
     }
 }

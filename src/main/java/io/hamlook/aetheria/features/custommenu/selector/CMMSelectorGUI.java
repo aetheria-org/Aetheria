@@ -8,6 +8,7 @@ import io.hamlook.aetheria.features.custommenu.ui.buttons.CMMButton;
 import io.hamlook.aetheria.features.custommenu.util.CMMHelper;
 import io.hamlook.aetheria.features.custommenu.util.ScreenHelper;
 import io.hamlook.aetheria.utils.SoundUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
@@ -42,7 +43,7 @@ public class CMMSelectorGUI extends GuiScreen {
     public void initGui() {
         ScreenHelper.updateScreenDimensions(this.width, this.height);
         Keyboard.enableRepeatEvents(true);
-        searchBar = new GuiTextField(0,mc.fontRendererObj, 0,0,0,0);
+        searchBar = new GuiTextField(0,MinecraftCompat.getFontRenderer(), 0,0,0,0);
         addButton = new CMMButton( 0, 0, 0, 0, "Add") {
             @Override
             public void onClick(GuiScreen screen) {
@@ -136,7 +137,7 @@ public class CMMSelectorGUI extends GuiScreen {
         NineSliceUtils.draw(getBGTex(),x,y,CONFIG_BOX_WIDTH,CONFIG_BOX_HEIGHT,6,18,isHovering(position,mouseX,mouseY));
 
         float xOff = ScreenHelper.getStaticWidth(20);
-        float uiScale = Math.max(1,((CONFIG_BOX_WIDTH - xOff)/mc.fontRendererObj.getStringWidth(config.configName)));
+        float uiScale = Math.max(1,((CONFIG_BOX_WIDTH - xOff)/MinecraftCompat.getFontRenderer().getStringWidth(config.configName)));
         float yPos = y + (CONFIG_BOX_HEIGHT / 2f);
         TextRenderUtils.drawCenteredStringScaleAware(config.configName,x+(CONFIG_BOX_WIDTH/2f),yPos,
                 isHovering(position,mouseX,mouseY) ? new Color(214, 214, 214).getRGB() : new Color(168, 168, 168).getRGB(),

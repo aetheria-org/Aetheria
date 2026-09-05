@@ -30,9 +30,9 @@ public class ChatPingListener {
         if (!cfg.chatPing) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
-        String name = mc.thePlayer.getName().toLowerCase();
+        String name = MinecraftCompat.getLocalPlayer().getName().toLowerCase();
         String stripped = StringUtils.stripControlCodes(TextCompat.getFormattedText(event.message));
 
         int colonIdx = stripped.indexOf(':');

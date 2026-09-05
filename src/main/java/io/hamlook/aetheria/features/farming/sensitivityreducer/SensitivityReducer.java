@@ -25,8 +25,8 @@ public final class SensitivityReducer {
 
     public static boolean isHoldingFarmingTool() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return false;
-        return FarmingToolIds.isFarmingTool(ItemUtils.getInternalName(mc.thePlayer.getHeldItem()));
+        if (MinecraftCompat.getLocalPlayer() == null) return false;
+        return FarmingToolIds.isFarmingTool(ItemUtils.getInternalName(MinecraftCompat.getLocalPlayer().getHeldItem()));
     }
 
     public static boolean isActive() {

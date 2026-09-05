@@ -37,7 +37,7 @@ public final class BlockedFeatureMessenger {
      */
     public static void showBlocked(String feature, NetworkStatusInfo.Gate root) {
         if (feature == null || feature.isEmpty()) return;
-        if (MinecraftCompat.getMinecraft().thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
         if (dismissed(feature)) return;
 
         long now = System.currentTimeMillis();
@@ -57,7 +57,7 @@ public final class BlockedFeatureMessenger {
         TextCompat.setHoverShowText(TextCompat.getChatStyle(hide), "§7Never show this message again");
         TextCompat.appendSibling(rootComp, hide);
 
-        MinecraftCompat.getMinecraft().thePlayer.addChatMessage(rootComp);
+        TextCompat.addChatMessage(rootComp);
     }
 
     private static boolean dismissed(String feature) {

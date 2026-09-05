@@ -58,7 +58,7 @@ public final class RenderUtils {
         }
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        FontRenderer fr = mc.fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         String text = field.getText();
         int textY = y - 4 + h / 2;
         int maxWidth = Math.max(8, w - 10);
@@ -154,7 +154,7 @@ public final class RenderUtils {
         if (hovered) {
             Gui.drawRect(x + 1, y + 1, x + w - 2, y + h - 1, 0x33FFFFFF);
             if (tooltip != null && !tooltip.isEmpty()) {
-                TextRenderUtils.drawHoveringText(tooltip, mouse[0], mouse[1], MinecraftCompat.getMinecraft().fontRendererObj);
+                TextRenderUtils.drawHoveringText(tooltip, mouse[0], mouse[1], MinecraftCompat.getFontRenderer());
             }
         }
         return hovered;
@@ -349,7 +349,7 @@ public final class RenderUtils {
         if (name == null || name.isEmpty()) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        float stringWidth = mc.fontRendererObj.getStringWidth(name);
+        float stringWidth = MinecraftCompat.getFontRenderer().getStringWidth(name);
 
         GlStateManagerCompat.pushMatrix();
         GlStateManagerCompat.enableBlend();
@@ -368,13 +368,13 @@ public final class RenderUtils {
             float paddingX = 3f;
             float paddingY = 2f;
             float x1 = -stringWidth / 2f - paddingX;
-            float y1 = -mc.fontRendererObj.FONT_HEIGHT / 2f - paddingY;
+            float y1 = -MinecraftCompat.getFontRenderer().FONT_HEIGHT / 2f - paddingY;
             float x2 = stringWidth / 2f + paddingX;
-            float y2 = mc.fontRendererObj.FONT_HEIGHT / 2f + paddingY;
+            float y2 = MinecraftCompat.getFontRenderer().FONT_HEIGHT / 2f + paddingY;
 
             Gui.drawRect((int) x1, (int) y1, (int) x2, (int) y2, 0x60000000);
             GlStateManagerCompat.enableTexture2D();
-            mc.fontRendererObj.drawString(name, (int) (-stringWidth / 2f), (int) (-mc.fontRendererObj.FONT_HEIGHT / 2f), 0xFFFFFFFF);
+            MinecraftCompat.getFontRenderer().drawString(name, (int) (-stringWidth / 2f), (int) (-MinecraftCompat.getFontRenderer().FONT_HEIGHT / 2f), 0xFFFFFFFF);
         } else {
             float headSize = headScale * 8f;
             float half = headSize / 2f;
@@ -387,7 +387,7 @@ public final class RenderUtils {
 
             GlStateManagerCompat.translate(nameX, cy, 0f);
             GlStateManagerCompat.scale(scale, scale, scale);
-            mc.fontRendererObj.drawString(name, 0, 0, 0xFFFFFFFF);
+            MinecraftCompat.getFontRenderer().drawString(name, 0, 0, 0xFFFFFFFF);
         }
 
         GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -399,7 +399,7 @@ public final class RenderUtils {
         Minecraft mc = MinecraftCompat.getMinecraft();
         String[] words = name.split(" ");
         if (words.length == 0) return;
-        int fontHeight = mc.fontRendererObj.FONT_HEIGHT + 1;
+        int fontHeight = MinecraftCompat.getFontRenderer().FONT_HEIGHT + 1;
 
         GlStateManagerCompat.pushMatrix();
         GlStateManagerCompat.enableBlend();
@@ -411,7 +411,7 @@ public final class RenderUtils {
         float yTextOffset = words.length * fontHeight / -2f;
         for (int i = 0; i < words.length; i++) {
             String word = words[i];
-            mc.fontRendererObj.drawString(word, (int) (-mc.fontRendererObj.getStringWidth(word) / 2f), (int) (yTextOffset + i * fontHeight), color, true);
+            MinecraftCompat.getFontRenderer().drawString(word, (int) (-MinecraftCompat.getFontRenderer().getStringWidth(word) / 2f), (int) (yTextOffset + i * fontHeight), color, true);
         }
         GlStateManagerCompat.popMatrix();
     }

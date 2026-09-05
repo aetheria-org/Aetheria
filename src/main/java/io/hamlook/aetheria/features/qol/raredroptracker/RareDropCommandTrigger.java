@@ -63,8 +63,8 @@ public class RareDropCommandTrigger {
         Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0x38000000);
 
         String msg = "§dClick anywhere to run your drop command!";
-        int w = mc.fontRendererObj.getStringWidth(msg);
-        mc.fontRendererObj.drawStringWithShadow(msg, (sr.getScaledWidth() - w) / 2f, sr.getScaledHeight() / 2f, -1);
+        int w = MinecraftCompat.getFontRenderer().getStringWidth(msg);
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(msg, (sr.getScaledWidth() - w) / 2f, sr.getScaledHeight() / 2f, -1);
     }
 
     @HandleEvent

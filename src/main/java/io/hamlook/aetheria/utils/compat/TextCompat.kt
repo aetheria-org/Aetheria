@@ -206,7 +206,12 @@ object TextCompat {
 
     @JvmStatic
     fun addChatMessage(message: IChatComponent) {
-        Minecraft.getMinecraft().thePlayer?.addChatMessage(message)
+        MinecraftCompat.getLocalPlayer()?.addChatMessage(message)
+    }
+
+    @JvmStatic
+    fun sendChatMessage(message: String) {
+        MinecraftCompat.getLocalPlayer()?.sendChatMessage(message)
     }
 
     @JvmStatic

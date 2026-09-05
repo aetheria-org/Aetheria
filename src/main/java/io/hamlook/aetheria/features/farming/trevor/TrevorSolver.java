@@ -14,6 +14,7 @@ import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.WorldCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
@@ -174,7 +175,7 @@ public class TrevorSolver {
     public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         TrevorConfig config = config();
-        if (config == null || !config.enabled || mc.theWorld == null || mc.thePlayer == null) return;
+        if (config == null || !config.enabled || MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null) return;
 
         // Cheap island gate first: the farming islands (Barn + Mushroom Desert)
         // report Location.BARN via the tab list server prefix.
@@ -186,7 +187,7 @@ public class TrevorSolver {
         // and without input-replacement mods: vanilla Forge never dispatches key
         // events while a screen is open, rawinput-style mods do. No menu open =
         // no text field to hijack, so the typing concern is structurally gone.
-        if (mc.currentScreen != null) {
+        if (MinecraftCompat.getCurrentScreen() != null) {
             KeybindHelper.resetKeyTap(config.hotkeys.warpKey);
             KeybindHelper.resetKeyTap(config.hotkeys.desertWarpKey);
             return;
@@ -237,13 +238,13 @@ public class TrevorSolver {
 
         EntityArmorStand nearest = null;
         double nearestDist = Double.MAX_VALUE;
-        for (Entity entity : WorldCompat.getAllEntities(mc.theWorld)) {
-            if (!(entity instanceof EntityArmorStand) || entity.isDead) continue;
+        for (Entity entity : WorldCompat.getAllEntities(MinecraftCompat.getLocalWorld())) {
+            if (!(entity instanceof EntityArmorStand) || EntityCompat.isDead(entity)) continue;
             String raw = entity.getName();
             if (raw == null) continue;
             String name = StringUtils.stripControlCodes(raw).toLowerCase(Locale.ROOT);
             if (!name.contains(questRarityLower) || !name.contains(questAnimalLower)) continue;
-            double dist = mc.thePlayer.getDistanceSqToEntity(entity);
+            double dist = MinecraftCompat.getLocalPlayer().getDistanceSqToEntity(entity);
             if (dist < nearestDist) {
                 nearestDist = dist;
                 nearest = (EntityArmorStand) entity;
@@ -260,7 +261,7 @@ public class TrevorSolver {
     @HandleEvent
     public void onRenderWorld(ASMRenderWorldEvent event) {
         TrevorConfig config = config();
-        if (config == null || !config.enabled || !onFarmingIsland || mc.thePlayer == null) return;
+        if (config == null || !config.enabled || !onFarmingIsland || MinecraftCompat.getLocalPlayer() == null) return;
 
         if (!activeSpots.isEmpty()) {
             Color spotColor = argbToColor(config.spotColor, 0x7800FFFF);
@@ -285,7 +286,7 @@ public class TrevorSolver {
         }
 
         EntityArmorStand animal = trackedAnimal;
-        if (animal != null && config.animalBeacon && !animal.isDead) {
+        if (animal != null && config.animalBeacon && !EntityCompat.isDead(animal)) {
             double x = animal.lastTickPosX + (animal.posX - animal.lastTickPosX) * event.partialTicks;
             double y = animal.lastTickPosY + (animal.posY - animal.lastTickPosY) * event.partialTicks;
             double z = animal.lastTickPosZ + (animal.posZ - animal.lastTickPosZ) * event.partialTicks;

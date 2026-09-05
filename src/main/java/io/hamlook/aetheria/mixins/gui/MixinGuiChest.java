@@ -41,7 +41,7 @@ public class MixinGuiChest {
         if (!BetterContainers.isEnabled() || !BetterContainers.getInstance().isLoaded()
                 || ATHRConfig.feature == null) return;
         String label = "ASM";
-        int textW = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(label);
+        int textW = MinecraftCompat.getFontRenderer().getStringWidth(label);
         int x = ((GuiChest)(Object)this).xSize - textW - 10;
         int y = 6;
         int baseColor = ChromaColour.specialToChromaRGB(
@@ -49,7 +49,7 @@ public class MixinGuiChest {
         int color = ChromaColour.applyChromaShift(baseColor, x, y,
                 ATHRConfig.feature.qol.betterContainers.watermarkChromaMode,
                 ATHRConfig.feature.qol.betterContainers.watermarkChromaSize);
-        MinecraftCompat.getMinecraft().fontRendererObj.drawStringWithShadow(label, x, y, color);
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(label, x, y, color);
     }
 
     @Inject(method = "drawGuiContainerBackgroundLayer", at = @At("HEAD"), cancellable = true)

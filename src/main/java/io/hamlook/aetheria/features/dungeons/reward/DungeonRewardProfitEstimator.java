@@ -122,10 +122,10 @@ public class DungeonRewardProfitEstimator {
         }
         for(DungeonReward reward1 : reward.getRewards()){
             String name = reward1.getText();
-            int tWidth = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(name);
+            int tWidth = MinecraftCompat.getFontRenderer().getStringWidth(name);
             tWidth += 20;
             if(width < tWidth) width = tWidth;
-            height+= MinecraftCompat.getMinecraft().fontRendererObj.FONT_HEIGHT + 4;
+            height+= MinecraftCompat.getFontRenderer().FONT_HEIGHT + 4;
         }
         height += 20;
         int xCenter = xPos + (width / 2);
@@ -147,14 +147,14 @@ public class DungeonRewardProfitEstimator {
         for(DungeonReward reward2 : reward.getRewards()){
             String name = reward2.getText();
             TextRenderUtils.drawStringScaleAware(name,xPos + 5,y,1f,false);
-            y += MinecraftCompat.getMinecraft().fontRendererObj.FONT_HEIGHT + 4;
+            y += MinecraftCompat.getFontRenderer().FONT_HEIGHT + 4;
         }
         TextRenderUtils.drawStringScaleAware("§6PROFIT: " +
                         (profit > 0 ? "§a" + profitString + " coins" : "§c" + profit + " coins."),
                 xPos + 5,
                 y,1f,false
         );
-        y += MinecraftCompat.getMinecraft().fontRendererObj.FONT_HEIGHT + 4;
+        y += MinecraftCompat.getFontRenderer().FONT_HEIGHT + 4;
         TextRenderUtils.drawStringScaleAware("§7Prices may not always be accurate, the mod does not take responsibility for this.",
                 xPos + 5,y,0.5f,false);
         GlStateManagerCompat.popMatrix();

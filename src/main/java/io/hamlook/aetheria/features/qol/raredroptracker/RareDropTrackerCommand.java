@@ -1,15 +1,15 @@
 package io.hamlook.aetheria.features.qol.raredroptracker;
 
-import io.hamlook.aetheria.command.ASMCommand;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.qol.RareDropTrackerConfig;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
-import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.TextCompat;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.util.BlockPos;
 import net.minecraft.util.IChatComponent;
 
 import java.util.*;
@@ -21,103 +21,95 @@ import java.util.stream.Collectors;
  * the first 3 letters of an item's name, then track it so RareDropTracker can alert
  * you the moment your inventory update event shows you obtained it.
  */
-@RegisterCommand
-public class RareDropTrackerCommand extends ASMCommand {
+@RegisterEvents
+public class RareDropTrackerCommand {
 
     private static final String PREFIX = "§d[RareDrops] §7";
     private static final int MIN_QUERY_LENGTH = 3;
     private static final int MAX_RESULTS = 15;
-    private static final List<String> SUBCOMMANDS = Arrays.asList("gui", "search", "add", "remove", "list", "clear");
 
-    @Override
-    public String getName() {
-        return "raredroptracker";
-    }
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("raredroptracker", builder -> {
+            builder.setAliases(Arrays.asList("rdt", "rdtracker"));
+            builder.description = "Rare drop tracker commands";
+            builder.setCategory(CommandCategory.USERS_ACTIVE);
 
-    @Override
-    public List<String> getAliases() {
-        return Arrays.asList("rdt", "rdtracker");
-    }
+            builder.legacyCallbackArgs(args -> {
+                RareDropTrackerConfig config = ATHRConfig.feature.qol.rareDropTracker;
 
-    @Override
-    public String getUsage() {
-        return "/rdt <search|add|remove|list|clear> [name]";
-    }
-
-    @Override
-    public void execute(ICommandSender sender, String[] args) {
-        RareDropTrackerConfig config = ATHRConfig.feature.qol.rareDropTracker;
-
-        if (args.length == 0) {
-            ATHRConfig.openRareDropTrackerGui();
-            return;
-        }
-
-        switch (args[0].toLowerCase()) {
-            case "gui":
-                ATHRConfig.openRareDropTrackerGui();
-                break;
-
-            case "search": {
-                String query = joinArgs(args);
-                if (validateQuery(query)) return;
-                List<SkyblockItem> matches = search(query);
-                showResults(sender, query, matches, false);
-                break;
-            }
-
-            case "add": {
-                String query = joinArgs(args);
-                if (validateQuery(query)) return;
-
-                Optional<SkyblockItem> exact = findExactId(query);
-                if (exact.isPresent()) {
-                    track(config, exact.get());
+                if (args.length == 0) {
+                    ATHRConfig.openRareDropTrackerGui();
                     return;
                 }
 
-                List<SkyblockItem> matches = search(query);
-                if (matches.isEmpty()) {
-                    ChatUtils.sendMessage(PREFIX + "§cNo items found matching §f\"" + query + "\"§c.");
-                } else if (matches.size() == 1) {
-                    track(config, matches.get(0));
-                } else {
-                    showResults(sender, query, matches, true);
+                switch (args[0].toLowerCase()) {
+                    case "gui":
+                        ATHRConfig.openRareDropTrackerGui();
+                        break;
+
+                    case "search": {
+                        String query = joinArgs(args);
+                        if (validateQuery(query)) return;
+                        List<SkyblockItem> matches = search(query);
+                        showResults(query, matches, false);
+                        break;
+                    }
+
+                    case "add": {
+                        String query = joinArgs(args);
+                        if (validateQuery(query)) return;
+
+                        Optional<SkyblockItem> exact = findExactId(query);
+                        if (exact.isPresent()) {
+                            track(config, exact.get());
+                            return;
+                        }
+
+                        List<SkyblockItem> matches = search(query);
+                        if (matches.isEmpty()) {
+                            ChatUtils.sendMessage(PREFIX + "§cNo items found matching §f\"" + query + "\"§c.");
+                        } else if (matches.size() == 1) {
+                            track(config, matches.get(0));
+                        } else {
+                            showResults(query, matches, true);
+                        }
+                        break;
+                    }
+
+                    case "remove": {
+                        if (args.length < 2) {
+                            ChatUtils.sendMessage(PREFIX + "§cUsage: /rdt remove <skyblockId>");
+                            return;
+                        }
+                        String id = args[1].toLowerCase();
+                        RareDropTrackerConfig.TrackedItem removed = config.trackedItems.remove(id);
+                        if (removed != null) {
+                            ATHRConfig.saveConfig();
+                            ChatUtils.sendMessage(PREFIX + "§aStopped tracking §f" + removed.displayName);
+                        } else {
+                            ChatUtils.sendMessage(PREFIX + "§cYou aren't tracking §f" + id);
+                        }
+                        break;
+                    }
+
+                    case "list":
+                        showList(config);
+                        break;
+
+                    case "clear": {
+                        int count = config.trackedItems.size();
+                        config.trackedItems.clear();
+                        ATHRConfig.saveConfig();
+                        ChatUtils.sendMessage(PREFIX + "§aCleared §f" + count + " §atracked item" + (count == 1 ? "" : "s") + ".");
+                        break;
+                    }
+
+                    default:
+                        ChatUtils.sendMessage(PREFIX + "§cUnknown subcommand. Use: search, add, remove, list, clear");
                 }
-                break;
-            }
-
-            case "remove": {
-                if (args.length < 2) {
-                    ChatUtils.sendMessage(PREFIX + "§cUsage: /rdt remove <skyblockId>");
-                    return;
-                }
-                String id = args[1].toLowerCase();
-                RareDropTrackerConfig.TrackedItem removed = config.trackedItems.remove(id);
-                if (removed != null) {
-                    ATHRConfig.saveConfig();
-                    ChatUtils.sendMessage(PREFIX + "§aStopped tracking §f" + removed.displayName);
-                } else {
-                    ChatUtils.sendMessage(PREFIX + "§cYou aren't tracking §f" + id);
-                }
-                break;
-            }
-
-            case "list":
-                showList(sender, config);
-                break;
-
-            case "clear": {
-                int count = config.trackedItems.size();
-                config.trackedItems.clear();
-                ATHRConfig.saveConfig();
-                ChatUtils.sendMessage(PREFIX + "§aCleared §f" + count + " §atracked item" + (count == 1 ? "" : "s") + ".");
-                break;
-            }
-
-            default:
-                ChatUtils.sendMessage(PREFIX + "§cUnknown subcommand. Use: search, add, remove, list, clear");
-        }
+            });
+        });
     }
 
     private boolean validateQuery(String query) {
@@ -157,12 +149,12 @@ public class RareDropTrackerCommand extends ASMCommand {
         ChatUtils.sendMessage(PREFIX + "§aNow tracking §f" + item.displayName + " §7(" + item.skyblockID + ")");
     }
 
-    private void showResults(ICommandSender sender, String query, List<SkyblockItem> matches, boolean addMode) {
-        sender.addChatMessage(TextCompat.createText(""));
-        sender.addChatMessage(TextCompat.createText("§d§lItem Search: §f\"" + query + "\" §7(" + matches.size() + " match" + (matches.size() == 1 ? "" : "es") + ")"));
+    private void showResults(String query, List<SkyblockItem> matches, boolean addMode) {
+        ChatUtils.sendMessage("");
+        ChatUtils.sendMessage("§d§lItem Search: §f\"" + query + "\" §7(" + matches.size() + " match" + (matches.size() == 1 ? "" : "es") + ")");
 
         if (matches.isEmpty()) {
-            sender.addChatMessage(TextCompat.createText(" §7No items found."));
+            ChatUtils.sendMessage(" §7No items found.");
         } else {
             List<SkyblockItem> shown = matches.size() > MAX_RESULTS ? matches.subList(0, MAX_RESULTS) : matches;
             for (SkyblockItem item : shown) {
@@ -174,21 +166,21 @@ public class RareDropTrackerCommand extends ASMCommand {
                     TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(root), "/rdt add " + item.skyblockID);
                     TextCompat.setHoverShowText(TextCompat.getChatStyle(root), "§eClick to fill in the add command");
                 }
-                sender.addChatMessage(root);
+                ChatUtils.sendMessage(root);
             }
             if (matches.size() > MAX_RESULTS) {
-                sender.addChatMessage(TextCompat.createText(" §7...and " + (matches.size() - MAX_RESULTS) + " more. Narrow your search."));
+                ChatUtils.sendMessage(" §7...and " + (matches.size() - MAX_RESULTS) + " more. Narrow your search.");
             }
         }
-        sender.addChatMessage(TextCompat.createText(""));
+        ChatUtils.sendMessage("");
     }
 
-    private void showList(ICommandSender sender, RareDropTrackerConfig config) {
-        sender.addChatMessage(TextCompat.createText(""));
-        sender.addChatMessage(TextCompat.createText("§d§lRare Drop Tracker"));
+    private void showList(RareDropTrackerConfig config) {
+        ChatUtils.sendMessage("");
+        ChatUtils.sendMessage("§d§lRare Drop Tracker");
 
         if (config.trackedItems.isEmpty()) {
-            sender.addChatMessage(TextCompat.createText(" §7Not tracking anything yet. Try §f/rdt add <name>"));
+            ChatUtils.sendMessage(" §7Not tracking anything yet. Try §f/rdt add <name>");
         } else {
             for (Map.Entry<String, RareDropTrackerConfig.TrackedItem> e : config.trackedItems.entrySet()) {
                 RareDropTrackerConfig.TrackedItem tracked = e.getValue();
@@ -198,36 +190,24 @@ public class RareDropTrackerCommand extends ASMCommand {
                 TextCompat.setClickRunCommand(TextCompat.getChatStyle(del), "/rdt remove " + e.getKey());
                 TextCompat.setHoverShowText(TextCompat.getChatStyle(del), "§cStop tracking " + tracked.displayName);
                 TextCompat.appendSibling(root, del);
-                sender.addChatMessage(root);
+                ChatUtils.sendMessage(root);
             }
         }
 
-        sender.addChatMessage(TextCompat.createText(""));
+        ChatUtils.sendMessage("");
         IChatComponent addNew = TextCompat.createText("§a§l[ADD NEW]");
         TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(addNew), "/rdt add ");
         TextCompat.setHoverShowText(TextCompat.getChatStyle(addNew), "§aSearch for an item to track");
-        sender.addChatMessage(addNew);
+        ChatUtils.sendMessage(addNew);
         IChatComponent clear = TextCompat.createText(" §c§l[CLEAR ALL]");
         TextCompat.setClickRunCommand(TextCompat.getChatStyle(clear), "/rdt clear");
         TextCompat.setHoverShowText(TextCompat.getChatStyle(clear), "§cRemove all tracked items");
-        sender.addChatMessage(clear);
-        sender.addChatMessage(TextCompat.createText(""));
+        ChatUtils.sendMessage(clear);
+        ChatUtils.sendMessage("");
     }
 
     private String joinArgs(String[] args) {
         if (args.length <= 1) return "";
         return String.join(" ", Arrays.copyOfRange(args, 1, args.length));
-    }
-
-    @Override
-    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos pos) {
-        if (args.length == 1) return SUBCOMMANDS;
-        if (args.length == 2 && args[0].equalsIgnoreCase("remove")) {
-            RareDropTrackerConfig config = ATHRConfig.feature.qol.rareDropTracker;
-            if (config.trackedItems != null && !config.trackedItems.isEmpty()) {
-                return new ArrayList<>(config.trackedItems.keySet());
-            }
-        }
-        return Collections.emptyList();
     }
 }

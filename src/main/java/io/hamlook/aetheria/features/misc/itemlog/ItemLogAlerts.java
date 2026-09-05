@@ -75,7 +75,7 @@ public class ItemLogAlerts {
         if (event.type != 11) return;
         if (System.currentTimeMillis() > endTime) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
-        FontRenderer fr = mc.fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int screenWidth = sr.getScaledWidth();
         int screenHeight = sr.getScaledHeight();

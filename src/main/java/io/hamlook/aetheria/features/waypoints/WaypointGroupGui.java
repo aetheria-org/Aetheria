@@ -159,7 +159,7 @@ public class WaypointGroupGui extends GuiElement {
     public void render() {
         Minecraft mc = MinecraftCompat.getMinecraft();
         ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        FontRenderer fr = mc.fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         updatePanel(sr);
 
         Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0xaa050508);
@@ -424,7 +424,7 @@ public class WaypointGroupGui extends GuiElement {
                     return true;
                 }
                 if (inBounds(mouseX, mouseY, expX, btnY, BTN_W, BTN_H)) {
-                    GuiScreen.setClipboardString(exportSoopy(gr.g));
+                    ClipboardCompat.setClipboard(exportSoopy(gr.g));
                     return true;
                 }
                 if (inBounds(mouseX, mouseY, delX, btnY, BTN_W, BTN_H)) {
@@ -468,9 +468,9 @@ public class WaypointGroupGui extends GuiElement {
                 AddRow ar = (AddRow) item;
                 int rx = px + PAD + INDENT, rw = pw - PAD - INDENT - PAD;
                 if (inBounds(mouseX, mouseY, rx, ar.y, rw, WP_H)) {
-                    double bx = Math.floor(mc.thePlayer.posX);
-                    double by = Math.floor(mc.thePlayer.posY) - 1;
-                    double bz = Math.floor(mc.thePlayer.posZ);
+                    double bx = Math.floor(MinecraftCompat.getLocalPlayer().posX);
+                    double by = Math.floor(MinecraftCompat.getLocalPlayer().posY) - 1;
+                    double bz = Math.floor(MinecraftCompat.getLocalPlayer().posZ);
                     ar.g.waypoints.add(new WaypointPoint(bx, by, bz, String.valueOf(ar.g.waypoints.size() + 1)));
                     storage.markDirty();
                     storage.saveIfDirty();
@@ -528,7 +528,7 @@ public class WaypointGroupGui extends GuiElement {
         if (importField == null) return;
         String name = importField.getText().trim().toLowerCase();
         if (name.isEmpty()) return;
-        String clip = GuiScreen.getClipboardString();
+        String clip = ClipboardCompat.getClipboard();
         if (clip == null || clip.trim().isEmpty()) return;
         List<WaypointPoint> wps = parseSoopy(clip.trim());
         if (wps == null || wps.isEmpty()) return;

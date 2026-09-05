@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.profile.viewer.ui.tabs;
 import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.StringUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
@@ -45,13 +46,13 @@ public class BasicInfoTab extends Tab {
 
         TextRenderUtils.drawStringScaleAware(title, x + pad, y + pad, titleScale, false);
 
-        float lineY = y + pad + (titleScale * mc.fontRendererObj.FONT_HEIGHT) + ProfileViewerGUI.getScaledF(4);
+        float lineY = y + pad + (titleScale * MinecraftCompat.getFontRenderer().FONT_HEIGHT) + ProfileViewerGUI.getScaledF(4);
         Gui.drawRect((int)(x + pad), (int)lineY, (int)(x + w - pad), (int)(lineY + Math.max(1, ProfileViewerGUI.getScaled(1))), new Color(255, 255, 255, 25).getRGB());
 
         float currentY = lineY + ProfileViewerGUI.getScaledF(8);
         for (String line : lines) {
             TextRenderUtils.drawStringScaleAware(line, x + pad, currentY, textScale, false);
-            currentY += (textScale * mc.fontRendererObj.FONT_HEIGHT) + ProfileViewerGUI.getScaledF(4);
+            currentY += (textScale * MinecraftCompat.getFontRenderer().FONT_HEIGHT) + ProfileViewerGUI.getScaledF(4);
         }
     }
 

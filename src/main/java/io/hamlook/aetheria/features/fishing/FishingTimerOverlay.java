@@ -29,9 +29,9 @@ public class FishingTimerOverlay {
         if (!isEnabled()) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
-        EntityFishHook hook = mc.thePlayer.fishEntity;
+        EntityFishHook hook = MinecraftCompat.getLocalPlayer().fishEntity;
         if (hook == null) {
             alertPlayed = false;
             return;
@@ -57,9 +57,9 @@ public class FishingTimerOverlay {
         if (!isEnabled()) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
-        EntityFishHook hook = mc.thePlayer.fishEntity;
+        EntityFishHook hook = MinecraftCompat.getLocalPlayer().fishEntity;
         if (hook == null) return;
 
         double x = hook.lastTickPosX + (hook.posX - hook.lastTickPosX) * event.partialTicks;
@@ -71,9 +71,9 @@ public class FishingTimerOverlay {
 
     private String getTimerText() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null || mc.thePlayer.fishEntity == null) return "";
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalPlayer().fishEntity == null) return "";
 
-        float seconds = mc.thePlayer.fishEntity.ticksExisted / 20f;
+        float seconds = MinecraftCompat.getLocalPlayer().fishEntity.ticksExisted / 20f;
         return String.format("%.2fs", seconds);
     }
 
@@ -81,9 +81,9 @@ public class FishingTimerOverlay {
         if (ATHRConfig.feature == null) return 0xFFFFFFFF;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null || mc.thePlayer.fishEntity == null) return 0xFFFFFFFF;
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalPlayer().fishEntity == null) return 0xFFFFFFFF;
 
-        float seconds = mc.thePlayer.fishEntity.ticksExisted / 20f;
+        float seconds = MinecraftCompat.getLocalPlayer().fishEntity.ticksExisted / 20f;
         boolean alerted = seconds >= ATHRConfig.feature.fishing.fishingTimerConfig.fishingTimerAlertTime;
 
         return ChromaColour.specialToChromaRGB(alerted ? ATHRConfig.feature.fishing.fishingTimerConfig.fishingTimerAlertColor : ATHRConfig.feature.fishing.fishingTimerConfig.fishingTimerNormalColor);
@@ -108,7 +108,7 @@ public class FishingTimerOverlay {
         GlStateManagerCompat.disableLighting();
         GlStateManagerCompat.disableDepth();
 
-        FontRenderer fr = mc.fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         int width = fr.getStringWidth(text) / 2;
 
         fr.drawString(text, -width, 0, color, true);

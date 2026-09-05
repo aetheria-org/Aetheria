@@ -105,7 +105,7 @@ public class MiningApi {
             } else {
                 if (System.currentTimeMillis() - lastClicked > CLICK_WINDOW_MS) { debugLogRateLimited("orb:window", "Init reject orb: outside click window (" + (System.currentTimeMillis() - lastClicked) + "ms > " + CLICK_WINDOW_MS + ")"); return; }
                 if (lastClickedPos == null) { debugLogRateLimited("orb:null", "Init reject orb: lastClickedPos is null"); return; }
-                IBlockState state = MinecraftCompat.getMinecraft().theWorld.getBlockState(lastClickedPos);
+                IBlockState state = MinecraftCompat.getLocalWorld().getBlockState(lastClickedPos);
                 OreBlock ore = OreBlock.getByStateOrNull(state);
                 if (ore == null) { debugLogRateLimited("orb:unknown:" + lastClickedPos, "Init reject orb: unknown ore at " + lastClickedPos + " state=" + state); return; }
                 if (ore.hasInitSound) { debugLogRateLimited("orb:hasInit:" + ore.name(), "Init reject orb: " + ore.name() + " hasInitSound=true"); return; }
@@ -146,7 +146,7 @@ public class MiningApi {
 
         BlockPos pos = event.pos;
 
-        EntityPlayer player = MinecraftCompat.getMinecraft().thePlayer;
+        EntityPlayer player = MinecraftCompat.getLocalPlayer();
         if (player == null) return;
         double dist = player.getDistance(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
         if (dist > MAX_BREAK_DISTANCE) { debugLogRateLimited("s22:far:" + pos, "S22: too far (" + String.format("%.1f", dist) + ") at " + pos); return; }
@@ -287,7 +287,7 @@ public class MiningApi {
 
     private static String buildSoundDebugMessage(PlaySoundEvent event) {
         BlockPos bp = event.getBlockPos();
-        EntityPlayer player = MinecraftCompat.getMinecraft().thePlayer;
+        EntityPlayer player = MinecraftCompat.getLocalPlayer();
         double dist = player != null
             ? player.getDistance(bp.getX() + 0.5, bp.getY() + 0.5, bp.getZ() + 0.5)
             : -1;

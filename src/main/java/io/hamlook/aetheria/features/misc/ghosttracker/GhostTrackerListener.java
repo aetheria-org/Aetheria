@@ -44,7 +44,7 @@ public class GhostTrackerListener {
         boolean inDwarven = SkyblockData.getCurrentLocation() == SkyblockData.Location.DWARVEN;
         boolean inMist = SkyblockData.isInMist();
         Minecraft mc = MinecraftCompat.getMinecraft();
-        boolean posYValid = mc.thePlayer != null && mc.thePlayer.posY <= 100;
+        boolean posYValid = MinecraftCompat.getLocalPlayer() != null && MinecraftCompat.getLocalPlayer().posY <= 100;
 
         return onSkyblock && inDwarven && inMist && posYValid;
     }

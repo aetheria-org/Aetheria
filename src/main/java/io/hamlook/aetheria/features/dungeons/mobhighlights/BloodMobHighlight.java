@@ -7,6 +7,7 @@ import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TessellatorCompat;
@@ -48,18 +49,18 @@ public class BloodMobHighlight {
         if (++tickCounter < 4) return;
         tickCounter = 0;
 
-        if (!SkyblockData.isInDungeon() || mc.theWorld == null) {
+        if (!SkyblockData.isInDungeon() || MinecraftCompat.getLocalWorld() == null) {
             bloodMobs = new HashSet<>();
             return;
         }
 
         Set<EntityLivingBase> found = new HashSet<>();
-        for (Entity entity : WorldCompat.getAllEntities(mc.theWorld)) {
+        for (Entity entity : WorldCompat.getAllEntities(MinecraftCompat.getLocalWorld())) {
             if (!(entity instanceof EntityArmorStand)) continue;
             String name = entity.getName();
             if (name == null || !MOB_NAME.matcher(name).matches()) continue;
 
-            EntityLivingBase mob = mc.theWorld.getEntitiesWithinAABB(EntityLivingBase.class, entity.getEntityBoundingBox().expand(0.5, 3.0, 0.5), e -> e != null && !(e instanceof EntityArmorStand) && e != mc.thePlayer).stream().findFirst().orElse(null);
+            EntityLivingBase mob = MinecraftCompat.getLocalWorld().getEntitiesWithinAABB(EntityLivingBase.class, entity.getEntityBoundingBox().expand(0.5, 3.0, 0.5), e -> e != null && !(e instanceof EntityArmorStand) && e != MinecraftCompat.getLocalPlayer()).stream().findFirst().orElse(null);
 
             if (mob != null && !isDying(mob)) found.add(mob);
         }
@@ -78,7 +79,7 @@ public class BloodMobHighlight {
     public void onRenderWorldLast(ASMRenderWorldEvent event) {
         if (ATHRConfig.feature == null || ATHRConfig.feature.dungeons.bloodMobHighlight != 0) return;
         Set<EntityLivingBase> snapshot = bloodMobs;
-        if (snapshot.isEmpty() || mc.thePlayer == null) return;
+        if (snapshot.isEmpty() || MinecraftCompat.getLocalPlayer() == null) return;
 
         Color c = getColor();
         float r = c.getRed() / 255f, g = c.getGreen() / 255f, b = c.getBlue() / 255f, a = c.getAlpha() / 255f;
@@ -100,7 +101,7 @@ public class BloodMobHighlight {
         GL11.glTranslated(-vx, -vy, -vz);
 
         for (EntityLivingBase mob : snapshot) {
-            if (mob.isDead || mob.getHealth() <= 0) continue;
+            if (EntityCompat.isDead(mob) || mob.getHealth() <= 0) continue;
             drawBox(mob.getEntityBoundingBox().expand(0.1, 0.05, 0.1), r, g, b, a);
         }
 
@@ -115,7 +116,7 @@ public class BloodMobHighlight {
     }
 
     private boolean isDying(EntityLivingBase entity) {
-        if (entity == null || entity.isDead || entity.getHealth() <= 0.1f) return true;
+        if (entity == null || EntityCompat.isDead(entity) || entity.getHealth() <= 0.1f) return true;
         IChatComponent name = entity.getDisplayName();
         if (name == null) return false;
         String text = TextCompat.getUnformattedText(name);

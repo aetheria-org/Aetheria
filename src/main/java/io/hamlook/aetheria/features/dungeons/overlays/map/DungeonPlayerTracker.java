@@ -42,18 +42,18 @@ public class DungeonPlayerTracker {
         playerNames.clear();
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null || mc.theWorld == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) return;
 
         if (!isRunStarted()) return;
 
-        String selfName = mc.thePlayer.getName();
+        String selfName = MinecraftCompat.getLocalPlayer().getName();
         playerNames.add(selfName);
-        players.add(mc.thePlayer);
+        players.add(MinecraftCompat.getLocalPlayer());
 
         for (String username : getOrderedPartyUsernames()) {
             if (username.equalsIgnoreCase(selfName) || playerNames.contains(username)) continue;
             playerNames.add(username);
-            players.add(mc.theWorld.getPlayerEntityByName(username));
+            players.add(MinecraftCompat.getLocalWorld().getPlayerEntityByName(username));
         }
     }
 
@@ -111,7 +111,7 @@ public class DungeonPlayerTracker {
      */
     public void matchDecorations(Map<String, Vec4b> mapDecorations) {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null || playerNames.isEmpty()) return;
+        if (MinecraftCompat.getLocalPlayer() == null || playerNames.isEmpty()) return;
         if (mapDecorations == null || mapDecorations.isEmpty()) return;
 
         currentPositions.clear();
@@ -173,10 +173,10 @@ public class DungeonPlayerTracker {
     }
 
     public NetworkPlayerInfo getNetworkPlayerInfo(String name, Minecraft mc) {
-        if (mc.thePlayer == null || mc.thePlayer.sendQueue == null) return null;
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalPlayer().sendQueue == null) return null;
         Collection<NetworkPlayerInfo> infos;
         try {
-            infos = mc.thePlayer.sendQueue.getPlayerInfoMap();
+            infos = MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap();
         } catch (Exception e) {
             return null;
         }

@@ -84,9 +84,9 @@ public final class FarmingApi {
 
     private static int computePlayerPlotId() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc == null || mc.thePlayer == null) return -1;
-        double px = mc.thePlayer.posX;
-        double pz = mc.thePlayer.posZ;
+        if (mc == null || MinecraftCompat.getLocalPlayer() == null) return -1;
+        double px = MinecraftCompat.getLocalPlayer().posX;
+        double pz = MinecraftCompat.getLocalPlayer().posZ;
         for (int i = 0; i < GARDEN_PLOTS.length; i++) {
             AxisAlignedBB box = GARDEN_PLOTS[i];
             if (px >= box.minX && px <= box.maxX && pz >= box.minZ && pz <= box.maxZ) {
@@ -102,7 +102,7 @@ public final class FarmingApi {
 
     public static boolean isHoldingFarmingTool() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        return mc != null && mc.thePlayer != null && FarmingToolIds.isFarmingTool(cachedHeldItemId);
+        return mc != null && MinecraftCompat.getLocalPlayer() != null && FarmingToolIds.isFarmingTool(cachedHeldItemId);
     }
 
     /** True when a farming tool was held within the last {@link #TOOL_HOLD_WINDOW_MS} */
@@ -117,7 +117,7 @@ public final class FarmingApi {
 
     public static boolean isHoldingVacuum() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        boolean holdingNow = mc != null && mc.thePlayer != null && cachedHeldItemId.contains("VACUUM");
+        boolean holdingNow = mc != null && MinecraftCompat.getLocalPlayer() != null && cachedHeldItemId.contains("VACUUM");
         if (holdingNow) lastVacuumHeldMs = System.currentTimeMillis();
         return holdingNow || System.currentTimeMillis() - lastVacuumHeldMs < VACUUM_WINDOW_MS;
     }
@@ -172,7 +172,7 @@ public final class FarmingApi {
 
     public static Integer getTargetInfestedPlot(int mode) {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc == null || mc.thePlayer == null || ACTIVE_PESTS.isEmpty()) return null;
+        if (mc == null || MinecraftCompat.getLocalPlayer() == null || ACTIVE_PESTS.isEmpty()) return null;
         Integer best = null;
         for (Integer id : ACTIVE_PESTS.keySet()) {
             if (!isValidPlot(id)) continue;
@@ -208,10 +208,10 @@ public final class FarmingApi {
     }
 
     private static double plotDistanceSq(Minecraft mc, Integer plotId) {
-        if (mc.thePlayer == null) return Double.MAX_VALUE;
+        if (MinecraftCompat.getLocalPlayer() == null) return Double.MAX_VALUE;
         AxisAlignedBB box = GARDEN_PLOTS[plotId - 1];
-        double dx = mc.thePlayer.posX - (box.minX + box.maxX) / 2.0;
-        double dz = mc.thePlayer.posZ - (box.minZ + box.maxZ) / 2.0;
+        double dx = MinecraftCompat.getLocalPlayer().posX - (box.minX + box.maxX) / 2.0;
+        double dz = MinecraftCompat.getLocalPlayer().posZ - (box.minZ + box.maxZ) / 2.0;
         return dx * dx + dz * dz;
     }
 
@@ -418,15 +418,15 @@ public final class FarmingApi {
     public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc == null || mc.thePlayer == null) return;
-        cachedHeldItemId = ItemUtils.getInternalName(mc.thePlayer.getHeldItem());
+        if (mc == null || MinecraftCompat.getLocalPlayer() == null) return;
+        cachedHeldItemId = ItemUtils.getInternalName(MinecraftCompat.getLocalPlayer().getHeldItem());
         if (cachedHeldItemId.contains("VACUUM")) {
             lastVacuumHeldMs = System.currentTimeMillis();
         }
         if (FarmingToolIds.isFarmingTool(cachedHeldItemId)) {
             lastFarmingToolHoldMs = System.currentTimeMillis();
         }
-        if (mc.thePlayer.ticksExisted % 5 == 0) {
+        if (MinecraftCompat.getLocalPlayer().ticksExisted % 5 == 0) {
             currentPlotId = SkyblockData.getCurrentLocation() == SkyblockData.Location.GARDEN ? computePlayerPlotId() : -1;
         }
     }

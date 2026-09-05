@@ -9,8 +9,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 
 import java.io.*;
 import java.lang.reflect.ParameterizedType;
@@ -99,9 +98,9 @@ public class ProfileViewerAPI {
             } catch (Exception e) {
                 Aetheria.logger.info("Error While Fetching Profiles For: " + username);
                 e.printStackTrace();
-                MinecraftCompat.getMinecraft().thePlayer.addChatMessage(TextCompat.createText("§cCould Not Fetch Profile For: §4" + username));
-                MinecraftCompat.getMinecraft().thePlayer.addChatMessage(TextCompat.createText("§cPlease Share the Following Message with the devs to find a fix."));
-                MinecraftCompat.getMinecraft().thePlayer.addChatMessage(TextCompat.createText("§c" + e.getMessage()));
+                ChatUtils.sendMessage("§cCould Not Fetch Profile For: §4" + username);
+                ChatUtils.sendMessage("§cPlease Share the Following Message with the devs to find a fix.");
+                ChatUtils.sendMessage("§c" + e.getMessage());
             }
         });
     }

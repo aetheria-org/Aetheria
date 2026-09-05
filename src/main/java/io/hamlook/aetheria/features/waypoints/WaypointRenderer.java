@@ -75,10 +75,10 @@ public class WaypointRenderer {
     }
 
     private void tickAdvance(WaypointState state) {
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
         WaypointPoint next = state.getNext();
         if (next == null) return;
-        double dist = next.distanceTo(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ);
+        double dist = next.distanceTo(MinecraftCompat.getLocalPlayer().posX, MinecraftCompat.getLocalPlayer().posY, MinecraftCompat.getLocalPlayer().posZ);
         if (dist <= state.advanceRange) {
             if (state.advanceTimerStart < 0) state.advanceTimerStart = System.currentTimeMillis();
             else if (System.currentTimeMillis() - state.advanceTimerStart >= state.advanceDelayMs) state.advance();
@@ -114,11 +114,11 @@ public class WaypointRenderer {
     }
 
     public static void drawLabel(double wx, double wy, double wz, String text, int nameColor, int distColor, double scaleMultiplier) {
-        if (mc.thePlayer == null || mc.fontRendererObj == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getFontRenderer() == null) return;
 
-        double dx = wx - mc.thePlayer.posX;
-        double dy = wy - mc.thePlayer.posY;
-        double dz = wz - mc.thePlayer.posZ;
+        double dx = wx - MinecraftCompat.getLocalPlayer().posX;
+        double dy = wy - MinecraftCompat.getLocalPlayer().posY;
+        double dz = wz - MinecraftCompat.getLocalPlayer().posZ;
         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
         float scale = Math.max(0.025f, (float) (Math.min(dist, 50.0) / 300.0));
@@ -127,11 +127,11 @@ public class WaypointRenderer {
         String nameStr = StringUtils.stripControlCodes(text);
         String distNum = String.valueOf((int) Math.round(dist));
 
-        int nameW = mc.fontRendererObj.getStringWidth(nameStr);
+        int nameW = MinecraftCompat.getFontRenderer().getStringWidth(nameStr);
         String bracketOpen = "[";
         String bracketClose = "]";
-        int distNumW = mc.fontRendererObj.getStringWidth(distNum);
-        int bracketW = mc.fontRendererObj.getStringWidth(bracketOpen) + distNumW + mc.fontRendererObj.getStringWidth(bracketClose);
+        int distNumW = MinecraftCompat.getFontRenderer().getStringWidth(distNum);
+        int bracketW = MinecraftCompat.getFontRenderer().getStringWidth(bracketOpen) + distNumW + MinecraftCompat.getFontRenderer().getStringWidth(bracketClose);
 
         GL11.glPushMatrix();
         GL11.glTranslated(wx, wy, wz);
@@ -143,13 +143,13 @@ public class WaypointRenderer {
         GlStateManagerCompat.disableDepth();
 
         float sx = -nameW / 2f;
-        mc.fontRendererObj.drawString(nameStr, sx, 0f, nameColor, false);
+        MinecraftCompat.getFontRenderer().drawString(nameStr, sx, 0f, nameColor, false);
 
         float bx = -bracketW / 2f;
-        float bw1 = mc.fontRendererObj.getStringWidth(bracketOpen);
-        mc.fontRendererObj.drawString(bracketOpen, bx, 10f, 0xAAAAAA, false);
-        mc.fontRendererObj.drawString(distNum, bx + bw1, 10f, nameColor, false);
-        mc.fontRendererObj.drawString(bracketClose, bx + bw1 + mc.fontRendererObj.getStringWidth(distNum), 10f, 0xAAAAAA, false);
+        float bw1 = MinecraftCompat.getFontRenderer().getStringWidth(bracketOpen);
+        MinecraftCompat.getFontRenderer().drawString(bracketOpen, bx, 10f, 0xAAAAAA, false);
+        MinecraftCompat.getFontRenderer().drawString(distNum, bx + bw1, 10f, nameColor, false);
+        MinecraftCompat.getFontRenderer().drawString(bracketClose, bx + bw1 + MinecraftCompat.getFontRenderer().getStringWidth(distNum), 10f, 0xAAAAAA, false);
 
         GlStateManagerCompat.enableDepth();
         GL11.glPopMatrix();

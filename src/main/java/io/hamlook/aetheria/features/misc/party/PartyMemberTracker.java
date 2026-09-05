@@ -120,7 +120,7 @@ public class PartyMemberTracker {
 
     private static String ownName() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        return mc.thePlayer != null ? mc.thePlayer.getName() : "";
+        return MinecraftCompat.getLocalPlayer() != null ? MinecraftCompat.getLocalPlayer().getName() : "";
     }
 
     private static void partyLeft() {

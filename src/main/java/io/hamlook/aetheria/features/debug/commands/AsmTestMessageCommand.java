@@ -1,18 +1,19 @@
 package io.hamlook.aetheria.features.debug.commands;
 
-import io.hamlook.aetheria.command.ASMCommand;
-import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
+import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.TextCompat;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
+import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.common.MinecraftForge;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,64 +28,52 @@ import java.util.List;
  *  -clipboard  read the message from your clipboard instead of the command args
  *  -s          don't print the "Testing message" confirmation line
  */
-@RegisterCommand
-public class AsmTestMessageCommand extends ASMCommand {
+@RegisterEvents
+public class AsmTestMessageCommand {
 
-    @Override
-    public String getName() {
-        return "asmtestmessage";
-    }
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("asmtestmessage", builder -> {
+            builder.setAliases(Collections.singletonList("asmtest"));
+            builder.description = "Posts a fake chat message through the event pipeline";
+            builder.setCategory(CommandCategory.DEVELOPER_DEBUG);
 
-    @Override
-    public String getUsage() {
-        return "/asmtestmessage <text> [-lines] [-clipboard] [-s]";
-    }
+            builder.legacyCallbackArgs(args -> {
+                if (args.length == 0) {
+                    ChatUtils.sendMultilineMessage(EnumChatFormatting.RED + "Specify a chat message to test!\n"
+                        + EnumChatFormatting.GRAY + "Syntax: /asmtestmessage <chat message> [flags]\n"
+                        + "  [-lines]: split the message into multiple by newlines\n"
+                        + "  [-clipboard]: read the message from the clipboard\n"
+                        + "  [-s]: hide the testing confirmation message");
+                    return;
+                }
 
-    @Override
-    public List<String> getAliases() {
-        return Collections.singletonList("asmtest");
-    }
+                List<String> mutArgs = new ArrayList<>(Arrays.asList(args));
+                boolean multiLines = mutArgs.remove("-lines");
+                boolean isClipboard = mutArgs.remove("-clipboard") || multiLines;
+                boolean isSilent = mutArgs.remove("-s");
 
-    @Override
-    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, net.minecraft.util.BlockPos pos) {
-        return java.util.Arrays.asList("-lines", "-clipboard", "-s");
-    }
+                String text;
+                if (isClipboard) {
+                    String clip = ClipboardCompat.getClipboard();
+                    if (clip == null || clip.isEmpty()) {
+                        ChatUtils.sendMessage(EnumChatFormatting.RED + "Clipboard does not contain a string!");
+                        return;
+                    }
+                    text = clip;
+                } else {
+                    text = String.join(" ", mutArgs);
+                }
 
-    @Override
-    public void execute(ICommandSender sender, String[] args) throws CommandException {
-        if (args.length == 0) {
-            ChatUtils.sendMultilineMessage(EnumChatFormatting.RED + "Specify a chat message to test!\n"
-                + EnumChatFormatting.GRAY + "Syntax: /asmtestmessage <chat message> [flags]\n"
-                + "  [-lines]: split the message into multiple by newlines\n"
-                + "  [-clipboard]: read the message from the clipboard\n"
-                + "  [-s]: hide the testing confirmation message");
-            return;
-        }
-
-        List<String> mutArgs = new ArrayList<>(java.util.Arrays.asList(args));
-        boolean multiLines = mutArgs.remove("-lines");
-        boolean isClipboard = mutArgs.remove("-clipboard") || multiLines;
-        boolean isSilent = mutArgs.remove("-s");
-
-        String text;
-        if (isClipboard) {
-            String clip = GuiScreen.getClipboardString();
-            if (clip == null || clip.isEmpty()) {
-                ChatUtils.sendMessage(EnumChatFormatting.RED + "Clipboard does not contain a string!");
-                return;
-            }
-            text = clip;
-        } else {
-            text = String.join(" ", mutArgs);
-        }
-
-        if (multiLines) {
-            for (String line : text.split("\n")) {
-                fire(line, isSilent);
-            }
-        } else {
-            fire(text.replace("&", "\u00a7"), isSilent);
-        }
+                if (multiLines) {
+                    for (String line : text.split("\n")) {
+                        fire(line, isSilent);
+                    }
+                } else {
+                    fire(text.replace("&", "\u00a7"), isSilent);
+                }
+            });
+        });
     }
 
     private void fire(String text, boolean isSilent) {

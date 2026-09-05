@@ -11,6 +11,7 @@ import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
@@ -69,11 +70,11 @@ public class GuiDianaOverlayEditor extends AetheriaBaseScreen {
             if (e.position.isCenterX()) x -= e.scaledW() / 2;
             if (e.position.isCenterY()) y -= e.scaledH() / 2;
             Gui.drawRect(x, y, x + e.scaledW(), y + e.scaledH(), 0x80404040);
-            mc.fontRendererObj.drawStringWithShadow(e.label, x + 2, y + 2, 0xFFFFFF);
+            MinecraftCompat.getFontRenderer().drawStringWithShadow(e.label, x + 2, y + 2, 0xFFFFFF);
         }
 
-        Utils.drawStringCentered("Diana Overlay Editor", mc.fontRendererObj, width / 2, 8, true, 0xFFFFFF);
-        Utils.drawStringCentered("Drag overlays to move | R = reset all | ESC = back", mc.fontRendererObj, width / 2, 18, true, 0xAAAAAA);
+        Utils.drawStringCentered("Diana Overlay Editor", MinecraftCompat.getFontRenderer(), width / 2, 8, true, 0xFFFFFF);
+        Utils.drawStringCentered("Drag overlays to move | R = reset all | ESC = back", MinecraftCompat.getFontRenderer(), width / 2, 18, true, 0xAAAAAA);
     }
 
     @Override

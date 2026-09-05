@@ -34,7 +34,7 @@ public class RecipeViewerGUI extends AetheriaBaseScreen {
     private int boxX, boxY, boxW, boxH;
 
     public RecipeViewerGUI(SkyblockItem item) {
-        this(item, MinecraftCompat.getMinecraft().currentScreen);
+        this(item, MinecraftCompat.getCurrentScreen());
     }
 
     public RecipeViewerGUI(SkyblockItem item, GuiScreen parentScreen) {

@@ -5,6 +5,7 @@ import io.hamlook.aetheria.events.ASMEntityJoinWorldEvent;
 import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
@@ -49,14 +50,14 @@ public class LootshareDetect {
     public static String getClosestInqName() {
         if (INSTANCE == null) return null;
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null || mc.theWorld == null) return null;
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) return null;
         EntityArmorStand closest = null;
         double minDist = Double.MAX_VALUE;
         for (Map.Entry<Integer, EntityArmorStand> e : INSTANCE.tracked.entrySet()) {
             if (!INSTANCE.trackedInqs.contains(e.getKey())) continue;
             EntityArmorStand stand = e.getValue();
-            if (stand.isDead) continue;
-            double d = mc.thePlayer.getDistanceSqToEntity(stand);
+            if (EntityCompat.isDead(stand)) continue;
+            double d = MinecraftCompat.getLocalPlayer().getDistanceSqToEntity(stand);
             if (d < minDist) {
                 minDist = d;
                 closest = stand;
@@ -69,14 +70,14 @@ public class LootshareDetect {
     public static String getClosestNonInqMobName() {
         if (INSTANCE == null || !nonInqMobActive) return null;
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null || mc.theWorld == null) return null;
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) return null;
         EntityArmorStand closest = null;
         double minDist = Double.MAX_VALUE;
         for (Map.Entry<Integer, EntityArmorStand> e : INSTANCE.tracked.entrySet()) {
             if (!INSTANCE.trackedNonInqs.contains(e.getKey())) continue;
             EntityArmorStand stand = e.getValue();
-            if (stand.isDead) continue;
-            double d = mc.thePlayer.getDistanceSqToEntity(stand);
+            if (EntityCompat.isDead(stand)) continue;
+            double d = MinecraftCompat.getLocalPlayer().getDistanceSqToEntity(stand);
             if (d < minDist) {
                 minDist = d;
                 closest = stand;
@@ -87,7 +88,7 @@ public class LootshareDetect {
 
     @HandleEvent
     public void onEntityJoin(ASMEntityJoinWorldEvent event) {
-        if (mc.theWorld == null) return;
+        if (MinecraftCompat.getLocalWorld() == null) return;
         if (!(event.entity instanceof EntityArmorStand)) return;
         // Only bother tracking if spade in hotbar (diana active) or a mob was just dug
         if ((DianaStats.hasSpadeInHotbar() || nonInqMobActive) && DianaStats.getInstance().isDianaMayor())
@@ -97,7 +98,7 @@ public class LootshareDetect {
     @HandleEvent
     public void onTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        if (mc.theWorld == null || mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null) return;
         long now = System.currentTimeMillis();
         promoteUnconfirmed(now);
         checkTracked();
@@ -117,9 +118,9 @@ public class LootshareDetect {
         while (it.hasNext()) {
             Map.Entry<Integer, Long> entry = it.next();
             int id = entry.getKey();
-            Entity entity = mc.theWorld.getEntityByID(id);
+            Entity entity = MinecraftCompat.getLocalWorld().getEntityByID(id);
 
-            if (!(entity instanceof EntityArmorStand) || entity.isDead) {
+            if (!(entity instanceof EntityArmorStand) || EntityCompat.isDead(entity)) {
                 it.remove();
                 continue;
             }
@@ -147,7 +148,7 @@ public class LootshareDetect {
             int id = entry.getKey();
             EntityArmorStand stand = entry.getValue();
 
-            if (!stand.isDead) {
+            if (!EntityCompat.isDead(stand)) {
                 if (!trackedInqs.contains(id) && !trackedNonInqs.contains(id)) {
                     String clean = net.minecraft.util.StringUtils.stripControlCodes(stand.getCustomNameTag());
                     if (clean.contains("Minos Inquisitor")) trackedInqs.add(id);

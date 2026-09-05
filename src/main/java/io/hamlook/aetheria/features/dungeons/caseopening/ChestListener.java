@@ -145,7 +145,7 @@ public class ChestListener {
         if (!ContainerUtils.isChestOpen()) return;
         if (!isCatacombsChestList) return;
 
-        GuiChest chest = (GuiChest) MinecraftCompat.getMinecraft().currentScreen;
+        GuiChest chest = (GuiChest) MinecraftCompat.getCurrentScreen();
         Slot hovered = chest.getSlotUnderMouse();
         if (hovered == null || !hovered.getHasStack()) return;
 
@@ -183,7 +183,7 @@ public class ChestListener {
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        WorldClient currentWorld = MinecraftCompat.getMinecraft().theWorld;
+        WorldClient currentWorld = MinecraftCompat.getLocalWorld();
         if (currentWorld != null && currentWorld != lastWorld) {
             lastWorld = currentWorld;
             isCroesus = false;

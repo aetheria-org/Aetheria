@@ -156,7 +156,7 @@ public class StorageListener {
             }
 
             // Only scroll if mouse is over the storage overlay area
-            GuiChest guiChest = (GuiChest) MinecraftCompat.getMinecraft().currentScreen;
+            GuiChest guiChest = (GuiChest) MinecraftCompat.getCurrentScreen();
             int[] mouse = KeybindHelper.getMouseCoords(guiChest.width, guiChest.height);
             int mouseX = mouse[0], mouseY = mouse[1];
 
@@ -193,7 +193,7 @@ public class StorageListener {
         if (chest == null) return false;
         for (net.minecraft.inventory.Slot slot : chest.inventorySlots) {
             if (slot == null) continue;
-            if (slot.inventory == MinecraftCompat.getMinecraft().thePlayer.inventory) continue;
+            if (slot.inventory == MinecraftCompat.getLocalPlayer().inventory) continue;
             if (r.isMouseOverActiveContainerSlot(slot, mouseX, mouseY)) return true;
         }
         return false;
@@ -234,7 +234,7 @@ public class StorageListener {
         if (event.type != 0) return;
         if (!ATHRConfig.feature.storage.enabled) return;
         if (!switchingContainer || !overlayInitialized || !StorageManager.isOverlayActive()) return;
-        if (MinecraftCompat.getMinecraft().currentScreen != null) return;
+        if (MinecraftCompat.getCurrentScreen() != null) return;
 
         ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int width = sr.getScaledWidth();

@@ -63,7 +63,7 @@ public class EnchantProcessor {
         }
         LORE_CACHE.updateBefore(loreList);
         LORE_CACHE.signature = configSignature();
-        FontRenderer fontRenderer = MinecraftCompat.getMinecraft().fontRendererObj;
+        FontRenderer fontRenderer = MinecraftCompat.getFontRenderer();
 
         boolean isEnchantedBook = "ENCHANTED_BOOK".equals(ItemUtils.getInternalName(event.itemStack));
         int startEnchant = -1, endEnchant = -1, maxTooltipWidth = 0;
@@ -200,7 +200,7 @@ public class EnchantProcessor {
         int layout = ATHRConfig.feature.qol.enchantParser.enchantLayout;
 
         if (layout == LAYOUT_SINGLE_LINE && enchants.size() > 1 && !(hasLore && isEnchantedBook)) {
-            FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+            FontRenderer fr = MinecraftCompat.getFontRenderer();
             int commaLength = fr.getStringWidth(GRAY_COMMA);
             int sum = 0;
             StringBuilder builder = new StringBuilder();
@@ -390,7 +390,7 @@ public class EnchantProcessor {
 
         private int renderLength() {
             if (cachedRenderLength == -1) {
-                cachedRenderLength = MinecraftCompat.getMinecraft().fontRendererObj.getStringWidth(formatted());
+                cachedRenderLength = MinecraftCompat.getFontRenderer().getStringWidth(formatted());
             }
             return cachedRenderLength;
         }

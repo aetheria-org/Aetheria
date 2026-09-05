@@ -1,16 +1,16 @@
 package io.hamlook.aetheria.features.debug.commands;
 
-import io.hamlook.aetheria.command.ASMCommand;
-import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
+import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.TablistParser;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiPlayerTabOverlay;
-import net.minecraft.client.gui.GuiScreen;
+import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import net.minecraft.client.network.NetworkPlayerInfo;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StringUtils;
 
@@ -24,66 +24,53 @@ import java.util.List;
  * clipboard, in the same order TablistParser iterates them (team-then-name
  * sorted). If /asmtesttablist has a fake tablist active, copies that instead.
  */
-@RegisterCommand
-public class AsmCopyTablistCommand extends ASMCommand {
+@RegisterEvents
+public class AsmCopyTablistCommand {
 
-    @Override
-    public String getName() {
-        return "asmcopytablist";
-    }
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("asmcopytablist", builder -> {
+            builder.setAliases(Collections.singletonList("asmcopytab"));
+            builder.description = "Copies every tablist entry (raw + stripped) to the clipboard";
+            builder.setCategory(CommandCategory.DEVELOPER_DEBUG);
 
-    @Override
-    public String getUsage() {
-        return "/asmcopytablist [-nocolor]";
-    }
+            builder.legacyCallbackArgs(args -> {
+                boolean noColor = Arrays.asList(args).contains("-nocolor");
 
-    @Override
-    public List<String> getAliases() {
-        return Collections.singletonList("asmcopytab");
-    }
+                if (TabListDebugCache.isActive()) {
+                    List<String> cached = TabListDebugCache.get();
+                    List<String> out = new ArrayList<>();
+                    out.add("=== FAKE TABLIST (" + cached.size() + " lines, from /asmtesttablist) ===");
+                    for (String line : cached) {
+                        out.add(noColor ? StringUtils.stripControlCodes(line) : line);
+                    }
+                    ClipboardCompat.setClipboard(String.join("\n", out));
+                    ChatUtils.sendMessage(EnumChatFormatting.YELLOW + "Copied the active FAKE tablist. Run /asmtesttablist again to disable it.");
+                    return;
+                }
 
-    @Override
-    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, net.minecraft.util.BlockPos pos) {
-        if (args.length == 1) return Collections.singletonList("-nocolor");
-        return Collections.emptyList();
-    }
+                Minecraft mc = MinecraftCompat.getMinecraft();
+                if (MinecraftCompat.getLocalPlayer() == null) {
+                    ChatUtils.sendMessage(EnumChatFormatting.RED + "Not in a world.");
+                    return;
+                }
 
-    @Override
-    public void execute(ICommandSender sender, String[] args) throws CommandException {
-        boolean noColor = Arrays.asList(args).contains("-nocolor");
+                GuiPlayerTabOverlay tab = mc.ingameGUI.getTabList();
+                List<NetworkPlayerInfo> infos = TablistParser.getParserOrderedInfos(mc);
 
-        if (TabListDebugCache.isActive()) {
-            List<String> cached = TabListDebugCache.get();
-            List<String> out = new ArrayList<>();
-            out.add("=== FAKE TABLIST (" + cached.size() + " lines, from /asmtesttablist) ===");
-            for (String line : cached) {
-                out.add(noColor ? StringUtils.stripControlCodes(line) : line);
-            }
-            GuiScreen.setClipboardString(String.join("\n", out));
-            ChatUtils.sendMessage(EnumChatFormatting.YELLOW + "Copied the active FAKE tablist. Run /asmtesttablist again to disable it.");
-            return;
-        }
+                StringBuilder sb = new StringBuilder();
+                sb.append("=== TABLIST (").append(infos.size()).append(" entries) ===\n");
 
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.thePlayer == null) {
-            ChatUtils.sendMessage(EnumChatFormatting.RED + "Not in a world.");
-            return;
-        }
+                for (NetworkPlayerInfo info : infos) {
+                    String raw = tab.getPlayerName(info);
+                    String stripped = StringUtils.stripControlCodes(raw != null ? raw : "").trim();
 
-        GuiPlayerTabOverlay tab = mc.ingameGUI.getTabList();
-        List<NetworkPlayerInfo> infos = TablistParser.getParserOrderedInfos(mc);
+                    sb.append(noColor ? stripped : (raw != null ? raw : "(null)")).append("\n");
+                }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== TABLIST (").append(infos.size()).append(" entries) ===\n");
-
-        for (NetworkPlayerInfo info : infos) {
-            String raw = tab.getPlayerName(info);
-            String stripped = StringUtils.stripControlCodes(raw != null ? raw : "").trim();
-
-            sb.append(noColor ? stripped : (raw != null ? raw : "(null)")).append("\n");
-        }
-
-        GuiScreen.setClipboardString(sb.toString());
-        ChatUtils.sendMessage(EnumChatFormatting.GREEN + "Copied " + infos.size() + " tablist entries to clipboard.");
+                ClipboardCompat.setClipboard(sb.toString());
+                ChatUtils.sendMessage(EnumChatFormatting.GREEN + "Copied " + infos.size() + " tablist entries to clipboard.");
+            });
+        });
     }
 }

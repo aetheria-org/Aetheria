@@ -262,7 +262,7 @@ public abstract class Overlay {
     }
 
     protected void drawLine(String line, int x, int y) {
-        mc.fontRendererObj.drawStringWithShadow(line, x, y, 0xFFFFFF);
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(line, x, y, 0xFFFFFF);
     }
 
     @HandleEvent
@@ -319,7 +319,7 @@ public abstract class Overlay {
 
         int w = getBaseWidth();
         for (String line : lines)
-            w = Math.max(w, mc.fontRendererObj.getStringWidth(line)
+            w = Math.max(w, MinecraftCompat.getFontRenderer().getStringWidth(line)
                     + (getLineIcon(line) != null ? getIconSize() + ICON_GAP : 0) + PADDING * 2);
         int h = lines.size() * LINE_HEIGHT + PADDING * 2;
         lastW = w;

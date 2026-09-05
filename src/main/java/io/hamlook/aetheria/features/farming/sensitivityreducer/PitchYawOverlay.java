@@ -6,6 +6,7 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 
@@ -56,7 +57,7 @@ public class PitchYawOverlay extends Overlay {
 
     @Override
     protected boolean extraGuard() {
-        return mc.thePlayer != null;
+        return MinecraftCompat.getLocalPlayer() != null;
     }
 
     @Override
@@ -69,10 +70,10 @@ public class PitchYawOverlay extends Overlay {
             return lines;
         }
 
-        if (mc.thePlayer == null) return lines;
+        if (MinecraftCompat.getLocalPlayer() == null) return lines;
 
-        lines.add(String.format("Pitch: %.4f", wrapDegrees(mc.thePlayer.rotationPitch)));
-        lines.add(String.format("Yaw: %.4f", wrapDegrees(mc.thePlayer.rotationYaw)));
+        lines.add(String.format("Pitch: %.4f", wrapDegrees(MinecraftCompat.getLocalPlayer().rotationPitch)));
+        lines.add(String.format("Yaw: %.4f", wrapDegrees(MinecraftCompat.getLocalPlayer().rotationYaw)));
         return lines;
     }
 
@@ -95,7 +96,7 @@ public class PitchYawOverlay extends Overlay {
         String label = line.substring(0, splitIdx);
         String value = line.substring(splitIdx);
         int labelColor = ChromaColour.specialToChromaRGB(config().pitchYawLabelColor);
-        mc.fontRendererObj.drawStringWithShadow(label, x, y, labelColor);
-        mc.fontRendererObj.drawStringWithShadow(value, x + mc.fontRendererObj.getStringWidth(label), y, 0xFFFFFF);
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(label, x, y, labelColor);
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(value, x + MinecraftCompat.getFontRenderer().getStringWidth(label), y, 0xFFFFFF);
     }
 }

@@ -130,10 +130,10 @@ public final class VisitorShoppingList {
 
         // Delayed /bzs dispatch after closing the current menu
         if (pendingBzsCommand != null) {
-            if (mc.currentScreen instanceof GuiContainer) {
+            if (MinecraftCompat.getCurrentScreen() instanceof GuiContainer) {
                 // Player opened another container before dispatch; drop the order
                 pendingBzsCommand = null;
-            } else if (mc.currentScreen == null && --pendingBzsTicks <= 0) {
+            } else if (MinecraftCompat.getCurrentScreen() == null && --pendingBzsTicks <= 0) {
                 ChatUtils.sendChatCommand(pendingBzsCommand);
                 pendingBzsCommand = null;
             }
@@ -143,7 +143,7 @@ public final class VisitorShoppingList {
             GuiEditSign gui = pendingSubmitSign;
             signSubmitAtMs = 0L;
             pendingSubmitSign = null;
-            if (gui != null && mc.currentScreen == gui) {
+            if (gui != null && MinecraftCompat.getCurrentScreen() == gui) {
                 noteParse("[flow] submitted sign automatically");
                 mc.displayGuiScreen(null);
             } else {
@@ -599,7 +599,7 @@ public final class VisitorShoppingList {
         long now = System.currentTimeMillis();
         if (now - haveCountsAt < HAVE_CACHE_MS) return haveCounts;
         Map<String, Integer> counts = new HashMap<>();
-        EntityPlayerSP player = MinecraftCompat.getMinecraft().thePlayer;
+        EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
         if (player != null && player.inventory != null) {
             for (ItemStack stack : player.inventory.mainInventory) {
                 if (!InventoryCompatKt.isStackNotEmpty(stack)) continue;
@@ -820,9 +820,8 @@ public final class VisitorShoppingList {
             }
         }
 
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        if (mc.currentScreen instanceof GuiEditSign) {
-            writeIntoSign(mc, missing);
+        if (MinecraftCompat.getCurrentScreen() instanceof GuiEditSign) {
+            writeIntoSign(missing);
             return;
         }
 
@@ -835,7 +834,7 @@ public final class VisitorShoppingList {
         }
         pendingBzsCommand = "/bzs " + name;
         pendingBzsTicks = 3;
-        if (mc.currentScreen != null) mc.thePlayer.closeScreen();
+        if (MinecraftCompat.getCurrentScreen() != null) MinecraftCompat.getLocalPlayer().closeScreen();
         noteParse("[flow] ordering " + name + " x" + missing + " (closed menu, dispatching /bzs)");
     }
 
@@ -892,7 +891,7 @@ public final class VisitorShoppingList {
 
     /** Empty slots across hotbar + main inventory (armor is a separate array). */
     public static int countEmptyMainInventorySlots() {
-        EntityPlayerSP player = MinecraftCompat.getMinecraft().thePlayer;
+        EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
         if (player == null || player.inventory == null) return 0;
         int empty = 0;
         for (ItemStack stack : player.inventory.mainInventory) {
@@ -906,8 +905,8 @@ public final class VisitorShoppingList {
         signSubmitAtMs = System.currentTimeMillis() + 200L;
     }
 
-    private static void writeIntoSign(Minecraft mc, int amount) {
-        TileEntitySign sign = ((io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor) mc.currentScreen).ATHR$getTileSign();
+    private static void writeIntoSign(int amount) {
+        TileEntitySign sign = ((io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor) MinecraftCompat.getCurrentScreen()).ATHR$getTileSign();
         if (sign == null || sign.signText == null || sign.signText.length == 0) return;
         if (TextCompat.getUnformattedText(sign.signText[0]).isEmpty()) return;
         sign.signText[0] = TextCompat.createText(String.valueOf(amount));

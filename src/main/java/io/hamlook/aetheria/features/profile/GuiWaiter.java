@@ -105,7 +105,7 @@ public class GuiWaiter {
 
         if (hasNextPage) {
             //ATHRMod.logger.info("[GuiWaiter] Paged GUI: clicking next page (slot " + actualNextSlot + ")");
-            InventoryCompat.windowClick(container.windowId, actualNextSlot, 0, 0, mc.thePlayer);
+            InventoryCompat.windowClick(container.windowId, actualNextSlot, 0, 0, MinecraftCompat.getLocalPlayer());
 
             queue.addFirst(new PendingWait(expectedTitle, tickDelay, -1,
                     next -> handlePage(next, expectedTitle, tickDelay,
@@ -116,7 +116,7 @@ public class GuiWaiter {
             Aetheria.logger.info("[GuiWaiter] Paged GUI: last page reached, clicking back (slot " + actualBackSlot + ")");
             WaiterLogs.addLog("[GuiWaiter] Paged GUI: last page reached, clicking back (slot " + actualBackSlot + ")");
             if (actualBackSlot >= 0) {
-                InventoryCompat.windowClick(container.windowId, actualBackSlot, 0, 0, mc.thePlayer);
+                InventoryCompat.windowClick(container.windowId, actualBackSlot, 0, 0, MinecraftCompat.getLocalPlayer());
                 //ATHRMod.logger.info("[GuiWaiter] Page GUI: clicked on slot " + actualBackSlot + " | " + container.windowId);
             }
             if (returnTitle != null && onReturn != null) {
@@ -244,7 +244,7 @@ public class GuiWaiter {
                     Minecraft mc = MinecraftCompat.getMinecraft();
                     ContainerChest current = getOpenChest("View Profile", -1);
                     if (current != null) {
-                        InventoryCompat.windowClick(current.windowId, head.pressSlot - 1, 0, 0, mc.thePlayer);
+                        InventoryCompat.windowClick(current.windowId, head.pressSlot - 1, 0, 0, MinecraftCompat.getLocalPlayer());
                     }
                 }
 
@@ -287,7 +287,7 @@ public class GuiWaiter {
             // ATHRMod.logger.info("[GuiWaiter] Clicking slot " + actualPressSlot + " to navigate away from '" + head.expectedTitle + "'");
             Minecraft mc = MinecraftCompat.getMinecraft();
             InventoryCompat.windowClick(
-                    head.container.windowId, actualPressSlot, 0, 0, mc.thePlayer
+                    head.container.windowId, actualPressSlot, 0, 0, MinecraftCompat.getLocalPlayer()
             );
         }
 
@@ -300,11 +300,11 @@ public class GuiWaiter {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static String getCurrentTitle() {
-        if (!(MinecraftCompat.getMinecraft().currentScreen instanceof GuiContainer)) {
-            return MinecraftCompat.getMinecraft().currentScreen == null ? "null"
-                    : MinecraftCompat.getMinecraft().currentScreen.getClass().getSimpleName();
+        if (!(MinecraftCompat.getCurrentScreen() instanceof GuiContainer)) {
+            return MinecraftCompat.getCurrentScreen() == null ? "null"
+                    : MinecraftCompat.getCurrentScreen().getClass().getSimpleName();
         }
-        Container container = InventoryCompat.getContainer((GuiContainer) MinecraftCompat.getMinecraft().currentScreen);
+        Container container = InventoryCompat.getContainer((GuiContainer) MinecraftCompat.getCurrentScreen());
         if (!(container instanceof ContainerChest)) return "(non-chest container)";
         return ColorUtils.stripColor(
                 TextCompat.getUnformattedText(((ContainerChest) container).getLowerChestInventory()
@@ -313,8 +313,8 @@ public class GuiWaiter {
     }
 
     private static ContainerChest getOpenChest(String expectedTitle, int ignoreWindowId) {
-        if (!(MinecraftCompat.getMinecraft().currentScreen instanceof GuiContainer)) return null;
-        Container container = InventoryCompat.getContainer((GuiContainer) MinecraftCompat.getMinecraft().currentScreen);
+        if (!(MinecraftCompat.getCurrentScreen() instanceof GuiContainer)) return null;
+        Container container = InventoryCompat.getContainer((GuiContainer) MinecraftCompat.getCurrentScreen());
         if (!(container instanceof ContainerChest)) return null;
 
         if (container.windowId == ignoreWindowId) return null;

@@ -5,7 +5,6 @@ import io.hamlook.aetheria.events.PacketEvent;
 import io.hamlook.aetheria.events.SlotClickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
@@ -73,7 +72,7 @@ public class NefSlotClickCompat {
             return;
         }
         if (slot == null) return;
-        GuiContainer gui = (GuiContainer) Minecraft.getMinecraft().currentScreen;
+        GuiContainer gui = (GuiContainer) MinecraftCompat.getMinecraft().currentScreen;
         posting = true;
         try {
             new SlotClickEvent(gui, slot, slotId, packet.getUsedButton(), SlotClickEvent.ClickType.fromId(packet.getMode())).post();

@@ -39,10 +39,10 @@ public class PVSearchBar {
         float startX = x + ProfileViewerGUI.getScaledF(12);
 
         if (text.isEmpty() && !isFocused) {
-            TextRenderUtils.drawStringScaleAware("§7" + placeholder, startX, textY - ((MinecraftCompat.getMinecraft().fontRendererObj.FONT_HEIGHT * textScale) / 2f), textScale, false);
+            TextRenderUtils.drawStringScaleAware("§7" + placeholder, startX, textY - ((MinecraftCompat.getFontRenderer().FONT_HEIGHT * textScale) / 2f), textScale, false);
         } else {
             String displayText = "§f" + text + (showCursor ? "§7|" : "");
-            float fontOffset = (MinecraftCompat.getMinecraft().fontRendererObj.FONT_HEIGHT * textScale) / 2f;
+            float fontOffset = (MinecraftCompat.getFontRenderer().FONT_HEIGHT * textScale) / 2f;
             TextRenderUtils.drawStringScaleAware(displayText, startX, textY - fontOffset, textScale, false);
         }
 
@@ -66,7 +66,7 @@ public class PVSearchBar {
                     Gui.drawRect(x + 4, (int) itemY, x + width - 4, (int) (itemY + itemH), 0x30FFFFFF);
                 }
 
-                TextRenderUtils.drawStringScaleAware("§f" + sug, startX, itemY + (itemH / 2f) - ((MinecraftCompat.getMinecraft().fontRendererObj.FONT_HEIGHT * textScale) / 2f), textScale, false);
+                TextRenderUtils.drawStringScaleAware("§f" + sug, startX, itemY + (itemH / 2f) - ((MinecraftCompat.getFontRenderer().FONT_HEIGHT * textScale) / 2f), textScale, false);
             }
         }
         GlStateManagerCompat.popMatrix();

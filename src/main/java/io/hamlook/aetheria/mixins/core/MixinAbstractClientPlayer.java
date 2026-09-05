@@ -23,9 +23,9 @@ public class MixinAbstractClientPlayer {
     private void ATHR$getLocationCape(CallbackInfoReturnable<ResourceLocation> cir) {
         if (this.playerInfo == null) return;
         String user = this.playerInfo.getGameProfile().getName();
-        EntityPlayer player = MinecraftCompat.getMinecraft().theWorld.getPlayerEntityByName(user);
+        EntityPlayer player = MinecraftCompat.getLocalWorld().getPlayerEntityByName(user);
         if (player == null) return;
-        if (MinecraftCompat.getMinecraft().thePlayer.getPosition().distanceSq(
+        if (MinecraftCompat.getLocalPlayer().getPosition().distanceSq(
                 player.getPosition()
         ) > 65536) return;
         Cape cape = CapeManager.getCapeForPlayer(user);

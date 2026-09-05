@@ -35,7 +35,7 @@ public class Text extends CMMElement {
         String toDraw = placeholders ? PlaceholderManager.replace(this.text) : this.text;
         List<MiniMessageDetector.Segment> segments = MiniMessageDetector.parse(toDraw);
 
-        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         boolean displayScale = false;
         float scaleDisplay = displayScale ? ResolutionUtils.getXStatic(1) : 1f;
         float finalScale = Math.max(0.25f, this.scale * scaleDisplay);
@@ -70,7 +70,7 @@ public class Text extends CMMElement {
 
     @Override
     public int[] getCorners() {
-        FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         int[] corners =  new int[4];
         int width = fr.getStringWidth(placeholders ? PlaceholderManager.replace(this.text) : this.text);
         int height = (int)(fr.FONT_HEIGHT * scale);

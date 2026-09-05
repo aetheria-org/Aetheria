@@ -95,6 +95,7 @@ dependencies {
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
     shadowImpl("com.google.code.gson:gson:2.10.1") { isTransitive = false }
     shadowImpl("com.fifesoft:rsyntaxtextarea:3.3.3") { isTransitive = false }
+    shadowImpl("com.mojang:brigadier:1.0.18") { isTransitive = false }
     implementation("moe.nea:hotswapagent-forge:1.0.1")
 }
 

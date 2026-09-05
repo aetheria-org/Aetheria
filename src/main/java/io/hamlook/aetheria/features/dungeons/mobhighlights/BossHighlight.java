@@ -7,6 +7,7 @@ import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TessellatorCompat;
@@ -46,14 +47,14 @@ public class BossHighlight {
         if (++tickCounter < 4) return;
         tickCounter = 0;
 
-        if (!SkyblockData.isInDungeon() || mc.theWorld == null) {
+        if (!SkyblockData.isInDungeon() || MinecraftCompat.getLocalWorld() == null) {
             bossMobs = new HashMap<>();
             return;
         }
 
         Map<EntityLivingBase, BossType> found = new HashMap<>();
 
-        for (Entity entity : WorldCompat.getAllEntities(mc.theWorld)) {
+        for (Entity entity : WorldCompat.getAllEntities(MinecraftCompat.getLocalWorld())) {
             if (!(entity instanceof EntityArmorStand)) continue;
             String raw = entity.getName();
             if (raw == null) continue;
@@ -76,9 +77,9 @@ public class BossHighlight {
             if (type == null) continue;
 
             final BossType finalType = type;
-            EntityLivingBase mob = mc.theWorld.getEntitiesWithinAABB(EntityLivingBase.class, entity.getEntityBoundingBox().expand(1.0, 3.0, 1.0), e -> e != null && !(e instanceof EntityArmorStand) && e != mc.thePlayer).stream().findFirst().orElse(null);
+            EntityLivingBase mob = MinecraftCompat.getLocalWorld().getEntitiesWithinAABB(EntityLivingBase.class, entity.getEntityBoundingBox().expand(1.0, 3.0, 1.0), e -> e != null && !(e instanceof EntityArmorStand) && e != MinecraftCompat.getLocalPlayer()).stream().findFirst().orElse(null);
 
-            if (mob != null && !mob.isDead && mob.getHealth() > 0) found.put(mob, finalType);
+            if (mob != null && !EntityCompat.isDead(mob) && mob.getHealth() > 0) found.put(mob, finalType);
         }
 
         bossMobs = found;
@@ -98,13 +99,13 @@ public class BossHighlight {
     public void onRenderWorldLast(ASMRenderWorldEvent event) {
         if (ATHRConfig.feature == null) return;
         Map<EntityLivingBase, BossType> snapshot = bossMobs;
-        if (snapshot.isEmpty() || mc.thePlayer == null) return;
+        if (snapshot.isEmpty() || MinecraftCompat.getLocalPlayer() == null) return;
 
         Map<BossType, Set<EntityLivingBase>> byType = new HashMap<>();
         for (Map.Entry<EntityLivingBase, BossType> entry : snapshot.entrySet()) {
             EntityLivingBase mob = entry.getKey();
             BossType type = entry.getValue();
-            if (highlightModeFor(type) != 0 || mob.isDead || mob.getHealth() <= 0) continue;
+            if (highlightModeFor(type) != 0 || EntityCompat.isDead(mob) || mob.getHealth() <= 0) continue;
             byType.computeIfAbsent(type, k -> new HashSet<>()).add(mob);
         }
         if (byType.isEmpty()) return;
