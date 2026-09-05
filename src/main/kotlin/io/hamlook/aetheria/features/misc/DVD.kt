@@ -64,7 +64,7 @@ object DVD : SimpleOverlay() {
             lastUpdateTime = System.nanoTime()
         }
 
-        updatePosition()
+        updatePosition(sr)
 
         val boxWidth = getBoxWidth()
         val boxHeight = getBoxHeight()
@@ -81,7 +81,7 @@ object DVD : SimpleOverlay() {
         GlStateManagerCompat.color(1f, 1f, 1f, 1f)
     }
 
-    private fun updatePosition() {
+    private fun updatePosition(sr: ScaledResolution) {
         val currentTime = System.nanoTime()
         val deltaTime = (currentTime - lastUpdateTime) / 1_000_000_000.0
         lastUpdateTime = currentTime
@@ -91,7 +91,6 @@ object DVD : SimpleOverlay() {
         x += dx * movement
         y += dy * movement
 
-        val sr = ScaledResolution(mc)
         val boxWidth = getBoxWidth()
         val boxHeight = getBoxHeight()
 

@@ -17,6 +17,7 @@ import io.hamlook.aetheria.utils.compat.ColoredBlockCompat;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
@@ -177,8 +178,8 @@ public class DungeonLeapOverlay {
         if (!isLeapGUI || tracker == null) return;
         if (MouseCompat.getEventButton() == 0 && MouseCompat.getEventButtonState()) {
 
-            int mouseX = MouseCompat.getEventX() * event.gui.width / event.gui.mc.displayWidth;
-            int mouseY = event.gui.height - MouseCompat.getEventY() * event.gui.height / event.gui.mc.displayHeight - 1;
+            int mouseX = MouseCompat.getEventX() * event.gui.width / GuiScreenUtils.getDisplayWidth();
+            int mouseY = event.gui.height - MouseCompat.getEventY() * event.gui.height / GuiScreenUtils.getDisplayHeight() - 1;
 
             List<String> players = getFilteredPartyMembers();
 

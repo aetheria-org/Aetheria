@@ -277,8 +277,8 @@ public abstract class VisitorPanelBase {
         if (!MouseCompat.getEventButtonState() || MouseCompat.getEventButton() != 0) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.currentScreen == null) return;
-        int mx = MouseCompat.getEventX() * mc.currentScreen.width / mc.displayWidth;
-        int my = mc.currentScreen.height - MouseCompat.getEventY() * mc.currentScreen.height / mc.displayHeight - 1;
+        int mx = MouseCompat.getEventX() * mc.currentScreen.width / GuiScreenUtils.getDisplayWidth();
+        int my = mc.currentScreen.height - MouseCompat.getEventY() * mc.currentScreen.height / GuiScreenUtils.getDisplayHeight() - 1;
         for (Clickable clickable : clickTargets) {
             if (clickable.contains(mx, my)) {
                 event.cancel();

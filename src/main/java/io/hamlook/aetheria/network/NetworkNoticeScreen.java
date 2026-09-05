@@ -58,7 +58,7 @@ public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
         ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int scale = sr.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(px * scale, mc.displayHeight - (py + PANEL_H) * scale, PANEL_W * scale, PANEL_H * scale);
+        GL11.glScissor(px * scale, GuiScreenUtils.getDisplayHeight() - (py + PANEL_H) * scale, PANEL_W * scale, PANEL_H * scale);
 
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.color(1f, 1f, 1f, alpha);

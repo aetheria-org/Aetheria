@@ -66,9 +66,6 @@ public class EmojiSuggestionBar {
     private static float scale = 1f;
     private static int totalRows = 0;
     private static int lastDragMouseY = -1;
-    private static ScaledResolution cachedSr = null;
-    private static int cachedSrKey = -1;
-
     private EmojiSuggestionBar() {
     }
 
@@ -285,15 +282,6 @@ public class EmojiSuggestionBar {
         return Math.round((mouseY - centerY()) / scale + centerY());
     }
 
-    private static ScaledResolution scaledResolution(Minecraft mc) {
-        int key = mc.displayWidth * 31 + mc.displayHeight * 17 + mc.gameSettings.guiScale * 7;
-        if (cachedSr == null || key != cachedSrKey) {
-            cachedSr = GuiScreenUtils.getScaledResolution();
-            cachedSrKey = key;
-        }
-        return cachedSr;
-    }
-
     private static void drawRoundedBorder(int x, int y, int x2, int y2, int r, int color) {
         r = Math.min(r, Math.min(x2 - x, y2 - y) / 2);
         if (r <= 0) {
@@ -339,7 +327,7 @@ public class EmojiSuggestionBar {
         if (matches.isEmpty()) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        ScaledResolution sr = scaledResolution(mc);
+        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         lastMouseX = mouseX;
         lastMouseY = mouseY;
 
@@ -402,7 +390,7 @@ public class EmojiSuggestionBar {
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         int factor = sr.getScaleFactor();
-        GL11.glScissor(sGridLeft * factor, mc.displayHeight - sGridBot * factor, (sGridRight - sGridLeft) * factor, (sGridBot - sGridTop) * factor);
+        GL11.glScissor(sGridLeft * factor, GuiScreenUtils.getDisplayHeight() - sGridBot * factor, (sGridRight - sGridLeft) * factor, (sGridBot - sGridTop) * factor);
 
         int firstRow = (int) scrollOffset;
         int lastIdx = Math.min(matches.size(), (firstRow + displayRows) * GRID_COLUMNS);

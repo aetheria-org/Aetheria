@@ -87,7 +87,7 @@ public class CollectionInfoTab extends Tab {
         int scaleFactor = res.getScaleFactor();
 
         int scissorX = (int) (xPos * scaleFactor);
-        int scissorY = (int) ((mc.displayHeight - (gridY + gridH) * scaleFactor));
+        int scissorY = (int) ((GuiScreenUtils.getDisplayHeight() - (gridY + gridH) * scaleFactor));
         int scissorW = width * scaleFactor;
         int scissorH = (int) (gridH * scaleFactor);
 

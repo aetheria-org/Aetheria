@@ -32,7 +32,7 @@ abstract class ChatFilterBaseGUI extends AetheriaBaseScreen {
         int scale = res.getScaleFactor();
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x * scale, mc.displayHeight - (y + height) * scale, width * scale, height * scale);
+        GL11.glScissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + height) * scale, width * scale, height * scale);
     }
 
     protected void stopScissor() {

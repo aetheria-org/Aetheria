@@ -306,7 +306,7 @@ public class InventoryStorageInfoTab extends Tab {
         ScaledResolution res = GuiScreenUtils.getScaledResolution();
         int f = res.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor((int)(x * f), (int)(MinecraftCompat.getMinecraft().displayHeight - (y + h) * f), (int)(w * f), (int)(h * f));
+        GL11.glScissor((int)(x * f), (int)(GuiScreenUtils.getDisplayHeight() - (y + h) * f), (int)(w * f), (int)(h * f));
     }
 
     private void drawSlot(Minecraft mc, ItemStack icon, int rarityScore, float x, float y, float size) {

@@ -235,7 +235,7 @@ public class ChatInputField extends Gui {
         Minecraft mc = MinecraftCompat.getMinecraft();
         int scale = GuiScreenUtils.getScaledResolution().getScaleFactor();
         int mx = MouseCompat.getX() / scale;
-        int my = mc.displayHeight / scale - MouseCompat.getY() / scale;
+        int my = GuiScreenUtils.getDisplayHeight() / scale - MouseCompat.getY() / scale;
         caret = xyToChar(mx, my);
     }
 

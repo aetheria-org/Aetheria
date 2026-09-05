@@ -8,6 +8,7 @@ import io.hamlook.aetheria.features.storage.utils.SContainer;
 import io.hamlook.aetheria.features.storage.utils.Type;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
@@ -342,7 +343,7 @@ public class StorageRenderer extends Gui {
         int scissorScreenTop = boxY + inset;
         int scissorScreenBottom = boxY + storageAreaH - inset;
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor((boxX + inset) * scaleFactor, (MinecraftCompat.getMinecraft().displayHeight - scissorScreenBottom * scaleFactor), (boxW - inset * 2) * scaleFactor, (scissorScreenBottom - scissorScreenTop) * scaleFactor);
+        GL11.glScissor((boxX + inset) * scaleFactor, (GuiScreenUtils.getDisplayHeight() - scissorScreenBottom * scaleFactor), (boxW - inset * 2) * scaleFactor, (scissorScreenBottom - scissorScreenTop) * scaleFactor);
 
         String activeId = StorageManager.getActiveContainerId();
         boolean dimMode = ATHRConfig.feature.storage.activeContainerStyle == 0 && activeId != null;

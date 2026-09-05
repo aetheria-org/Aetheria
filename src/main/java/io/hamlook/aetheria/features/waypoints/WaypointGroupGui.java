@@ -256,7 +256,7 @@ public class WaypointGroupGui extends GuiElement {
         int scale = sr.getScaleFactor();
         GlStateManagerCompat.pushMatrix();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(px * scale, mc.displayHeight - listBottomY * scale, pw * scale, visibleH * scale);
+        GL11.glScissor(px * scale, GuiScreenUtils.getDisplayHeight() - listBottomY * scale, pw * scale, visibleH * scale);
 
         for (RowItem item : rows) {
             if (item.y + item.h() <= listTopY || item.y >= listBottomY) continue;

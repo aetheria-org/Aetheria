@@ -102,7 +102,7 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
         if (!(mc.currentScreen instanceof GuiChat)) return;
         if (!((GuiChatHook) mc.currentScreen).athr$isTypingMode()) return;
         athr$hoveredLine = athr$getHoveredChatLine(
-                MouseCompat.getX(), mc.displayHeight - MouseCompat.getY() - 1);
+                MouseCompat.getX(), GuiScreenUtils.getDisplayHeight() - MouseCompat.getY() - 1);
     }
 
     @Redirect(

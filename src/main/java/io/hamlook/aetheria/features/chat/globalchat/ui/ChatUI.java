@@ -374,8 +374,8 @@ public class ChatUI extends AetheriaBaseScreen {
     protected void onHandleMouseInput() {
         int wheel = MouseCompat.getEventDWheel();
         if (wheel == 0) return;
-        int mx = MouseCompat.getEventX() * width / mc.displayWidth;
-        int my = MouseCompat.getEventY() * height / mc.displayHeight;
+        int mx = MouseCompat.getEventX() * width / GuiScreenUtils.getDisplayWidth();
+        int my = MouseCompat.getEventY() * height / GuiScreenUtils.getDisplayHeight();
         if (editingMessage != null && editBoxVisible && editField.isHovered(mx, my)) {
             editField.mouseWheel(wheel);
             return;
@@ -2498,7 +2498,7 @@ public class ChatUI extends AetheriaBaseScreen {
         ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         int scale = sr.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x * scale, mc.displayHeight - (y + h) * scale, w * scale, h * scale);
+        GL11.glScissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + h) * scale, w * scale, h * scale);
     }
 
     private void disableScissor() {
