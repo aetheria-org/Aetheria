@@ -1,117 +1,33 @@
 package io.hamlook.aetheria.utils.render;
 
+import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Defensive parser for CMM markup; malformed tags stay literal instead of crashing rendering. */
 public final class MiniMessageDetector {
-
-    private MiniMessageDetector() {}
-
+    private MiniMessageDetector() { }
     public static class Segment {
-        public final String text;
-        public final int color;          // solid color, -1 if none
-        public final int gradientStart;  // gradient start color, -1 if none
-        public final int gradientEnd;    // gradient end color, -1 if none
-
-        public Segment(String text, int color) {
-            this.text = text;
-            this.color = color;
-            this.gradientStart = -1;
-            this.gradientEnd = -1;
-        }
-
-        public Segment(String text, int gradientStart, int gradientEnd) {
-            this.text = text;
-            this.color = -1;
-            this.gradientStart = gradientStart;
-            this.gradientEnd = gradientEnd;
-        }
+        public final String text; public final int color, gradientStart, gradientEnd; public final String chromaStyle;
+        public Segment(String text,int color){this.text=text;this.color=color;gradientStart=-1;gradientEnd=-1;chromaStyle=null;}
+        public Segment(String text,int start,int end){this.text=text;color=-1;gradientStart=start;gradientEnd=end;chromaStyle=null;}
+        public Segment(String text,String chroma){this.text=text;color=-1;gradientStart=-1;gradientEnd=-1;chromaStyle=chroma;}
     }
-
-    public static List<Segment> parse(String input) {
-        List<Segment> segments = new ArrayList<>();
-        StringBuilder buffer = new StringBuilder();
-
-        int i = 0;
-        int currentColor = -1;
-        int gradientStart = -1;
-        boolean inGradient = false;
-
-        while (i < input.length()) {
-            // <color:#rrggbb>
-            if (input.startsWith("<color:", i)) {
-                flushBuffer(segments, buffer, currentColor, gradientStart, inGradient);
-                int gt = input.indexOf('>', i);
-                String hex = input.substring(i + 7, gt);
-                currentColor = parseHex(hex);
-                gradientStart = -1;
-                inGradient = false;
-                i = gt + 1;
-                continue;
-            }
-            // </color>  (with or without hex)
-            if (input.startsWith("</color", i)) {
-                flushBuffer(segments, buffer, currentColor, gradientStart, inGradient);
-                currentColor = -1;
-                int gt = input.indexOf('>', i);
-                i = gt + 1;
-                continue;
-            }
-            // <gradient:#rrggbb>
-            if (input.startsWith("<gradient:", i)) {
-                flushBuffer(segments, buffer, currentColor, gradientStart, inGradient);
-                int gt = input.indexOf('>', i);
-                String hex = input.substring(i + 10, gt);
-                gradientStart = parseHex(hex);
-                currentColor = -1;
-                inGradient = true;
-                i = gt + 1;
-                continue;
-            }
-            // </gradient:#rrggbb>  (hex required)
-            if (input.startsWith("</gradient:", i)) {
-                int gt = input.indexOf('>', i);
-                String hex = input.substring(i + 11, gt);
-                int gradientEnd = parseHex(hex);
-                // buffer holds the gradient text
-                segments.add(new Segment(buffer.toString(), gradientStart, gradientEnd));
-                buffer.setLength(0);
-                gradientStart = -1;
-                inGradient = false;
-                i = gt + 1;
-                continue;
-            }
-
-            // regular character
-            buffer.append(input.charAt(i));
-            i++;
+    public static List<Segment> parse(String input){
+        List<Segment> out=new ArrayList<>(); if(input==null||input.isEmpty())return out;
+        StringBuilder b=new StringBuilder(); int color=-1,gradient=-1; boolean inGradient=false; String chroma=null; boolean inChroma=false;
+        int i=0; while(i<input.length()){
+            if(input.startsWith("<color:",i)){int e=input.indexOf('>',i);if(e<0){b.append(input.charAt(i++));continue;}flush(out,b,color,gradient,inGradient,chroma,inChroma);color=parseHex(input.substring(i+7,e));gradient=-1;inGradient=false;chroma=null;inChroma=false;i=e+1;continue;}
+            if(input.startsWith("</color",i)){int e=input.indexOf('>',i);if(e<0){b.append(input.charAt(i++));continue;}flush(out,b,color,gradient,inGradient,chroma,inChroma);color=-1;i=e+1;continue;}
+            if(input.startsWith("<gradient:",i)){int e=input.indexOf('>',i);if(e<0){b.append(input.charAt(i++));continue;}flush(out,b,color,gradient,inGradient,chroma,inChroma);gradient=parseHex(input.substring(i+10,e));color=-1;inGradient=true;chroma=null;inChroma=false;i=e+1;continue;}
+            if(input.startsWith("</gradient:",i)){int e=input.indexOf('>',i);if(e<0){b.append(input.charAt(i++));continue;}int end=parseHex(input.substring(i+11,e));if(inGradient&&b.length()>0)out.add(new Segment(b.toString(),gradient,end));b.setLength(0);gradient=-1;inGradient=false;i=e+1;continue;}
+            if(input.startsWith("<chroma:",i)){int e=input.indexOf('>',i);if(e<0){b.append(input.charAt(i++));continue;}String style=createChromaStyle(input.substring(i+8,e));if(style==null){b.append(input,i,e+1);i=e+1;continue;}flush(out,b,color,gradient,inGradient,chroma,inChroma);chroma=style;inChroma=true;color=-1;gradient=-1;inGradient=false;i=e+1;continue;}
+            if(input.startsWith("</chroma",i)){int e=input.indexOf('>',i);if(e<0){b.append(input.charAt(i++));continue;}if(inChroma&&b.length()>0)out.add(new Segment(b.toString(),chroma));b.setLength(0);chroma=null;inChroma=false;i=e+1;continue;}
+            b.append(input.charAt(i++));
         }
-
-        // any trailing text
-        flushBuffer(segments, buffer, currentColor, gradientStart, inGradient);
-        return segments;
+        flush(out,b,color,gradient,inGradient,chroma,inChroma);return out;
     }
-
-    private static void flushBuffer(List<Segment> segments,
-                                    StringBuilder buffer,
-                                    int currentColor,
-                                    int gradientStart,
-                                    boolean inGradient) {
-        if (buffer.length() == 0) return;
-        if (inGradient && gradientStart != -1) {
-            // gradient without explicit end tag – treat as solid start color
-            segments.add(new Segment(buffer.toString(), gradientStart));
-        } else if (currentColor != -1) {
-            segments.add(new Segment(buffer.toString(), currentColor));
-        } else {
-            segments.add(new Segment(buffer.toString(), -1));
-        }
-        buffer.setLength(0);
-    }
-
-    private static int parseHex(String hex) {
-        hex = hex.replace("#", "");
-        if (hex.length() == 6) hex = "FF" + hex; // assume fully opaque if alpha omitted
-        return (int) Long.parseLong(hex, 16);
-    }
+    private static void flush(List<Segment> out,StringBuilder b,int color,int gradient,boolean inGradient,String chroma,boolean inChroma){if(b.length()==0)return;if(inChroma&&chroma!=null)out.add(new Segment(b.toString(),chroma));else if(inGradient&&gradient!=-1)out.add(new Segment(b.toString(),gradient,gradient));else out.add(new Segment(b.toString(),color));b.setLength(0);}
+    private static String createChromaStyle(String value){try{String[] p=value.split(":");float seconds=Math.max(1f,Math.min(60f,Float.parseFloat(p[0])));int speed=Math.max(1,Math.min(255,Math.round(255f-((seconds-1f)/59f)*254f)));int rgb=p.length>1&&!p[1].isEmpty()?parseHex(p[1])&0xFFFFFF:0xFFFFFF;return ChromaColour.special(speed,255,rgb);}catch(Exception ignored){return null;}}
+    private static int parseHex(String value){try{String h=value.replace("#","");if(h.length()==6)h="FF"+h;return (int)Long.parseLong(h,16);}catch(Exception ignored){return -1;}}
 }

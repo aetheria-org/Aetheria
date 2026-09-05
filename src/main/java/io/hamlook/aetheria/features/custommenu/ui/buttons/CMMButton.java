@@ -37,8 +37,7 @@ public abstract class CMMButton extends CMMElement {
 
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         GlStateManagerCompat.pushMatrix();
-        if (style.rounded) ButtonRenderer.drawRounded(xPos, yPos, width, height, style, hovered);
-        else NineSliceUtils.draw(Resources.betterContainerNineSlice(style.index), xPos, yPos, width, height, 6, 18);
+        NineSliceUtils.draw(Resources.betterContainerNineSlice(style.index), xPos, yPos, width, height, 6, 18, hovered);
         GlStateManagerCompat.popMatrix();
 
         drawCenteredString(displayString, this.xPos, this.yPos, this.width, this.height, textColor, true);

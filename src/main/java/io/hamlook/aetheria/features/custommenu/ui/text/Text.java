@@ -53,6 +53,8 @@ public class Text extends CMMElement {
             if (seg.gradientStart != -1 && seg.gradientEnd != -1) {
                 TextRenderUtils.drawStringGradientScaleAware(seg.text, x, y,
                         seg.gradientStart, seg.gradientEnd, this.scale, displayScale);
+            } else if (seg.chromaStyle != null) {
+                TextRenderUtils.drawChromaStringScaleAware(seg.text, x, y, seg.chromaStyle, this.scale, displayScale);
             } else {
                 int col;
                 if (seg.color != -1) {
@@ -69,11 +71,12 @@ public class Text extends CMMElement {
     }
 
     @Override
-    public int[] getCorners() {
+    public int[] getCorners(boolean preview) {
         FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
         int[] corners =  new int[4];
         int width = fr.getStringWidth(placeholders ? PlaceholderManager.replace(this.text) : this.text);
         int height = (int)(fr.FONT_HEIGHT * scale);
+        width = (int)(width * scale);
         corners[0] = centered ? (this.xPos - width/2) : this.xPos;
         corners[1] = centered ? (this.yPos - height/2) : this.yPos;
         corners[2] = centered ? (this.xPos + width/2) : this.xPos + width;

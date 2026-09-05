@@ -12,6 +12,7 @@ import io.hamlook.aetheria.features.custommenu.Position;
 import io.hamlook.aetheria.features.custommenu.presets.DefaultCMMPreset;
 import io.hamlook.aetheria.features.custommenu.ui.CMMElement;
 import io.hamlook.aetheria.features.custommenu.ui.buttons.impl.GuiButton;
+import io.hamlook.aetheria.features.custommenu.ui.sprites.Sprite;
 import io.hamlook.aetheria.utils.ModFinder;
 
 import java.io.File;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 public class CMMHelper {
 
     public static Map<String, CustomMMConfig> configList = new ConcurrentHashMap<>();
+    public static final List<String> incompatiblePresets = new java.util.concurrent.CopyOnWriteArrayList<>();
     public static String selectedConfig = "Default";
 
     public static File CONFIG_FOLDER = new File(ATHRConfig.configDirectory, "cmmConfigs");
@@ -80,7 +82,7 @@ public class CMMHelper {
                 if (configList.containsKey(configName)) {
                     selectedConfig = configName;
                 } else {
-                    selectedConfig = "default";
+                    selectedConfig = configList.containsKey("Default") ? "Default" : configList.keySet().iterator().next();
                 }
             }
         } catch (Exception e) {
@@ -94,6 +96,8 @@ public class CMMHelper {
     }
 
     public static void registerPreset(CustomMMConfig preset) {
+        if (preset == null) return;
+        migrate(preset);
         ensureEditorButton(preset);
         configList.put(preset.configName, preset);
     }
@@ -103,14 +107,46 @@ public class CMMHelper {
         for (CMMElement element : preset.elements) {
             if (element instanceof GuiButton && ("Custom Main Menu Editor".equals(((GuiButton) element).screen) || "CMM Editor".equals(((GuiButton) element).screen))) return;
         }
-        preset.addElement(new GuiButton(new Position("CENTER", "CENTER", -100, -75), 200, 20, "Menu Editor", "Custom Main Menu Editor"));
+        preset.addElement(new GuiButton(new Position("CENTER", "CENTER", -100, -75), 200, 20, "Menu Editor", "CMM Editor"));
     }
 
     public static boolean createPreset(String name) {
+        return createPreset(name, "Default");
+    }
+
+    public static boolean importPreset(CustomMMConfig imported) {
+        if (imported == null) return false;
+        String base = imported.configName == null || imported.configName.trim().isEmpty() ? "Imported Menu" : imported.configName.trim();
+        String name = base; int suffix = 2;
+        while (configList.containsKey(name)) name = base + " " + suffix++;
+        imported.configName = name; registerPreset(imported); selectedConfig = name; save(); return true;
+    }
+
+    private static void migrate(CustomMMConfig preset) {
+        if (preset.elements == null) preset.elements = new java.util.ArrayList<>();
+        if (preset.formatVersion > CustomMMConfig.CURRENT_FORMAT_VERSION) {
+            throw new IllegalArgumentException("Unsupported future CMM preset version: " + preset.formatVersion);
+        }
+        if (preset.formatVersion <= 0) preset.formatVersion = 1;
+        // Version 2 introduced shared element presentation fields; Gson already supplies their defaults.
+        preset.formatVersion = CustomMMConfig.CURRENT_FORMAT_VERSION;
+    }
+
+    public static boolean createPreset(String name, String basePresetName) {
         if (name == null || name.trim().isEmpty()) return false;
         String id = name.trim().replaceAll("[^a-zA-Z0-9_\\- ]", "");
         if (id.isEmpty() || configList.containsKey(id)) return false;
-        CustomMMConfig copy = GSON.fromJson(GSON.toJson(configList.get("default")), CustomMMConfig.class);
+        CustomMMConfig base = configList.get(basePresetName);
+        if (base == null) base = configList.get("Default");
+        CustomMMConfig copy = null;
+        if (base != null) {
+            try { copy = GSON.fromJson(GSON.toJson(base), CustomMMConfig.class); }
+            catch (RuntimeException ex) { Aetheria.logger.warning("[CMM] Base preset was invalid; creating a clean preset instead."); }
+        }
+        if (copy == null && "Default".equalsIgnoreCase(basePresetName)) {
+            try { copy = GSON.fromJson(GSON.toJson(new DefaultCMMPreset()), CustomMMConfig.class); }
+            catch (RuntimeException ignored) { }
+        }
         if (copy == null) copy = new CustomMMConfig(id);
         copy.configName = id;
         registerPreset(copy);
@@ -129,11 +165,37 @@ public class CMMHelper {
     public static boolean deletePreset(String name) {
         if (name == null || isModPreset(name) || !configList.containsKey(name)) return false;
         configList.remove(name);
-        File file = new File(CONFIG_FOLDER, name + ".cmm");
+        File file = new File(CONFIG_FOLDER, name + ".menu");
         if (file.exists() && !file.delete()) Aetheria.logger.warning("[CMM] Failed to delete preset: " + name);
-        selectedConfig = "default";
+        cleanupUnusedAssets();
+        selectedConfig = configList.containsKey("Default") ? "Default" : configList.keySet().iterator().next();
         saveCMMConfig();
         return true;
+    }
+
+    public static void cleanupUnusedAssets() {
+        File assets = new File(CONFIG_FOLDER, "assets");
+        File[] files = assets.listFiles();
+        if (files == null) return;
+        java.util.Set<String> used = new java.util.HashSet<>();
+        for (CustomMMConfig preset : configList.values()) {
+            if (preset.background != null && preset.background.url != null) addAssetReference(used, preset.background.url);
+            if (preset.elements != null) for (CMMElement element : preset.elements) {
+                if (element instanceof Sprite) {
+                    Sprite sprite = (Sprite) element;
+                    if (sprite.image != null && sprite.image.url != null) addAssetReference(used, sprite.image.url);
+                }
+            }
+        }
+        for (File file : files) if (file.isFile() && !used.contains(assetPath(file))) file.delete();
+    }
+
+    private static void addAssetReference(java.util.Set<String> used, String path) {
+        used.add(assetPath(new File(path)));
+    }
+
+    private static String assetPath(File file) {
+        try { return file.getCanonicalPath(); } catch (Exception ignored) { return file.getAbsolutePath(); }
     }
 
     public static void savePreset(CustomMMConfig preset) {
@@ -142,7 +204,7 @@ public class CMMHelper {
             return;
         }
         if (!CONFIG_FOLDER.exists()) CONFIG_FOLDER.mkdirs();
-        File file = new File(CONFIG_FOLDER, preset.configName + ".cmm");
+        File file = new File(CONFIG_FOLDER, preset.configName + ".menu");
         try (FileWriter writer = new FileWriter(file)) {
             writer.write(GSON.toJson(preset));
         } catch (Exception e) {
@@ -157,9 +219,11 @@ public class CMMHelper {
             if (isModPreset(preset.configName)) continue;
             savePreset(preset);
         }
+        cleanupUnusedAssets();
     }
 
     public static void loadConfigList() {
+        incompatiblePresets.clear();
         if (!CONFIG_FOLDER.exists()) {
             CONFIG_FOLDER.mkdirs();
             return;
@@ -167,14 +231,15 @@ public class CMMHelper {
         if (!CONFIG_FOLDER.isDirectory() || CONFIG_FOLDER.list() == null || Objects.requireNonNull(CONFIG_FOLDER.list()).length == 0)
             return;
         File[] files = Objects.requireNonNull(CONFIG_FOLDER.listFiles());
-        List<File> filtered = Arrays.stream(files).filter(file -> file.getName().endsWith(".cmm")).collect(Collectors.toList());
+        List<File> filtered = Arrays.stream(files).filter(file -> file.getName().endsWith(".menu")).collect(Collectors.toList());
         for (File file : filtered) {
             try {
                 CustomMMConfig config = GSON.fromJson(new FileReader(file), CustomMMConfig.class);
-                if (config == null) return;
+                if (config == null) continue;
                 registerPreset(config);
             } catch (Exception e) {
                 Aetheria.logger.warning("Failed to load config file: " + file.getName());
+                if (e.getMessage() != null && e.getMessage().contains("future CMM preset version")) incompatiblePresets.add(file.getName());
             }
         }
     }
@@ -189,5 +254,11 @@ public class CMMHelper {
 
     public static CustomMMConfig getCMMConfig() {
         return configList.get(selectedConfig);
+    }
+
+    /** Clones using the concrete runtime class so class-specific fields are retained. */
+    public static CMMElement copyElement(CMMElement element) {
+        if (element == null) return null;
+        return GSON.fromJson(GSON.toJson(element, element.getClass()), element.getClass());
     }
 }

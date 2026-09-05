@@ -2,6 +2,9 @@ package io.hamlook.aetheria.features.custommenu.selector;
 
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.custommenu.ui.buttons.CMMButton;
+import io.hamlook.aetheria.features.custommenu.ui.dropdown.CMMDropdown;
+import io.hamlook.aetheria.features.custommenu.util.CMMHelper;
+import io.hamlook.aetheria.features.custommenu.editor.CMMEditorGUI;
 import io.hamlook.aetheria.features.custommenu.util.ScreenHelper;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
@@ -13,17 +16,25 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CreateConfigElement {
 
     public boolean enabled = false;
     public GuiTextField nameField = new GuiTextField(0, Minecraft.getMinecraft().fontRendererObj, 0,0,0,0);
+    public CMMDropdown basePreset = new CMMDropdown(new io.hamlook.aetheria.features.custommenu.Position(), 0, 20, new ArrayList<CMMDropdown.Item>());
     public CMMButton createButton = new CMMButton(0, 0, 0, 0, "Create") {
         @Override
         public void onClick(GuiScreen screen) {
-            //TODO: Create Preset & Open Editor
+            if (CMMHelper.createPreset(nameField.getText(), basePreset.getSelectedItem())) {
+                enabled = false;
+                nameField.setText("");
+                Minecraft.getMinecraft().displayGuiScreen(new CMMEditorGUI(CMMHelper.getCMMConfig(), screen));
+            }
         }
     };
+
     public CMMButton cancelButton = new CMMButton(0, 0, 0, 0, "Cancel") {
         @Override
         public void onClick(GuiScreen screen) {
@@ -32,7 +43,7 @@ public class CreateConfigElement {
         }
     };
     public int GUI_WIDTH = 600;
-    public int GUI_HEIGHT = 200;
+    public int GUI_HEIGHT = 250;
 
     public void render(int x,int y,int mouseX,int mouseY) {
         if(!enabled) return;
@@ -54,6 +65,7 @@ public class CreateConfigElement {
         createButton.draw(mouseX,mouseY,0);
         cancelButton.draw(mouseX,mouseY,0);
         drawNameField();
+        basePreset.draw(mouseX, mouseY, 0);
     }
 
     private void drawNameField() {
@@ -81,32 +93,48 @@ public class CreateConfigElement {
         GlStateManager.popMatrix();
     }
 
+    public void updatePositions(int x){ updatePositions(x, ScreenHelper.getAnchoredY(ScreenHelper.Anchor.CENTER, ScreenHelper.getStaticHeight(100))); }
     public void updatePositions(int x, int y){
         GUI_WIDTH = ScreenHelper.getStaticWidth(600);
-        GUI_HEIGHT = ScreenHelper.getStaticHeight(200);
+        GUI_HEIGHT = ScreenHelper.getStaticHeight(250);
 
         // Name Field
         nameField.xPosition = (int)(x + (GUI_WIDTH * 0.1));
-        nameField.yPosition = ScreenHelper.getAnchoredY(ScreenHelper.Anchor.CENTER,ScreenHelper.getStaticHeight(30));
+        nameField.yPosition = y + ScreenHelper.getStaticHeight(58);
         nameField.width = (int)(GUI_WIDTH * 0.8);
         nameField.height = ScreenHelper.getStaticHeight(30);
 
         // Create Button
         createButton.xPos = ScreenHelper.getAnchoredX(ScreenHelper.Anchor.CENTER,-ScreenHelper.getStaticWidth(225));
-        createButton.yPos = ScreenHelper.getAnchoredY(ScreenHelper.Anchor.CENTER,-ScreenHelper.getStaticHeight(30));
+        createButton.yPos = y + ScreenHelper.getStaticHeight(160);
         createButton.width = ScreenHelper.getStaticWidth(200);
         createButton.height = ScreenHelper.getStaticHeight(20);
 
         // Cancel Button
         cancelButton.xPos = ScreenHelper.getAnchoredX(ScreenHelper.Anchor.CENTER,ScreenHelper.getStaticWidth(25));
-        cancelButton.yPos = ScreenHelper.getAnchoredY(ScreenHelper.Anchor.CENTER,-ScreenHelper.getStaticHeight(30));
+        cancelButton.yPos = y + ScreenHelper.getStaticHeight(160);
         cancelButton.width = ScreenHelper.getStaticWidth(200);
         cancelButton.height = ScreenHelper.getStaticHeight(20);
+
+        basePreset.xPos = nameField.xPosition;
+        basePreset.yPos = nameField.yPosition + ScreenHelper.getStaticHeight(42);
+        basePreset.width = nameField.width;
+        basePreset.itemHeight = ScreenHelper.getStaticHeight(20);
+        basePreset.height = basePreset.itemHeight;
+        List<CMMDropdown.Item> items = new ArrayList<>();
+        for (String preset : CMMHelper.configList.keySet()) {
+            CMMDropdown.NameItem item = new CMMDropdown.NameItem(preset);
+            item.id = preset;
+            items.add(item);
+        }
+        basePreset.setItems(items);
+        if (basePreset.getSelectedItem().isEmpty()) basePreset.setSelectedItem("Default");
     }
 
     public boolean mouseInput(int mouseX, int mouseY,int mouseButton) {
         if(!enabled) return false;
         nameField.mouseClicked(mouseX,mouseY,mouseButton);
+        if (basePreset.onMouseClick(mouseX, mouseY)) return true;
         if(isHovering(cancelButton,mouseX,mouseY)){
             SoundUtils.playSound("gui.button.press");
             cancelButton.onClick(Minecraft.getMinecraft().currentScreen);

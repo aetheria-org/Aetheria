@@ -96,6 +96,7 @@ dependencies {
     shadowImpl("com.google.code.gson:gson:2.10.1") { isTransitive = false }
     shadowImpl("com.fifesoft:rsyntaxtextarea:3.3.3") { isTransitive = false }
     implementation("moe.nea:hotswapagent-forge:1.0.1")
+    testImplementation("junit:junit:4.13.2")
 }
 
 // Tasks:

@@ -10,10 +10,19 @@ import net.minecraft.client.gui.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Collections;
 
 public class GuiHelper {
 
     private static final Map<String, GuiScreen> instanceCache = new HashMap<>();
+
+    /** Names exposed by the same resolver used by CMM buttons. */
+    public static List<String> getAvailableMenuNames() {
+        return Arrays.asList("Singleplayer Menu", "Multiplayer Menu", "Options Menu", "Controls Menu",
+                "Video Settings", "Language Menu", "Create World Menu", "ASM Config", "ASM Options Menu", "CMM Editor");
+    }
 
     public static GuiScreen getMenu(String name, GuiScreen parentScreen) {
         return instanceCache.computeIfAbsent(name, key -> {
@@ -38,6 +47,7 @@ public class GuiHelper {
                     return new OptionsMenu();
                 case "CMM Editor":
                 case "CMM Editor Menu":
+                case "Custom Main Menu Editor":
                 case "CMM Selector":
                     return new CMMSelectorGUI();
                 default:

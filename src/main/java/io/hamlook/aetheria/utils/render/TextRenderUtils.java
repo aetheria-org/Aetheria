@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.utils.render;
 
+import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
 import io.hamlook.aetheria.features.misc.ScrollableTooltips;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
@@ -46,6 +47,13 @@ public final class TextRenderUtils {
         GlStateManagerCompat.scale(finalScale, finalScale, 1f);
         MinecraftCompat.getMinecraft().fontRendererObj.drawString(text, 0, 0, color);
         GlStateManagerCompat.popMatrix();
+    }
+
+    public static void drawChromaStringScaleAware(String text, float xPos, float yPos, String style, float uiScale, boolean displayScale) {
+        int color;
+        try { color = ChromaStyle.of(style).toArgb(xPos, yPos); }
+        catch (Exception ignored) { color = 0xFFFFFFFF; }
+        drawStringScaleAware(text, xPos, yPos, color, uiScale, displayScale);
     }
 
     public static void drawStringScaleAware(String text, float xPos, float yPos, float uiScale, boolean displayScale) {

@@ -7,8 +7,11 @@ import io.hamlook.aetheria.features.custommenu.CustomMMConfig;
 import io.hamlook.aetheria.features.custommenu.Position;
 import io.hamlook.aetheria.features.custommenu.ui.buttons.impl.ActionButton;
 import io.hamlook.aetheria.features.custommenu.ui.buttons.impl.GuiButton;
+import io.hamlook.aetheria.features.custommenu.ui.dropdown.CMMDropdown;
 import io.hamlook.aetheria.features.custommenu.ui.sprites.Sprite;
 import io.hamlook.aetheria.features.custommenu.ui.text.Text;
+
+import java.util.Arrays;
 
 public class DefaultCMMPreset extends CustomMMConfig {
 
@@ -34,6 +37,14 @@ public class DefaultCMMPreset extends CustomMMConfig {
                 200,20,"Change Menu Style","CMM Editor"
         ));
 
+        addElement(new CMMDropdown(new Position("CENTER","CENTER",-100,-125),
+                200,20,
+                Arrays.asList(
+                        new CMMDropdown.NameItem("Test 1"),
+                        new CMMDropdown.NameItem("Test 2"),
+                        new CMMDropdown.NameItem("Test 3"),
+                        new CMMDropdown.NameItem("Test 4")
+                )));
         addElement(new ActionButton(
                         new Position("RIGHT", "TOP", -18, -2),
                         16, 16, "✕", ActionButton.Action.EXIT));

@@ -68,4 +68,8 @@ public class MainMenuConfig {
     @ConfigOption(name = "Key: Import", desc = "Import config from clipboard key")
     @ConfigEditorKeybind(defaultKey = Keyboard.KEY_I)
     public int keyImport = Keyboard.KEY_I;
+
+    @ConfigOption(name = "Key: Help", desc = "Open editor help")
+    @ConfigEditorKeybind(defaultKey = Keyboard.KEY_H)
+    public int keyHelp = Keyboard.KEY_H;
 }

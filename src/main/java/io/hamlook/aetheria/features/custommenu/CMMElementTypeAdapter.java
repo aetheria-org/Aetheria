@@ -6,6 +6,7 @@ import io.hamlook.aetheria.features.custommenu.ui.buttons.CMMButton;
 import io.hamlook.aetheria.features.custommenu.ui.buttons.ButtonStyle;
 import io.hamlook.aetheria.features.custommenu.ui.sprites.Sprite;
 import io.hamlook.aetheria.features.custommenu.ui.text.Text;
+import io.hamlook.aetheria.features.custommenu.ui.dropdown.CMMDropdown;
 
 import java.lang.reflect.Type;
 
@@ -24,15 +25,24 @@ public class CMMElementTypeAdapter implements JsonSerializer<CMMElement>, JsonDe
 
     @Override
     public CMMElement deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+        if (json == null || json.isJsonNull() || !json.isJsonObject()) return null;
         JsonObject obj = json.getAsJsonObject();
-        String typeName = obj.get(TYPE_FIELD).getAsString();
-        Class<? extends CMMElement> clazz = getClassForType(typeName);
+        JsonElement typeElement = obj.get(TYPE_FIELD);
         JsonElement data = obj.get("data");
+        if (typeElement == null || !typeElement.isJsonPrimitive() || data == null || data.isJsonNull()) {
+            throw new JsonParseException("Invalid CMM element: missing type or data");
+        }
+        String typeName = typeElement.getAsString();
+        Class<? extends CMMElement> clazz = getClassForType(typeName);
         if (data != null && data.isJsonObject() && data.getAsJsonObject().has("style") && data.getAsJsonObject().get("style").isJsonPrimitive() && data.getAsJsonObject().get("style").getAsJsonPrimitive().isNumber()) {
             int index = data.getAsJsonObject().get("style").getAsInt();
             data.getAsJsonObject().addProperty("style", ButtonStyle.fromIndex(index).name());
         }
-        return context.deserialize(data, clazz);
+        try {
+            return context.deserialize(data, clazz);
+        } catch (RuntimeException ex) {
+            throw new JsonParseException("Could not deserialize CMM element type " + typeName, ex);
+        }
     }
 
     private String getTypeName(CMMElement element) {
@@ -41,6 +51,7 @@ public class CMMElementTypeAdapter implements JsonSerializer<CMMElement>, JsonDe
         if (element instanceof CMMButton) return "button";
         if (element instanceof Sprite) return "image";
         if (element instanceof Text) return "text";
+        if (element instanceof CMMDropdown) return "dropdown";
         return "element";
     }
 
@@ -52,6 +63,7 @@ public class CMMElementTypeAdapter implements JsonSerializer<CMMElement>, JsonDe
             case "image":
             case "sprite": return Sprite.class;
             case "text": return Text.class;
+            case "dropdown": return CMMDropdown.class;
             default: return CMMElement.class;
         }
     }

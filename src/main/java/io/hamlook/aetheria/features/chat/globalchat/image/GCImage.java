@@ -31,6 +31,9 @@ import java.util.regex.Pattern;
 
 public class GCImage {
 
+    public static final int MAX_REMOTE_BYTES = 32 * 1024 * 1024;
+    public static final int MAX_URL_LENGTH = 2048;
+
 
     public List<BufferedImage> images;
     public List<ResourceLocation> frames = new ArrayList<>();
@@ -116,6 +119,7 @@ public class GCImage {
     }
 
     public static String createGCImage(String url, boolean circularMask, boolean expectedAnimated) {
+        if (url == null || url.length() > MAX_URL_LENGTH || !(url.startsWith("http://") || url.startsWith("https://"))) return "";
         GCImage gcImage = new GCImage(new ArrayList<>(), -1);
         gcImage.url = url;
         gcImage.circularMask = circularMask;
@@ -334,12 +338,14 @@ public class GCImage {
         }
 
         int expectedLength = connection.getContentLength();
+        if (expectedLength > MAX_REMOTE_BYTES) throw new IOException("Image exceeds maximum size");
 
         try (InputStream is = new BufferedInputStream(connection.getInputStream());
              ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[8192];
             int read;
             while ((read = is.read(buffer)) != -1) {
+                if (baos.size() + read > MAX_REMOTE_BYTES) throw new IOException("Image exceeds maximum size");
                 baos.write(buffer, 0, read);
             }
             byte[] data = baos.toByteArray();

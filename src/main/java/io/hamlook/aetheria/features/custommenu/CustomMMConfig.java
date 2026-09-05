@@ -4,6 +4,8 @@ import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.features.custommenu.ui.CMMElement;
 import io.hamlook.aetheria.features.custommenu.ui.buttons.CMMButton;
+import io.hamlook.aetheria.features.custommenu.ui.dropdown.CMMDropdown;
+import io.hamlook.aetheria.features.custommenu.animation.CMMAnimation;
 import lombok.Setter;
 
 import java.util.ArrayList;
@@ -13,11 +15,17 @@ import java.io.File;
 
 public class CustomMMConfig {
 
+    public static final int CURRENT_FORMAT_VERSION = 2;
+    public int formatVersion = CURRENT_FORMAT_VERSION;
+
     public String configName;
     @Setter
     public GCImage background;
     private transient String loadingBackgroundUrl;
     public List<CMMElement> elements;
+    public CMMAnimation openAnimation = new CMMAnimation();
+    public CMMAnimation closeAnimation = new CMMAnimation();
+    public boolean animateBackground = true;
 
 
     public GCImage getBackground(){
@@ -42,6 +50,13 @@ public class CustomMMConfig {
         return elements.stream()
                 .filter(e -> e instanceof CMMButton)
                 .map(e -> (CMMButton) e)
+                .collect(Collectors.toList());
+    }
+
+    public List<CMMDropdown> getDropdowns() {
+        return elements.stream()
+                .filter(e -> e instanceof CMMDropdown)
+                .map(e -> (CMMDropdown) e)
                 .collect(Collectors.toList());
     }
 
