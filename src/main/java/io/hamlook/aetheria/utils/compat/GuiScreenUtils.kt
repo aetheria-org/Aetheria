@@ -1,6 +1,5 @@
 ﻿package io.hamlook.aetheria.utils.compat
 
-import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.gui.ScaledResolution
 
 /**
@@ -54,10 +53,4 @@ object GuiScreenUtils {
 
     @JvmStatic
     fun getMousePos(): Pair<Int, Int> = getMouseX() to getMouseY()
-
-    @JvmStatic
-    fun setClipboard(text: String) = GuiScreen.setClipboardString(text)
-
-    @JvmStatic
-    fun getClipboard(): String = GuiScreen.getClipboardString()
 }
