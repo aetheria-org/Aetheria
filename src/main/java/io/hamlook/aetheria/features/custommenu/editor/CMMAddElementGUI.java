@@ -17,23 +17,119 @@ import io.hamlook.aetheria.features.custommenu.util.ScreenHelper;
 import io.hamlook.aetheria.features.custommenu.util.PercentageUtils;
 import net.minecraft.client.gui.GuiScreen;
 import org.lwjgl.input.Keyboard;
+
 import java.util.Arrays;
 
 public class CMMAddElementGUI extends AetheriaBaseScreen {
-    private final CustomMMConfig config; private final GuiScreen parent;
+    private final CustomMMConfig config;
+    private final GuiScreen parent;
     private final String[] types = {"GuiButton", "Action Button", "Text", "Sprite", "Dropdown"};
-    private final String[] presets = {"Singleplayer Button", "Multiplayer Button", "Aetheria Options Menu Button", "Aetheria's Skyblock Mod Title Text", "Aetheria's Skyblock Mod Logo"};
+    private final String[] presets = {"Singleplayer Button", "Multiplayer Button", "MC Options Menu", "Aetheria Config Menu","Aetheria Options Menu Button", "Aetheria's Skyblock Mod Title Text", "Aetheria's Skyblock Mod Logo"};
     private boolean presetsTab;
-    public CMMAddElementGUI(CustomMMConfig config, GuiScreen parent) { this.config=config; this.parent=parent; }
-    @Override protected void onInitGui() { ScreenHelper.updateScreenDimensions(width, height); }
-    @Override public void onResize(net.minecraft.client.Minecraft mc, int w, int h) { super.onResize(mc, w, h); ScreenHelper.updateScreenDimensions(w, h); }
-    private int tabLeft() { return PercentageUtils.centeredX(36f); }
-    private int tabWidth() { return PercentageUtils.width(17f); }
-    private int listLeft() { return PercentageUtils.centeredX(35f); }
-    private int listWidth() { return PercentageUtils.width(35f); }
-    private int listY(int i) { return PercentageUtils.y(18.75f) + i * PercentageUtils.height(6.7f); }
-    @Override protected void onDrawScreen(int mx,int my,float pt) { ScreenHelper.updateScreenDimensions(width,height); drawRect(0,0,width,height,0xF0121218); TextRenderUtils.drawCenteredStringScaleAware("Add CMM Element",PercentageUtils.centerX(),PercentageUtils.y(7.3f),0xFFFFFFFF,2f,true); drawRect(tabLeft(),PercentageUtils.y(11.5f),tabLeft()+tabWidth(),PercentageUtils.y(16.3f),presetsTab?0xFF292932:0xFF3B6982); drawRect(PercentageUtils.centerX()+PercentageUtils.width(1f),PercentageUtils.y(11.5f),PercentageUtils.centerX()+PercentageUtils.width(1f)+tabWidth(),PercentageUtils.y(16.3f),presetsTab?0xFF3B6982:0xFF292932); TextRenderUtils.drawCenteredStringScaleAware("Elements",tabLeft()+tabWidth()/2f,PercentageUtils.y(13.9f),0xFFFFFFFF,.9f,false); TextRenderUtils.drawCenteredStringScaleAware("Presets",PercentageUtils.centerX()+PercentageUtils.width(1f)+tabWidth()/2f,PercentageUtils.y(13.9f),0xFFFFFFFF,.9f,false); String[] list=presetsTab?presets:types; for(int i=0;i<list.length;i++){int y=listY(i);boolean h=mx>listLeft()&&mx<listLeft()+listWidth()&&my>y&&my<y+PercentageUtils.height(5f);drawRect(listLeft(),y,listLeft()+listWidth(),y+PercentageUtils.height(5f),h?0xFF3B6982:0xFF292932);TextRenderUtils.drawCenteredStringScaleAware(list[i],PercentageUtils.centerX(),y+PercentageUtils.height(2.5f),0xFFFFFFFF,.9f,false);} TextRenderUtils.drawCenteredStringScaleAware("Escape: return",PercentageUtils.centerX(),PercentageUtils.y(94f),0xFFB8B8C8,1f,false); }
-    @Override protected void onMouseClicked(int mx,int my,int button) { if(button!=0)return; if(my>=PercentageUtils.y(11.5f)&&my<PercentageUtils.y(16.3f)){presetsTab=mx>=PercentageUtils.centerX();return;} int i=(my-PercentageUtils.y(18.75f))/PercentageUtils.height(6.7f);String[] list=presetsTab?presets:types;if(i<0||i>=list.length)return;CMMElement e=create(presetsTab?(i==0?0:i==1?1:i==2?1:i==3?2:3):i);if(e!=null){config.addElement(e);CMMHelper.savePreset(config);MinecraftCompat.getMinecraft().displayGuiScreen(parent);} }
-    private CMMElement create(int i){int x=PercentageUtils.centerX()-ScreenHelper.getStaticWidth(100),y=PercentageUtils.centerY()-ScreenHelper.getStaticHeight(10);Position p=Position.absolute(x,y);CMMElement element;switch(i){case 0:element=new GuiButton(p,200,20,"New Button","CMM Editor");break;case 1:element=new ActionButton(p,200,20,"Close",ActionButton.Action.CLOSE_MENU);break;case 2:element=new Text(p,true,"New Text",0xFFFFFFFF,1f);break;case 3:element=new Sprite(p,100,100,null,Resources.ASM_LOGO);break;case 4:element=new CMMDropdown(p,200,20,Arrays.<CMMDropdown.Item>asList(new CMMDropdown.NameItem("Option 1"),new CMMDropdown.NameItem("Option 2")));break;default:return null;} element.setPixelGeometry(x,y,element.width,element.height); element.position=Position.absolute(x,y); return element;}
-    @Override protected void onKeyTyped(char c,int key){if(key==Keyboard.KEY_ESCAPE)MinecraftCompat.getMinecraft().displayGuiScreen(parent);}
+
+    public CMMAddElementGUI(CustomMMConfig config, GuiScreen parent) {
+        this.config = config;
+        this.parent = parent;
+    }
+
+    @Override
+    protected void onInitGui() {
+        ScreenHelper.updateScreenDimensions(width, height);
+    }
+
+    @Override
+    public void onResize(net.minecraft.client.Minecraft mc, int w, int h) {
+        super.onResize(mc, w, h);
+        ScreenHelper.updateScreenDimensions(w, h);
+    }
+
+    private int tabLeft() {
+        return PercentageUtils.centeredX(36f);
+    }
+
+    private int tabWidth() {
+        return PercentageUtils.width(17f);
+    }
+
+    private int listLeft() {
+        return PercentageUtils.centeredX(35f);
+    }
+
+    private int listWidth() {
+        return PercentageUtils.width(35f);
+    }
+
+    private int listY(int i) {
+        return PercentageUtils.y(18.75f) + i * PercentageUtils.height(6.7f);
+    }
+
+    @Override
+    protected void onDrawScreen(int mx, int my, float pt) {
+        ScreenHelper.updateScreenDimensions(width, height);
+        drawRect(0, 0, width, height, 0xF0121218);
+        TextRenderUtils.drawCenteredStringScaleAware("Add CMM Element", PercentageUtils.centerX(), PercentageUtils.y(7.3f), 0xFFFFFFFF, 2f, true);
+        drawRect(tabLeft(), PercentageUtils.y(11.5f), tabLeft() + tabWidth(), PercentageUtils.y(16.3f), presetsTab ? 0xFF292932 : 0xFF3B6982);
+        drawRect(PercentageUtils.centerX() + PercentageUtils.width(1f), PercentageUtils.y(11.5f), PercentageUtils.centerX() + PercentageUtils.width(1f) + tabWidth(), PercentageUtils.y(16.3f), presetsTab ? 0xFF3B6982 : 0xFF292932);
+        TextRenderUtils.drawCenteredStringScaleAware("Elements", tabLeft() + tabWidth() / 2f, PercentageUtils.y(13.9f), 0xFFFFFFFF, .9f, false);
+        TextRenderUtils.drawCenteredStringScaleAware("Presets", PercentageUtils.centerX() + PercentageUtils.width(1f) + tabWidth() / 2f, PercentageUtils.y(13.9f), 0xFFFFFFFF, .9f, false);
+        String[] list = presetsTab ? presets : types;
+        for (int i = 0; i < list.length; i++) {
+            int y = listY(i);
+            boolean h = mx > listLeft() && mx < listLeft() + listWidth() && my > y && my < y + PercentageUtils.height(5f);
+            drawRect(listLeft(), y, listLeft() + listWidth(), y + PercentageUtils.height(5f), h ? 0xFF3B6982 : 0xFF292932);
+            TextRenderUtils.drawCenteredStringScaleAware(list[i], PercentageUtils.centerX(), y + PercentageUtils.height(2.5f), 0xFFFFFFFF, .9f, false);
+        }
+        TextRenderUtils.drawCenteredStringScaleAware("Escape: return", PercentageUtils.centerX(), PercentageUtils.y(94f), 0xFFB8B8C8, 1f, false);
+    }
+
+    @Override
+    protected void onMouseClicked(int mx, int my, int button) {
+        if (button != 0) return;
+        if (my >= PercentageUtils.y(11.5f) && my < PercentageUtils.y(16.3f)) {
+            presetsTab = mx >= PercentageUtils.centerX();
+            return;
+        }
+        int i = (my - PercentageUtils.y(18.75f)) / PercentageUtils.height(6.7f);
+        String[] list = presetsTab ? presets : types;
+        if (i < 0 || i >= list.length) return;
+        CMMElement e = create(presetsTab ? (i == 0 ? 0 : i == 1 ? 1 : i == 2 ? 1 : i == 3 ? 2 : 3) : i);
+        if (e != null) {
+            config.addElement(e);
+            CMMHelper.savePreset(config);
+            MinecraftCompat.getMinecraft().displayGuiScreen(parent);
+        }
+    }
+
+    private CMMElement create(int i) {
+        int x = PercentageUtils.centerX() - ScreenHelper.getStaticWidth(100), y = PercentageUtils.centerY() - ScreenHelper.getStaticHeight(10);
+        Position p = Position.absolute(x, y);
+        CMMElement element;
+        switch (i) {
+            case 0:
+                element = new GuiButton(p, 200, 20, "New Button", "CMM Editor");
+                break;
+            case 1:
+                element = new ActionButton(p, 200, 20, "Close", ActionButton.Action.CLOSE_MENU);
+                break;
+            case 2:
+                element = new Text(p, true, "New Text", 0xFFFFFFFF, 1f);
+                break;
+            case 3:
+                element = new Sprite(p, 100, 100, null, Resources.ASM_LOGO);
+                break;
+            case 4:
+                element = new CMMDropdown(p, 200, 20, Arrays.<CMMDropdown.Item>asList(new CMMDropdown.NameItem("Option 1"), new CMMDropdown.NameItem("Option 2")));
+                break;
+            default:
+                return null;
+        }
+        element.setPixelGeometry(x, y, element.width, element.height);
+        element.position = Position.absolute(x, y);
+        return element;
+    }
+
+    @Override
+    protected void onKeyTyped(char c, int key) {
+        if (key == Keyboard.KEY_ESCAPE) MinecraftCompat.getMinecraft().displayGuiScreen(parent);
+    }
 }

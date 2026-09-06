@@ -30,7 +30,7 @@ public class CreateConfigElement {
             if (CMMHelper.createPreset(nameField.getText(), basePreset.getSelectedItem())) {
                 enabled = false;
                 nameField.setText("");
-                Minecraft.getMinecraft().displayGuiScreen(new CMMEditorGUI(CMMHelper.getCMMConfig(), screen));
+                Minecraft.getMinecraft().displayGuiScreen(new CMMEditorGUI(CMMHelper.getCMMConfig()));
             }
         }
     };

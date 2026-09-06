@@ -259,7 +259,7 @@ public class CMMSelectorGUI extends GuiScreen {
         if (my<buttonY||my>=buttonY+PercentageUtils.height(6f)) { actionMenu=false; return; }
         int option=(mx-(x+PercentageUtils.width(2.5f)))/(buttonW+buttonGap); if(option<0||option>3){actionMenu=false;return;}
         if(option==0){CMMHelper.selectPreset(actionConfig.configName);actionMenu=false;updateCMMList();}
-        else if(option==1){actionMenu=false;Minecraft.getMinecraft().displayGuiScreen(new CMMEditorGUI(actionConfig,this));}
+        else if(option==1){actionMenu=false;Minecraft.getMinecraft().displayGuiScreen(new CMMEditorGUI(actionConfig));}
         else if(option==2){actionMenu=false;if(!CMMHelper.isModPreset(actionConfig.configName))deleteConfirm=true;}
         else { CMMClipboard.copyPreset(actionConfig); actionMenu=false; }
     }
