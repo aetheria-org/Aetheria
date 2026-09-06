@@ -110,7 +110,7 @@ class SlotBinds {
         if (!isEnabled()) return
         val gui = event.gui as? GuiInventory ?: return
         val c = cfg() ?: return
-        val container = InventoryCompat.getContainer(gui) ?: return
+        val container = InventoryCompat.getContainer(gui)
         val color = ChromaColour.specialToChromaRGB(c.lineColor)
 
         GlStateManagerCompat.pushMatrix()

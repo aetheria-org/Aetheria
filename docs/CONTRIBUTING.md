@@ -60,7 +60,7 @@ When IntelliJ opens the project for the first time, Gradle will begin downloadin
 If Gradle doesn't start automatically:
 
 1. Open the **Gradle** tab (elephant icon on the right sidebar).
-2. Click **Link Gradle Project** and select the `build.gradle.kts` file at the project root.
+2. Click **Link Gradle Project** and select the `root.gradle.kts` file at the project root.
 
 ![Gradle tab](gradle-tab.png)
 ![Gradle JVM setting](gradle-tab2.png)
@@ -86,7 +86,7 @@ If Gradle doesn't start automatically:
 
 ![run-configuration](run-configuration.png)
 
-This compiles the mod and produces a `.jar` in `build/libs/`. This is the file you'd drop into a Minecraft `mods/` folder to test the changes.
+This compiles the mod and produces a `.jar` in `versions/1.8.9-forge/build/libs/`. This is the file you'd drop into a Minecraft `mods/` folder to test the changes.
 
 ---
 ## Project Structure
@@ -94,6 +94,11 @@ This compiles the mod and produces a `.jar` in `build/libs/`. This is the file y
 Here's how the ASM source code is laid out so you know where to put things:
 
 ```
+root.gradle.kts                        ← EGT multi-version root (preprocess graph)
+build.gradle.kts                       ← Shared per-version build (compiled by :1.8.9-forge)
+versions/
+  mainProject                          ← Plain text: "1.8.9-forge"
+  1.8.9-forge/                         ← Empty (source stays in src/)
 src/main/
 ├──java/io/hamlook/aetheria/
 │   ├── Aetheria.java              ← Mod entry point
@@ -165,7 +170,7 @@ All commands are run from the project root. Use `./gradlew` on Mac/Linux and `gr
 ./gradlew build
 ```
 
-Compiles the mod and produces a `.jar` in `build/libs/`. This is the file you'd drop into a Minecraft `mods/` folder to test outside IntelliJ.
+Compiles the mod and produces a `.jar` in `versions/1.8.9-forge/build/libs/`. This is the file you'd drop into a Minecraft `mods/` folder to test outside IntelliJ.
 
 ### Check for errors without a full build
 
@@ -212,11 +217,18 @@ Full wipe and rebuild. Run this if something seems broken and a normal build doe
 - Use existing utility methods in the `utils` package before writing new ones.
 - All Mixin classes → `src/main/io/hamlook/aetheria/mixins/`
 
+### Compat layer & version-agnostic code
+
+- **Always use compat wrappers** from `utils/compat/` for APIs that change between Minecraft versions (Minecraft, GUI, GlStateManager, entities, items, etc.). Never import version-specific APIs directly in feature code — use the wrappers so preprocessor directives can be applied later.
+- **Use Aetheria custom events** (`AetheriaEventBus`, `@HandleEvent`) instead of Forge's `@SubscribeEvent` for new event handlers. Custom events are version-agnostic and will work across Forge/Fabric once preprocessing is active.
+- **Never use `@SubscribeEvent`** for new code — only existing pre-EGT code uses it. All new handlers should be `@RegisterEvents` classes with `@HandleEvent` methods.
+- **Preprocessor directives**: when porting to other versions, use `#if MC >= X.X.X` / `//$$` comments, not runtime version checks. The preprocessor strips inactive branches at build time.
+
 ---
 
 ## Additional Notes
 
-- ASM targets **Minecraft 1.8.9 Forge**. Many modern Fabric/Forge APIs are not available.
+- ASM targets **Minecraft 1.8.9 Forge** (with EGT multi-version infrastructure in place for future version branches). Many modern Fabric/Forge APIs are not available.
 - The mod entry point is `Aetheria.java`. Initialization logic is in the `init/` package.
 - The `repo/` package handles loading remote data. If you add new remotely-configurable data, wire it through there.
 - On server join, Aetheria sends only your Minecraft username and installed mod list to Aetheria's servers for analytics. Some features (like capes) send additional minimal data strictly necessary for that feature to function. See the README for the full privacy note.

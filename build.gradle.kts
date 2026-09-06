@@ -3,37 +3,26 @@ import org.apache.commons.lang3.SystemUtils
 plugins {
     idea
     java
-    id("gg.essential.loom") version "0.10.0.5"
-    kotlin("jvm") version "1.8.21"
-    id("dev.architectury.architectury-pack200") version "0.1.3"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "9.4.1"
+    id("gg.essential.multi-version")
+    id("gg.essential.loom")
+    kotlin("jvm") version "2.3.20"
+    id("dev.architectury.architectury-pack200")
 }
 
 //Constants:
 
-val baseGroup: String by project
-val mcVersion: String by project
-val version: String by project
-val mixinGroup = "$baseGroup.mixin"
-val modid: String by project
-val transformerFile = file("src/main/resources/accesstransformer.cfg")
-
-// Toolchains:
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(8))
-    toolchain.vendor.set(org.gradle.jvm.toolchain.JvmVendorSpec.ADOPTIUM)
-}
+val baseGroup = (project.findProperty("baseGroup") as? String) ?: "io.hamlook.aetheria"
+val mcVersion = (project.findProperty("mcVersion") as? String) ?: "1.8.9"
+val modid = (project.findProperty("modid") as? String) ?: "aetheria"
+val transformerFile = rootProject.file("src/main/resources/accesstransformer.cfg")
 
 // Minecraft configuration:
 loom {
-    launchConfigs {
-        "client" {
-            property("mixin.debug", "true")
-            arg("--tweakClass", "org.spongepowered.asm.launch.MixinTweaker")
-        }
-    }
     runConfigs {
         "client" {
+            property("mixin.debug", "true")
+            programArgs("--tweakClass", "org.spongepowered.asm.launch.MixinTweaker")
             if (SystemUtils.IS_OS_MAC_OSX) {
                 vmArgs.remove("-XstartOnFirstThread")
             }
@@ -48,13 +37,16 @@ loom {
             accessTransformer(transformerFile)
         }
     }
+    @Suppress("UnstableApiUsage")
     mixin {
+        useLegacyMixinAp.set(true)
         defaultRefmapName.set("mixins.$modid.refmap.json")
     }
 }
 
 sourceSets.main {
-    java.srcDirs("src/main/java", "src/main/kotlin")
+    java.srcDirs(rootProject.file("src/main/java"), rootProject.file("src/main/kotlin"))
+    resources.srcDirs(rootProject.file("src/main/resources"))
     output.setResourcesDir(sourceSets.main.flatMap { it.java.classesDirectory })
 }
 
@@ -83,8 +75,11 @@ dependencies {
         isTransitive = false
     }
     shadowImpl("org.java-websocket:Java-WebSocket:1.6.0") { isTransitive = false }
-    shadowImpl("org.slf4j:slf4j-api:1.7.36"){ isTransitive = false }
+    shadowImpl("org.slf4j:slf4j-api:1.7.36") { isTransitive = false }
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
+    annotationProcessor("com.google.code.gson:gson:2.10.1")
+    //noinspection VulnerableGradleDependency — Guava 17.0 is MC 1.8.9's bundled version
+    annotationProcessor("com.google.guava:guava:17.0")
 
     // Kotlin standard library, must be shadowed into the JAR
     shadowImpl(kotlin("stdlib"))
@@ -105,7 +100,7 @@ tasks.withType(JavaCompile::class) {
     options.encoding = "UTF-8"
 }
 
-tasks.withType(org.gradle.jvm.tasks.Jar::class) {
+tasks.withType(Jar::class) {
     archiveBaseName.set(modid)
     manifest.attributes.run {
         this["Main-Class"] = "io.hamlook.aetheria.ModInstaller"
@@ -114,22 +109,28 @@ tasks.withType(org.gradle.jvm.tasks.Jar::class) {
 
         this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
         this["MixinConfigs"] = "mixins.$modid.json"
-        if (transformerFile.exists())
-            this["FMLAT"] = "${modid}_at.cfg"
+        if (transformerFile.exists()) this["FMLAT"] = "${modid}_at.cfg"
     }
 }
 
 tasks.processResources {
-    inputs.property("version", project.version)
-    inputs.property("mcversion", mcVersion)
-    inputs.property("modid", modid)
-    inputs.property("basePackage", baseGroup)
+    val versionStr = project.version.toString()
+    @Suppress("REDUNDANT_CALL_OF_CONVERSION_METHOD") val mcVersionStr = mcVersion.toString()
+    @Suppress("REDUNDANT_CALL_OF_CONVERSION_METHOD") val modidStr = modid.toString()
+    @Suppress("REDUNDANT_CALL_OF_CONVERSION_METHOD") val baseGroupStr = baseGroup.toString()
 
-    filesMatching(listOf("mcmod.info", "mixins.$modid.json")) {
-        expand(inputs.properties)
+    inputs.property("version", versionStr)
+    inputs.property("mcversion", mcVersionStr)
+    inputs.property("modid", modidStr)
+    inputs.property("basePackage", baseGroupStr)
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    filesMatching(listOf("mcmod.info", "mixins.$modidStr")) {
+        expand("version" to versionStr, "mcversion" to mcVersionStr, "modid" to modidStr, "basePackage" to baseGroupStr)
     }
 
-    rename("accesstransformer.cfg", "META-INF/${modid}_at.cfg")
+    rename("accesstransformer.cfg", "META-INF/${modidStr}_at.cfg")
 }
 
 
@@ -151,9 +152,7 @@ tasks.shadowJar {
     from(rootProject.file("LICENSE.txt"))
     mergeServiceFiles()
     doLast {
-        configurations.forEach {
-            println("Copying dependencies into mod: ${it.files}")
-        }
+        println("Shadow jar built: ${archiveFile.get().asFile} (${archiveFile.get().asFile.length()} bytes)")
     }
 
     fun relocate(name: String) = relocate(name, "$baseGroup.deps.$name")
