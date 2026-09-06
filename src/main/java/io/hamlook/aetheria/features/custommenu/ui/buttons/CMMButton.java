@@ -6,6 +6,8 @@ import io.hamlook.aetheria.features.custommenu.ui.CMMElement;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
+import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import io.hamlook.aetheria.features.custommenu.util.ScreenHelper;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
 
@@ -45,9 +47,12 @@ public abstract class CMMButton extends CMMElement {
 
     public static void drawCenteredString(String displayString, int xPos, int yPos, int width, int height, int color, boolean shadow) {
         FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
-        float x = xPos + (width / 2f) - (fr.getStringWidth(displayString) / 2f);
-        float y = (yPos + (height / 2f) - (fr.FONT_HEIGHT / 2f)) + 1;
-        fr.drawString(displayString, x, y, color, shadow);
+        if (displayString == null) displayString = "";
+        float availableWidth = Math.max(1f, width - Math.max(4, ScreenHelper.getStaticWidth(10)));
+        float widthScale = availableWidth / Math.max(1f, fr.getStringWidth(displayString));
+        float heightScale = Math.max(0.25f, (height * 0.72f) / Math.max(1f, fr.FONT_HEIGHT));
+        float scale = Math.max(0.25f, Math.min(2.0f, Math.min(widthScale, heightScale)));
+        TextRenderUtils.drawCenteredStringScaleAware(displayString, xPos + width / 2f, yPos + height / 2f, color, scale, false);
     }
 
     public boolean checkHover(int mouseX, int mouseY) {

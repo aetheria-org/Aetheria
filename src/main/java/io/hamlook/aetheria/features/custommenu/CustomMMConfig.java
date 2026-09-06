@@ -15,7 +15,7 @@ import java.io.File;
 
 public class CustomMMConfig {
 
-    public static final int CURRENT_FORMAT_VERSION = 2;
+    public static final int CURRENT_FORMAT_VERSION = 3;
     public int formatVersion = CURRENT_FORMAT_VERSION;
 
     public String configName;

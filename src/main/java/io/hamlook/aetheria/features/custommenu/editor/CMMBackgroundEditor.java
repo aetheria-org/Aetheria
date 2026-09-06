@@ -10,6 +10,7 @@ import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import io.hamlook.aetheria.features.custommenu.util.ScreenHelper;
+import io.hamlook.aetheria.features.custommenu.util.PercentageUtils;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.util.ResourceLocation;
@@ -28,30 +29,36 @@ public class CMMBackgroundEditor extends AetheriaBaseScreen {
     private GuiTextField url;
     private String message = "";
     private final ResourceLocation[] resources = {Resources.CMM_DEFAULT_BG};
+    private int logicalWidth() { return PercentageUtils.width(100f); }
+    private int logicalHeight() { return PercentageUtils.height(100f); }
+    private int px(float percent) { return PercentageUtils.x(percent); }
+    private int py(float percent) { return PercentageUtils.y(percent); }
+    private int pw(float percent) { return PercentageUtils.width(percent); }
+    private int ph(float percent) { return PercentageUtils.height(percent); }
 
     public CMMBackgroundEditor(CustomMMConfig config, GuiScreen parent) { this.config = config; this.parent = parent; this.sprite = null; }
     public CMMBackgroundEditor(Sprite sprite, GuiScreen parent) { this.config = null; this.parent = parent; this.sprite = sprite; }
 
     @Override protected void onInitGui() {
         ScreenHelper.updateScreenDimensions(width, height);
-        url = new GuiTextField(0, MinecraftCompat.getFontRenderer(), width / 2 - ScreenHelper.getStaticWidth(180), ScreenHelper.getStaticHeight(90), ScreenHelper.getStaticWidth(360), ScreenHelper.getStaticHeight(20));
+        url = new GuiTextField(0, MinecraftCompat.getFontRenderer(), px(28.92f), py(18.75f), pw(42.15f), ph(4.17f));
         url.setMaxStringLength(2048);
         if (sprite != null && sprite.image != null && sprite.image.url != null) url.setText(sprite.image.url);
         else if (config != null && config.background != null && config.background.url != null && config.background.url.startsWith("http")) url.setText(config.background.url);
         url.setFocused(true);
     }
-    @Override public void onResize(net.minecraft.client.Minecraft mc, int w, int h) { super.onResize(mc, w, h); ScreenHelper.updateScreenDimensions(w, h); if (url != null) { url.xPosition=w/2-ScreenHelper.getStaticWidth(180); url.yPosition=ScreenHelper.getStaticHeight(90); url.width=ScreenHelper.getStaticWidth(360); url.height=ScreenHelper.getStaticHeight(20); } }
+    @Override public void onResize(net.minecraft.client.Minecraft mc, int w, int h) { super.onResize(mc, w, h); ScreenHelper.updateScreenDimensions(w, h); if (url != null) { url.xPosition=px(28.92f); url.yPosition=py(18.75f); url.width=pw(42.15f); url.height=ph(4.17f); } }
 
     @Override protected void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
-        drawRect(0, 0, width, height, 0xEE121218);
-        TextRenderUtils.drawCenteredStringScaleAware("Edit Background", width / 2f, 35, 0xFFFFFFFF, 2f, true);
-        TextRenderUtils.drawCenteredStringScaleAware("Paste a direct image link, upload a file, or choose a mod resource", width / 2f, 57, 0xFFB8B8C8, 1f, false);
+        int sw=logicalWidth(), sh=logicalHeight(); drawRect(0, 0, sw, sh, 0xEE121218);
+        TextRenderUtils.drawCenteredStringScaleAware("Edit Background", sw / 2f, py(7.3f), 0xFFFFFFFF, 2f, true);
+        TextRenderUtils.drawCenteredStringScaleAware("Paste a direct image link, upload a file, or choose a mod resource", sw / 2f, py(11.9f), 0xFFB8B8C8, 1f, false);
         drawField();
-        button(width / 2 - 180, 125, 360, 24, "Apply Link", mouseX, mouseY);
-        button(width / 2 - 180, 158, 175, 24, "Upload File", mouseX, mouseY);
-        button(width / 2 + 5, 158, 175, 24, "Use Default Resource", mouseX, mouseY);
-        button(width / 2 - 180, height - 45, 360, 24, "Back", mouseX, mouseY);
-        if (!message.isEmpty()) TextRenderUtils.drawCenteredStringScaleAware(message, width / 2f, height - 65, 0xFFFFAA55, 1f, false);
+        button(px(28.92f), py(26.04f), pw(42.15f), ph(5f), "Apply Link", mouseX, mouseY);
+        button(px(28.92f), py(32.92f), pw(20.49f), ph(5f), "Upload File", mouseX, mouseY);
+        button(px(50.59f), py(32.92f), pw(20.49f), ph(5f), "Use Default Resource", mouseX, mouseY);
+        button(px(28.92f), py(90.63f), pw(42.15f), ph(5f), "Back", mouseX, mouseY);
+        if (!message.isEmpty()) TextRenderUtils.drawCenteredStringScaleAware(message, sw / 2f, py(86.5f), 0xFFFFAA55, 1f, false);
     }
 
     private void drawField() {
@@ -69,10 +76,10 @@ public class CMMBackgroundEditor extends AetheriaBaseScreen {
     @Override protected void onMouseClicked(int mouseX, int mouseY, int button) {
         url.mouseClicked(mouseX, mouseY, button);
         if (button != 0) return;
-        if (inside(mouseX, mouseY, width / 2 - 180, 125, 360, 24)) applyLink();
-        else if (inside(mouseX, mouseY, width / 2 - 180, 158, 175, 24)) upload();
-        else if (inside(mouseX, mouseY, width / 2 + 5, 158, 175, 24)) applyResource(resources[0]);
-        else if (inside(mouseX, mouseY, width / 2 - 180, height - 45, 360, 24)) MinecraftCompat.getMinecraft().displayGuiScreen(parent);
+        if (inside(mouseX, mouseY, px(28.92f), py(26.04f), pw(42.15f), ph(5f))) applyLink();
+        else if (inside(mouseX, mouseY, px(28.92f), py(32.92f), pw(20.49f), ph(5f))) upload();
+        else if (inside(mouseX, mouseY, px(50.59f), py(32.92f), pw(20.49f), ph(5f))) applyResource(resources[0]);
+        else if (inside(mouseX, mouseY, px(28.92f), py(90.63f), pw(42.15f), ph(5f))) MinecraftCompat.getMinecraft().displayGuiScreen(parent);
     }
 
     private void applyLink() {

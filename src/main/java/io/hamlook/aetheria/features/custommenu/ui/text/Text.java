@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.custommenu.ui.text;
 
 import io.hamlook.aetheria.features.custommenu.Position;
 import io.hamlook.aetheria.features.custommenu.ui.CMMElement;
+import io.hamlook.aetheria.features.custommenu.util.ScreenHelper;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.placeholders.PlaceholderManager;
 import io.hamlook.aetheria.utils.render.MiniMessageDetector;
@@ -38,7 +39,10 @@ public class Text extends CMMElement {
         FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
         boolean displayScale = false;
         float scaleDisplay = displayScale ? ResolutionUtils.getXStatic(1) : 1f;
-        float finalScale = Math.max(0.25f, this.scale * scaleDisplay);
+        // Text is rendered in the same scaled GUI coordinate space as element geometry.
+        // Re-evaluate this every frame so GUI-scale/resolution changes are immediate.
+        float renderScale = this.scale;
+        float finalScale = Math.max(0.25f, renderScale * scaleDisplay);
 
         // total unscaled width
         int totalWidth = 0;
@@ -46,15 +50,15 @@ public class Text extends CMMElement {
             totalWidth += fr.getStringWidth(seg.text);
         }
 
-        float x = centered ? (position.getX() - totalWidth * finalScale / 2f) : position.getX();
-        float y = position.getY();
+        float x = centered ? (xPos - totalWidth * finalScale / 2f) : xPos;
+        float y = yPos;
 
         for (MiniMessageDetector.Segment seg : segments) {
             if (seg.gradientStart != -1 && seg.gradientEnd != -1) {
                 TextRenderUtils.drawStringGradientScaleAware(seg.text, x, y,
-                        seg.gradientStart, seg.gradientEnd, this.scale, displayScale);
+                        seg.gradientStart, seg.gradientEnd, renderScale, displayScale);
             } else if (seg.chromaStyle != null) {
-                TextRenderUtils.drawChromaStringScaleAware(seg.text, x, y, seg.chromaStyle, this.scale, displayScale);
+                TextRenderUtils.drawChromaStringScaleAware(seg.text, x, y, seg.chromaStyle, renderScale, displayScale);
             } else {
                 int col;
                 if (seg.color != -1) {
@@ -64,7 +68,7 @@ public class Text extends CMMElement {
                 } else {
                     col = this.color;
                 }
-                TextRenderUtils.drawStringScaleAware(seg.text, x, y, col, this.scale, displayScale);
+                TextRenderUtils.drawStringScaleAware(seg.text, x, y, col, renderScale, displayScale);
             }
             x += fr.getStringWidth(seg.text) * finalScale;
         }
@@ -75,8 +79,9 @@ public class Text extends CMMElement {
         FontRenderer fr = MinecraftCompat.getMinecraft().fontRendererObj;
         int[] corners =  new int[4];
         int width = fr.getStringWidth(placeholders ? PlaceholderManager.replace(this.text) : this.text);
-        int height = (int)(fr.FONT_HEIGHT * scale);
-        width = (int)(width * scale);
+        float renderScale = scale;
+        int height = (int)(fr.FONT_HEIGHT * renderScale);
+        width = (int)(width * renderScale);
         corners[0] = centered ? (this.xPos - width/2) : this.xPos;
         corners[1] = centered ? (this.yPos - height/2) : this.yPos;
         corners[2] = centered ? (this.xPos + width/2) : this.xPos + width;

@@ -9,6 +9,7 @@ import io.hamlook.aetheria.features.custommenu.util.CMMHelper;
 import io.hamlook.aetheria.features.custommenu.editor.CMMEditorGUI;
 import io.hamlook.aetheria.features.custommenu.editor.CMMClipboard;
 import io.hamlook.aetheria.features.custommenu.util.ScreenHelper;
+import io.hamlook.aetheria.features.custommenu.util.PercentageUtils;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -43,6 +44,11 @@ public class CMMSelectorGUI extends GuiScreen {
     private CustomMMConfig actionConfig;
     private boolean actionMenu;
     private boolean deleteConfirm;
+
+    private int actionLeft() { return PercentageUtils.centeredX(44f); }
+    private int actionTop() { return PercentageUtils.centeredY(26f); }
+    private int actionWidth() { return PercentageUtils.width(44f); }
+    private int actionHeight() { return PercentageUtils.height(26f); }
 
 
     @Override
@@ -155,20 +161,21 @@ public class CMMSelectorGUI extends GuiScreen {
     }
 
     private void drawActionMenu(int mx, int my) {
-        int x = width / 2 - 190, y = height / 2 - 62;
-        NineSliceUtils.draw(getBGTex(), x, y, 380, 125, 8, 18, true);
-        TextRenderUtils.drawCenteredStringScaleAware("Menu Actions", width / 2f, y + 17, 0xFFFFFFFF, 1.35f, true);
-        TextRenderUtils.drawCenteredStringScaleAware(actionConfig.configName, width / 2f, y + 34, 0xFF8FD7F0, .9f, false);
+        int x = actionLeft(), y = actionTop(), menuW = actionWidth(), menuH = actionHeight();
+        NineSliceUtils.draw(getBGTex(), x, y, menuW, menuH, 8, 18, true);
+        TextRenderUtils.drawCenteredStringScaleAware("Menu Actions", PercentageUtils.centerX(), y + PercentageUtils.height(3.5f), 0xFFFFFFFF, 1.35f, true);
+        TextRenderUtils.drawCenteredStringScaleAware(actionConfig.configName, PercentageUtils.centerX(), y + PercentageUtils.height(7f), 0xFF8FD7F0, .9f, false);
         String[] actions = {"Use this Menu", "Edit this Menu", "Delete this Menu", "Export to Clipboard"};
-        for (int i=0;i<4;i++) { int bx=x+10+i*91; boolean h=mx>=bx&&mx<=bx+84&&my>=y+58&&my<y+88; drawRect(bx,y+58,bx+84,y+88,h?0xFF3B6982:0xFF292932); TextRenderUtils.drawCenteredStringScaleAware(actions[i],bx+42,y+73, i==2?0xFFFF9999:0xFFFFFFFF,.61f,false); }
+        int buttonW = PercentageUtils.width(10f), buttonGap = PercentageUtils.width(1f), buttonY = y + PercentageUtils.height(12f);
+        for (int i=0;i<4;i++) { int bx=x+PercentageUtils.width(2.5f)+i*(buttonW+buttonGap); boolean h=mx>=bx&&mx<=bx+buttonW&&my>=buttonY&&my<buttonY+PercentageUtils.height(6f); drawRect(bx,buttonY,bx+buttonW,buttonY+PercentageUtils.height(6f),h?0xFF3B6982:0xFF292932); TextRenderUtils.drawCenteredStringScaleAware(actions[i],bx+buttonW/2f,buttonY+PercentageUtils.height(3f), i==2?0xFFFF9999:0xFFFFFFFF,.61f,false); }
     }
 
     private void drawDeleteConfirmation(int mx, int my) {
-        int x=width/2-150,y=height/2-50; NineSliceUtils.draw(getBGTex(),x,y,300,100,8,18,true);
-        TextRenderUtils.drawCenteredStringScaleAware("Delete " + actionConfig.configName + "?",width/2f,y+22,0xFFFFFFFF,1.2f,true);
-        drawRect(x+25,y+55,x+125,y+80,mx>=x+25&&mx<=x+125&&my>=y+55&&my<y+80?0xFF7A3D4A:0xFF3B252D);
-        drawRect(x+175,y+55,x+275,y+80,mx>=x+175&&mx<=x+275&&my>=y+55&&my<y+80?0xFF3B6982:0xFF292932);
-        TextRenderUtils.drawCenteredStringScaleAware("Delete",x+75,y+67,0xFFFFFFFF,.9f,false); TextRenderUtils.drawCenteredStringScaleAware("Cancel",x+225,y+67,0xFFFFFFFF,.9f,false);
+        int x=PercentageUtils.centeredX(35f),y=PercentageUtils.centeredY(21f),w=PercentageUtils.width(35f),h=PercentageUtils.height(21f); NineSliceUtils.draw(getBGTex(),x,y,w,h,8,18,true);
+        TextRenderUtils.drawCenteredStringScaleAware("Delete " + actionConfig.configName + "?",PercentageUtils.centerX(),y+PercentageUtils.height(4.6f),0xFFFFFFFF,1.2f,true);
+        int bw=PercentageUtils.width(11f), by=y+PercentageUtils.height(11.5f); drawRect(x+PercentageUtils.width(3f),by,x+PercentageUtils.width(3f)+bw,by+PercentageUtils.height(5.2f),mx>=x+PercentageUtils.width(3f)&&mx<=x+PercentageUtils.width(3f)+bw&&my>=by&&my<by+PercentageUtils.height(5.2f)?0xFF7A3D4A:0xFF3B252D);
+        drawRect(x+w-PercentageUtils.width(14f),by,x+w-PercentageUtils.width(3f),by+PercentageUtils.height(5.2f),mx>=x+w-PercentageUtils.width(14f)&&mx<=x+w-PercentageUtils.width(3f)&&my>=by&&my<by+PercentageUtils.height(5.2f)?0xFF3B6982:0xFF292932);
+        TextRenderUtils.drawCenteredStringScaleAware("Delete",x+PercentageUtils.width(8.5f),by+PercentageUtils.height(2.6f),0xFFFFFFFF,.9f,false); TextRenderUtils.drawCenteredStringScaleAware("Cancel",x+w-PercentageUtils.width(8.5f),by+PercentageUtils.height(2.6f),0xFFFFFFFF,.9f,false);
     }
 
     public ResourceLocation getBGTex(){
@@ -187,7 +194,9 @@ public class CMMSelectorGUI extends GuiScreen {
 
         GlStateManager.pushMatrix();
         GlStateManager.translate(searchBar.xPosition, searchBar.yPosition+ScreenHelper.getStaticHeight(5), 0);
-        GlStateManager.scale(2*ScreenHelper.getScaleFactor(), 2*ScreenHelper.getScaleFactor(), 1.0f);
+        // GuiTextField already renders in Minecraft's logical GUI coordinate
+        // space. Do not apply a second GUI-scale transform here.
+        GlStateManager.scale(1.0f, 1.0f, 1.0f);
 
         int originalX = searchBar.xPosition;
         int originalY = searchBar.yPosition;
@@ -246,19 +255,19 @@ public class CMMSelectorGUI extends GuiScreen {
     }
 
     private void handleActionMenu(int mx, int my) {
-        int x=width/2-190,y=height/2-62;
-        if (my<y+58||my>=y+88) { actionMenu=false; return; }
-        int option=(mx-x-10)/91; if(option<0||option>3||mx>x+374){actionMenu=false;return;}
+        int x=actionLeft(),y=actionTop(), buttonW=PercentageUtils.width(10f), buttonGap=PercentageUtils.width(1f), buttonY=y+PercentageUtils.height(12f);
+        if (my<buttonY||my>=buttonY+PercentageUtils.height(6f)) { actionMenu=false; return; }
+        int option=(mx-(x+PercentageUtils.width(2.5f)))/(buttonW+buttonGap); if(option<0||option>3){actionMenu=false;return;}
         if(option==0){CMMHelper.selectPreset(actionConfig.configName);actionMenu=false;updateCMMList();}
         else if(option==1){actionMenu=false;Minecraft.getMinecraft().displayGuiScreen(new CMMEditorGUI(actionConfig,this));}
         else if(option==2){actionMenu=false;if(!CMMHelper.isModPreset(actionConfig.configName))deleteConfirm=true;}
         else { CMMClipboard.copyPreset(actionConfig); actionMenu=false; }
     }
     private void handleDeleteConfirmation(int mx,int my) {
-        int x=width/2-150,y=height/2-50;
-        if(my<y+55||my>=y+80){deleteConfirm=false;return;}
-        if(mx>=x+25&&mx<=x+125){CMMHelper.deletePreset(actionConfig.configName);deleteConfirm=false;actionConfig=null;updateCMMList();}
-        else if(mx>=x+175&&mx<=x+275){deleteConfirm=false;}
+        int x=PercentageUtils.centeredX(35f),y=PercentageUtils.centeredY(21f),w=PercentageUtils.width(35f),bw=PercentageUtils.width(11f),by=y+PercentageUtils.height(11.5f);
+        if(my<by||my>=by+PercentageUtils.height(5.2f)){deleteConfirm=false;return;}
+        if(mx>=x+PercentageUtils.width(3f)&&mx<=x+PercentageUtils.width(3f)+bw){CMMHelper.deletePreset(actionConfig.configName);deleteConfirm=false;actionConfig=null;updateCMMList();}
+        else if(mx>=x+w-PercentageUtils.width(14f)&&mx<=x+w-PercentageUtils.width(3f)){deleteConfirm=false;}
     }
 
     private boolean isHovering(Position position, int mouseX, int mouseY) {

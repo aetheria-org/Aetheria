@@ -43,8 +43,8 @@ public class CMMDropdown extends CMMElement {
         ResourceLocation bg = Resources.betterContainerNineSlice(selected || hover ? 1 : 0);
         NineSliceUtils.draw(bg, x, y, w, h, 6, 18, selected || hover);
         int textWidth = Math.max(1, MinecraftCompat.getFontRenderer().getStringWidth(text));
-        float scale = Math.min(1.25f, Math.min((w - 20f) / textWidth, (h - 2f) / MinecraftCompat.getFontRenderer().FONT_HEIGHT));
-        TextRenderUtils.drawCenteredStringScaleAware(text, x + w / 2f - 6, y + h / 2f, hover ? 0xFFFFFFFF : 0xFFE0E0E0, Math.max(.25f, scale), true);
+        float scale = Math.min(2.0f, Math.min((w - 20f) / textWidth, (h - 2f) / MinecraftCompat.getFontRenderer().FONT_HEIGHT));
+        TextRenderUtils.drawCenteredStringScaleAware(text, x + w / 2f - 6, y + h / 2f, hover ? 0xFFFFFFFF : 0xFFE0E0E0, Math.max(.25f, scale), false);
         TextRenderUtils.drawStringScaleAware(focused ? "▲" : "▼", x + w - 12, y + h / 2f - 4, 0xFFB8B8B8, .8f, false);
     }
     public boolean onMouseClick(int mouseX, int mouseY) {

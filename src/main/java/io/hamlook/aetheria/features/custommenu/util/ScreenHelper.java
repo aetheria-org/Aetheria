@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.custommenu.util;
 
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import lombok.Getter;
 
 public class ScreenHelper {
@@ -9,9 +10,16 @@ public class ScreenHelper {
     private static float scaleFactor;
 
     public static void updateScreenDimensions(int width, int height) {
-        screenWidth = width;
-        screenHeight = height;
-        scaleFactor = Math.min(width / 854f, height / 480f);
+        // GuiScreen resize callbacks can be supplied with display-sized values by
+        // compatibility layers. Vanilla GuiScreen layouts use ScaledResolution,
+        // so always establish CMM's coordinate space from the same source.
+        int scaledWidth = GuiScreenUtils.getScaledWindowWidth();
+        int scaledHeight = GuiScreenUtils.getScaledWindowHeight();
+        screenWidth = scaledWidth > 0 ? scaledWidth : width;
+        screenHeight = scaledHeight > 0 ? scaledHeight : height;
+        // Keep this factor neutral. Minecraft's GUI projection already applies
+        // the selected GUI scale when these logical coordinates are rendered.
+        scaleFactor = 1.0f;
     }
 
     public static int getWidth() {
@@ -31,11 +39,11 @@ public class ScreenHelper {
     }
 
     public static int getScaledWidth() {
-        return (int) (screenWidth / scaleFactor);
+        return screenWidth;
     }
 
     public static int getScaledHeight() {
-        return (int) (screenHeight / scaleFactor);
+        return screenHeight;
     }
 
     public static int getRelativeX(float percentage) {
@@ -88,10 +96,10 @@ public class ScreenHelper {
     }
 
     public static int getStaticWidth(int width) {
-        return (int) ((float) getWidth() / getScaledWidth() * width);
+        return width;
     }
     public static int getStaticHeight(int height) {
-        return (int) ((float) getHeight() / getScaledHeight() * height);
+        return height;
     }
 
     public static class Position {

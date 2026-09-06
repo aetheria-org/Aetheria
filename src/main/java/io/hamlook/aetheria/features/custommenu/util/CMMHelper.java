@@ -128,7 +128,8 @@ public class CMMHelper {
             throw new IllegalArgumentException("Unsupported future CMM preset version: " + preset.formatVersion);
         }
         if (preset.formatVersion <= 0) preset.formatVersion = 1;
-        // Version 2 introduced shared element presentation fields; Gson already supplies their defaults.
+        // Version 3 introduced normalized percentage geometry; each element lazily converts
+        // its legacy pixel/anchor geometry during the first screen layout pass.
         preset.formatVersion = CustomMMConfig.CURRENT_FORMAT_VERSION;
     }
 

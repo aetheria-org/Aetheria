@@ -80,7 +80,8 @@ public class CreateConfigElement {
 
         GlStateManager.pushMatrix();
         GlStateManager.translate(nameField.xPosition, nameField.yPosition+ScreenHelper.getStaticHeight(5), 0);
-        GlStateManager.scale(2*ScreenHelper.getScaleFactor(),2* ScreenHelper.getScaleFactor(), 1.0f);
+        // GuiTextField already uses Minecraft's logical GUI coordinates.
+        GlStateManager.scale(1.0f, 1.0f, 1.0f);
 
         int originalX = nameField.xPosition;
         int originalY = nameField.yPosition;
