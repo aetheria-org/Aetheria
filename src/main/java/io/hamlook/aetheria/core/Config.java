@@ -4,6 +4,7 @@ import com.google.gson.annotations.Expose;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
 import io.hamlook.aetheria.core.features.about.About;
 import io.hamlook.aetheria.core.features.chat.ChatConfig;
+import io.hamlook.aetheria.core.features.chat.PlayerButtonsConfig;
 import io.hamlook.aetheria.core.features.cosmetics.Cosmetics;
 import io.hamlook.aetheria.core.features.debug.Debug;
 import io.hamlook.aetheria.core.features.diana.Diana;
@@ -157,6 +158,11 @@ public class Config {
             case "openLicenseJbAnnotations": openUrl("https://github.com/JetBrains/java-annotations"); break;
             case "openModrinth": openUrl("https://modrinth.com/mod/aetheriamod"); break;
             case "openSkyAtlas": openUrl("https://skyatlas.lol"); break;
+            case "resetPlayerButtonsColors":
+                ATHRConfig.feature.chat.playerButtons.backgroundColor = PlayerButtonsConfig.DEFAULT_BACKGROUND_COLOR;
+                ATHRConfig.feature.chat.playerButtons.accentColor = PlayerButtonsConfig.DEFAULT_ACCENT_COLOR;
+                ATHRConfig.saveConfig();
+                break;
         }
     }
 }

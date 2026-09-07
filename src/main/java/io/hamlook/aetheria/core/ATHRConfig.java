@@ -76,12 +76,9 @@ import java.util.Date;
 public class ATHRConfig {
 
     public static final KeyBinding openGuiKey = new KeyBinding("Open ATHR GUI", Keyboard.KEY_RMENU, "aetheria");
-    private static final long CONFIG_SAVE_DEBOUNCE_MS = 2000L;
-    private static final long CONFIG_SAVE_MAX_LATENCY_MS = 10000L;
     public static Config feature;
     public static File configDirectory = new File("config/Aetheria");
     public static GuiScreen screenToOpen = null;
-    static boolean previousSessionClean = true;
     private static File configFile;
     private static int screenTicks = 0;
     private static boolean waypointManagerKeyWasDown = false;
@@ -95,10 +92,13 @@ public class ATHRConfig {
     private static boolean configLoaded = false;
     private static boolean configDirty = false;
     private static long lastSaveRequestMs = 0L;
+    static boolean previousSessionClean = true;
     private static boolean shutdownHookRegistered = false;
     private static boolean configRetriedOnce = false;
     private static long lastFlushAttemptMs = 0L;
     private static File cleanShutdownMarker;
+    private static final long CONFIG_SAVE_DEBOUNCE_MS = 2000L;
+    private static final long CONFIG_SAVE_MAX_LATENCY_MS = 10000L;
 
     private static boolean isKeyOrMouseDown(int keyCode) {
         if (keyCode == Keyboard.KEY_NONE) return false;
@@ -147,7 +147,9 @@ public class ATHRConfig {
                     if (previousSessionClean) {
                         System.err.println("[ATHR] Previous session shut down cleanly — the corruption is NOT crash-related (possible write bug or external process).");
                     } else {
-                        System.err.println("[ATHR] Previous session did NOT shut down cleanly (crash/BSOD/force-kill) — config.json last modified " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(configFile.lastModified())) + " was likely corrupted by an interrupted write.");
+                        System.err.println("[ATHR] Previous session did NOT shut down cleanly (crash/BSOD/force-kill) — config.json last modified "
+                                + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(configFile.lastModified()))
+                                + " was likely corrupted by an interrupted write.");
                     }
                 }
             } else {
@@ -160,7 +162,8 @@ public class ATHRConfig {
         if (configFile == null) return null;
         File parent = configFile.getParentFile();
         if (parent == null) return null;
-        File[] backups = parent.listFiles((dir, name) -> name.startsWith(configFile.getName() + ".") && name.endsWith(".corrupted"));
+        File[] backups = parent.listFiles((dir, name) ->
+                name.startsWith(configFile.getName() + ".") && name.endsWith(".corrupted"));
         if (backups == null || backups.length == 0) return null;
         Arrays.sort(backups, (a, b) -> b.getName().compareTo(a.getName()));
         for (File backup : backups) {
@@ -170,8 +173,7 @@ public class ATHRConfig {
                     System.err.println("[ATHR] Restoring config from " + backup.getName());
                     return restored;
                 }
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
         }
         return null;
     }
@@ -209,8 +211,7 @@ public class ATHRConfig {
     private static void writeCleanShutdownMarker() {
         try {
             Files.write(cleanShutdownMarker.toPath(), new byte[]{'1'});
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
     }
 
     private static void registerShutdownHook() {
@@ -221,16 +222,13 @@ public class ATHRConfig {
                 if (configDirty) {
                     saveConfig();
                 }
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
             try {
                 StorageManager.saveAll();
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
             try {
                 Files.deleteIfExists(cleanShutdownMarker.toPath());
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) {}
         }, "ATHR-Config-Shutdown"));
     }
 
@@ -251,6 +249,10 @@ public class ATHRConfig {
 
     public static void openSearch(String search) {
         screenToOpen = new GuiScreenElementWrapper(new ConfigEditor(feature, null, search));
+    }
+
+    public static void openSubcategory(String categoryName, String... subcategoryFieldPath) {
+        ConfigEditor.editor.openSubcategory(categoryName, subcategoryFieldPath);
     }
 
     public static void openWaypointGroupGui() {
@@ -383,7 +385,6 @@ public class ATHRConfig {
 
     }
 
-
     public static void openInvButtonEditor() {
         screenToOpen = new GuiInvButtonEditor();
     }
@@ -470,14 +471,16 @@ public class ATHRConfig {
 
     public static void openVisitorOverlayEditor() {
         if (feature == null) return;
-        io.hamlook.aetheria.features.farming.visitors.VisitorShoppingListOverlay overlay = io.hamlook.aetheria.features.farming.visitors.VisitorShoppingListOverlay.getInstance();
+        io.hamlook.aetheria.features.farming.visitors.VisitorShoppingListOverlay overlay =
+                io.hamlook.aetheria.features.farming.visitors.VisitorShoppingListOverlay.getInstance();
         if (overlay == null) return;
         screenToOpen = new GuiPositionEditor(feature.farming.visitors.overlay.overlayPos, overlay::getOverlayWidth, overlay::getOverlayHeight, () -> overlay.render(true), ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.visitors.overlay.scale).withParent(MinecraftCompat.getCurrentScreen());
     }
 
     public static void openVisitorPanelEditor() {
         if (feature == null) return;
-        io.hamlook.aetheria.features.farming.visitors.VisitorPanel panel = io.hamlook.aetheria.features.farming.visitors.VisitorPanel.getInstance();
+        io.hamlook.aetheria.features.farming.visitors.VisitorPanel panel =
+                io.hamlook.aetheria.features.farming.visitors.VisitorPanel.getInstance();
         if (panel == null) return;
         screenToOpen = new GuiPositionEditor(feature.farming.visitors.panel.panelPos, panel::getLastWidth, panel::getLastHeight, panel::renderPreview, ATHRConfig::markConfigDirty, ATHRConfig::saveConfig).withOverlayScale(feature.farming.visitors.panel.scale).withParent(MinecraftCompat.getCurrentScreen());
     }
@@ -496,7 +499,6 @@ public class ATHRConfig {
     public static void resetPristineTracker() {
         PristineStats.getInstance().reset();
     }
-
 
     public static void openKillComboEditor() {
         if (feature == null) return;
@@ -559,7 +561,6 @@ public class ATHRConfig {
         if (feature == null) return;
         MinecraftCompat.getMinecraft().displayGuiScreen(new PrivacyNoticeScreen(MinecraftCompat.getCurrentScreen()));
     }
-
 
     @HandleEvent
     public void onGuiOpen(ASMGuiOpenEvent event) {

@@ -5,8 +5,10 @@ import io.hamlook.aetheria.features.chat.GuiChatHook;
 import io.hamlook.aetheria.features.chat.emoji.EmojiSuggestionBar;
 import io.hamlook.aetheria.features.qol.ChatStateManager;
 import io.hamlook.aetheria.mixins.hooks.GuiChatMixinHook;
+import io.hamlook.aetheria.mixins.hooks.PlayerButtonHook;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.gui.GuiChat;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import org.lwjgl.input.Keyboard;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GuiChat.class)
-public abstract class MixinGuiChat implements GuiChatHook {
+public abstract class MixinGuiChat extends GuiScreen implements GuiChatHook {
 
     @Shadow
     protected GuiTextField inputField;
@@ -30,6 +32,22 @@ public abstract class MixinGuiChat implements GuiChatHook {
     @Override
     public boolean athr$isTypingMode() {
         return inputField != null && inputField.isFocused();
+    }
+
+    @Inject(method = "drawScreen", at = @At("TAIL"))
+    private void athr$drawPlayerMenu(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        PlayerButtonHook.drawMenu(mouseX, mouseY, this.width, this.height, this.fontRendererObj);
+    }
+
+    @Inject(method = "keyTyped", at = @At("HEAD"), cancellable = true)
+    private void athr$onKeyTypedMenu(char typedChar, int keyCode, CallbackInfo ci) {
+        if (PlayerButtonHook.handleKeyTyped(keyCode)) ci.cancel();
+    }
+
+    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
+    private void athr$onPlayerMenuClick(int mouseX, int mouseY, int mouseButton, CallbackInfo ci) {
+        if (PlayerButtonHook.handlePlayerMenuClick(mouseX, mouseY, mouseButton, this.width, this.height, this.inputField))
+            ci.cancel();
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
