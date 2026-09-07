@@ -1,10 +1,7 @@
 package io.hamlook.aetheria.features.diana;
 
 import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.events.ASMChatEvent;
-import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
-import io.hamlook.aetheria.events.ASMServerJoinEvent;
-import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.Utils;
@@ -12,7 +9,6 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -103,7 +99,7 @@ public class DianaTracker {
 
     @HandleEvent
     public void onTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
         DianaStats.getInstance().timerTick();
     }
 

@@ -2,9 +2,9 @@ package io.hamlook.aetheria.utils.render;
 
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraft.client.Minecraft;
 import io.hamlook.aetheria.utils.compat.TessellatorCompat;
 import io.hamlook.aetheria.utils.compat.VertexBuilder;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;

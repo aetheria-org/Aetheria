@@ -5,16 +5,16 @@ import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.PestFinderConfig;
 import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.input.Keyboard;
 
 import java.util.ArrayList;
@@ -209,7 +209,7 @@ public class PestFinderOverlay extends Overlay {
 
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
         PestFinderConfig config = config();
         int warpKey = config != null ? config.warpKey : 0;
         boolean active = config != null && config.enabled && warpKey != Keyboard.KEY_NONE

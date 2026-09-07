@@ -4,9 +4,8 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
-import net.minecraft.item.ItemStack;
-
 import lombok.Getter;
+import net.minecraft.item.ItemStack;
 
 @Getter
 public final class DungeonReward {

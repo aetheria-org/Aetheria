@@ -3,10 +3,7 @@ package io.hamlook.aetheria.features.dungeons.caseopening;
 import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.events.ASMGuiOpenEvent;
-import io.hamlook.aetheria.events.ASMMouseEvent;
-import io.hamlook.aetheria.events.ASMTickEvent;
-import io.hamlook.aetheria.events.ASMTooltipEvent;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
@@ -18,7 +15,6 @@ import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -182,7 +178,7 @@ public class ChestListener {
 
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
         WorldClient currentWorld = MinecraftCompat.getLocalWorld();
         if (currentWorld != null && currentWorld != lastWorld) {
             lastWorld = currentWorld;

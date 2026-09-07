@@ -10,7 +10,6 @@ import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,7 +40,7 @@ public class PestTrackerListener {
 
     @HandleEvent
     public void onTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
         PestStats.getInstance().timerTick();
     }
 

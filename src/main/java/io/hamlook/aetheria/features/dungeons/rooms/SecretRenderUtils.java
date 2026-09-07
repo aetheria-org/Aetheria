@@ -26,7 +26,6 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -260,7 +259,7 @@ public class SecretRenderUtils {
 
     @HandleEvent
     public void onPlayerTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.START) return;
+        if (event.phase != TickPhase.START) return;
         if (MinecraftCompat.getLocalPlayer() == null || !isInDungeonContext()) return;
 
         // Decrement chest restore timers

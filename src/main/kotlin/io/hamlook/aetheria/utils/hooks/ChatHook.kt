@@ -1,11 +1,14 @@
-package io.hamlook.aetheria.mixins.hooks
+package io.hamlook.aetheria.utils.hooks
 
 import io.hamlook.aetheria.core.ATHRConfig
+import io.hamlook.aetheria.features.chat.ChatLineHook
+import io.hamlook.aetheria.features.chat.GuiChatHook
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import net.minecraft.client.gui.ChatLine
 import net.minecraft.client.gui.Gui
+import net.minecraft.client.gui.GuiChat
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.util.EnumChatFormatting
 import net.minecraft.util.MathHelper
@@ -38,8 +41,8 @@ object ChatHook {
         hoveredLine = null
         val config = ATHRConfig.feature ?: return
         if (!config.chat.chatCopyEnabled) return
-        if (MinecraftCompat.getCurrentScreen() !is net.minecraft.client.gui.GuiChat) return
-        val screen = MinecraftCompat.getCurrentScreen() as? io.hamlook.aetheria.features.chat.GuiChatHook ?: return
+        if (MinecraftCompat.getCurrentScreen() !is GuiChat) return
+        val screen = MinecraftCompat.getCurrentScreen() as? GuiChatHook ?: return
         if (!screen.`athr$isTypingMode`()) return
         hoveredLine = getHoveredChatLine(drawnChatLines, scrollPos, chatScale, lineCount, mouseX, mouseY)
     }
@@ -75,9 +78,9 @@ object ChatHook {
     ): Float {
         val config = ATHRConfig.feature ?: return x
         if (!config.chat.chatHeads) return x
-        if (renderLine !is io.hamlook.aetheria.features.chat.ChatLineHook) return x
+        if (renderLine !is ChatLineHook) return x
 
-        val hook = renderLine as io.hamlook.aetheria.features.chat.ChatLineHook
+        val hook = renderLine as ChatLineHook
         val info = hook.`athr$getPlayerInfo`() ?: run {
             if (hook.`athr$hasDetected`() || config.chat.offsetNonPlayerMessages) {
                 return x + 10f
@@ -142,7 +145,7 @@ object ChatHook {
         if (!config.chat.chatCopyEnabled) return null
 
         return if (useFullMsg) {
-            val hook = line as? io.hamlook.aetheria.features.chat.ChatLineHook
+            val hook = line as? ChatLineHook
             val fullMsg = hook?.`athr$getFullMessage`()
             val src = fullMsg ?: line.chatComponent
             val raw = src.formattedText

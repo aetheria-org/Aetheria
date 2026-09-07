@@ -4,11 +4,7 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
-import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
-import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import io.hamlook.aetheria.utils.compat.MouseCompat;
-import io.hamlook.aetheria.utils.compat.TessellatorCompat;
-import io.hamlook.aetheria.utils.compat.VertexBuilder;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 

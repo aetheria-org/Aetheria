@@ -4,6 +4,7 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -13,7 +14,6 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -227,7 +227,7 @@ public class GuiWaiter {
 
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.START) return;
+        if (event.phase != TickPhase.START) return;
         if (queue.isEmpty()) return;
 
         PendingWait head = queue.peek();

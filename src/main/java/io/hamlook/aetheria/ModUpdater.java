@@ -5,8 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.ModContainer;
+import io.hamlook.aetheria.utils.compat.ModCompat;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -73,12 +72,9 @@ public class ModUpdater {
                     }
                 }
 
-                ModContainer myMod = Loader.instance().getIndexedModList().get(Aetheria.MODID);
-                if (myMod != null) {
-                    File oldJar = myMod.getSource();
-                    if (oldJar != null && oldJar.exists() && !oldJar.getName().equals(newFileName)) {
-                        oldJar.deleteOnExit();
-                    }
+                File oldJar = ModCompat.getModJar();
+                if (oldJar != null && oldJar.exists() && !oldJar.getName().equals(newFileName)) {
+                    oldJar.deleteOnExit();
                 }
 
                 if(shutdown) {

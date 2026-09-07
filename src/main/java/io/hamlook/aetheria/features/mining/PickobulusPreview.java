@@ -4,6 +4,7 @@ import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.RaycastUtils;
@@ -15,7 +16,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.awt.*;
 
@@ -69,7 +69,7 @@ public class PickobulusPreview {
 
     @HandleEvent
     public void onTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
 
         tickCounter++;
         if (tickCounter % 2 != 0) return;

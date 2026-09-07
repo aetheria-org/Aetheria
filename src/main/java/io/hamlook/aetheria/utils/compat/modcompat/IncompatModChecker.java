@@ -4,13 +4,12 @@ import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.ASMServerJoinEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
-
 import net.minecraft.util.IChatComponent;
 import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -91,7 +90,7 @@ public class IncompatModChecker {
 
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
         if (pending == null) return;
         if (MinecraftCompat.getLocalPlayer() == null) return;
         sendWarning(pending);

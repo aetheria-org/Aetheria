@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.mixins.core;
 
-import io.hamlook.aetheria.mixins.hooks.FontRendererEmojiHook;
+import io.hamlook.aetheria.utils.hooks.FontRendererEmojiHook;
 import net.minecraft.client.gui.FontRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

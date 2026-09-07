@@ -1,7 +1,10 @@
 {
   "package": "io.hamlook.aetheria.mixins",
   "plugin": "io.hamlook.aetheria.init.AutoDiscoveryMixinPlugin",
-  "refmap": "mixins.${modid}.refmap.json",
+  "refmap": "mixins.aetheria.refmap.json",
   "minVersion": "0.7",
-  "compatibilityLevel": "JAVA_8"
+  "compatibilityLevel": "JAVA_8",
+  "injectors": {
+    "maxShiftBy": 2
+  }
 }

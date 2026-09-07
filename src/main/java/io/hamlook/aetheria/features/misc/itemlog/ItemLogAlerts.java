@@ -6,6 +6,7 @@ import io.hamlook.aetheria.core.features.misc.ItemLogAlertsConfig;
 import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
@@ -14,7 +15,6 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -31,7 +31,7 @@ public class ItemLogAlerts {
 
     @HandleEvent
     public void onTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
 
         if (!registered) {
             ItemPickupLog log = ItemPickupLog.getInstance();

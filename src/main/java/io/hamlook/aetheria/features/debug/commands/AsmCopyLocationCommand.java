@@ -5,9 +5,8 @@ import io.hamlook.aetheria.command.brigadier.CommandCategory;
 import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.ClipboardCompat;
-import net.minecraft.client.gui.GuiScreen;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.EnumChatFormatting;
 

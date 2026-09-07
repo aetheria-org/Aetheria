@@ -2,13 +2,13 @@ package io.hamlook.aetheria.features.farming
 
 import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
-import io.hamlook.aetheria.utils.Position
+import io.hamlook.aetheria.events.ASMTickEvent
 import io.hamlook.aetheria.events.BlockBreakEvent
+import io.hamlook.aetheria.events.TickPhase
 import io.hamlook.aetheria.init.RegisterEvents
+import io.hamlook.aetheria.utils.Position
 import io.hamlook.aetheria.utils.data.SkyblockData
 import io.hamlook.aetheria.utils.overlay.Overlay
-import io.hamlook.aetheria.events.ASMTickEvent
-import net.minecraftforge.fml.common.gameevent.TickEvent
 
 @RegisterEvents
 class BPSOverlay : Overlay(50, 20) {
@@ -48,7 +48,7 @@ class BPSOverlay : Overlay(50, 20) {
 
     @HandleEvent
     fun onTick(event: ASMTickEvent) {
-        if (event.phase != TickEvent.Phase.START) return
+        if (event.phase != TickPhase.START) return
 
         if (blocksBroken > 0) {
             val timeInSeconds = (System.currentTimeMillis() - startTime) / 1000.0

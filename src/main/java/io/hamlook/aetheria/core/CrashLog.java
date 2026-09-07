@@ -1,7 +1,7 @@
 package io.hamlook.aetheria.core;
 
 import io.hamlook.aetheria.Aetheria;
-import net.minecraftforge.fml.common.Loader;
+import io.hamlook.aetheria.utils.compat.ModCompat;
 
 import java.io.File;
 import java.io.IOException;
@@ -94,7 +94,7 @@ public final class CrashLog {
 
     private static String getMinecraftVersion() {
         try {
-            return Loader.instance().getMCVersionString().replace("Minecraft ", "");
+            return ModCompat.getMcVersion().replace("Minecraft ", "");
         } catch (Exception e) {
             return "unknown";
         }

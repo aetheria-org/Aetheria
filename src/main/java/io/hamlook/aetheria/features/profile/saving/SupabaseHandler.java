@@ -3,10 +3,10 @@ package io.hamlook.aetheria.features.profile.saving;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.profile.ProfileCompressor;
-import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.features.profile.WaiterLogs;
 import io.hamlook.aetheria.features.profile.data.ProfileData;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.ThreadUtils;
 

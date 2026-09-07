@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.mixins.gui;
 
-import io.hamlook.aetheria.mixins.hooks.GuiScreenHook;
+import io.hamlook.aetheria.utils.hooks.GuiScreenHook;
 import net.minecraft.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

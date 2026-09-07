@@ -8,6 +8,7 @@ import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
 import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.chat.chatfilters.ui.ChatFilterGUI;
 import io.hamlook.aetheria.features.chat.globalchat.ui.NotificationOverlay;
 import io.hamlook.aetheria.features.diana.DianaStats;
@@ -55,12 +56,14 @@ import io.hamlook.aetheria.features.waypoints.WaypointGroupGui;
 import io.hamlook.aetheria.network.PrivacyNoticeScreen;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
-import io.hamlook.aetheria.utils.compat.*;
+import io.hamlook.aetheria.utils.compat.KeybindCompat;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.input.Keyboard;
 
 import java.io.BufferedReader;
@@ -578,7 +581,7 @@ public class ATHRConfig {
 
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
         flushConfigIfDirty();
 
         if (screenToOpen != null) {

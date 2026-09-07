@@ -2,10 +2,10 @@ package io.hamlook.aetheria.features.qol.overlays;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.utils.Position;
-import io.hamlook.aetheria.utils.overlay.TimerOverlay;
 import io.hamlook.aetheria.features.qol.timers.ItemCooldowns;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.overlay.TimerOverlay;
 import lombok.Getter;
 import net.minecraft.item.ItemStack;
 

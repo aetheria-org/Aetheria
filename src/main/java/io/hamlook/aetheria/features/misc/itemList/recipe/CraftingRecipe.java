@@ -7,6 +7,7 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
+
 import java.util.List;
 
 public class CraftingRecipe extends Recipe {

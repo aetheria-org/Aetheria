@@ -4,9 +4,9 @@ import io.hamlook.aetheria.features.misc.ScrollableTooltips;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.RenderHelperCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import io.hamlook.aetheria.utils.compat.RenderHelperCompat;
 
 import java.util.ArrayList;
 import java.util.List;

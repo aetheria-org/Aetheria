@@ -1,4 +1,4 @@
-﻿package io.hamlook.aetheria.utils.compat
+package io.hamlook.aetheria.utils.compat
 
 import net.minecraft.client.renderer.GlStateManager
 

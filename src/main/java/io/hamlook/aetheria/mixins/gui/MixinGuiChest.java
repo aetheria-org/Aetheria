@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.mixins.gui;
 
-import io.hamlook.aetheria.mixins.hooks.GuiChestHook;
+import io.hamlook.aetheria.utils.hooks.GuiChestHook;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.util.ResourceLocation;

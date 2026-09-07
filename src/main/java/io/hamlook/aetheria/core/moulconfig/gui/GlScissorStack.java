@@ -4,7 +4,6 @@
 package io.hamlook.aetheria.core.moulconfig.gui;
 
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
-import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 

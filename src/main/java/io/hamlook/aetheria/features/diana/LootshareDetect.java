@@ -4,13 +4,13 @@ import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.ASMEntityJoinWorldEvent;
 import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityArmorStand;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
 
@@ -97,7 +97,7 @@ public class LootshareDetect {
 
     @HandleEvent
     public void onTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
         if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null) return;
         long now = System.currentTimeMillis();
         promoteUnconfirmed(now);

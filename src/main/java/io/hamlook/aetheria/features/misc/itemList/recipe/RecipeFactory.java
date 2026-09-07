@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.misc.itemList.recipe;
 
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
+
 import java.util.ArrayList;
 import java.util.List;
 

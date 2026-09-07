@@ -6,6 +6,7 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.dungeons.overlays.PhaseOverlay;
 import io.hamlook.aetheria.features.dungeons.utils.*;
 import io.hamlook.aetheria.init.RegisterEvents;
@@ -16,7 +17,6 @@ import io.hamlook.aetheria.utils.data.DungeonUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -125,7 +125,7 @@ public class DungeonStats extends Overlay {
 
     @HandleEvent
     public void onTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || ++tickCounter % 10 != 0) return;
+        if (event.phase != TickPhase.END || ++tickCounter % 10 != 0) return;
         if (ATHRConfig.feature == null) return;
         if (MinecraftCompat.getLocalPlayer() == null) return;
 

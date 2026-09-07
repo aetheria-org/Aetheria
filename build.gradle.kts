@@ -126,7 +126,7 @@ tasks.processResources {
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-    filesMatching(listOf("mcmod.info", "mixins.$modidStr")) {
+    filesMatching(listOf("mcmod.info", "mixins.$modidStr.json")) {
         expand("version" to versionStr, "mcversion" to mcVersionStr, "modid" to modidStr, "basePackage" to baseGroupStr)
     }
 
@@ -136,7 +136,6 @@ tasks.processResources {
 
 val remapJar by tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
     archiveClassifier.set("")
-    from(tasks.shadowJar)
     input.set(tasks.shadowJar.get().archiveFile)
 }
 

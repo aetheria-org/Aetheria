@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.dungeons
 import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.events.ASMTickEvent
+import io.hamlook.aetheria.events.TickPhase
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.SoundUtils
 import io.hamlook.aetheria.utils.Utils
@@ -12,7 +13,6 @@ import io.hamlook.aetheria.utils.overlay.SimpleOverlay
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.entity.boss.EntityWither
 import net.minecraft.util.EnumChatFormatting
-import net.minecraftforge.fml.common.gameevent.TickEvent
 import org.lwjgl.opengl.GL11
 import kotlin.math.sqrt
 
@@ -33,7 +33,7 @@ class CrushAlert : SimpleOverlay() {
 
     @HandleEvent
     fun onTick(event: ASMTickEvent) {
-        if (event.phase != TickEvent.Phase.END) return
+        if (event.phase != TickPhase.END) return
         val cfg = config ?: return
         if (!cfg.enabled) {
             alertActive = false; return

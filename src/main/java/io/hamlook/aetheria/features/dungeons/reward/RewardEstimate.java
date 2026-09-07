@@ -1,10 +1,10 @@
 package io.hamlook.aetheria.features.dungeons.reward;
 
-import java.util.List;
-
 import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 @Getter

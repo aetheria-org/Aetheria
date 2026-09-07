@@ -2,7 +2,7 @@ package io.hamlook.aetheria.mixins.chat;
 
 import io.hamlook.aetheria.features.chat.ChatLineHook;
 import io.hamlook.aetheria.features.chat.ChatUtilsState;
-import io.hamlook.aetheria.mixins.hooks.ChatLineInitHook;
+import io.hamlook.aetheria.utils.hooks.ChatLineInitHook;
 import net.minecraft.client.gui.ChatLine;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.util.IChatComponent;

@@ -2,10 +2,7 @@ package io.hamlook.aetheria.features.misc;
 
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.events.ASMGuiDrawPreEvent;
-import io.hamlook.aetheria.events.ASMPlayerInteractEvent;
-import io.hamlook.aetheria.events.ASMRenderWorldEvent;
-import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
@@ -19,7 +16,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntityBrewingStand;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
@@ -92,7 +88,7 @@ public class BrewingStandHelper {
 
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.START) return;
+        if (event.phase != TickPhase.START) return;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.colorBrewingStands) return;
         if (MinecraftCompat.getLocalWorld() == null) return;
         if (!isOnPrivateIsland()) return;

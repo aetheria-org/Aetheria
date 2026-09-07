@@ -4,11 +4,11 @@ import com.google.gson.JsonParser;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.ASMServerJoinEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.utils.compat.ModCompat;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -67,12 +67,12 @@ public class TesterWhitelist {
 
     private static void crashGame(String reason) {
         Aetheria.logger.severe("[ATHR] " + reason);
-        FMLCommonHandler.instance().exitJava(1, true);
+        ModCompat.exitJava(1);
     }
 
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
-        if (!isAlpha || event.phase != TickEvent.Phase.START) return;
+        if (!isAlpha || event.phase != TickPhase.START) return;
 
         tickCounter++;
         if (!hasChecked || tickCounter >= CHECK_INTERVAL_TICKS) {

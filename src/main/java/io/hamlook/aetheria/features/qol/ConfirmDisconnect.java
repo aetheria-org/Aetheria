@@ -1,13 +1,13 @@
 package io.hamlook.aetheria.features.qol;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMActionPerformedEvent;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiInitEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiIngameMenu;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.events.ASMGuiDrawEvent;
-import io.hamlook.aetheria.events.ASMGuiInitEvent;
-import io.hamlook.aetheria.events.ASMActionPerformedEvent;
 
 @RegisterEvents
 public class ConfirmDisconnect {

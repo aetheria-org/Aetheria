@@ -5,6 +5,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.data.ApiHandler;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.ASMTooltipEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.price.PriceMap;
 import io.hamlook.aetheria.features.price.vars.PriceType;
 import io.hamlook.aetheria.features.price.vars.recieve.PriceEntry;
@@ -18,7 +19,6 @@ import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -129,7 +129,7 @@ public class SkyblockTooltips {
 
     @HandleEvent
     public void onTick(ASMTickEvent e) {
-        if (e.phase != TickEvent.Phase.START) return;
+        if (e.phase != TickPhase.START) return;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.romanNumerals) return;
         if (++tickCounter % 20 != 0) return;
 

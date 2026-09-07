@@ -10,6 +10,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.price.vars.AuctionEntry;
 import io.hamlook.aetheria.features.price.vars.BazaarEntry;
 import io.hamlook.aetheria.features.price.vars.PriceData;
@@ -32,7 +33,6 @@ import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.*;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -105,7 +105,7 @@ public class PriceDetector {
 
     @HandleEvent
     public void onTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
 
 
         if (!initialised) {

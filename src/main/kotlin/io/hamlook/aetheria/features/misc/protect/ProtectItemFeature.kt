@@ -8,6 +8,7 @@ import io.hamlook.aetheria.events.ItemTossEvent
 import io.hamlook.aetheria.events.RenderItemOverlayEvent
 import io.hamlook.aetheria.events.SlotClickEvent
 import io.hamlook.aetheria.events.SlotClickEvent.ClickType
+import io.hamlook.aetheria.events.TickPhase
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.ContainerUtils
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
@@ -17,9 +18,7 @@ import io.hamlook.aetheria.utils.compat.TextCompat
 import io.hamlook.aetheria.utils.item.ItemUtils
 import net.minecraft.client.gui.Gui
 import net.minecraft.item.ItemStack
-import net.minecraft.util.ChatComponentText
 import net.minecraft.util.EnumChatFormatting
-import net.minecraftforge.fml.common.gameevent.TickEvent
 import org.lwjgl.input.Keyboard
 
 @RegisterEvents
@@ -56,7 +55,7 @@ class ProtectItemFeature {
 
     @HandleEvent
     fun onClientTick(event: ASMTickEvent) {
-        if (event.phase != TickEvent.Phase.END) return
+        if (event.phase != TickPhase.END) return
         if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getMinecraft().currentScreen != null) return
 
         val key = ATHRConfig.feature?.misc?.protectItem?.protectionKey ?: return

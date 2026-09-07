@@ -7,9 +7,8 @@ import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.ClipboardCompat;
-import net.minecraft.client.gui.GuiScreen;
+import io.hamlook.aetheria.utils.compat.ModCompat;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.fml.common.Loader;
 
 import java.util.Collections;
 
@@ -23,7 +22,7 @@ public class AsmVersionCommand {
             builder.description = "Prints and copies the mod + Minecraft version";
             builder.setCategory(CommandCategory.DEVELOPER_DEBUG);
             builder.simpleCallback(() -> {
-                String mcVersion = Loader.instance().getMCVersionString();
+                String mcVersion = ModCompat.getMcVersion();
                 String text = "Aetheria " + Aetheria.VERSION + " on " + mcVersion;
                 ClipboardCompat.setClipboard(text);
                 ChatUtils.sendMessage(EnumChatFormatting.YELLOW + "You are using " + text);

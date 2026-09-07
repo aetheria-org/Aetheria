@@ -11,7 +11,7 @@ public class PlayerButtonsConfig {
     @Expose
     @ConfigOption(name = "Enable", desc = "Click a player's name in chat to open a menu with Whisper, View Profile, Auction House, Party Invite, Add Friend, Ignore, Visit Island and Visit Garden shortcuts")
     @ConfigEditorBoolean
-    public boolean enabled = false;
+    public boolean enabled = true;
 
     @Expose
     @ConfigOption(name = "Use In-Game View Profile", desc = "View Profile sends the server's /viewprofile command instead of opening Aetheria's own profile viewer")

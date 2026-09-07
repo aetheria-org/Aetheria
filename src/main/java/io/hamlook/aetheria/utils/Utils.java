@@ -1,14 +1,9 @@
 package io.hamlook.aetheria.utils;
 
-import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
-import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
-import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import io.hamlook.aetheria.utils.compat.ModCompat;
+import io.hamlook.aetheria.utils.compat.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
-import io.hamlook.aetheria.utils.compat.TessellatorCompat;
-import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;

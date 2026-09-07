@@ -1,14 +1,14 @@
 package io.hamlook.aetheria.features.profile;
 
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import net.minecraft.inventory.ContainerChest;
-import io.hamlook.aetheria.api.event.HandleEvent;
 
 import java.util.Arrays;
 import java.util.List;
-import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 
 @RegisterEvents
 public class ProfileListener {

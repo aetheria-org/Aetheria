@@ -6,15 +6,14 @@ import io.hamlook.aetheria.TesterWhitelist;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.data.NoPriceData;
 import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.ModContainer;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.utils.compat.ModCompat;
 
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -109,13 +108,13 @@ public class ApiHandler {
 
     private static String buildPayload() {
         String username = MinecraftCompat.getMinecraft().getSession().getUsername();
-        List<String> mods = NetworkGuard.modListInTelemetryAllowed() ? Loader.instance().getModList().stream().map(ModContainer::getModId).collect(Collectors.toList()) : null;
+        List<String> mods = NetworkGuard.modListInTelemetryAllowed() ? ModCompat.getModIds() : null;
         return GSON.toJson(new Payload(username, mods, Aetheria.VERSION));
     }
 
     @HandleEvent
     public void onFirstTick(ASMTickEvent e) {
-        if (e.phase != TickEvent.Phase.START) return;
+        if (e.phase != TickPhase.START) return;
         if (noPriceFetched) return;
         noPriceFetched = true;
         ApiHandler.fetchNoPriceAsync();

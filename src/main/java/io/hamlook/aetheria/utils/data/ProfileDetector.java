@@ -1,11 +1,11 @@
 package io.hamlook.aetheria.utils.data;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.StorageManager;
+import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import io.hamlook.aetheria.api.event.HandleEvent;
-import io.hamlook.aetheria.events.ASMChatEvent;
 
 @RegisterEvents
 public class ProfileDetector {

@@ -1,11 +1,19 @@
 package io.hamlook.aetheria.mixins.chat;
 
-import io.hamlook.aetheria.features.chat.*;
-import io.hamlook.aetheria.mixins.hooks.ChatHook;
+import io.hamlook.aetheria.features.chat.ChatCompactHandler;
+import io.hamlook.aetheria.features.chat.ChatUtilsState;
+import io.hamlook.aetheria.features.chat.GuiNewChatHook;
+import io.hamlook.aetheria.utils.hooks.ChatHook;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.*;
+import net.minecraft.client.gui.ChatLine;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiNewChat;
 import net.minecraft.util.IChatComponent;
-import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 

@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.mixins.input;
 
-import io.hamlook.aetheria.mixins.hooks.MouseHelperHook;
+import io.hamlook.aetheria.utils.hooks.MouseHelperHook;
 import net.minecraft.util.MouseHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;

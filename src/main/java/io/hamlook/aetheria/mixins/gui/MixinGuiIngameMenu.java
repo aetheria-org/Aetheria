@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.mixins.gui;
 
-import io.hamlook.aetheria.mixins.hooks.GuiIngameMenuHook;
+import io.hamlook.aetheria.utils.hooks.GuiIngameMenuHook;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import org.spongepowered.asm.mixin.Mixin;

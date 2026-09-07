@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.mixins.gui;
 
-import io.hamlook.aetheria.mixins.hooks.GuiIngameHook;
+import io.hamlook.aetheria.utils.hooks.GuiIngameHook;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.scoreboard.ScoreObjective;
 import org.spongepowered.asm.mixin.Mixin;

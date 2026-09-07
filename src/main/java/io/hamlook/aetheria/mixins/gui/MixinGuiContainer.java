@@ -1,7 +1,7 @@
 package io.hamlook.aetheria.mixins.gui;
 
 import io.hamlook.aetheria.features.storage.StorageManager;
-import io.hamlook.aetheria.mixins.hooks.GuiContainerHook;
+import io.hamlook.aetheria.utils.hooks.GuiContainerHook;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Slot;

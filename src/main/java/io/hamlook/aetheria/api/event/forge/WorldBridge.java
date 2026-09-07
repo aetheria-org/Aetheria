@@ -1,13 +1,13 @@
 package io.hamlook.aetheria.api.event.forge;
 
-import io.hamlook.aetheria.events.ASMWorldLoadEvent;
 import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
 import io.hamlook.aetheria.events.ASMServerJoinEvent;
+import io.hamlook.aetheria.events.ASMWorldLoadEvent;
 import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
-import net.minecraftforge.event.world.WorldEvent;
 
 @RegisterEvents
 public class WorldBridge {

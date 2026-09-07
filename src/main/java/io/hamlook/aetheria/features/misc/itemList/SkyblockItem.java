@@ -1,16 +1,16 @@
 package io.hamlook.aetheria.features.misc.itemList;
 
-import com.google.gson.annotations.SerializedName;
 import com.google.gson.JsonObject;
-import io.hamlook.aetheria.utils.item.ItemUtils;
+import com.google.gson.annotations.SerializedName;
 import io.hamlook.aetheria.utils.compat.BlockCompat;
-import net.minecraft.init.Blocks;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
+
 import java.util.List;
 
 public class SkyblockItem {

@@ -3,7 +3,7 @@ package io.hamlook.aetheria.features.chat.globalchat.ui;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 
-import java.awt.Desktop;
+import java.awt.*;
 import java.net.URI;
 
 /** Small confirmation overlay shown before opening an external link from a chat message. */

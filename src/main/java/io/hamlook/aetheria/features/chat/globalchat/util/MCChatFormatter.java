@@ -1,11 +1,7 @@
 package io.hamlook.aetheria.features.chat.globalchat.util;
 
 import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
-import io.hamlook.aetheria.features.chat.globalchat.vars.Attachment;
-import io.hamlook.aetheria.features.chat.globalchat.vars.ChatMessage;
-import io.hamlook.aetheria.features.chat.globalchat.vars.Channel;
-import io.hamlook.aetheria.features.chat.globalchat.vars.Embed;
-import io.hamlook.aetheria.features.chat.globalchat.vars.EmojiRef;
+import io.hamlook.aetheria.features.chat.globalchat.vars.*;
 import io.hamlook.aetheria.utils.EmojiParser;
 
 import java.util.List;

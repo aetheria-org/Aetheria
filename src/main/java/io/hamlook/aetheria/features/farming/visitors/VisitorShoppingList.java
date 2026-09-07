@@ -28,7 +28,6 @@ import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntitySign;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
 
@@ -125,7 +124,7 @@ public final class VisitorShoppingList {
 
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
 
         // Delayed /bzs dispatch after closing the current menu

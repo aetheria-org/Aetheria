@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.mixins.hooks;
+package io.hamlook.aetheria.utils.hooks;
 
 import io.hamlook.aetheria.OptionsMenu;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;

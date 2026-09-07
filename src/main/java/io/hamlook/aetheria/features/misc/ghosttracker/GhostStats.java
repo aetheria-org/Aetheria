@@ -1,7 +1,6 @@
 package io.hamlook.aetheria.features.misc.ghosttracker;
 
 import com.google.gson.annotations.Expose;
-import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.GsonBuilder;
 import io.hamlook.aetheria.core.ProfileManagedStorage;

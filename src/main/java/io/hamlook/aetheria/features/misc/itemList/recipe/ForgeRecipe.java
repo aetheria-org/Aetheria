@@ -7,6 +7,7 @@ import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
+
 import java.util.List;
 
 public class ForgeRecipe extends Recipe {

@@ -6,14 +6,9 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
-import io.hamlook.aetheria.utils.compat.EntityCompat;
-import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
-import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import io.hamlook.aetheria.utils.compat.TessellatorCompat;
-import io.hamlook.aetheria.utils.compat.TextCompat;
-import io.hamlook.aetheria.utils.compat.VertexBuilder;
-import io.hamlook.aetheria.utils.compat.WorldCompat;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
@@ -21,7 +16,6 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.IChatComponent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -43,7 +37,7 @@ public class BloodMobHighlight {
 
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
         if (ATHRConfig.feature == null || ATHRConfig.feature.dungeons.bloodMobHighlight == 2) return;
 
         if (++tickCounter < 4) return;

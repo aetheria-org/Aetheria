@@ -2,7 +2,6 @@ package io.hamlook.aetheria.utils;
 
 import io.hamlook.aetheria.utils.compat.BlockCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
 

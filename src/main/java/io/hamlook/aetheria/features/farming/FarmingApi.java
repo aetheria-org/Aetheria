@@ -4,6 +4,7 @@ import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.BlockBreakEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerData;
 import io.hamlook.aetheria.features.farming.gardenplots.GardenPlotData;
 import io.hamlook.aetheria.features.farming.sensitivityreducer.FarmingToolIds;
@@ -18,7 +19,6 @@ import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.AxisAlignedBB;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -416,7 +416,7 @@ public final class FarmingApi {
 
     @HandleEvent
     public void onTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc == null || MinecraftCompat.getLocalPlayer() == null) return;
         cachedHeldItemId = ItemUtils.getInternalName(MinecraftCompat.getLocalPlayer().getHeldItem());

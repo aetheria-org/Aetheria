@@ -3,11 +3,7 @@ package io.hamlook.aetheria.utils.compat
 import net.minecraft.client.Minecraft
 import net.minecraft.event.ClickEvent
 import net.minecraft.event.HoverEvent
-import net.minecraft.util.ChatComponentText
-import net.minecraft.util.ChatStyle
-import net.minecraft.util.EnumChatFormatting
-import net.minecraft.util.IChatComponent
-import net.minecraft.util.ResourceLocation
+import net.minecraft.util.*
 
 object TextCompat {
 

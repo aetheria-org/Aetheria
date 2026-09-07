@@ -1,4 +1,4 @@
-﻿package io.hamlook.aetheria.features.misc
+package io.hamlook.aetheria.features.misc
 
 import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig

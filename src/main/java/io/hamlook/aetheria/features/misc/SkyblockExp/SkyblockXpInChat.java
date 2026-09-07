@@ -5,12 +5,12 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.misc.Misc;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.data.TablistParser;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @RegisterEvents
 public class SkyblockXpInChat {
@@ -43,7 +43,7 @@ public class SkyblockXpInChat {
 
     @HandleEvent
     public void onTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickPhase.END) return;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.misc.skyblockXpInChat) return;
         if (MinecraftCompat.getLocalPlayer() == null) return;
         if (!SkyblockData.isOnSkyblock()) return;

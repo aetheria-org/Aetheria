@@ -7,7 +7,6 @@ import io.hamlook.aetheria.features.chat.globalchat.vars.EmojiRef;
 import net.minecraft.client.gui.FontRenderer;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;

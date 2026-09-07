@@ -1,7 +1,6 @@
 package io.hamlook.aetheria.api.event;
 
 import io.hamlook.aetheria.Aetheria;
-
 import lombok.Getter;
 
 import java.lang.reflect.InvocationTargetException;

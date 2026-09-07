@@ -2,7 +2,6 @@ package io.hamlook.aetheria.features.chat
 
 import io.hamlook.aetheria.core.ATHRConfig
 import net.minecraft.client.gui.ChatLine
-import net.minecraft.event.HoverEvent
 import net.minecraft.util.ChatComponentText
 import net.minecraft.util.EnumChatFormatting
 import net.minecraft.util.IChatComponent

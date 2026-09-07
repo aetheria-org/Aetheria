@@ -10,7 +10,8 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.IChatComponent;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
 
 @RegisterEvents
 public class ItemLogAlertsCommand {

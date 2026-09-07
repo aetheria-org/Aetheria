@@ -3,7 +3,7 @@ package io.hamlook.aetheria.features.misc.itemList;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ThreadUtils;
 
-import java.awt.Desktop;
+import java.awt.*;
 import java.net.URI;
 import java.util.List;
 

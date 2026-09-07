@@ -1,5 +1,6 @@
-﻿package io.hamlook.aetheria.utils.compat
+package io.hamlook.aetheria.utils.compat
 
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils.getScaledResolution
 import net.minecraft.client.gui.ScaledResolution
 
 /**

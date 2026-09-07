@@ -1,7 +1,6 @@
 package io.hamlook.aetheria.core;
 
 import com.google.gson.annotations.Expose;
-import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
 import io.hamlook.aetheria.core.features.about.About;
 import io.hamlook.aetheria.core.features.chat.ChatConfig;
 import io.hamlook.aetheria.core.features.chat.PlayerButtonsConfig;
@@ -9,16 +8,17 @@ import io.hamlook.aetheria.core.features.cosmetics.Cosmetics;
 import io.hamlook.aetheria.core.features.debug.Debug;
 import io.hamlook.aetheria.core.features.diana.Diana;
 import io.hamlook.aetheria.core.features.dungeons.Dungeons;
+import io.hamlook.aetheria.core.features.farming.Farming;
 import io.hamlook.aetheria.core.features.fishing.Fishing;
-import io.hamlook.aetheria.core.features.misc.Misc;
 import io.hamlook.aetheria.core.features.mining.Mining;
+import io.hamlook.aetheria.core.features.misc.Misc;
+import io.hamlook.aetheria.core.features.network.NetworkConfig;
 import io.hamlook.aetheria.core.features.overlays.Overlays;
 import io.hamlook.aetheria.core.features.qol.Qol;
-import io.hamlook.aetheria.core.features.waypoints.Waypoints;
-import io.hamlook.aetheria.core.features.farming.Farming;
 import io.hamlook.aetheria.core.features.scoreboard.Scoreboard;
 import io.hamlook.aetheria.core.features.storage.Storage;
-import io.hamlook.aetheria.core.features.network.NetworkConfig;
+import io.hamlook.aetheria.core.features.waypoints.Waypoints;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
 import io.hamlook.aetheria.features.capes.CapeManager;
 
 import java.awt.*;

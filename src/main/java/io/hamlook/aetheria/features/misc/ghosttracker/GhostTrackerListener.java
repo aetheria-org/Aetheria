@@ -4,13 +4,13 @@ import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.ActionBarUpdateEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -74,7 +74,7 @@ public class GhostTrackerListener {
 
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
-        if (event.phase != TickEvent.Phase.START) return;
+        if (event.phase != TickPhase.START) return;
         GhostStats.getInstance().timerTick();
         PurseTracker.tick();
         autoSaveIfNeeded();

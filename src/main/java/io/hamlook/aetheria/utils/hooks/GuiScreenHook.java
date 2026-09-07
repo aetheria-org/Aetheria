@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.mixins.hooks;
+package io.hamlook.aetheria.utils.hooks;
 
 import io.hamlook.aetheria.features.farming.visitors.VisitorTooltips;
 import io.hamlook.aetheria.features.storage.StorageManager;

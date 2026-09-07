@@ -4,7 +4,7 @@ import io.hamlook.aetheria.core.GsonBuilder;
 import io.hamlook.aetheria.core.ProfileManagedStorage;
 import io.hamlook.aetheria.core.StorageManager;
 
-import java.io.*;
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Map;
 

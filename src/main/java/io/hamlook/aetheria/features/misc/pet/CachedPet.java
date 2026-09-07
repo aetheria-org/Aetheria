@@ -15,9 +15,9 @@ public class CachedPet {
         if (textureValue == null) textureValue = "";
         if (rarityColor == null) rarityColor = "";
         if (skinTag == null) skinTag = "";
-        formattedName = formattedName.replace("Â§", "§");
-        rarityColor = rarityColor.replace("Â§", "§");
-        skinTag = skinTag.replace("Â§", "§");
+        formattedName = formattedName.replace("§", "§");
+        rarityColor = rarityColor.replace("§", "§");
+        skinTag = skinTag.replace("§", "§");
     }
 
     public void rebuildFormattedName() {

@@ -6,10 +6,10 @@ import io.hamlook.aetheria.features.custommenu.ui.CMMElement;
 import io.hamlook.aetheria.features.custommenu.ui.buttons.CMMButton;
 import lombok.Setter;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.io.File;
 
 public class CustomMMConfig {
 
