@@ -11,7 +11,7 @@ import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
-import io.hamlook.aetheria.utils.compat.NefSlotClickCompat;
+import io.hamlook.aetheria.utils.modcompat.NefSlotClickCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.NBTFormatter;

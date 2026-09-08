@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.utils.compat.modcompat;
+package io.hamlook.aetheria.utils.modcompat;
 
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.command.brigadier.CommandCategory;

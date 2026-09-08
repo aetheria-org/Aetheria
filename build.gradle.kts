@@ -1,3 +1,6 @@
+import io.hamlook.aetheria.sharedvariables.MinecraftVersion
+import io.hamlook.aetheria.sharedvariables.ProjectTarget
+import com.replaymod.gradle.preprocess.PreprocessExtension
 import org.apache.commons.lang3.SystemUtils
 
 plugins {
@@ -6,35 +9,41 @@ plugins {
     id("com.gradleup.shadow") version "9.4.1"
     id("gg.essential.multi-version")
     id("gg.essential.loom")
-    kotlin("jvm") version "2.3.20"
+    kotlin("jvm") version "2.0.10"
     id("dev.architectury.architectury-pack200")
 }
 
-//Constants:
+// Constants:
+
+val target = ProjectTarget.values().find { it.projectPath == project.path }!!
 
 val baseGroup = (project.findProperty("baseGroup") as? String) ?: "io.hamlook.aetheria"
-val mcVersion = (project.findProperty("mcVersion") as? String) ?: "1.8.9"
 val modid = (project.findProperty("modid") as? String) ?: "aetheria"
 val transformerFile = rootProject.file("src/main/resources/accesstransformer.cfg")
 
 // Minecraft configuration:
+
 loom {
     runConfigs {
         "client" {
             property("mixin.debug", "true")
-            programArgs("--tweakClass", "org.spongepowered.asm.launch.MixinTweaker")
+            if (target.isForge) {
+                programArgs("--tweakClass", "org.spongepowered.asm.launch.MixinTweaker")
+            }
             if (SystemUtils.IS_OS_MAC_OSX) {
                 vmArgs.remove("-XstartOnFirstThread")
             }
         }
         remove(getByName("server"))
     }
-    forge {
-        pack200Provider.set(dev.architectury.pack200.java.Pack200Adapter())
-        mixinConfig("mixins.$modid.json")
-        if (transformerFile.exists()) {
-            println("Installing access transformer")
-            accessTransformer(transformerFile)
+    if (target.isForge) {
+        forge {
+            pack200Provider.set(dev.architectury.pack200.java.Pack200Adapter())
+            mixinConfig("mixins.$modid.json")
+            if (transformerFile.exists()) {
+                println("Installing access transformer")
+                accessTransformer(transformerFile)
+            }
         }
     }
     @Suppress("UnstableApiUsage")
@@ -45,10 +54,46 @@ loom {
 }
 
 sourceSets.main {
-    java.srcDirs(rootProject.file("src/main/java"), rootProject.file("src/main/kotlin"))
-    resources.srcDirs(rootProject.file("src/main/resources"))
     output.setResourcesDir(sourceSets.main.flatMap { it.java.classesDirectory })
 }
+
+extensions.configure<PreprocessExtension> {
+    vars.put("MC", target.minecraftVersion.versionNumber)
+    vars.put("FORGE", if (target.isForge) 1 else 0)
+    vars.put("FABRIC", if (target.isFabric) 1 else 0)
+    vars.put("JAVA", target.minecraftVersion.javaVersion)
+}
+
+pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+    the<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>().sourceSets.named("main") {
+        kotlin.srcDir(rootProject.file("src/main/kotlin"))
+        kotlin.srcDir(rootProject.file("src/main/java"))
+    }
+    val compileKotlin = tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>("compileKotlin")
+    tasks.named<JavaCompile>("compileJava") {
+        dependsOn(compileKotlin)
+        classpath += files(compileKotlin.get().destinationDirectory)
+    }
+}
+
+// Build path exclusion (SkyHanni pattern):
+// Files listed in versions/<target>/buildpaths-excluded.txt are excluded from compilation on that target.
+
+fun excludeBuildPaths(buildPathsFile: File, sourceSet: Provider<SourceSet>) {
+    if (buildPathsFile.exists()) {
+        sourceSet.get().apply {
+            val buildPaths = buildPathsFile.readText().lineSequence()
+                .map { it.substringBefore("#").trim().replace(Regex("\\.(?!kt|java|\\()"), "/") }
+                .filter { it.isNotBlank() }
+                .toSet()
+            kotlin.exclude(buildPaths)
+            java.exclude(buildPaths)
+        }
+    }
+}
+val buildPathsFile = file("versions/${target.projectName}/buildpaths-excluded.txt")
+excludeBuildPaths(buildPathsFile, sourceSets.main)
+excludeBuildPaths(buildPathsFile, sourceSets.test)
 
 // Dependencies:
 
@@ -67,31 +112,53 @@ val shadowImpl: Configuration by configurations.creating {
 }
 
 dependencies {
-    minecraft("com.mojang:minecraft:1.8.9")
-    mappings("de.oceanlabs.mcp:mcp_stable:22-1.8.9")
-    forge("net.minecraftforge:forge:1.8.9-11.15.1.2318-1.8.9")
+    val versionName = target.minecraftVersion.versionName
+    minecraft("com.mojang:minecraft:$versionName")
 
-    shadowImpl("org.spongepowered:mixin:0.7.11-SNAPSHOT") {
-        isTransitive = false
+    if (target.mappingDependency == "official") {
+        mappings(loom.officialMojangMappings())
+    } else {
+        mappings(target.mappingDependency)
     }
+
+    if (target.forgeDep != null) {
+        "forge"(target.forgeDep!!)
+    }
+
+    val mixinVersion = if (target == ProjectTarget.MAIN) "0.7.11-SNAPSHOT" else "0.8.2"
+
+    if (target.isForge) {
+        shadowImpl("org.spongepowered:mixin:$mixinVersion") {
+            isTransitive = false
+        }
+        annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
+        annotationProcessor("com.google.code.gson:gson:2.10.1")
+        //noinspection VulnerableGradleDependency — Guava 17.0 is MC 1.8.9's bundled version
+        annotationProcessor("com.google.guava:guava:17.0")
+    } else {
+        target.fabricLoaderVersion?.let { modImplementation(it) }
+        target.fabricApiVersion?.let { modImplementation(it) }
+    }
+
     shadowImpl("org.java-websocket:Java-WebSocket:1.6.0") { isTransitive = false }
     shadowImpl("org.slf4j:slf4j-api:1.7.36") { isTransitive = false }
-    annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
-    annotationProcessor("com.google.code.gson:gson:2.10.1")
-    //noinspection VulnerableGradleDependency — Guava 17.0 is MC 1.8.9's bundled version
-    annotationProcessor("com.google.guava:guava:17.0")
 
-    // Kotlin standard library, must be shadowed into the JAR
     shadowImpl(kotlin("stdlib"))
     shadowImpl("com.tianscar.imageio:imageio-apng:1.0.1") { isTransitive = false }
     shadowImpl("dev.matrixlab.webp4j:webp4j-core:2.5.0") { isTransitive = false }
-    compileOnly("org.projectlombok:lombok:1.18.30")
-    annotationProcessor("org.projectlombok:lombok:1.18.30")
-    runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
     shadowImpl("com.google.code.gson:gson:2.10.1") { isTransitive = false }
     shadowImpl("com.fifesoft:rsyntaxtextarea:3.3.3") { isTransitive = false }
-    shadowImpl("com.mojang:brigadier:1.0.18") { isTransitive = false }
-    implementation("moe.nea:hotswapagent-forge:1.0.1")
+
+    if (target == ProjectTarget.MAIN) {
+        compileOnly("org.projectlombok:lombok:1.18.30")
+        annotationProcessor("org.projectlombok:lombok:1.18.30")
+        shadowImpl("com.mojang:brigadier:1.0.18") { isTransitive = false }
+        runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
+        implementation("moe.nea:hotswapagent-forge:1.0.1")
+    }
+    if (target.isFabric) {
+        runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
+    }
 }
 
 // Tasks:
@@ -104,35 +171,34 @@ tasks.withType(Jar::class) {
     archiveBaseName.set(modid)
     manifest.attributes.run {
         this["Main-Class"] = "io.hamlook.aetheria.ModInstaller"
-        this["FMLCorePluginContainsFMLMod"] = "true"
-        this["ForceLoadAsMod"] = "true"
-
-        this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
-        this["MixinConfigs"] = "mixins.$modid.json"
-        if (transformerFile.exists()) this["FMLAT"] = "${modid}_at.cfg"
+        if (target.isForge) {
+            this["FMLCorePluginContainsFMLMod"] = "true"
+            this["ForceLoadAsMod"] = "true"
+            this["TweakClass"] = "org.spongepowered.asm.launch.MixinTweaker"
+            this["MixinConfigs"] = "mixins.$modid.json"
+            if (transformerFile.exists()) this["FMLAT"] = "${modid}_at.cfg"
+        }
     }
 }
 
 tasks.processResources {
     val versionStr = project.version.toString()
-    @Suppress("REDUNDANT_CALL_OF_CONVERSION_METHOD") val mcVersionStr = mcVersion.toString()
-    @Suppress("REDUNDANT_CALL_OF_CONVERSION_METHOD") val modidStr = modid.toString()
-    @Suppress("REDUNDANT_CALL_OF_CONVERSION_METHOD") val baseGroupStr = baseGroup.toString()
+    val modidStr = modid
+    val baseGroupStr = baseGroup
 
     inputs.property("version", versionStr)
-    inputs.property("mcversion", mcVersionStr)
+    inputs.property("mcversion", target.minecraftVersion.versionName)
     inputs.property("modid", modidStr)
     inputs.property("basePackage", baseGroupStr)
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     filesMatching(listOf("mcmod.info", "mixins.$modidStr.json")) {
-        expand("version" to versionStr, "mcversion" to mcVersionStr, "modid" to modidStr, "basePackage" to baseGroupStr)
+        expand("version" to versionStr, "mcversion" to target.minecraftVersion.versionName, "modid" to modidStr, "basePackage" to baseGroupStr)
     }
 
     rename("accesstransformer.cfg", "META-INF/${modidStr}_at.cfg")
 }
-
 
 val remapJar by tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
     archiveClassifier.set("")

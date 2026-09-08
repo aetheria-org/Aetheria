@@ -1,10 +1,11 @@
-package io.hamlook.aetheria.utils.compat;
+package io.hamlook.aetheria.utils.modcompat;
 
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.PacketEvent;
 import io.hamlook.aetheria.events.SlotClickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;

@@ -2,8 +2,10 @@ package io.hamlook.aetheria.utils.compat
 
 import net.minecraft.client.Minecraft
 import net.minecraft.client.entity.EntityPlayerSP
+import net.minecraft.client.gui.FontRenderer
 import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.multiplayer.WorldClient
+import net.minecraft.client.renderer.RenderGlobal
 import net.minecraft.client.settings.GameSettings
 import net.minecraft.entity.Entity
 
@@ -48,13 +50,13 @@ object MinecraftCompat {
     fun getDisplayHeight(): Int = Minecraft.getMinecraft().displayHeight
 
     @JvmStatic
-    fun getFontRenderer(): net.minecraft.client.gui.FontRenderer =
+    fun getFontRenderer(): FontRenderer =
         Minecraft.getMinecraft().fontRendererObj
 
     @JvmStatic
     fun getCurrentScreen(): GuiScreen? = Minecraft.getMinecraft().currentScreen
 
     @JvmStatic
-    fun getRenderGlobal(): net.minecraft.client.renderer.RenderGlobal =
+    fun getRenderGlobal(): RenderGlobal =
         Minecraft.getMinecraft().renderGlobal
 }

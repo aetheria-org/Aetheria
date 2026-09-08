@@ -1,3 +1,5 @@
+import io.hamlook.aetheria.sharedvariables.ProjectTarget
+
 pluginManagement {
     // FORCES JAVA 21 COMPLIANT GSON INTO THE CLASSLOADER BEFORE LOOM INITIALIZES
     buildscript {
@@ -13,6 +15,8 @@ pluginManagement {
         }
     }
 
+    includeBuild("sharedVariables")
+
     repositories {
         mavenCentral()
         gradlePluginPortal()
@@ -23,7 +27,6 @@ pluginManagement {
         maven("https://maven.minecraftforge.net/")
         maven("https://files.minecraftforge.net/maven/")
         maven("https://repo.spongepowered.org/maven/")
-        maven("https://repo.essential.gg/repository/maven-releases/")
         maven("https://jitpack.io")
     }
     resolutionStrategy {
@@ -31,23 +34,29 @@ pluginManagement {
             when (requested.id.id) {
                 "gg.essential.loom" -> useModule("gg.essential:architectury-loom:${requested.version}")
                 "dev.architectury.loom" -> useModule("dev.architectury:architectury-loom:${requested.version}")
+                else -> if (requested.id.id.startsWith("gg.essential.")) {
+                    useModule("com.github.aetheria-org.essential-gradle-toolkit:${requested.id.id}.gradle.plugin:0.7.2kotlin.1")
+                }
             }
         }
     }
     plugins {
-        id("gg.essential.multi-version.root") version "0.7.2"
+        id("gg.essential.multi-version.root") version "0.7.2kotlin.1"
     }
 }
 
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version("0.6.0")
+    id("io.hamlook.aetheria.shared-variables")
 }
 
 rootProject.name = "Aetheria"
 rootProject.buildFileName = "root.gradle.kts"
 
-include(":1.8.9-forge")
-project(":1.8.9-forge").apply {
-    projectDir = file("versions/1.8.9-forge")
-    buildFileName = "../../build.gradle.kts"
+ProjectTarget.values().forEach { target ->
+    include(target.projectPath)
+    project(target.projectPath).apply {
+        projectDir = file("versions/${target.projectName}")
+        buildFileName = "../../build.gradle.kts"
+    }
 }

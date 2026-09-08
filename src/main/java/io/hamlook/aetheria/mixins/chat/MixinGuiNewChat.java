@@ -40,7 +40,7 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
     private void athr$beforeSetChatLine(IChatComponent component, int chatLineId,
                                          int updateCounter, boolean refresh, CallbackInfo ci) {
         ChatUtilsState.currentFullMessage = component;
-        ChatCompactHandler.handleChatMessage(component, refresh, chatLines, drawnChatLines);
+        ChatCompactHandler.handleChatMessage(component, refresh, this.chatLines, this.drawnChatLines);
     }
 
     @Inject(method = "setChatLine", at = @At("TAIL"))
@@ -86,7 +86,7 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 
     @Inject(method = "drawChat", at = @At("HEAD"))
     private void athr$computeHoveredLine(int updateCounter, CallbackInfo ci) {
-        ChatHook.computeHoveredLine(drawnChatLines, scrollPos, getChatScale(), getLineCount(), org.lwjgl.input.Mouse.getX(), org.lwjgl.input.Mouse.getY());
+        ChatHook.computeHoveredLine(this.drawnChatLines, this.scrollPos, getChatScale(), getLineCount(), org.lwjgl.input.Mouse.getX(), org.lwjgl.input.Mouse.getY());
     }
 
     @Redirect(
@@ -127,6 +127,6 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 
     @Override
     public ChatLine athr$getHoveredChatLine(int rawMouseX, int rawMouseY) {
-        return ChatHook.getHoveredChatLine(drawnChatLines, scrollPos, getChatScale(), getLineCount(), rawMouseX, rawMouseY);
+        return ChatHook.getHoveredChatLine(this.drawnChatLines, this.scrollPos, getChatScale(), getLineCount(), rawMouseX, rawMouseY);
     }
 }
