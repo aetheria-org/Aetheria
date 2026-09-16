@@ -20,8 +20,6 @@ import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import lombok.Getter;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
@@ -407,9 +405,11 @@ public class ConfigEditor extends GuiElement {
         long currentTime = System.currentTimeMillis();
         long delta = currentTime - openedMillis;
 
-        ScaledResolution scaledResolution = GuiScreenUtils.getScaledResolution();
-        int width = scaledResolution.getScaledWidth();
-        int height = scaledResolution.getScaledHeight();
+        int screenW = GuiScreenUtils.getScaledWindowWidth();
+        int screenH = GuiScreenUtils.getScaledWindowHeight();
+        int scaleFactor = GuiScreenUtils.getScaleFactor();
+        int width = screenW;
+        int height = screenH;
         int[] mouse = KeybindHelper.getMouseCoords(width, height);
         int mouseX = mouse[0], mouseY = mouse[1];
 
@@ -418,13 +418,13 @@ public class ConfigEditor extends GuiElement {
         float opacityFactor = LerpUtils.sigmoidZeroOne(delta / 500f);
         RenderUtils.drawGradientRect(0, 0, 0, width, height, (int) (0x80 * opacityFactor) << 24 | 0x101010, (int) (0x90 * opacityFactor) << 24 | 0x101010);
 
-        int xSize = Math.min(scaledResolution.getScaledWidth() - 100 / scaledResolution.getScaleFactor(), 540);
-        int ySize = Math.min(scaledResolution.getScaledHeight() - 100 / scaledResolution.getScaleFactor(), 400);
+        int xSize = Math.min(screenW - 100 / scaleFactor, 540);
+        int ySize = Math.min(screenH - 100 / scaleFactor, 400);
 
-        int x = (scaledResolution.getScaledWidth() - xSize) / 2;
-        int y = (scaledResolution.getScaledHeight() - ySize) / 2;
+        int x = (screenW - xSize) / 2;
+        int y = (screenH - ySize) / 2;
 
-        int adjScaleFactor = Math.max(2, scaledResolution.getScaleFactor());
+        int adjScaleFactor = Math.max(2, scaleFactor);
 
         int openingXSize = xSize;
         int openingYSize = ySize;
@@ -434,9 +434,9 @@ public class ConfigEditor extends GuiElement {
         } else if (delta < 300) {
             openingYSize = 5 + (int) (delta - 150) * (ySize - 5) / 150;
         }
-        RenderUtils.drawFloatingRectDark((scaledResolution.getScaledWidth() - openingXSize) / 2, (scaledResolution.getScaledHeight() - openingYSize) / 2, openingXSize, openingYSize);
+        RenderUtils.drawFloatingRectDark((screenW - openingXSize) / 2, (screenH - openingYSize) / 2, openingXSize, openingYSize);
         GlScissorStack.clear();
-        GlScissorStack.push((scaledResolution.getScaledWidth() - openingXSize) / 2, (scaledResolution.getScaledHeight() - openingYSize) / 2, (scaledResolution.getScaledWidth() + openingXSize) / 2, (scaledResolution.getScaledHeight() + openingYSize) / 2, scaledResolution);
+        GlScissorStack.push((screenW - openingXSize) / 2, (screenH - openingYSize) / 2, (screenW + openingXSize) / 2, (screenH + openingYSize) / 2, scaleFactor);
 
         RenderUtils.drawFloatingRectDark(x + 5, y + 5, xSize - 10, 20, false);
 
@@ -449,13 +449,13 @@ public class ConfigEditor extends GuiElement {
         int innerRight = x + 184 - innerPadding;
         int innerTop = y + 49 + innerPadding;
         int innerBottom = y + ySize - 5 - innerPadding;
-        Gui.drawRect(innerLeft, innerTop, innerLeft + 1, innerBottom, 0xff080808);
-        Gui.drawRect(innerLeft + 1, innerTop, innerRight, innerTop + 1, 0xff080808);
-        Gui.drawRect(innerRight - 1, innerTop + 1, innerRight, innerBottom, 0xff282828);
-        Gui.drawRect(innerLeft + 1, innerBottom - 1, innerRight - 1, innerBottom, 0xff282828);
-        Gui.drawRect(innerLeft + 1, innerTop + 1, innerRight - 1, innerBottom - 1, 0x60080808);
+        DrawContextUtils.fill(innerLeft, innerTop, innerLeft + 1, innerBottom, 0xff080808);
+        DrawContextUtils.fill(innerLeft + 1, innerTop, innerRight, innerTop + 1, 0xff080808);
+        DrawContextUtils.fill(innerRight - 1, innerTop + 1, innerRight, innerBottom, 0xff282828);
+        DrawContextUtils.fill(innerLeft + 1, innerBottom - 1, innerRight - 1, innerBottom, 0xff282828);
+        DrawContextUtils.fill(innerLeft + 1, innerTop + 1, innerRight - 1, innerBottom - 1, 0x60080808);
 
-        GlScissorStack.push(0, innerTop + 1, scaledResolution.getScaledWidth(), innerBottom - 1, scaledResolution);
+        GlScissorStack.push(0, innerTop + 1, screenW, innerBottom - 1, scaleFactor);
 
         float catBarSize = 1;
         int catY = -categoryScroll.getValue();
@@ -510,10 +510,10 @@ public class ConfigEditor extends GuiElement {
             }
         }
         int catDist = innerBottom - innerTop - 12;
-        Gui.drawRect(innerLeft + 2, innerTop + 5, innerLeft + 7, innerBottom - 5, 0xff0d0d0d);
-        Gui.drawRect(innerLeft + 3, innerTop + 6 + (int) (catDist * catBarStart), innerLeft + 6, innerTop + 6 + (int) (catDist * catBarEnd), 0xff3a3a3a);
+        DrawContextUtils.fill(innerLeft + 2, innerTop + 5, innerLeft + 7, innerBottom - 5, 0xff0d0d0d);
+        DrawContextUtils.fill(innerLeft + 3, innerTop + 6 + (int) (catDist * catBarStart), innerLeft + 6, innerTop + 6 + (int) (catDist * catBarEnd), 0xff3a3a3a);
 
-        GlScissorStack.pop(scaledResolution);
+        GlScissorStack.pop(scaleFactor);
 
         TextRenderUtils.drawStringCenteredScaledMaxWidth("Categories", fr, x + 95, y + 44, false, 120, 0x00b8b8);
 
@@ -556,13 +556,13 @@ public class ConfigEditor extends GuiElement {
             TextRenderUtils.drawStringScaledMaxWidth(cat.desc, fr, innerLeft + 5, y + 40, true, innerRight - innerLeft - rightStuffLen - 10, 0xb0b0b0);
         }
 
-        Gui.drawRect(innerLeft, innerTop, innerLeft + 1, innerBottom, 0xff080808);
-        Gui.drawRect(innerLeft + 1, innerTop, innerRight, innerTop + 1, 0xff080808);
-        Gui.drawRect(innerRight - 1, innerTop + 1, innerRight, innerBottom, 0xff303030);
-        Gui.drawRect(innerLeft + 1, innerBottom - 1, innerRight - 1, innerBottom, 0xff303030);
-        Gui.drawRect(innerLeft + 1, innerTop + 1, innerRight - 1, innerBottom - 1, 0x60080808);
+        DrawContextUtils.fill(innerLeft, innerTop, innerLeft + 1, innerBottom, 0xff080808);
+        DrawContextUtils.fill(innerLeft + 1, innerTop, innerRight, innerTop + 1, 0xff080808);
+        DrawContextUtils.fill(innerRight - 1, innerTop + 1, innerRight, innerBottom, 0xff303030);
+        DrawContextUtils.fill(innerLeft + 1, innerBottom - 1, innerRight - 1, innerBottom, 0xff303030);
+        DrawContextUtils.fill(innerLeft + 1, innerTop + 1, innerRight - 1, innerBottom - 1, 0x60080808);
 
-        GlScissorStack.push(innerLeft + 1, innerTop + 1, innerRight - 1, innerBottom - 1, scaledResolution);
+        GlScissorStack.push(innerLeft + 1, innerTop + 1, innerRight - 1, innerBottom - 1, scaleFactor);
         float barSize = 1;
         int optionY = -optionsScroll.getValue();
         if (getSelectedCategory() != null && currentConfigEditing.containsKey(getSelectedCategory())) {
@@ -579,7 +579,7 @@ public class ConfigEditor extends GuiElement {
             }
         }
 
-        GlScissorStack.pop(scaledResolution);
+        GlScissorStack.pop(scaleFactor);
 
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
         if (getSelectedCategory() != null && currentConfigEditing.containsKey(getSelectedCategory())) {
@@ -610,8 +610,8 @@ public class ConfigEditor extends GuiElement {
             }
         }
         int dist = innerBottom - innerTop - 12;
-        Gui.drawRect(innerRight - 10, innerTop + 5, innerRight - 5, innerBottom - 5, 0xff0d0d0d);
-        Gui.drawRect(innerRight - 9, innerTop + 6 + (int) (dist * optionsBarStart), innerRight - 6, innerTop + 6 + (int) (dist * optionsBarend), 0xff3a3a3a);
+        DrawContextUtils.fill(innerRight - 10, innerTop + 5, innerRight - 5, innerBottom - 5, 0xff0d0d0d);
+        DrawContextUtils.fill(innerRight - 9, innerTop + 6 + (int) (dist * optionsBarStart), innerRight - 6, innerTop + 6 + (int) (dist * optionsBarend), 0xff3a3a3a);
 
         for (int socialIndex = 0; socialIndex < socialsIco.length; socialIndex++) {
             MinecraftCompat.getMinecraft().getTextureManager().bindTexture(socialsIco[socialIndex]);
@@ -668,7 +668,7 @@ public class ConfigEditor extends GuiElement {
             }
 
             int hColor = thisInSelection ? 0xff00b8b8 : 0xff606060;
-            Gui.drawRect(lineX, itemCenterY + 4, textBaseX - 2, itemCenterY + 5, hColor);
+            DrawContextUtils.fill(lineX, itemCenterY + 4, textBaseX - 2, itemCenterY + 5, hColor);
 
             boolean hasChildren = !subEntry.getValue().subcategories.isEmpty();
             String indicator = hasChildren ? (inPath ? "▼ " : "▶ ") : "  ";
@@ -691,12 +691,12 @@ public class ConfigEditor extends GuiElement {
             if (subtreeContainsSelection && firstAncestorY != -1) {
                 int cyanStart = trunkStart;
                 int cyanEnd = y + 70 + lastAncestorY + 6;
-                Gui.drawRect(lineX, cyanStart, lineX + 1, cyanEnd, 0xff00b8b8);
+                DrawContextUtils.fill(lineX, cyanStart, lineX + 1, cyanEnd, 0xff00b8b8);
                 if (cyanEnd < trunkEnd) {
-                    Gui.drawRect(lineX, cyanEnd, lineX + 1, trunkEnd, 0xff606060);
+                    DrawContextUtils.fill(lineX, cyanEnd, lineX + 1, trunkEnd, 0xff606060);
                 }
             } else {
-                Gui.drawRect(lineX, trunkStart, lineX + 1, trunkEnd, 0xff606060);
+                DrawContextUtils.fill(lineX, trunkStart, lineX + 1, trunkEnd, 0xff606060);
             }
         }
 
@@ -731,17 +731,19 @@ public class ConfigEditor extends GuiElement {
             isDraggingCategoryScroll = false;
         }
 
-        ScaledResolution scaledResolution = GuiScreenUtils.getScaledResolution();
-        int width = scaledResolution.getScaledWidth();
-        int height = scaledResolution.getScaledHeight();
+        int screenW2 = GuiScreenUtils.getScaledWindowWidth();
+        int screenH2 = GuiScreenUtils.getScaledWindowHeight();
+        int scaleFactor2 = GuiScreenUtils.getScaleFactor();
+        int width = screenW2;
+        int height = screenH2;
 
-        int xSize = Math.min(width - 100 / scaledResolution.getScaleFactor(), 540);
-        int ySize = Math.min(height - 100 / scaledResolution.getScaleFactor(), 400);
+        int xSize = Math.min(width - 100 / scaleFactor2, 540);
+        int ySize = Math.min(height - 100 / scaleFactor2, 400);
 
-        int x = (scaledResolution.getScaledWidth() - xSize) / 2;
-        int y = (scaledResolution.getScaledHeight() - ySize) / 2;
+        int x = (screenW2 - xSize) / 2;
+        int y = (screenH2 - ySize) / 2;
 
-        int adjScaleFactor = Math.max(2, scaledResolution.getScaleFactor());
+        int adjScaleFactor = Math.max(2, scaleFactor2);
 
         int innerPadding = 20 / adjScaleFactor;
         int innerTop = y + 49 + innerPadding;
@@ -1000,12 +1002,13 @@ public class ConfigEditor extends GuiElement {
     }
 
     public boolean keyboardInput() {
-        ScaledResolution scaledResolution = GuiScreenUtils.getScaledResolution();
-        int width = scaledResolution.getScaledWidth();
+        int screenW3 = GuiScreenUtils.getScaledWindowWidth();
+        int scaleFactor3 = GuiScreenUtils.getScaleFactor();
+        int width = screenW3;
 
-        int xSize = Math.min(width - 100 / scaledResolution.getScaleFactor(), 540);
+        int xSize = Math.min(width - 100 / scaleFactor3, 540);
 
-        int adjScaleFactor = Math.max(2, scaledResolution.getScaleFactor());
+        int adjScaleFactor = Math.max(2, scaleFactor3);
 
         int innerPadding = 20 / adjScaleFactor;
         int innerWidth = xSize - 194 - innerPadding * 2;
@@ -1078,11 +1081,11 @@ public class ConfigEditor extends GuiElement {
     private void handleDragScroll(int mouseX, int mouseY) {
         if (isDraggingOptionsScroll) {
             if (MouseCompat.isButtonDown(0)) {
-                ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-                int sh = sr.getScaledHeight();
-                int ySize = Math.min(sh - 100 / sr.getScaleFactor(), 400);
+                int sh = GuiScreenUtils.getScaledWindowHeight();
+                int sf = GuiScreenUtils.getScaleFactor();
+                int ySize = Math.min(sh - 100 / sf, 400);
                 int y = (sh - ySize) / 2;
-                int adjScaleFactor = Math.max(2, sr.getScaleFactor());
+                int adjScaleFactor = Math.max(2, sf);
                 int innerPadding = 20 / adjScaleFactor;
                 int innerTop = y + 49 + innerPadding;
                 int innerBottom = y + ySize - 5 - innerPadding;
@@ -1100,14 +1103,14 @@ public class ConfigEditor extends GuiElement {
         }
         if (isDraggingCategoryScroll) {
             if (MouseCompat.isButtonDown(0)) {
-                ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-                int sw = sr.getScaledWidth();
-                int sh = sr.getScaledHeight();
-                int xSize = Math.min(sw - 100 / sr.getScaleFactor(), 540);
-                int ySize = Math.min(sh - 100 / sr.getScaleFactor(), 400);
+                int sw = GuiScreenUtils.getScaledWindowWidth();
+                int sh = GuiScreenUtils.getScaledWindowHeight();
+                int sf = GuiScreenUtils.getScaleFactor();
+                int xSize = Math.min(sw - 100 / sf, 540);
+                int ySize = Math.min(sh - 100 / sf, 400);
                 int x = (sw - xSize) / 2;
                 int y = (sh - ySize) / 2;
-                int adjScaleFactor = Math.max(2, sr.getScaleFactor());
+                int adjScaleFactor = Math.max(2, sf);
                 int innerPadding = 20 / adjScaleFactor;
                 int innerTop = y + 49 + innerPadding;
                 int innerBottom = y + ySize - 5 - innerPadding;

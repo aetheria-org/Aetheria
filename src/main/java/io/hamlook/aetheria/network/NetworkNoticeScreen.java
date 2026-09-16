@@ -1,11 +1,11 @@
 package io.hamlook.aetheria.network;
 
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 
 public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
@@ -55,8 +55,7 @@ public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
         float slide = animOffset;
         float alpha = 1f - Math.min(1f, Math.abs(slide) / (PANEL_W * 0.4f));
 
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int scale = sr.getScaleFactor();
+        int scale = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(px * scale, GuiScreenUtils.getDisplayHeight() - (py + PANEL_H) * scale, PANEL_W * scale, PANEL_H * scale);
 
@@ -90,8 +89,8 @@ public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
 
     protected void drawNavBtn(int x, int y, String label, int color, boolean hovered) {
         RenderUtils.drawFloatingRectDark(x, y, NAV_W, NAV_H, false);
-        if (hovered) Gui.drawRect(x, y, x + NAV_W, y + NAV_H, 0x18FFFFFF);
-        drawCenteredString(fontRendererObj, label, x + NAV_W / 2, y + (NAV_H - fontRendererObj.FONT_HEIGHT) / 2, color);
+        if (hovered) DrawContextUtils.fill(x, y, x + NAV_W, y + NAV_H, 0x18FFFFFF);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), label, x + NAV_W / 2, y + (NAV_H - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2, color);
     }
 
     protected void drawWrapped(String text, int cx, int y, int color) {
@@ -99,17 +98,17 @@ public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
             StringBuilder seg = new StringBuilder();
             for (String word : line.split(" ")) {
                 String test = seg.length() == 0 ? word : seg + " " + word;
-                if (fontRendererObj.getStringWidth(test) > 340) {
-                    drawCenteredString(fontRendererObj, seg.toString(), cx, y, color);
-                    y += fontRendererObj.FONT_HEIGHT + 2;
+                if (DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), test) > 340) {
+                    drawCenteredString(MinecraftCompat.getFontRenderer(), seg.toString(), cx, y, color);
+                    y += MinecraftCompat.getFontRenderer().FONT_HEIGHT + 2;
                     seg = new StringBuilder(word);
                 } else {
                     seg = new StringBuilder(test);
                 }
             }
             if (seg.length() > 0) {
-                drawCenteredString(fontRendererObj, seg.toString(), cx, y, color);
-                y += fontRendererObj.FONT_HEIGHT + 2;
+                drawCenteredString(MinecraftCompat.getFontRenderer(), seg.toString(), cx, y, color);
+                y += MinecraftCompat.getFontRenderer().FONT_HEIGHT + 2;
             }
         }
     }

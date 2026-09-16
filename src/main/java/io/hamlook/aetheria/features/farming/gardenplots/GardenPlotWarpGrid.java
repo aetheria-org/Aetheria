@@ -9,6 +9,7 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -16,8 +17,6 @@ import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
@@ -61,13 +60,13 @@ public class GardenPlotWarpGrid {
         return gui instanceof GuiInventory;
     }
 
-    private static int[] calculatePosition(ScaledResolution sr) {
+    private static int[] calculatePosition() {
         if (ATHRConfig.feature == null) return new int[]{0, 0};
         Position pos = ATHRConfig.feature.farming.gardenPlotWarpGrid.pos;
         int w = GRID_SIZE;
         int h = GRID_SIZE + HOME_GAP + HOME_HEIGHT;
-        int x = pos.getAbsX(sr, w);
-        int y = pos.getAbsY(sr, h);
+        int x = pos.getAbsX(GuiScreenUtils.getScaledWindowWidth(), w);
+        int y = pos.getAbsY(GuiScreenUtils.getScaledWindowHeight(), h);
         if (pos.isCenterX()) x -= w / 2;
         if (pos.isCenterY()) y -= h / 2;
         return new int[]{x, y};
@@ -82,8 +81,7 @@ public class GardenPlotWarpGrid {
     }
 
     public void render(boolean preview) {
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int[] pos = calculatePosition(sr);
+        int[] pos = calculatePosition();
         draw(pos[0], pos[1]);
     }
 
@@ -120,7 +118,7 @@ public class GardenPlotWarpGrid {
 
         RenderUtils.drawButton(x, y, CELL_SIZE, CELL_SIZE, null, () -> {
             if (plot != 0 && FarmingApi.isPlayerInPlot(plot)) {
-                Gui.drawRect(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x5500FF00);
+                DrawContextUtils.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x5500FF00);
             }
 
             if (plot == 0) {
@@ -128,14 +126,14 @@ public class GardenPlotWarpGrid {
                 ItemRenderUtils.renderItemIcon(MC, new ItemStack(Blocks.hay_block), x + 2, y + 2, CELL_SIZE - 4);
             } else {
                 String text = String.valueOf(plot);
-                int tw = MC.fontRendererObj.getStringWidth(text);
+                int tw = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), text);
                 int color = hidden ? 0x777777 : 0xFFFFFF;
-                MC.fontRendererObj.drawStringWithShadow(text, x + (CELL_SIZE - tw) / 2f, y + (CELL_SIZE - 8) / 2f, color);
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), text, (int) (x + (CELL_SIZE - tw) / 2f), (int) (y + (CELL_SIZE - 8) / 2f), color);
             }
         });
 
         if (hidden) {
-            Gui.drawRect(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x99000000);
+            DrawContextUtils.fill(x, y, x + CELL_SIZE, y + CELL_SIZE, 0x99000000);
         }
 
         if (!hidden && plot != 0 && hasPest) {
@@ -150,16 +148,16 @@ public class GardenPlotWarpGrid {
     private static void drawHomeButton(int x, int y, int w) {
         RenderUtils.drawButton(x, y, w, HOME_HEIGHT, null, () -> {
             String text = "Home";
-            int tw = MC.fontRendererObj.getStringWidth(text);
-            MC.fontRendererObj.drawStringWithShadow(text, x + (w - tw) / 2f, y + (HOME_HEIGHT - 8) / 2f, 0xFFFFFF);
+            int tw = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), text);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), text, (int) (x + (w - tw) / 2f), (int) (y + (HOME_HEIGHT - 8) / 2f), 0xFFFFFF);
         });
     }
 
     private static void drawBorder(int x, int y, int size, int thickness, int color) {
-        Gui.drawRect(x, y, x + size, y + thickness, color);
-        Gui.drawRect(x, y + size - thickness, x + size, y + size, color);
-        Gui.drawRect(x, y, x + thickness, y + size, color);
-        Gui.drawRect(x + size - thickness, y, x + size, y + size, color);
+        DrawContextUtils.fill(x, y, x + size, y + thickness, color);
+        DrawContextUtils.fill(x, y + size - thickness, x + size, y + size, color);
+        DrawContextUtils.fill(x, y, x + thickness, y + size, color);
+        DrawContextUtils.fill(x + size - thickness, y, x + size, y + size, color);
     }
 
     private static int flashingColor(int rgb) {
@@ -177,8 +175,7 @@ public class GardenPlotWarpGrid {
         if (!isEnabled() || !isSupportedGui(event.gui)) return;
         GlStateManagerCompat.pushMatrix();
         GlStateManagerCompat.translate(-event.gui.guiLeft, -event.gui.guiTop, 50);
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int[] pos = calculatePosition(sr);
+        int[] pos = calculatePosition();
         draw(pos[0], pos[1]);
         GlStateManagerCompat.popMatrix();
     }

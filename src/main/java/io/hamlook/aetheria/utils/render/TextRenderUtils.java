@@ -3,7 +3,9 @@ package io.hamlook.aetheria.utils.render;
 import io.hamlook.aetheria.features.misc.ScrollableTooltips;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.RenderHelperCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -17,7 +19,7 @@ public final class TextRenderUtils {
     }
 
     public static void drawStringScaledMaxWidth(String str, FontRenderer fr, float x, float y, boolean shadow, int len, int colour) {
-        float factor = Math.min(1, len / (float) fr.getStringWidth(str));
+        float factor = Math.min(1, len / (float) DrawContextUtils.getStringWidth(fr, str));
         drawStringScaled(str, fr, x, y, shadow, colour, factor);
     }
 
@@ -28,7 +30,7 @@ public final class TextRenderUtils {
     }
 
     public static void drawStringCenteredScaledMaxWidth(String str, FontRenderer fr, float x, float y, boolean shadow, int len, int colour) {
-        int strLen = fr.getStringWidth(str);
+        int strLen = DrawContextUtils.getStringWidth(fr, str);
         float factor = Math.min(1, len / (float) strLen);
         int newLen = Math.min(strLen, len);
         drawStringScaled(str, fr, x - newLen / 2f, y - 8 * factor / 2f, shadow, colour, factor);
@@ -68,7 +70,7 @@ public final class TextRenderUtils {
         GlStateManagerCompat.scale(finalScale, finalScale, 1f);
 
         FontRenderer fr = MinecraftCompat.getFontRenderer();
-        fr.drawString(text, -fr.getStringWidth(text) / 2f, -fr.FONT_HEIGHT / 2f, color, false);
+        fr.drawString(text, -DrawContextUtils.getStringWidth(fr, text) / 2f, -fr.FONT_HEIGHT / 2f, color, false);
         GlStateManagerCompat.popMatrix();
     }
 
@@ -94,7 +96,7 @@ public final class TextRenderUtils {
         GlStateManagerCompat.disableDepth();
 
         int tooltipTextWidth = 0;
-        for (String line : textLines) tooltipTextWidth = Math.max(tooltipTextWidth, font.getStringWidth(line));
+        for (String line : textLines) tooltipTextWidth = Math.max(tooltipTextWidth, DrawContextUtils.getStringWidth(font, line));
 
         boolean needsWrap = false;
         int titleLinesCount = 1;
@@ -119,7 +121,7 @@ public final class TextRenderUtils {
                 List<String> wl = font.listFormattedStringToWidth(textLines.get(i), tooltipTextWidth);
                 if (i == 0) titleLinesCount = wl.size();
                 for (String l : wl) {
-                    wrappedWidth = Math.max(wrappedWidth, font.getStringWidth(l));
+                    wrappedWidth = Math.max(wrappedWidth, DrawContextUtils.getStringWidth(font, l));
                     wrapped.add(l);
                 }
             }
@@ -160,8 +162,7 @@ public final class TextRenderUtils {
     }
 
     public static void drawHoveringText(List<String> textLines, int mouseX, int mouseY, FontRenderer font) {
-        net.minecraft.client.gui.ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        drawHoveringText(textLines, mouseX, mouseY, sr.getScaledWidth(), sr.getScaledHeight(), -1, font);
+        drawHoveringText(textLines, mouseX, mouseY, GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight(), -1, font);
     }
 
     public static void drawHoveringText(String text, int mouseX, int mouseY, FontRenderer font) {
@@ -173,7 +174,7 @@ public final class TextRenderUtils {
     public static void drawItemTooltip(net.minecraft.item.ItemStack stack, int mouseX, int mouseY, FontRenderer font) {
         if (stack == null) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
-        List<String> tooltip = stack.getTooltip(MinecraftCompat.getLocalPlayer(), mc.gameSettings.advancedItemTooltips);
+        List<String> tooltip = ItemCompatKt.getTooltipCompat(stack, MinecraftCompat.getLocalPlayer(), mc.gameSettings.advancedItemTooltips);
         drawHoveringText(tooltip, mouseX, mouseY, font);
     }
 
@@ -199,7 +200,7 @@ public final class TextRenderUtils {
             float progress = len == 1 ? 0f : (float) i / (len - 1);
             int color = interpolateColor(startColor, endColor, progress);
             fr.drawString(ch, currentX, 0, color, false);
-            currentX += fr.getStringWidth(ch);
+            currentX += DrawContextUtils.getStringWidth(fr, ch);
         }
 
         GlStateManagerCompat.popMatrix();
@@ -210,7 +211,7 @@ public final class TextRenderUtils {
                                                             float uiScale, boolean displayScale) {
         FontRenderer fr = MinecraftCompat.getFontRenderer();
         // compute total width at scale 1
-        int totalWidth = fr.getStringWidth(text);
+        int totalWidth = DrawContextUtils.getStringWidth(fr, text);
         float halfWidth = totalWidth / 2f;
         drawStringGradientScaleAware(text, xPos - halfWidth, yPos - fr.FONT_HEIGHT / 2f,
                 startColor, endColor, uiScale, displayScale);

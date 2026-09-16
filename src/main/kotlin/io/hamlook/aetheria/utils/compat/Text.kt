@@ -1,6 +1,9 @@
 package io.hamlook.aetheria.utils.compat
-
+//#if MC < 1.16
 import net.minecraft.util.ChatComponentText
+//#else
+//$$ import net.minecraft.network.chat.Component
+//#endif
 import net.minecraft.util.IChatComponent
 
 class Text private constructor(val text: String) {
@@ -14,7 +17,12 @@ class Text private constructor(val text: String) {
 
     val string get() = this.text
 
-    fun toComponent(): IChatComponent = ChatComponentText(text)
+    fun toComponent(): IChatComponent =
+        //#if MC < 1.16
+        ChatComponentText(text)
+        //#else
+        //$$ Component.literal(text)
+        //#endif
 
     fun append(string: String): Text = Text(this.text + string)
 

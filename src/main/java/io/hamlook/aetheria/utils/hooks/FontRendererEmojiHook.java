@@ -2,6 +2,7 @@ package io.hamlook.aetheria.utils.hooks;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.emoji.EmojiManager;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 
@@ -58,10 +59,10 @@ public class FontRendererEmojiHook {
     private static float drawPlain(FontRenderer fr, String segment, float x, float y, int color, boolean dropShadow) {
         if (segment.isEmpty()) return x;
         if (dropShadow) {
-            fr.drawStringWithShadow(segment, x, y, color);
+            DrawContextUtils.drawTextWithShadow(fr, segment, (int) x, (int) y, color);
         } else {
-            fr.drawString(segment, (int) x, (int) y, color);
+            DrawContextUtils.drawText(fr, segment, (int) x, (int) y, color, false);
         }
-        return x + fr.getStringWidth(segment);
+        return x + DrawContextUtils.getStringWidth(fr, segment);
     }
 }

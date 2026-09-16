@@ -9,6 +9,7 @@ import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class CFButton extends GuiButton {
 
@@ -34,7 +35,7 @@ public class CFButton extends GuiButton {
     public void drawButton(Minecraft mc, int mouseX, int mouseY) {
         if (this.visible) {
             FontRenderer fontrenderer = MinecraftCompat.getFontRenderer();
-            this.hovered = mouseX >= this.xPosition && mouseY >= this.yPosition && mouseX < this.xPosition + this.width && mouseY < this.yPosition + this.height;
+            this.hovered = mouseX >= GuiScreenUtils.getX(this) && mouseY >= GuiScreenUtils.getY(this) && mouseX < GuiScreenUtils.getX(this) + GuiScreenUtils.getW(this) && mouseY < GuiScreenUtils.getY(this) + GuiScreenUtils.getH(this);
 
             float r, g, b;
 
@@ -73,8 +74,8 @@ public class CFButton extends GuiButton {
             this.mouseDragged(mc, mouseX, mouseY);
 
             float scale = ResolutionUtils.getXStatic(1);
-            float centerX = this.xPosition + (this.width / 2.0f);
-            float centerY = this.yPosition + (this.height / 2.0f);
+            float centerX = GuiScreenUtils.getX(this) + (GuiScreenUtils.getW(this) / 2.0f);
+            float centerY = GuiScreenUtils.getY(this) + (GuiScreenUtils.getH(this) / 2.0f);
 
             if (!this.enabled) {
                 GlStateManagerCompat.color(0.6f, 0.6f, 0.6f, 1f);

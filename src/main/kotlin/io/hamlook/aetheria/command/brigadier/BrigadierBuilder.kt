@@ -7,7 +7,11 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.suggestion.SuggestionProvider
 import com.mojang.brigadier.tree.CommandNode
+//#if MC < 1.16
 import net.minecraft.command.ICommand
+//#else
+//$$ import net.minecraft.commands.CommandSource
+//#endif
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
@@ -20,7 +24,9 @@ class BaseBrigadierBuilder(override val name: String) : CommandData,
     override var category: CommandCategory = CommandCategory.USERS_ACTIVE
     override val descriptor: String get() = description
     lateinit var node: CommandNode<Any?>
+    //#if MC < 1.21
     fun toCommand(dispatcher: CommandDispatcher<Any?>): ICommand = BrigadierCommand(this, dispatcher)
+    //#endif
 }
 
 open class BrigadierBuilder<B : ArgumentBuilder<Any?, B>>(

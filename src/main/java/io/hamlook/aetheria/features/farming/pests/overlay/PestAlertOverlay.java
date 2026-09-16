@@ -15,7 +15,7 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.SimpleOverlay;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
+
 
 @RegisterEvents
 public class PestAlertOverlay extends SimpleOverlay {
@@ -99,7 +99,7 @@ public class PestAlertOverlay extends SimpleOverlay {
     }
 
     @Override
-    public void render(ScaledResolution sr) {
+    public void render(int scaledWidth, int scaledHeight) {
         PestAlertConfig cfg = config();
         float scale = cfg == null ? 2f : Math.max(1f, cfg.alertScale);
         boolean animate = cfg == null || cfg.fadeInOut;
@@ -136,9 +136,9 @@ public class PestAlertOverlay extends SimpleOverlay {
         int subW = fr.getStringWidth(sub);
         int gap = 4;
         float blockH = fr.FONT_HEIGHT * scale + gap + fr.FONT_HEIGHT * subScale;
-        float yMain = sr.getScaledHeight() * 0.44f - blockH / 2f;
-        float xMain = (sr.getScaledWidth() - mainW * scale) / 2f;
-        float xSub = (sr.getScaledWidth() - subW * subScale) / 2f;
+        float yMain = scaledHeight * 0.44f - blockH / 2f;
+        float xMain = (scaledWidth - mainW * scale) / 2f;
+        float xSub = (scaledWidth - subW * subScale) / 2f;
 
         if (mainAlpha < 1f || subAlpha < 1f) {
             GlStateManagerCompat.enableBlend();

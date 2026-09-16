@@ -9,6 +9,7 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.*;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.ClipboardCompat;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -17,7 +18,6 @@ import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 
@@ -91,7 +91,7 @@ public class SearchBar {
     }
 
     public static GuiTextField createStorageSearchBar(int x, int y, int width) {
-        storageSearchBar = new GuiTextField(1, MC.fontRendererObj, x, y, width, BAR_HEIGHT);
+        storageSearchBar = new GuiTextField(1, MinecraftCompat.getFontRenderer(), x, y, width, BAR_HEIGHT);
         storageSearchBar.setCanLoseFocus(true);
         storageSearchBar.setMaxStringLength(50);
         storageSearchBar.setEnableBackgroundDrawing(false);
@@ -130,7 +130,7 @@ public class SearchBar {
 
     public static boolean handleStorageMouseClick(GuiTextField field, int mouseX, int mouseY) {
         if (field == null) return false;
-        boolean inside = mouseX >= field.xPosition && mouseX <= field.xPosition + field.width && mouseY >= field.yPosition && mouseY <= field.yPosition + field.height;
+        boolean inside = mouseX >= GuiScreenUtils.getX(field) && mouseX <= GuiScreenUtils.getX(field) + GuiScreenUtils.getW(field) && mouseY >= GuiScreenUtils.getY(field) && mouseY <= GuiScreenUtils.getY(field) + GuiScreenUtils.getH(field);
         field.setFocused(inside);
         if (inside) field.mouseClicked(mouseX, mouseY, 0);
         return inside;
@@ -155,7 +155,7 @@ public class SearchBar {
     }
 
     private static GuiTextField createTempFieldWithText(GuiTextField original, String text) {
-        GuiTextField temp = new GuiTextField(original.getId(), MC.fontRendererObj, original.xPosition, original.yPosition, original.width, original.height);
+        GuiTextField temp = new GuiTextField(original.getId(), MinecraftCompat.getFontRenderer(), GuiScreenUtils.getX(original), GuiScreenUtils.getY(original), original.width, original.height);
         temp.setText(text);
         temp.setFocused(original.isFocused());
         temp.setCursorPosition(original.getCursorPosition());
@@ -177,7 +177,7 @@ public class SearchBar {
     }
 
     private static int[] getMouseCoords() {
-        return KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledResolution());
+        return KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
     }
 
     private static void drawToggleButton(int barX, int barY) {
@@ -193,7 +193,7 @@ public class SearchBar {
                 Gui.drawModalRectWithCustomSizedTexture(toggleBtnX + (TOGGLE_BTN_W - size) / 2, toggleBtnY + (BAR_HEIGHT - size) / 2, 0, 0, size, size, size, size);
             } else {
                 String icon = "≡";
-                MC.fontRendererObj.drawStringWithShadow(icon, toggleBtnX + TOGGLE_BTN_W / 2f - MC.fontRendererObj.getStringWidth(icon) / 2f, toggleBtnY + BAR_HEIGHT / 2f - 4, 0xFFFFFF);
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), icon, (int) (toggleBtnX + TOGGLE_BTN_W / 2f - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), icon) / 2f), (int) (toggleBtnY + BAR_HEIGHT / 2f - 4), 0xFFFFFF);
             }
         });
     }
@@ -203,7 +203,7 @@ public class SearchBar {
         clearBtnY = barY;
 
         RenderUtils.drawButton(clearBtnX, clearBtnY, CLEAR_BTN_W, BAR_HEIGHT, "§cClear Search", () -> {
-            MC.fontRendererObj.drawStringWithShadow("✕", clearBtnX + CLEAR_BTN_W / 2f - MC.fontRendererObj.getStringWidth("✕") / 2f, clearBtnY + BAR_HEIGHT / 2f - 4, 0xFF5555);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), "✕", (int) (clearBtnX + CLEAR_BTN_W / 2f - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), "✕") / 2f), (int) (clearBtnY + BAR_HEIGHT / 2f - 4), 0xFF5555);
         });
     }
 
@@ -256,8 +256,8 @@ public class SearchBar {
         recentPanelW = BAR_WIDTH;
         recentPanelH = visibleCount * RECENT_ROW_HEIGHT;
 
-        Gui.drawRect(recentPanelX, recentPanelY, recentPanelX + recentPanelW, recentPanelY + recentPanelH, 0xFF2C2C2C);
-        Gui.drawRect(recentPanelX + 1, recentPanelY + 1, recentPanelX + recentPanelW - 1, recentPanelY + recentPanelH - 1, 0xFF111111);
+        DrawContextUtils.fill(recentPanelX, recentPanelY, recentPanelX + recentPanelW, recentPanelY + recentPanelH, 0xFF2C2C2C);
+        DrawContextUtils.fill(recentPanelX + 1, recentPanelY + 1, recentPanelX + recentPanelW - 1, recentPanelY + recentPanelH - 1, 0xFF111111);
 
         int[] mouse = getMouseCoords();
         int hoveredRow = hoveredRecentRow(mouse[0], mouse[1]);
@@ -267,11 +267,11 @@ public class SearchBar {
 
             int rowY = recentPanelY + row * RECENT_ROW_HEIGHT;
             if (row == hoveredRow) {
-                Gui.drawRect(recentPanelX + 1, rowY, recentPanelX + recentPanelW - 1, rowY + RECENT_ROW_HEIGHT, 0x33FFFFFF);
+                DrawContextUtils.fill(recentPanelX + 1, rowY, recentPanelX + recentPanelW - 1, rowY + RECENT_ROW_HEIGHT, 0x33FFFFFF);
             }
 
-            String display = MC.fontRendererObj.trimStringToWidth(matches.get(index), recentPanelW - 10);
-            MC.fontRendererObj.drawStringWithShadow(display, recentPanelX + 5, rowY + (RECENT_ROW_HEIGHT - 8) / 2f, 0xCCCCCC);
+            String display = MinecraftCompat.getFontRenderer().trimStringToWidth(matches.get(index), recentPanelW - 10);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), display, recentPanelX + 5, (int) (rowY + (RECENT_ROW_HEIGHT - 8) / 2f), 0xCCCCCC);
         }
     }
 
@@ -284,10 +284,10 @@ public class SearchBar {
         return (mouseY - recentPanelY) / RECENT_ROW_HEIGHT;
     }
 
-    private static int[] calculateBarPosition(ScaledResolution sr) {
+    private static int[] calculateBarPosition(int screenW, int screenH) {
         Position pos = ATHRConfig.feature.misc.searchBarConfig.searchBarPos;
-        int x = pos.getAbsX(sr, BAR_WIDTH);
-        int y = pos.getAbsY(sr, BAR_HEIGHT);
+        int x = pos.getAbsX(screenW, BAR_WIDTH);
+        int y = pos.getAbsY(screenH, BAR_HEIGHT);
         if (pos.isCenterX()) x -= BAR_WIDTH / 2;
         if (pos.isCenterY()) y -= BAR_HEIGHT / 2;
         return new int[]{x, y};
@@ -302,13 +302,12 @@ public class SearchBar {
     }
 
     public void render(boolean preview) {
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int[] pos = calculateBarPosition(sr);
+        int[] pos = calculateBarPosition(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
         int x = pos[0], y = pos[1];
 
-        Gui.drawRect(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, 0xFF2C2C2C);
-        Gui.drawRect(x + 1, y + 1, x + BAR_WIDTH - 1, y + BAR_HEIGHT - 1, 0xFF111111);
-        MC.fontRendererObj.drawStringWithShadow("Search...", x + 5, y + (float) BAR_HEIGHT / 2 - 4, 0x8F8F8F);
+        DrawContextUtils.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, 0xFF2C2C2C);
+        DrawContextUtils.fill(x + 1, y + 1, x + BAR_WIDTH - 1, y + BAR_HEIGHT - 1, 0xFF111111);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), "Search...", x + 5, (int) (y + (float) BAR_HEIGHT / 2 - 4), 0x8F8F8F);
     }
 
     @HandleEvent
@@ -317,10 +316,9 @@ public class SearchBar {
 
         KeybindHelper.enableRepeatEvents(true);
 
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int[] pos = calculateBarPosition(sr);
+        int[] pos = calculateBarPosition(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
 
-        searchBar = new GuiTextField(0, MC.fontRendererObj, pos[0], pos[1], BAR_WIDTH, BAR_HEIGHT);
+        searchBar = new GuiTextField(0, MinecraftCompat.getFontRenderer(), pos[0], pos[1], BAR_WIDTH, BAR_HEIGHT);
         searchBar.setCanLoseFocus(false);
         searchBar.setMaxStringLength(100);
         searchBar.setEnableBackgroundDrawing(false);
@@ -422,7 +420,7 @@ public class SearchBar {
             return;
         }
 
-        boolean inside = mouseX >= searchBar.xPosition && mouseX <= searchBar.xPosition + searchBar.width && mouseY >= searchBar.yPosition && mouseY <= searchBar.yPosition + searchBar.height;
+        boolean inside = mouseX >= GuiScreenUtils.getX(searchBar) && mouseX <= GuiScreenUtils.getX(searchBar) + GuiScreenUtils.getW(searchBar) && mouseY >= GuiScreenUtils.getY(searchBar) && mouseY <= GuiScreenUtils.getY(searchBar) + GuiScreenUtils.getH(searchBar);
 
         searchBar.setFocused(inside);
         if (inside) {
@@ -450,9 +448,9 @@ public class SearchBar {
             GlStateManagerCompat.translate(-event.gui.guiLeft, -event.gui.guiTop, 50);
             searchBar.updateCursorCounter();
             drawSearchBar(searchBar);
-            drawClearButton(searchBar.xPosition, searchBar.yPosition);
-            if (isItemListActive()) drawToggleButton(searchBar.xPosition, searchBar.yPosition);
-            drawRecentSearches(searchBar.xPosition, searchBar.yPosition);
+            drawClearButton(GuiScreenUtils.getX(searchBar), GuiScreenUtils.getY(searchBar));
+            if (isItemListActive()) drawToggleButton(GuiScreenUtils.getX(searchBar), GuiScreenUtils.getY(searchBar));
+            drawRecentSearches(GuiScreenUtils.getX(searchBar), GuiScreenUtils.getY(searchBar));
             GlStateManagerCompat.popMatrix();
         }
     }

@@ -7,12 +7,12 @@ import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.time.TimeFormatter;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
@@ -125,7 +125,6 @@ public class UptimeOverlay extends Overlay {
         int titleTicksLeft = expiryTicksLeft - (EXPIRY_SHOW_TICKS - EXPIRY_TITLE_TICKS);
         if (titleTicksLeft <= 0) return;
 
-        ScaledResolution resolution = currentSr();
         float alpha = Math.min(1f, titleTicksLeft / 20f); // fade in for 1s, fade out last 20t
         if (expiryTicksLeft < 20) alpha = expiryTicksLeft / 20f;
         int a = (int) (alpha * 255) & 0xFF;
@@ -136,7 +135,7 @@ public class UptimeOverlay extends Overlay {
         GL11.glPushMatrix();
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glTranslatef(resolution.getScaledWidth() / 2f, resolution.getScaledHeight() / 3f, 0f);
+        GL11.glTranslatef(GuiScreenUtils.getScaledWindowWidth() / 2f, GuiScreenUtils.getScaledWindowHeight() / 3f, 0f);
         GL11.glScalef(2f, 2f, 1f);
 
         int white = (a << 24) | 0x00FFFFFF;

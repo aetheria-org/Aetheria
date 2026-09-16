@@ -1,8 +1,0 @@
-# Forge-only files excluded from Fabric compilation
-# These files depend on Forge APIs (ClientCommandHandler, ICommand, Loader, ClientRegistry)
-
-io.hamlook.aetheria.command.brigadier.BrigadierCommand.kt
-io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent.kt
-io.hamlook.aetheria.command.brigadier.BrigadierBuilder.kt
-io.hamlook.aetheria.utils.compat.ModCompat.kt
-io.hamlook.aetheria.utils.compat.KeybindCompat.kt

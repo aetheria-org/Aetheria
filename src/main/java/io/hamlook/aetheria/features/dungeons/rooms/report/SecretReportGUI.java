@@ -21,6 +21,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class SecretReportGUI extends AetheriaBaseScreen {
 
@@ -123,23 +124,23 @@ public class SecretReportGUI extends AetheriaBaseScreen {
 
     @Override
     public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
-        if(this.buttonList.isEmpty()){
+        if(GuiScreenUtils.isButtonListEmpty(this)){
             populateButtonList();
         }
         drawDefaultBackground();
-        TextRenderUtils.drawCenteredStringScaleAware("X-Rel. Coord", xField.xPosition + xField.width/2f,
-                xField.yPosition - 10,1f,false);
+        TextRenderUtils.drawCenteredStringScaleAware("X-Rel. Coord", GuiScreenUtils.getX(xField) + GuiScreenUtils.getW(xField)/2f,
+                GuiScreenUtils.getY(xField) - 10,1f,false);
 
-        TextRenderUtils.drawCenteredStringScaleAware("Y. Coordinate", yField.xPosition + yField.width/2f,
-                yField.yPosition - 10,1f,false);
+        TextRenderUtils.drawCenteredStringScaleAware("Y. Coordinate", GuiScreenUtils.getX(yField) + GuiScreenUtils.getW(yField)/2f,
+                GuiScreenUtils.getY(yField) - 10,1f,false);
 
-        TextRenderUtils.drawCenteredStringScaleAware("Z-Rel. Coordinate", zField.xPosition + zField.width/2f,
-                zField.yPosition - 10,1f,false);
+        TextRenderUtils.drawCenteredStringScaleAware("Z-Rel. Coordinate", GuiScreenUtils.getX(zField) + GuiScreenUtils.getW(zField)/2f,
+                GuiScreenUtils.getY(zField) - 10,1f,false);
 
-        TextRenderUtils.drawCenteredStringScaleAware("Secret Name", searchField.xPosition + searchField.width/2f,
-                searchField.yPosition - 10,1f,false);
+        TextRenderUtils.drawCenteredStringScaleAware("Secret Name", GuiScreenUtils.getX(searchField) + GuiScreenUtils.getW(searchField)/2f,
+                GuiScreenUtils.getY(searchField) - 10,1f,false);
         TextRenderUtils.drawCenteredStringScaleAware(errorMessage,
-                width/2f,searchField.yPosition - 22,1f,false);
+                width/2f,GuiScreenUtils.getY(searchField) - 22,1f,false);
 
         xField.drawTextBox();
         yField.drawTextBox();
@@ -182,8 +183,8 @@ public class SecretReportGUI extends AetheriaBaseScreen {
         int yOffset = (int) ResolutionUtils.getYStatic(100);
         submitButton = new GuiButton(0,xCenter - 125,yCenter+yOffset,100,20,"Submit");
         cancelButton = new GuiButton(1,xCenter + 25,yCenter+yOffset,100,20,"Cancel");
-        this.buttonList.add(submitButton);
-        this.buttonList.add(cancelButton);
+        GuiScreenUtils.addButton(this, submitButton);
+        GuiScreenUtils.addButton(this, cancelButton);
         searchField = new GuiDropdownTextField(5, MinecraftCompat.getFontRenderer(), xCenter - 100, yCenter - 50, 200, 20, secretNames);
 
         xField = new GuiTextField(2,MinecraftCompat.getFontRenderer(),xCenter - 175,yCenter,100,20);

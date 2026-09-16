@@ -4,9 +4,10 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.features.misc.SearchBar;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
@@ -59,7 +60,7 @@ public class HighlightUtils {
         GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
         GlStateManagerCompat.colorMask(true, true, true, false);
 
-        Gui.drawRect(x, y, x + 16, y + 16, color);
+        DrawContextUtils.fill(x, y, x + 16, y + 16, color);
 
         GlStateManagerCompat.colorMask(true, true, true, true);
         GlStateManagerCompat.disableBlend();
@@ -75,7 +76,7 @@ public class HighlightUtils {
         GlStateManagerCompat.disableLighting();
         GlStateManagerCompat.disableDepth();
         GlStateManagerCompat.colorMask(true, true, true, false);
-        Gui.drawRect(x, y, x + 18, y + 18, 0x80ffffff);
+        DrawContextUtils.fill(x, y, x + 18, y + 18, 0x80ffffff);
         GlStateManagerCompat.colorMask(true, true, true, true);
 
         if (depthWasOn) GlStateManagerCompat.enableDepth();
@@ -88,7 +89,7 @@ public class HighlightUtils {
         String display = stack.getDisplayName();
         if (display != null && ColorUtils.stripColor(display).toLowerCase(Locale.ROOT).contains(query)) return true;
 
-        List<String> tooltip = stack.getTooltip(MinecraftCompat.getLocalPlayer(), false);
+        List<String> tooltip = ItemCompatKt.getTooltipCompat(stack, MinecraftCompat.getLocalPlayer(), false);
         if (tooltip != null) for (String line : tooltip)
             if (line != null && ColorUtils.stripColor(line).toLowerCase(Locale.ROOT).contains(query)) return true;
 

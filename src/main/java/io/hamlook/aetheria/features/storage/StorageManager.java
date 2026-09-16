@@ -17,7 +17,6 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import lombok.Getter;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.inventory.ContainerChest;
 
 import java.util.LinkedHashMap;
@@ -166,8 +165,7 @@ public class StorageManager {
         if (MouseCompat.getEventButtonState()) {
             int mouseButton = MouseCompat.getEventButton();
             if (mouseButton == 0) {
-                ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-                int[] mouse = KeybindHelper.getMouseCoords(sr);
+                int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
                 int mouseX = mouse[0], mouseY = mouse[1];
 
                 renderer.handleClick(mouseX, mouseY);

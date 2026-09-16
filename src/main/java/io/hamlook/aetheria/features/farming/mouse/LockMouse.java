@@ -12,7 +12,7 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.SimpleOverlay;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
+
 import net.minecraft.util.EnumChatFormatting;
 
 @RegisterEvents
@@ -50,9 +50,9 @@ public class LockMouse extends SimpleOverlay {
     }
 
     @Override
-    public void render(ScaledResolution sr) {
-        int w = sr.getScaledWidth();
-        int h = sr.getScaledHeight();
+    public void render(int scaledWidth, int scaledHeight) {
+        int w = scaledWidth;
+        int h = scaledHeight;
 
         int iconSize = 16;
         float iconX = (w - iconSize) / 2f;

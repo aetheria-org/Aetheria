@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.core.hotswap;
 
+//#if MC < 1.16
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.init.EventRegistrar;
 import moe.nea.hotswapagentforge.forge.ClassDefinitionEvent;
@@ -95,3 +96,4 @@ public class HotswapSupportImpl implements HotswapSupportHandle {
         return HotswapEvent.isReady();
     }
 }
+//#endif

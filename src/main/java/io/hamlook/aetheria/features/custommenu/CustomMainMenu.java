@@ -11,6 +11,7 @@ import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 
 public class CustomMainMenu extends AetheriaBaseScreen {
 
@@ -47,7 +48,7 @@ public class CustomMainMenu extends AetheriaBaseScreen {
     @Override
     public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         if(configuration == null) return;
-        drawRect(0,0, this.width, this.height, 0xBB000000);
+        DrawContextUtils.fill(0,0, this.width, this.height, 0xBB000000);
         drawBackground();
 
         for(CMMElement element : configuration.elements) {

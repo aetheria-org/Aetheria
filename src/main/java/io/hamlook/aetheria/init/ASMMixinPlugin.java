@@ -1,12 +1,16 @@
 /*
- * Based on AutoDiscoveryMixinPlugin by Linnea Gräf.
+ * Based on ASMMixinPlugin by Linnea Gräf.
  * Original implementation released under the Unlicense.
  * Modified by Aetheria contributors.
  */
 
 package io.hamlook.aetheria.init;
 
+//#if MC < 1.16
 import org.spongepowered.asm.lib.tree.ClassNode;
+//#else
+//$$ import org.objectweb.asm.tree.ClassNode;
+//#endif
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
@@ -20,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
-public class AutoDiscoveryMixinPlugin implements IMixinConfigPlugin {
+public class ASMMixinPlugin implements IMixinConfigPlugin {
 
     private String mixinPackage;
     private List<String> mixins;
@@ -36,10 +40,10 @@ public class AutoDiscoveryMixinPlugin implements IMixinConfigPlugin {
         mixins = new ArrayList<>();
         try {
             URL location = getClass().getProtectionDomain().getCodeSource().getLocation();
-            System.out.println("[AutoDiscoveryMixinPlugin] Raw location: " + location);
+            System.out.println("[ASMMixinPlugin] Raw location: " + location);
 
             Path root = resolveRoot(location);
-            System.out.println("[AutoDiscoveryMixinPlugin] Resolved root: " + root);
+            System.out.println("[ASMMixinPlugin] Resolved root: " + root);
 
             String basePath = mixinPackage.replace('.', '/');
             Predicate<String> filter = fqn -> fqn.startsWith(mixinPackage + ".") && !fqn.contains("$");
@@ -53,9 +57,9 @@ public class AutoDiscoveryMixinPlugin implements IMixinConfigPlugin {
             for (String fqn : fqns) {
                 mixins.add(fqn.substring(mixinPackage.length() + 1));
             }
-            System.out.println("[AutoDiscoveryMixinPlugin] Found mixins: " + mixins);
+            System.out.println("[ASMMixinPlugin] Found mixins: " + mixins);
         } catch (Exception e) {
-            System.out.println("[AutoDiscoveryMixinPlugin] FAILED: " + e);
+            System.out.println("[ASMMixinPlugin] FAILED: " + e);
             e.printStackTrace(System.out);
         }
         return mixins;

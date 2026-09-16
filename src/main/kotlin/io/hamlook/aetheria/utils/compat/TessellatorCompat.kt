@@ -1,9 +1,21 @@
 package io.hamlook.aetheria.utils.compat
 
+//#if MC < 1.16
 import net.minecraft.client.renderer.Tessellator
 import net.minecraft.client.renderer.WorldRenderer
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats
 import net.minecraft.client.renderer.vertex.VertexFormat
+//#endif
+//#if MC > 1.21
+//$$ import com.mojang.blaze3d.systems.RenderSystem
+//$$ import net.minecraft.client.render.BufferBuilder
+//$$ import net.minecraft.client.render.BufferRenderer
+//$$ import net.minecraft.client.render.GameRenderer
+//$$ import net.minecraft.client.render.Tessellator
+//$$ import net.minecraft.client.render.VertexFormat
+//$$ import net.minecraft.client.render.VertexFormat.DrawMode
+//$$ import net.minecraft.client.render.VertexFormats
+//#endif
 import org.lwjgl.opengl.GL11
 
 object TessellatorCompat {
@@ -13,20 +25,81 @@ object TessellatorCompat {
     @JvmField val TRIANGLES: Int = GL11.GL_TRIANGLES
     @JvmField val LINE_STRIP: Int = GL11.GL_LINE_STRIP
 
-    @JvmField val POSITION_TEX = DefaultVertexFormats.POSITION_TEX
-    @JvmField val POSITION_COLOR = DefaultVertexFormats.POSITION_COLOR
-    @JvmField val POSITION_TEX_COLOR = DefaultVertexFormats.POSITION_TEX_COLOR
-    @JvmField val POSITION = DefaultVertexFormats.POSITION
+    @JvmField
+    val POSITION_TEX: VertexFormat =
+        //#if MC < 1.16
+        DefaultVertexFormats.POSITION_TEX
+        //#else
+        //$$ VertexFormats.POSITION_TEXTURE
+        //#endif
+
+    @JvmField
+    val POSITION_COLOR: VertexFormat =
+        //#if MC < 1.16
+        DefaultVertexFormats.POSITION_COLOR
+        //#else
+        //$$ VertexFormats.POSITION_COLOR
+        //#endif
+
+    @JvmField
+    val POSITION_TEX_COLOR: VertexFormat =
+        //#if MC < 1.16
+        DefaultVertexFormats.POSITION_TEX_COLOR
+        //#else
+        //$$ VertexFormats.POSITION_TEXTURE_COLOR
+        //#endif
+
+    @JvmField
+    val POSITION: VertexFormat =
+        //#if MC < 1.16
+        DefaultVertexFormats.POSITION
+        //#else
+        //$$ VertexFormats.POSITION
+        //#endif
 
     @JvmStatic
-    fun beginDraw(mode: Int, format: VertexFormat): VertexBuilder {
+    fun beginDraw(mode: Int, format: VertexFormat): VertexBuilder =
+        //#if MC < 1.16
+        beginDrawLegacy(mode, format)
+        //#else
+        //$$ beginDrawModern(mode, format)
+        //#endif
+
+    //#if MC < 1.16
+    private fun beginDrawLegacy(mode: Int, format: VertexFormat): VertexBuilder {
         val tess = Tessellator.getInstance()
         val wr = tess.worldRenderer
         wr.begin(mode, format)
         return VertexBuilder(wr, tess)
     }
+    //#endif
+
+    //#if MC > 1.21
+    //$$ private fun beginDrawModern(mode: Int, format: VertexFormat): VertexBuilder {
+    //$$     val drawMode = when (mode) {
+    //$$         GL11.GL_QUADS -> DrawMode.QUADS
+    //$$         GL11.GL_LINES -> DrawMode.LINES
+    //$$         GL11.GL_TRIANGLES -> DrawMode.TRIANGLES
+    //$$         GL11.GL_LINE_STRIP -> DrawMode.LINE_STRIP
+    //$$         else -> DrawMode.QUADS
+    //$$     }
+    //$$     setShaderFor(format)
+    //$$     return VertexBuilder(Tessellator.getInstance().begin(drawMode, format))
+    //$$ }
+    //$$
+    //$$ private fun setShaderFor(format: VertexFormat) {
+    //$$     val program = when (format) {
+    //$$         POSITION_TEX -> GameRenderer.getPositionTexProgram()
+    //$$         POSITION_COLOR -> GameRenderer.getPositionColorProgram()
+    //$$         POSITION_TEX_COLOR -> GameRenderer.getPositionTexColorProgram()
+    //$$         else -> GameRenderer.getPositionProgram()
+    //$$     }
+    //$$     RenderSystem.setShader { program }
+    //$$ }
+    //#endif
 }
 
+//#if MC < 1.16
 class VertexBuilder internal constructor(
     val worldRenderer: WorldRenderer,
     private val tess: Tessellator
@@ -60,3 +133,34 @@ class VertexBuilder internal constructor(
         tess.draw()
     }
 }
+//#else
+//$$ class VertexBuilder internal constructor(private val buffer: BufferBuilder) {
+//$$
+//$$     fun pos(x: Double, y: Double, z: Double): VertexBuilder {
+//$$         buffer.vertex(x.toFloat(), y.toFloat(), z.toFloat())
+//$$         return this
+//$$     }
+//$$
+//$$     fun tex(u: Double, v: Double): VertexBuilder {
+//$$         buffer.texture(u.toFloat(), v.toFloat())
+//$$         return this
+//$$     }
+//$$
+//$$     fun color(r: Float, g: Float, b: Float, a: Float): VertexBuilder {
+//$$         buffer.color(r, g, b, a)
+//$$         return this
+//$$     }
+//$$
+//$$     fun color(r: Int, g: Int, b: Int, a: Int): VertexBuilder {
+//$$         buffer.color(r, g, b, a)
+//$$         return this
+//$$     }
+//$$
+//$$     fun endVertex() {
+//$$     }
+//$$
+//$$     fun draw() {
+//$$         BufferRenderer.drawWithGlobalProgram(buffer.end())
+//$$     }
+//$$ }
+//#endif

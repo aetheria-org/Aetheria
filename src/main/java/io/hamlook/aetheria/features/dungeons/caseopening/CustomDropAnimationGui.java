@@ -11,7 +11,6 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.netty.util.internal.ThreadLocalRandom;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.shader.ShaderGroup;
@@ -22,6 +21,7 @@ import org.lwjgl.opengl.GL11;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 
 public class CustomDropAnimationGui extends AetheriaBaseScreen {
 
@@ -205,10 +205,9 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
         float progress = Math.min((System.nanoTime() - guiOpenStartTime) / (float) animationDuration, 1.0f);
         progress = 1 - (1 - progress) * (1 - progress);
 
-        ScaledResolution scaled = GuiScreenUtils.getScaledResolution();
-        scaleFactor = scaled.getScaleFactor();
-        screenWidth = scaled.getScaledWidth() * scaleFactor;
-        screenHeight = scaled.getScaledHeight() * scaleFactor;
+        int scaleFactor = GuiScreenUtils.getScaleFactor();
+        screenWidth = GuiScreenUtils.getScaledWindowWidth() * scaleFactor;
+        screenHeight = GuiScreenUtils.getScaledWindowHeight() * scaleFactor;
         if (scaleFactor != lastScaleFactor || screenWidth != lastScreenWidth || screenHeight != lastScreenHeight)
             updateLayout();
 
@@ -319,8 +318,8 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
             float y2 = y + itemBoxHeight * size;
 
             GlStateManagerCompat.color(1f, 1f, 1f, 1f);
-            drawRect((int) x, (int) y, (int) (x + itemBoxWidth * size), (int) (y + itemBoxHeight * size), 0x3F888888);
-            drawRect((int) x, (int) y1, (int) (x + itemBoxWidth * size), (int) y2, boxColor);
+            DrawContextUtils.fill((int) x, (int) y, (int) (x + itemBoxWidth * size), (int) (y + itemBoxHeight * size), 0x3F888888);
+            DrawContextUtils.fill((int) x, (int) y1, (int) (x + itemBoxWidth * size), (int) y2, boxColor);
             GlStateManagerCompat.enableBlend();
             GlStateManagerCompat.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             drawGradientRect((int) x, (int) (y2 - itemBoxHeight * size), (int) (x + itemBoxWidth * size), (int) y2, (boxColor & 0x00FFFFFF), (boxColor & 0x00FFFFFF) | 0xCC000000);
@@ -366,7 +365,7 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
     private void renderJudgementLine() {
         float lineWidth = screenWidth / 512f;
         float lineHeight = screenHeight / 4f;
-        drawRect((int) (centerX - lineWidth / 2), (int) (centerY - lineHeight / 3 * 2.5), (int) (centerX + lineWidth), (int) (centerY + lineHeight), 0xFFFFA500);
+        DrawContextUtils.fill((int) (centerX - lineWidth / 2), (int) (centerY - lineHeight / 3 * 2.5), (int) (centerX + lineWidth), (int) (centerY + lineHeight), 0xFFFFA500);
 
         int boxDistance = (int) offsetX % (int) spacing;
         if (boxDistance < lastBoxDistance) SoundUtils.playSound("gui.button.press");

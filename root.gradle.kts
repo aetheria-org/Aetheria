@@ -16,5 +16,5 @@ preprocess {
 
     mc11605Forge.link(mc10809, file("versions/mapping-1.16.5-forge-1.8.9.txt"))
     mc11605Fabric.link(mc11605Forge, file("versions/mapping-1.16.5-fabric-1.16.5-forge.txt"))
-    mc12101Fabric.link(mc11605Fabric)
+    mc12101Fabric.link(mc11605Fabric, file("versions/mapping-1.21.1-fabric-1.16.5-fabric.txt"))
 }

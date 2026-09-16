@@ -11,6 +11,7 @@ import io.hamlook.aetheria.features.misc.SearchBar;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -19,7 +20,6 @@ import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 @RegisterEvents
 public class ItemPaneRenderer {
@@ -218,9 +219,9 @@ private boolean shouldntShow() {
                 searchField.setFocused(false);
                 searchField.setText(localSearchText[0]);
             } else {
-                searchField.xPosition = paneX + PAD;
-                searchField.yPosition = sbY;
-                searchField.width = paneW - PAD * 2;
+                GuiScreenUtils.setX(searchField, paneX + PAD);
+                GuiScreenUtils.setY(searchField, sbY);
+                GuiScreenUtils.setW(searchField, paneW - PAD * 2);
             }
         }
 
@@ -237,13 +238,13 @@ private boolean shouldntShow() {
         int rarityX = paneX + PAD;
         boolean hoverRar = isInBounds(mouseX, mouseY, rarityX, filterY, btnWidth, FILTER_H);
         NineSliceUtils.draw(Resources.storageBackground(1), rarityX, filterY, btnWidth, FILTER_H, 6, 18);
-        if (hoverRar) Gui.drawRect(rarityX, filterY, rarityX + btnWidth, filterY + FILTER_H, 0x33FFFFFF);
+        if (hoverRar) DrawContextUtils.fill(rarityX, filterY, rarityX + btnWidth, filterY + FILTER_H, 0x33FFFFFF);
         drawCenteredText(mc, RARITIES[rarityFilterIdx], rarityX + btnWidth / 2, filterY + 6, 0xAAAAAA);
 
         int typeX = rarityX + btnWidth + PAD;
         boolean hoverType = isInBounds(mouseX, mouseY, typeX, filterY, btnWidth, FILTER_H);
         NineSliceUtils.draw(Resources.storageBackground(1), typeX, filterY, btnWidth, FILTER_H, 6, 18);
-        if (hoverType) Gui.drawRect(typeX, filterY, typeX + btnWidth, filterY + FILTER_H, 0x33FFFFFF);
+        if (hoverType) DrawContextUtils.fill(typeX, filterY, typeX + btnWidth, filterY + FILTER_H, 0x33FFFFFF);
         drawCenteredText(mc, TYPES[typeFilterIdx], typeX + btnWidth / 2, filterY + 6, 0xAAAAAA);
 
         int navY = paneY + PAD;
@@ -255,11 +256,11 @@ private boolean shouldntShow() {
         boolean hN = isInBounds(mouseX, mouseY, nextX, navY, navBtnW, NAV_H);
 
         NineSliceUtils.draw(Resources.storageBackground(1), prevX, navY, navBtnW, NAV_H, 6, 18);
-        if (hP) Gui.drawRect(prevX, navY, prevX + navBtnW, navY + NAV_H, 0x33FFFFFF);
+        if (hP) DrawContextUtils.fill(prevX, navY, prevX + navBtnW, navY + NAV_H, 0x33FFFFFF);
         drawCenteredText(mc, "◄", prevX + navBtnW / 2, navY + 6, hP ? 0xFFFFAA : 0xFFFFFF);
 
         NineSliceUtils.draw(Resources.storageBackground(1), nextX, navY, navBtnW, NAV_H, 6, 18);
-        if (hN) Gui.drawRect(nextX, navY, nextX + navBtnW, navY + NAV_H, 0x33FFFFFF);
+        if (hN) DrawContextUtils.fill(nextX, navY, nextX + navBtnW, navY + NAV_H, 0x33FFFFFF);
         drawCenteredText(mc, "►", nextX + navBtnW / 2, navY + 6, hN ? 0xFFFFAA : 0xFFFFFF);
 
         drawCenteredText(mc, "Page: " + (currentPage + 1) + "/" + cachedTotalPages, paneX + paneW / 2, navY + 6, 0xCCCCCC);
@@ -300,14 +301,14 @@ private boolean shouldntShow() {
 
             if (fam.hasDropdown()) {
                 int indS = (int) (4 * getScale());
-                Gui.drawRect(sx + S() - indS - 2, sy + S() - indS - 2, sx + S() - 2, sy + S() - 2, 0xFFFFDD44);
+                DrawContextUtils.fill(sx + S() - indS - 2, sy + S() - indS - 2, sx + S() - 2, sy + S() - 2, 0xFFFFDD44);
             }
 
             boolean hovered = isInBounds(mouseX, mouseY, sx, sy, S(), S());
             if (hovered && !overDropdown) {
                 GlStateManagerCompat.enableBlend();
                 GlStateManagerCompat.disableDepth();
-                Gui.drawRect(sx, sy, sx + S(), sy + S(), 0x80FFFFFF);
+                DrawContextUtils.fill(sx, sy, sx + S(), sy + S(), 0x80FFFFFF);
                 GlStateManagerCompat.enableDepth();
 
                 if (fam.hasDropdown()) {
@@ -375,10 +376,10 @@ private boolean shouldntShow() {
         GlStateManagerCompat.pushMatrix();
         GlStateManagerCompat.translate(0, 0, 300);
 
-        Gui.drawRect(dropDx - 1, dropDy - 1, dropDx + dropDw + 1, dropDy, 0xFFFFAA00);
-        Gui.drawRect(dropDx - 1, dropDy + dropDh, dropDx + dropDw + 1, dropDy + dropDh + 1, 0xFFFFAA00);
-        Gui.drawRect(dropDx - 1, dropDy, dropDx, dropDy + dropDh, 0xFFFFAA00);
-        Gui.drawRect(dropDx + dropDw, dropDy, dropDx + dropDw + 1, dropDy + dropDh, 0xFFFFAA00);
+        DrawContextUtils.fill(dropDx - 1, dropDy - 1, dropDx + dropDw + 1, dropDy, 0xFFFFAA00);
+        DrawContextUtils.fill(dropDx - 1, dropDy + dropDh, dropDx + dropDw + 1, dropDy + dropDh + 1, 0xFFFFAA00);
+        DrawContextUtils.fill(dropDx - 1, dropDy, dropDx, dropDy + dropDh, 0xFFFFAA00);
+        DrawContextUtils.fill(dropDx + dropDw, dropDy, dropDx + dropDw + 1, dropDy + dropDh, 0xFFFFAA00);
 
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), dropDx, dropDy, dropDw, dropDh, 6, 18);
@@ -398,7 +399,7 @@ private boolean shouldntShow() {
             if (h) {
                 GlStateManagerCompat.enableBlend();
                 GlStateManagerCompat.disableDepth();
-                Gui.drawRect(sx, sy, sx + S(), sy + S(), 0x80FFFFFF);
+                DrawContextUtils.fill(sx, sy, sx + S(), sy + S(), 0x80FFFFFF);
                 GlStateManagerCompat.enableDepth();
                 hovered = mem;
             }

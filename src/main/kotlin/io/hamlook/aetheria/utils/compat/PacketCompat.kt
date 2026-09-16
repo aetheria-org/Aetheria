@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.utils.compat
 
+//#if MC < 1.16
 import net.minecraft.item.ItemStack
 import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement
 import net.minecraft.util.EnumFacing
@@ -9,3 +10,4 @@ fun C08PacketPlayerBlockPlacement.getFacing(): EnumFacing =
 
 fun C08PacketPlayerBlockPlacement.getUsedItem(): ItemStack? =
     stack
+//#endif

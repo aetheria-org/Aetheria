@@ -64,7 +64,11 @@ import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.common.MinecraftForge;
+//#if MC < 1.16
 import org.lwjgl.input.Keyboard;
+//#else
+//$$ import org.lwjgl.glfw.GLFW;
+//#endif
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -78,7 +82,11 @@ import java.util.Date;
 
 public class ATHRConfig {
 
-    public static final KeyBinding openGuiKey = new KeyBinding("Open ATHR GUI", Keyboard.KEY_RMENU, "aetheria");
+    //#if MC < 1.16
+    public static final KeyBinding openGuiKey = KeybindCompat.createKeyBinding("Open ATHR GUI", Keyboard.KEY_RMENU, "aetheria");
+    //#else
+    //$$ public static final KeyBinding openGuiKey = KeybindCompat.createKeyBinding("Open ATHR GUI", GLFW.GLFW_KEY_RIGHT_ALT, "aetheria");
+    //#endif
     public static Config feature;
     public static File configDirectory = new File("config/Aetheria");
     public static GuiScreen screenToOpen = null;

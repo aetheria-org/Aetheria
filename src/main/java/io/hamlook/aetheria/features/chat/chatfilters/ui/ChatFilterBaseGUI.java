@@ -2,10 +2,9 @@ package io.hamlook.aetheria.features.chat.chatfilters.ui;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 
 abstract class ChatFilterBaseGUI extends AetheriaBaseScreen {
@@ -28,8 +27,7 @@ abstract class ChatFilterBaseGUI extends AetheriaBaseScreen {
     }
 
     protected void startScissor(int x, int y, int width, int height) {
-        ScaledResolution res = GuiScreenUtils.getScaledResolution();
-        int scale = res.getScaleFactor();
+        int scale = GuiScreenUtils.getScaleFactor();
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + height) * scale, width * scale, height * scale);
@@ -42,10 +40,10 @@ abstract class ChatFilterBaseGUI extends AetheriaBaseScreen {
     protected void drawScrollbar(int trackX, int listY, int listH, int totalH, int scrollY, int maxScroll) {
         if (maxScroll <= 0) return;
         int barW = getScaledX(5);
-        Gui.drawRect(trackX, listY, trackX + barW, listY + listH, 0x44000000);
+        DrawContextUtils.fill(trackX, listY, trackX + barW, listY + listH, 0x44000000);
         int thumbH = Math.max(getScaledY(20), listH * listH / Math.max(listH, totalH));
         int thumbY = listY + (int) ((float) scrollY / maxScroll * (listH - thumbH));
-        Gui.drawRect(trackX, thumbY, trackX + barW, thumbY + thumbH, 0xFFAAAAAA);
+        DrawContextUtils.fill(trackX, thumbY, trackX + barW, thumbY + thumbH, 0xFFAAAAAA);
     }
 
     protected boolean tryStartScrollbarDrag(int mouseX, int mouseY, int trackX, int listY, int listH, int totalH, int scrollY, int maxScroll) {

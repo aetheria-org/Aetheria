@@ -6,6 +6,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.ColoredBlockCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ResourceCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
@@ -19,6 +20,7 @@ import net.minecraft.util.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -109,7 +111,9 @@ public final class BetterContainers {
     }
 
     private static BufferedImage read(ResourceLocation rl) throws IOException {
-        try (InputStream is = MinecraftCompat.getMinecraft().getResourceManager().getResource(rl).getInputStream()) {
+        byte[] data = ResourceCompat.openResource(rl);
+        if (data == null) throw new IOException("Missing resource " + rl);
+        try (InputStream is = new ByteArrayInputStream(data)) {
             return ImageIO.read(is);
         }
     }

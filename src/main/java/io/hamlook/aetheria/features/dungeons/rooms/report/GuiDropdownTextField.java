@@ -1,12 +1,13 @@
 package io.hamlook.aetheria.features.dungeons.rooms.report;
 
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
 
 import java.util.ArrayList;
 import java.util.List;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class GuiDropdownTextField extends GuiTextField {
     private final List<String> allOptions;
@@ -47,33 +48,33 @@ public class GuiDropdownTextField extends GuiTextField {
     public void drawDropdown(int mouseX, int mouseY) {
         if (!this.isFocused()) return;
 
-        int dropY = this.yPosition + this.height;
+        int dropY = GuiScreenUtils.getY(this) + GuiScreenUtils.getH(this);
         int count = Math.min(filteredOptions.size(), maxSuggestions);
         int totalHeight = count * dropdownItemHeight;
 
         int borderColor = 0xFFA0A0A0;
-        Gui.drawRect(this.xPosition - 1, dropY, this.xPosition, dropY + totalHeight, borderColor); // Left border
-        Gui.drawRect(this.xPosition + this.width, dropY, this.xPosition + this.width + 1, dropY + totalHeight, borderColor); // Right border
-        Gui.drawRect(this.xPosition - 1, dropY + totalHeight, this.xPosition + this.width + 1, dropY + totalHeight + 1, borderColor); // Bottom border
+        DrawContextUtils.fill(GuiScreenUtils.getX(this) - 1, dropY, GuiScreenUtils.getX(this), dropY + totalHeight, borderColor); // Left border
+        DrawContextUtils.fill(GuiScreenUtils.getX(this) + GuiScreenUtils.getW(this), dropY, GuiScreenUtils.getX(this) + GuiScreenUtils.getW(this) + 1, dropY + totalHeight, borderColor); // Right border
+        DrawContextUtils.fill(GuiScreenUtils.getX(this) - 1, dropY + totalHeight, GuiScreenUtils.getX(this) + GuiScreenUtils.getW(this) + 1, dropY + totalHeight + 1, borderColor); // Bottom border
 
-        Gui.drawRect(this.xPosition, dropY, this.xPosition + this.width, dropY + totalHeight, 0xE6000000);
+        DrawContextUtils.fill(GuiScreenUtils.getX(this), dropY, GuiScreenUtils.getX(this) + GuiScreenUtils.getW(this), dropY + totalHeight, 0xE6000000);
 
         for (int i = 0; i < count; i++) {
             int itemMinY = dropY + (i * dropdownItemHeight);
             int itemMaxY = itemMinY + dropdownItemHeight;
 
-            boolean isHovered = mouseX >= this.xPosition && mouseX <= this.xPosition + this.width &&
+            boolean isHovered = mouseX >= GuiScreenUtils.getX(this) && mouseX <= GuiScreenUtils.getX(this) + GuiScreenUtils.getW(this) &&
                     mouseY >= itemMinY && mouseY < itemMaxY;
 
             if (isHovered) {
-                Gui.drawRect(this.xPosition, itemMinY, this.xPosition + this.width, itemMaxY, 0x44FFFFFF);
+                DrawContextUtils.fill(GuiScreenUtils.getX(this), itemMinY, GuiScreenUtils.getX(this) + GuiScreenUtils.getW(this), itemMaxY, 0x44FFFFFF);
             }
 
             int textColor = isHovered ? 0xFFFFA0 : 0xFFFFFF;
 
             MinecraftCompat.getFontRenderer().drawStringWithShadow(
                     filteredOptions.get(i),
-                    this.xPosition + 4,
+                    GuiScreenUtils.getX(this) + 4,
                     itemMinY + 2,
                     textColor
             );
@@ -83,10 +84,10 @@ public class GuiDropdownTextField extends GuiTextField {
     public boolean mouseClickedDropdown(int mouseX, int mouseY, int mouseButton) {
         if (!this.isFocused() || filteredOptions.isEmpty()) return false;
 
-        int dropY = this.yPosition + this.height;
+        int dropY = GuiScreenUtils.getY(this) + GuiScreenUtils.getH(this);
         int count = Math.min(filteredOptions.size(), maxSuggestions);
 
-        if (mouseX >= this.xPosition && mouseX <= this.xPosition + this.width &&
+        if (mouseX >= GuiScreenUtils.getX(this) && mouseX <= GuiScreenUtils.getX(this) + GuiScreenUtils.getW(this) &&
                 mouseY >= dropY && mouseY < dropY + (count * dropdownItemHeight)) {
 
             int index = (mouseY - dropY) / dropdownItemHeight;

@@ -5,9 +5,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraft.event.ClickEvent;
-import net.minecraft.event.HoverEvent;
-import net.minecraft.util.ChatComponentText;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.ChatStyle;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
@@ -72,21 +70,20 @@ public class PlayerNameButtonListener {
 
                 ChatStyle baseStyle = sib.getChatStyle();
 
-                ChatComponentText beforeComp = new ChatComponentText(before);
-                beforeComp.setChatStyle(baseStyle.createDeepCopy());
+                IChatComponent beforeComp = TextCompat.createText(before);
+                TextCompat.setChatStyle(beforeComp, TextCompat.createDeepCopy(baseStyle));
 
-                ChatComponentText nameComp = new ChatComponentText(name);
-                ChatStyle nameStyle = baseStyle.createDeepCopy();
-                nameStyle.setUnderlined(true);
-                nameStyle.setChatClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, MARKER_PREFIX + ign));
-                nameStyle.setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                        new ChatComponentText("§eClick for player options")));
-                nameComp.setChatStyle(nameStyle);
+                IChatComponent nameComp = TextCompat.createText(name);
+                ChatStyle nameStyle = TextCompat.createDeepCopy(baseStyle);
+                TextCompat.setUnderlined(nameComp, true);
+                TextCompat.setClickSuggestCommand(nameStyle, MARKER_PREFIX + ign);
+                TextCompat.setHoverShowText(nameStyle, "§eClick for player options");
+                TextCompat.setChatStyle(nameComp, nameStyle);
 
-                ChatComponentText afterComp = new ChatComponentText(after);
-                afterComp.setChatStyle(baseStyle.createDeepCopy());
+                IChatComponent afterComp = TextCompat.createText(after);
+                TextCompat.setChatStyle(afterComp, TextCompat.createDeepCopy(baseStyle));
                 for (IChatComponent child : sib.getSiblings()) {
-                    afterComp.appendSibling(child);
+                    TextCompat.appendSibling(afterComp, child);
                 }
 
                 siblings.set(i, beforeComp);

@@ -5,7 +5,9 @@ import io.hamlook.aetheria.features.chat.chatfilters.ChatFilter;
 import io.hamlook.aetheria.features.chat.chatfilters.ChatFilterManager;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterCase;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterMode;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
@@ -54,25 +56,25 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
 
         int fieldH = getScaledY(BTN_H);
 
-        searchField = new GuiTextField(0, fontRendererObj, boxX + getScaledX(20), boxY + getScaledY(24), boxW - getScaledX(160), fieldH);
+        searchField = new GuiTextField(0, MinecraftCompat.getFontRenderer(), boxX + getScaledX(20), boxY + getScaledY(24), boxW - getScaledX(160), fieldH);
 
         searchField.setMaxStringLength(100);
         searchField.setText(prevSearch);
         searchField.setFocused(true);
-        buttonList.clear();
+        GuiScreenUtils.clearButtons(this);
 
-        buttonList.add(new CFButton(0, boxX + boxW - getScaledX(135), boxY + getScaledY(24), getScaledX(BTN_W + 20), getScaledY(BTN_H), "Add Filter", 0.2f, 0.4f, 0.8f));
+        GuiScreenUtils.addButton(this, new CFButton(0, boxX + boxW - getScaledX(135), boxY + getScaledY(24), getScaledX(BTN_W + 20), getScaledY(BTN_H), "Add Filter", 0.2f, 0.4f, 0.8f));
 
         int ty = boxY + getScaledY(68);
         int th = getScaledY(TOGGLE_H);
         int tw = getScaledX(TOGGLE_W);
 
-        buttonList.add(new CFButton(1, boxX + getScaledX(20), ty, tw, th, "STARTS", true, showStarts));
-        buttonList.add(new CFButton(2, boxX + getScaledX(100), ty, tw, th, "ENDS", true, showEnds));
-        buttonList.add(new CFButton(3, boxX + getScaledX(180), ty, getScaledX(TOGGLE_W + 10), th, "CONTAINS", true, showContains));
+        GuiScreenUtils.addButton(this, new CFButton(1, boxX + getScaledX(20), ty, tw, th, "STARTS", true, showStarts));
+        GuiScreenUtils.addButton(this, new CFButton(2, boxX + getScaledX(100), ty, tw, th, "ENDS", true, showEnds));
+        GuiScreenUtils.addButton(this, new CFButton(3, boxX + getScaledX(180), ty, getScaledX(TOGGLE_W + 10), th, "CONTAINS", true, showContains));
 
-        buttonList.add(new CFButton(4, boxX + getScaledX(275), ty, getScaledX(TOGGLE_W + 10), th, "SENSITIVE", true, showSensitive));
-        buttonList.add(new CFButton(5, boxX + getScaledX(370), ty, getScaledX(TOGGLE_W + 20), th, "INSENSITIVE", true, showInsensitive));
+        GuiScreenUtils.addButton(this, new CFButton(4, boxX + getScaledX(275), ty, getScaledX(TOGGLE_W + 10), th, "SENSITIVE", true, showSensitive));
+        GuiScreenUtils.addButton(this, new CFButton(5, boxX + getScaledX(370), ty, getScaledX(TOGGLE_W + 20), th, "INSENSITIVE", true, showInsensitive));
     }
 
     @Override
@@ -196,7 +198,7 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
 
         float msgScale = textScale * 1.1f;
 
-        int msgW = (int) (MinecraftCompat.getFontRenderer().getStringWidth(msg) * msgScale);
+        int msgW = (int) (DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), msg) * msgScale);
         int centerX = boxX + (boxW - msgW) / 2;
         int centerY = l.listY + l.listH / 2 - getScaledY(6);
 

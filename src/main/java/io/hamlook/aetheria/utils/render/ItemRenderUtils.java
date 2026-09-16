@@ -7,7 +7,6 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.RenderHelperCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -118,8 +117,7 @@ public class ItemRenderUtils {
         ItemStack held = MinecraftCompat.getLocalPlayer().inventory.getItemStack();
         if (held == null) return;
 
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int[] cursor = KeybindHelper.getMouseCoords(sr);
+        int[] cursor = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
         int cursorX = cursor[0], cursorY = cursor[1];
 
         beginGuiItemRender();

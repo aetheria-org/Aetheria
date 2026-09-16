@@ -1,6 +1,6 @@
 {
   "package": "io.hamlook.aetheria.mixins",
-  "plugin": "io.hamlook.aetheria.init.AutoDiscoveryMixinPlugin",
+  "plugin": "io.hamlook.aetheria.init.ASMMixinPlugin",
   "refmap": "mixins.aetheria.refmap.json",
   "minVersion": "0.7",
   "compatibilityLevel": "JAVA_8",

@@ -18,7 +18,6 @@ import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityArmorStand;
-import net.minecraft.event.ClickEvent;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.IChatComponent;
@@ -155,9 +154,8 @@ public class TrevorSolver {
     private static String findConfirmCommand(IChatComponent component, String optionText) {
         String clean = StringUtils.stripControlCodes(component.getUnformattedTextForChat()).trim();
         if (optionText.equalsIgnoreCase(clean)) {
-            ClickEvent click = component.getChatStyle().getChatClickEvent();
-            if (click != null && click.getAction() == ClickEvent.Action.RUN_COMMAND) {
-                return click.getValue();
+            if (TextCompat.isClickAction(component.getChatStyle(), "RUN_COMMAND")) {
+                return TextCompat.getClickValue(component.getChatStyle());
             }
         }
         for (IChatComponent sibling : TextCompat.getSiblings(component)) {

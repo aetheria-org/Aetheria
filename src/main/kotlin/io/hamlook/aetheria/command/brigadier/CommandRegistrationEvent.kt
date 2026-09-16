@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.command.brigadier
 
 import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import io.hamlook.aetheria.api.event.AetheriaEvent
 import java.util.function.Consumer
 
@@ -38,8 +39,16 @@ class CommandRegistrationEvent(
         dispatcher: CommandDispatcher<Any?>,
         builders: MutableList<CommandData>,
     ) {
+        //#if MC < 1.21
         val command = toCommand(dispatcher)
         net.minecraftforge.client.ClientCommandHandler.instance.registerCommand(command)
+        //#else
+        //$$ val original = dispatcher.register(builder as LiteralArgumentBuilder<Any?>)
+        //$$ this.node = original
+        //$$ aliases.forEach {
+        //$$     dispatcher.register(LiteralArgumentBuilder.literal<Any?>(it).redirect(original).executes(original.command))
+        //$$ }
+        //#endif
         builders.add(this)
     }
 }

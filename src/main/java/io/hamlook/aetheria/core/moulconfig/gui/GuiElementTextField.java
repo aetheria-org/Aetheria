@@ -4,14 +4,14 @@
 package io.hamlook.aetheria.core.moulconfig.gui;
 
 import io.hamlook.aetheria.utils.StringUtils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import lombok.Setter;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.gui.ScaledResolution;
+
 
 import java.awt.*;
 import java.util.regex.Matcher;
@@ -98,14 +98,14 @@ public class GuiElementTextField {
     }
 
     public int getHeight() {
-        int paddingUnscaled = searchBarPadding / GuiScreenUtils.getScaledResolution().getScaleFactor();
+        int paddingUnscaled = searchBarPadding / GuiScreenUtils.getScaleFactor();
         int numLines = org.apache.commons.lang3.StringUtils.countMatches(textField.getText(), "\n") + 1;
         int extraSize = (searchBarYSize - 8) / 2 + 8;
         return searchBarYSize + extraSize * (numLines - 1) + paddingUnscaled * 2;
     }
 
     public int getWidth() {
-        int paddingUnscaled = searchBarPadding / GuiScreenUtils.getScaledResolution().getScaleFactor();
+        int paddingUnscaled = searchBarPadding / GuiScreenUtils.getScaleFactor();
         return searchBarXSize + paddingUnscaled * 2;
     }
 
@@ -216,19 +216,19 @@ public class GuiElementTextField {
     }
 
     private void drawTextbox(int x, int y, int sizeX, int sizeY, int padding, GuiTextField tf, boolean focused) {
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
+        int scaleFactor = GuiScreenUtils.getScaleFactor();
         String renderText = prependText + tf.getText();
         GlStateManagerCompat.disableLighting();
 
-        int paddingUnscaled = Math.max(1, padding / sr.getScaleFactor());
+        int paddingUnscaled = Math.max(1, padding / scaleFactor);
         int numLines = org.apache.commons.lang3.StringUtils.countMatches(renderText, "\n") + 1;
         int extraSize = (sizeY - 8) / 2 + 8;
         int bottomTextBox = y + sizeY + extraSize * (numLines - 1);
 
         if ((options & DISABLE_BG) == 0) {
             int borderColour = customBorderColour != -1 ? customBorderColour : (focused ? Color.GREEN.getRGB() : Color.WHITE.getRGB());
-            Gui.drawRect(x - paddingUnscaled, y - paddingUnscaled, x + sizeX + paddingUnscaled, bottomTextBox + paddingUnscaled, borderColour);
-            Gui.drawRect(x, y, x + sizeX, bottomTextBox, Color.BLACK.getRGB());
+            DrawContextUtils.fill(x - paddingUnscaled, y - paddingUnscaled, x + sizeX + paddingUnscaled, bottomTextBox + paddingUnscaled, borderColour);
+            DrawContextUtils.fill(x, y, x + sizeX, bottomTextBox, Color.BLACK.getRGB());
         }
 
         String text = renderText, textNoColor = renderText;
@@ -256,9 +256,9 @@ public class GuiElementTextField {
                 TextRenderUtils.drawStringCenteredScaledMaxWidth(texts[i], MinecraftCompat.getFontRenderer(), x + sizeX / 2f, y + sizeY / 2f + yOff, false, sizeX - 2, customTextColour);
             } else {
                 if ((options & SCISSOR_TEXT) != 0) {
-                    GlScissorStack.push(x + 5, 0, x + sizeX, sr.getScaledHeight(), sr);
+                    GlScissorStack.push(x + 5, 0, x + sizeX, GuiScreenUtils.getScaledWindowHeight(), scaleFactor);
                     MinecraftCompat.getFontRenderer().drawString(texts[i], x + 5, y + (sizeY - 8) / 2 + yOff, customTextColour);
-                    GlScissorStack.pop(sr);
+                    GlScissorStack.pop(scaleFactor);
                 } else {
                     String toRender = MinecraftCompat.getFontRenderer().trimStringToWidth(texts[i], sizeX - 10);
                     MinecraftCompat.getFontRenderer().drawString(toRender, x + 5, y + (sizeY - 8) / 2 + yOff, customTextColour);
@@ -274,7 +274,7 @@ public class GuiElementTextField {
             int yOff = numLinesBC * extraSize;
             String[] split = tBC.split("\n");
             int tBCW = (split.length <= numLinesBC || split.length == 0) ? 0 : (int) (MinecraftCompat.getFontRenderer().getStringWidth(split[split.length - 1]) * scale);
-            Gui.drawRect(x + xStartOffset + tBCW, y + (sizeY - 8) / 2 - 1 + yOff, x + xStartOffset + tBCW + 1, y + (sizeY - 8) / 2 + 9 + yOff, Color.WHITE.getRGB());
+            DrawContextUtils.fill(x + xStartOffset + tBCW, y + (sizeY - 8) / 2 - 1 + yOff, x + xStartOffset + tBCW + 1, y + (sizeY - 8) / 2 + 9 + yOff, Color.WHITE.getRGB());
         }
     }
 

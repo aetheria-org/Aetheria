@@ -65,8 +65,11 @@ net.minecraft.client.gui.screens.Screen net.minecraft.client.gui.GuiScreen
 net.minecraft.client.gui.screens.Screen isPauseScreen() doesGuiPauseGame()
 
 net.minecraft.client.gui.screens.inventory.ContainerScreen net.minecraft.client.gui.inventory.GuiChest
+net.minecraft.client.gui.screens.inventory.AbstractContainerScreen net.minecraft.client.gui.inventory.GuiContainer
+com.mojang.blaze3d.vertex.VertexFormat net.minecraft.client.renderer.vertex.VertexFormat
 net.minecraft.client.gui.screens.inventory.InventoryScreen net.minecraft.client.gui.inventory.GuiInventory
 net.minecraft.client.gui.screens.inventory.SignEditScreen net.minecraft.client.gui.inventory.GuiEditSign
+net.minecraft.client.gui.components.EditBox net.minecraft.client.gui.GuiTextField
 
 net.minecraft.client.gui.screens.inventory.SignEditScreen line editLine
 net.minecraft.client.gui.screens.inventory.SignEditScreen sign tileSign
@@ -995,4 +998,64 @@ org.lwjgl.glfw.GLFW GLFW_KEY_W KEY_W
 org.lwjgl.glfw.GLFW GLFW_KEY_X KEY_X
 org.lwjgl.glfw.GLFW GLFW_KEY_Y KEY_Y
 org.lwjgl.glfw.GLFW GLFW_KEY_Z KEY_Z
+
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_0 KEY_NUMPAD0
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_1 KEY_NUMPAD1
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_2 KEY_NUMPAD2
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_3 KEY_NUMPAD3
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_4 KEY_NUMPAD4
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_5 KEY_NUMPAD5
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_6 KEY_NUMPAD6
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_7 KEY_NUMPAD7
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_8 KEY_NUMPAD8
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_9 KEY_NUMPAD9
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_DECIMAL KEY_DECIMAL
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_DIVIDE KEY_DIVIDE
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_EQUAL KEY_NUMPAD_EQUALS
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_ENTER KEY_NUMPADENTER
+org.lwjgl.glfw.GLFW GLFW_KEY_KP_MULTIPLY KEY_MULTIPLY
+
+org.lwjgl.glfw.GLFW GLFW_KEY_F1 KEY_F1
+org.lwjgl.glfw.GLFW GLFW_KEY_F2 KEY_F2
+org.lwjgl.glfw.GLFW GLFW_KEY_F4 KEY_F4
+org.lwjgl.glfw.GLFW GLFW_KEY_F5 KEY_F5
+org.lwjgl.glfw.GLFW GLFW_KEY_F6 KEY_F6
+org.lwjgl.glfw.GLFW GLFW_KEY_F7 KEY_F7
+org.lwjgl.glfw.GLFW GLFW_KEY_F8 KEY_F8
+org.lwjgl.glfw.GLFW GLFW_KEY_F9 KEY_F9
+org.lwjgl.glfw.GLFW GLFW_KEY_F10 KEY_F10
+org.lwjgl.glfw.GLFW GLFW_KEY_F11 KEY_F11
+org.lwjgl.glfw.GLFW GLFW_KEY_F12 KEY_F12
+org.lwjgl.glfw.GLFW GLFW_KEY_INSERT KEY_INSERT
+org.lwjgl.glfw.GLFW GLFW_KEY_DELETE KEY_DELETE
+org.lwjgl.glfw.GLFW GLFW_KEY_HOME KEY_HOME
+org.lwjgl.glfw.GLFW GLFW_KEY_END KEY_END
+org.lwjgl.glfw.GLFW GLFW_KEY_PAGE_UP KEY_PRIOR
+org.lwjgl.glfw.GLFW GLFW_KEY_PAGE_DOWN KEY_NEXT
+org.lwjgl.glfw.GLFW GLFW_KEY_CAPS_LOCK KEY_CAPITAL
+org.lwjgl.glfw.GLFW GLFW_KEY_NUM_LOCK KEY_NUMLOCK
+org.lwjgl.glfw.GLFW GLFW_KEY_SCROLL_LOCK KEY_SCROLL
+org.lwjgl.glfw.GLFW GLFW_KEY_PAUSE KEY_PAUSE
+org.lwjgl.glfw.GLFW GLFW_KEY_MENU KEY_APPS
+org.lwjgl.glfw.GLFW GLFW_KEY_PRINT_SCREEN KEY_SYSRQ
+org.lwjgl.glfw.GLFW GLFW_KEY_LEFT_SUPER KEY_LWIN
+org.lwjgl.glfw.GLFW GLFW_KEY_RIGHT_SUPER KEY_RWIN
+
+org.lwjgl.glfw.GLFW GLFW_KEY_COMMA KEY_COMMA
+org.lwjgl.glfw.GLFW GLFW_KEY_PERIOD KEY_PERIOD
+org.lwjgl.glfw.GLFW GLFW_KEY_SLASH KEY_SLASH
+org.lwjgl.glfw.GLFW GLFW_KEY_SEMICOLON KEY_SEMICOLON
+org.lwjgl.glfw.GLFW GLFW_KEY_APOSTROPHE KEY_APOSTROPHE
+org.lwjgl.glfw.GLFW GLFW_KEY_LEFT_BRACKET KEY_LBRACKET
+org.lwjgl.glfw.GLFW GLFW_KEY_RIGHT_BRACKET KEY_RBRACKET
+org.lwjgl.glfw.GLFW GLFW_KEY_BACKSLASH KEY_BACKSLASH
+org.lwjgl.glfw.GLFW GLFW_KEY_GRAVE_ACCENT KEY_GRAVE
+
+net.minecraft.client.gui.Font net.minecraft.client.gui.FontRenderer
+
+net.minecraft.client.gui.Font width() getStringWidth()
+
+net.minecraft.client.gui.Font plainSubstrByWidth() trimStringToWidth()
+
+net.minecraft.client.gui.Font fontHeight FONT_HEIGHT
 

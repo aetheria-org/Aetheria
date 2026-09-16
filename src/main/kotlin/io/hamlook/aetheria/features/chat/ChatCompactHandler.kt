@@ -1,8 +1,8 @@
 package io.hamlook.aetheria.features.chat
 
 import io.hamlook.aetheria.core.ATHRConfig
+import io.hamlook.aetheria.utils.compat.TextCompat
 import net.minecraft.client.gui.ChatLine
-import net.minecraft.util.ChatComponentText
 import net.minecraft.util.EnumChatFormatting
 import net.minecraft.util.IChatComponent
 import java.text.DecimalFormat
@@ -30,7 +30,7 @@ object ChatCompactHandler {
     fun applyTimestamp(original: IChatComponent): IChatComponent {
         val cfg = ATHRConfig.feature?.chat ?: return original
         if (!cfg.timestampsEnabled) return original
-        if (original.unformattedText.trim().isEmpty()) return original
+        if (TextCompat.getUnformattedText(original).trim().isEmpty()) return original
 
         val pattern = when {
             cfg.timestamp24Hour && cfg.timestampShowSeconds -> "HH:mm:ss"
@@ -43,8 +43,8 @@ object ChatCompactHandler {
         val bracket = if (cfg.timestampStyle == 0) "[$time] " else "<$time> "
 
         val wrapper = ChatComponentIgnored(EnumChatFormatting.GRAY.toString() + bracket + EnumChatFormatting.RESET)
-        wrapper.appendSibling(original)
-        return wrapper
+        TextCompat.appendSibling(wrapper.wrapped, original)
+        return wrapper.wrapped
     }
 
     @JvmStatic
@@ -57,7 +57,7 @@ object ChatCompactHandler {
         val cfg = ATHRConfig.feature?.chat ?: return
         if (!cfg.compactingEnabled || refresh) return
 
-        val clear = cleanColor(component.formattedText).trim()
+        val clear = cleanColor(TextCompat.getFormattedText(component)).trim()
         if (clear.isEmpty() || isDivider(clear)) return
 
         val hash = getChatComponentHash(component)
@@ -86,8 +86,9 @@ object ChatCompactHandler {
         entry.messageCount++
         entry.lastSeenMessageMillis = now
 
-        component.appendSibling(
-            ChatComponentText(EnumChatFormatting.GRAY.toString() + " (${decimalFormat.format(entry.messageCount)})")
+        TextCompat.appendSibling(
+            component,
+            TextCompat.createText(EnumChatFormatting.GRAY.toString() + " (${decimalFormat.format(entry.messageCount)})")
         )
     }
 
@@ -165,31 +166,29 @@ object ChatCompactHandler {
     }
 
     private fun getChatStyleHash(style: net.minecraft.util.ChatStyle): Int {
-        val hover = style.chatHoverEvent
-        val action = hover?.action
-        val hoverHash = if (hover != null) getChatComponentHash(hover.value) else 0
+        val hoverHash = TextCompat.getHoverValue(style)?.let { getChatComponentHash(it) } ?: 0
         return listOf(
-            style.color,
-            style.bold,
-            style.italic,
-            style.underlined,
-            style.strikethrough,
-            style.obfuscated,
-            action,
+            TextCompat.getColorChatStyle(style),
+            TextCompat.getBold(style),
+            TextCompat.getItalic(style),
+            TextCompat.getUnderlined(style),
+            TextCompat.getStrikethrough(style),
+            TextCompat.getObfuscated(style),
+            TextCompat.getHoverAction(style),
             hoverHash,
-            style.chatClickEvent,
-            style.insertion
+            TextCompat.getChatClickEvent(style),
+            TextCompat.getInsertion(style)
         ).hashCode()
     }
 
     private fun getChatComponentHash(component: IChatComponent): Int {
         val siblingHashes = component.siblings
-            .filterNot { it is ChatComponentIgnored }
+            .filterNot { ChatComponentIgnored.isIgnored(it) }
             .map { getChatComponentHash(it) }
 
-        if (component is ChatComponentIgnored) return siblingHashes.hashCode()
+        if (ChatComponentIgnored.isIgnored(component)) return siblingHashes.hashCode()
 
-        val cleaned = component.unformattedText
+        val cleaned = TextCompat.getUnformattedText(component)
             .replace(TIMESTAMP_REGEX, "")
             .trim()
 

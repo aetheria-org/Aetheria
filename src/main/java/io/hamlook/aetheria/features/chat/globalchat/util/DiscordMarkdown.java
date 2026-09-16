@@ -4,6 +4,7 @@ import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
 import io.hamlook.aetheria.features.chat.globalchat.vars.Channel;
 import io.hamlook.aetheria.features.chat.globalchat.vars.ChatMessage;
 import io.hamlook.aetheria.features.chat.globalchat.vars.EmojiRef;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import net.minecraft.client.gui.FontRenderer;
 
 import java.util.ArrayList;
@@ -508,11 +509,11 @@ public class DiscordMarkdown {
         List<RenderLine> result = new ArrayList<>();
         RenderLine current = new RenderLine(type);
         int width = 0;
-        int spaceWidth = fr.getStringWidth(" ");
+        int spaceWidth = DrawContextUtils.getStringWidth(fr, " ");
 
         for (Span tok : tokens) {
             int tokWidth = tok.imageUrl != null ? EMOJI_SIZE
-                    : fr.getStringWidth(toFormatted(tok.mention ? tokDisplay(tok) : tok))
+                    : DrawContextUtils.getStringWidth(fr, toFormatted(tok.mention ? tokDisplay(tok) : tok))
                         + (tok.mention ? MENTION_PILL_PADDING * 2 : 0);
 
             if (tokWidth > maxWidth && tok.imageUrl == null && !tok.mention && tok.discordChannelId == null) {
@@ -592,7 +593,7 @@ public class DiscordMarkdown {
                     fit = rest.substring(0, 1);
                 }
                 current.codeTokens.add(new CodeParser.HighlightedToken(fit, token.mcColor));
-                width += fr.getStringWidth(fit);
+                width += DrawContextUtils.getStringWidth(fr, fit);
                 rest = rest.substring(fit.length());
                 if (width >= maxWidth && !rest.isEmpty()) {
                     result.add(current);

@@ -25,15 +25,23 @@ import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.placeholders.PlaceholderManager;
+//#if FORGE
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+//#else
+//$$ import net.fabricmc.api.ModInitializer;
+//#endif
 
 import java.util.logging.Logger;
 
+//#if FORGE
 @Mod(modid = Aetheria.MODID, name = Aetheria.NAME, version = Aetheria.VERSION, clientSideOnly = true, guiFactory = "io.hamlook.aetheria.GuiFactory")
 public class Aetheria {
+//#else
+//$$ public class Aetheria implements ModInitializer {
+//#endif
 
     public static final String MODID = "aetheria";
     public static final String NAME = "Aetheria";
@@ -43,6 +51,7 @@ public class Aetheria {
     public static Logger logger;
     public static WebSocketClient webSocketClient;
 
+    //#if FORGE
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         logger = Logger.getLogger("[ATHR] ");
@@ -81,6 +90,39 @@ public class Aetheria {
         CommandsRegistry.INSTANCE.registerAll();
         CMMHelper.initialise();
     }
+    //#else
+    //$$ @Override
+    //$$ public void onInitialize() {
+    //$$     logger = Logger.getLogger("[ATHR] ");
+    //$$     ATHRConfig.init();
+    //$$     ATHRRepo.init();
+    //$$     EmojiManager.init();
+    //$$     StorageManager.initAll(ATHRConfig.configDirectory);
+    //$$     CapeManager.initialise(false);
+    //$$     TesterWhitelist.init(VERSION);
+    //$$     PlaceholderManager.initialise();
+    //$$     webSocketClient = new WebSocketClient();
+    //$$     if (ATHRConfig.feature == null || !ATHRConfig.feature.network.smartSocketLifecycle) {
+    //$$         webSocketClient.connect();
+    //$$     }
+    //$$     ATHRConfig.register();
+    //$$     StorageManager.loadAll();
+    //$$     StorageManager.startAutoSave();
+    //$$     ItemRegistry.initialise();
+    //$$     ChatFilterManager.initialise();
+    //$$     ElectionUtils.initialise();
+    //$$     DianaPartyConnector.initialise();
+    //$$     GlobalChat.initialise();
+    //$$     ImageManager.initialise();
+    //$$     TrackerManager.initialise();
+    //$$     new CitManager();
+    //$$     if (ATHRConfig.feature.misc.currentPet.showCurrentPet) PetCache.getInstance().warmupTextures();
+    //$$     AetheriaEventBus.INSTANCE.register(GuiWaiter.INSTANCE);
+    //$$     AetheriaEventBus.INSTANCE.register(this);
+    //$$     EventRegistrar.registerAll();
+    //$$     CMMHelper.initialise();
+    //$$ }
+    //#endif
 
     @HandleEvent
     public void onServerJoin(ASMServerJoinEvent e) {

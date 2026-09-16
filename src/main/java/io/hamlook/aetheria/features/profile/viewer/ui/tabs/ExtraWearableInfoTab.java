@@ -14,7 +14,8 @@ import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
+
+
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -139,7 +140,7 @@ public class ExtraWearableInfoTab extends Tab {
         
         float headerY = y - ProfileViewerGUI.getScaledF(16);
         TextRenderUtils.drawStringScaleAware("§ePets", x, headerY, ProfileViewerGUI.getScaleText(), false);
-        Gui.drawRect((int)x, (int)(headerY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(headerY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
+        DrawContextUtils.fill((int)x, (int)(headerY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(headerY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
 
         handleHorizontalScroll(x, y, w, h, totalGridW, true);
         petScrollX += (petScrollTarget - petScrollX) * scrollSpeed;
@@ -191,7 +192,7 @@ public class ExtraWearableInfoTab extends Tab {
         
         float headerY = y - ProfileViewerGUI.getScaledF(16);
         TextRenderUtils.drawStringScaleAware("§eWardrobe", x, headerY, ProfileViewerGUI.getScaleText(), false);
-        Gui.drawRect((int)x, (int)(headerY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(headerY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
+        DrawContextUtils.fill((int)x, (int)(headerY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(headerY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
 
         handleHorizontalScroll(x, y, w, h, totalGridW, false);
         wardScrollX += (wardScrollTarget - wardScrollX) * scrollSpeed;
@@ -237,19 +238,19 @@ public class ExtraWearableInfoTab extends Tab {
         if (active) {
             int color = getRarityHex(rarityScore);
             int b = 1;
-            Gui.drawRect((int)x + 1, (int)y + 1, (int)(x + size) - 1, (int)y + 1 + b, color);
-            Gui.drawRect((int)x + 1, (int)(y + size) - 1 - b, (int)(x + size) - 1, (int)(y + size) - 1, color);
-            Gui.drawRect((int)x + 1, (int)y + 1, (int)x + 1 + b, (int)(y + size) - 1, color);
-            Gui.drawRect((int)(x + size) - 1 - b, (int)y + 1, (int)(x + size) - 1, (int)(y + size) - 1, color);
+            DrawContextUtils.fill((int)x + 1, (int)y + 1, (int)(x + size) - 1, (int)y + 1 + b, color);
+            DrawContextUtils.fill((int)x + 1, (int)(y + size) - 1 - b, (int)(x + size) - 1, (int)(y + size) - 1, color);
+            DrawContextUtils.fill((int)x + 1, (int)y + 1, (int)x + 1 + b, (int)(y + size) - 1, color);
+            DrawContextUtils.fill((int)(x + size) - 1 - b, (int)y + 1, (int)(x + size) - 1, (int)(y + size) - 1, color);
         }
 
         if (icon != null) {
             if (isPet) {
                 ItemRenderUtils.renderItemIcon(mc, icon, (int)(x + size*0.1f), (int)(y + size*0.1f), (int)(size*0.8f));
                 int squareSize = (int) Math.max(3, size * 0.18f);
-                Gui.drawRect((int)(x + size - squareSize - 1), (int)(y + size - squareSize - 1), (int)(x + size - 1), (int)(y + size - 1), getRarityHex(rarityScore));
+                DrawContextUtils.fill((int)(x + size - squareSize - 1), (int)(y + size - squareSize - 1), (int)(x + size - 1), (int)(y + size - 1), getRarityHex(rarityScore));
                 if (active) {
-                    Gui.drawRect((int)x + 1, (int)y + 1, (int)(x + size) - 1, (int)(y + size) - 1, 0x4055FF55);
+                    DrawContextUtils.fill((int)x + 1, (int)y + 1, (int)(x + size) - 1, (int)(y + size) - 1, 0x4055FF55);
                 }
             } else {
                 ItemRenderUtils.renderItemIcon(mc, icon, (int)(x + size*0.15f), (int)(y + size*0.15f), (int)(size*0.7f));
@@ -314,8 +315,7 @@ public class ExtraWearableInfoTab extends Tab {
     }
 
     private void applyScissor(float x, float y, float w, float h) {
-        ScaledResolution res = GuiScreenUtils.getScaledResolution();
-        int f = res.getScaleFactor();
+        int f = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor((int)(x * f), (int)(GuiScreenUtils.getDisplayHeight() - (y + h) * f), (int)(w * f), (int)(h * f));
     }

@@ -3,7 +3,6 @@ package io.hamlook.aetheria.utils;
 import io.hamlook.aetheria.utils.compat.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
@@ -19,7 +18,6 @@ public class Utils {
     //Labymod compatibility
     private static final FloatBuffer projectionMatrixOld = BufferUtils.createFloatBuffer(16);
     private static final FloatBuffer modelviewMatrixOld = BufferUtils.createFloatBuffer(16);
-    private static ScaledResolution lastScale = GuiScreenUtils.getScaledResolution();
 
     public static boolean overlayShouldRender(Integer type, boolean... booleans) {
         return overlayShouldRender(false, type, 9, booleans);
@@ -37,7 +35,7 @@ public class Utils {
     }
 
     public static void drawStringScaledMaxWidth(String str, FontRenderer fr, float x, float y, boolean shadow, int len, int colour) {
-        int strLen = fr.getStringWidth(str);
+        int strLen = DrawContextUtils.getStringWidth(fr, str);
         float factor = len / (float) strLen;
         factor = Math.min(1, factor);
 
@@ -87,11 +85,12 @@ public class Utils {
         guiScales.clear();
     }
 
-    public static ScaledResolution peekGuiScale() {
-        return lastScale;
-    }
-
-    public static ScaledResolution pushGuiScale(int scale) {
+    /**
+     * Temporarily overrides the GUI scale, sets up the GL projection, and returns
+     * the resulting scaled window dimensions as {@code int[]{width, height}}.
+     * Pass a negative value to restore the previous scale.
+     */
+    public static int[] pushGuiScale(int scale) {
         if (guiScales.isEmpty()) {
             if (ModCompat.isModLoaded("labymod")) {
                 GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projectionMatrixOld);
@@ -116,14 +115,15 @@ public class Utils {
 
         int oldScale = MinecraftCompat.getMinecraft().gameSettings.guiScale;
         MinecraftCompat.getMinecraft().gameSettings.guiScale = newScale;
-        ScaledResolution scaledresolution = GuiScreenUtils.getScaledResolution();
+        int w = GuiScreenUtils.getScaledWindowWidth();
+        int h = GuiScreenUtils.getScaledWindowHeight();
         MinecraftCompat.getMinecraft().gameSettings.guiScale = oldScale;
 
         if (!guiScales.isEmpty()) {
             GlStateManagerCompat.viewport(0, 0, MinecraftCompat.getMinecraft().displayWidth, MinecraftCompat.getMinecraft().displayHeight);
             GlStateManagerCompat.matrixMode(GL11.GL_PROJECTION);
             GlStateManagerCompat.loadIdentity();
-            GlStateManagerCompat.ortho(0.0D, scaledresolution.getScaledWidth_double(), scaledresolution.getScaledHeight_double(), 0.0D, 1000.0D, 3000.0D);
+            GlStateManagerCompat.ortho(0.0D, (double) w, (double) h, 0.0D, 1000.0D, 3000.0D);
             GlStateManagerCompat.matrixMode(GL11.GL_MODELVIEW);
             GlStateManagerCompat.loadIdentity();
             GlStateManagerCompat.translate(0.0F, 0.0F, -2000.0F);
@@ -136,19 +136,18 @@ public class Utils {
             } else {
                 GlStateManagerCompat.matrixMode(GL11.GL_PROJECTION);
                 GlStateManagerCompat.loadIdentity();
-                GlStateManagerCompat.ortho(0.0D, scaledresolution.getScaledWidth_double(), scaledresolution.getScaledHeight_double(), 0.0D, 1000.0D, 3000.0D);
+                GlStateManagerCompat.ortho(0.0D, (double) w, (double) h, 0.0D, 1000.0D, 3000.0D);
                 GlStateManagerCompat.matrixMode(GL11.GL_MODELVIEW);
                 GlStateManagerCompat.loadIdentity();
                 GlStateManagerCompat.translate(0.0F, 0.0F, -2000.0F);
             }
         }
 
-        lastScale = scaledresolution;
-        return scaledresolution;
+        return new int[]{w, h};
     }
 
     public static void drawStringCentered(String str, FontRenderer fr, float x, float y, boolean shadow, int colour) {
-        int strLen = fr.getStringWidth(str);
+        int strLen = DrawContextUtils.getStringWidth(fr, str);
 
         float x2 = x - strLen / 2f;
         float y2 = y - fr.FONT_HEIGHT / 2f;

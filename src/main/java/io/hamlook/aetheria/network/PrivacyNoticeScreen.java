@@ -1,9 +1,9 @@
 package io.hamlook.aetheria.network;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 
 public class PrivacyNoticeScreen extends NetworkNoticeScreen {
@@ -126,11 +126,11 @@ public class PrivacyNoticeScreen extends NetworkNoticeScreen {
         Page cur = pages[page];
         int cx = px + PANEL_W / 2 + slide;
 
-        drawCenteredString(fontRendererObj, "§lAetheria — Network & Privacy", cx, py + 10, 0xFFFFFF);
-        drawCenteredString(fontRendererObj, "§7You can change these any time in Settings → Network.", cx, py + 22, 0x888888);
-        Gui.drawRect(px + 20, py + 34, px + PANEL_W - 20, py + 35, 0x33FFFFFF);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), "§lAetheria — Network & Privacy", cx, py + 10, 0xFFFFFF);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), "§7You can change these any time in Settings → Network.", cx, py + 22, 0x888888);
+        DrawContextUtils.fill(px + 20, py + 34, px + PANEL_W - 20, py + 35, 0x33FFFFFF);
 
-        drawCenteredString(fontRendererObj, "§e" + cur.title, cx, py + 48, 0xFFFFFF);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), "§e" + cur.title, cx, py + 48, 0xFFFFFF);
         drawWrapped(cur.what, cx, py + 68, 0xCCCCCC);
         drawWrapped(cur.why, cx, py + 110, 0x888888);
         drawToggle(mouseX, mouseY, slide, cur);
@@ -143,9 +143,9 @@ public class PrivacyNoticeScreen extends NetworkNoticeScreen {
         boolean hov = inBox(mouseX, mouseY, togX(), ty, TOG_W, TOG_H);
 
         RenderUtils.drawFloatingRectDark(tx, ty, TOG_W, TOG_H, false);
-        Gui.drawRect(tx, ty, tx + TOG_W, ty + TOG_H, hov ? (enabled ? 0x2244FF44 : 0x22FF4444) : 0);
-        Gui.drawRect(tx, ty, tx + 4, ty + TOG_H, enabled ? 0xFF33BB55 : 0xFFBB3333);
-        drawCenteredString(fontRendererObj, enabled ? "§a✔  ENABLED" : "§c✗  DISABLED", tx + TOG_W / 2, ty + (TOG_H - fontRendererObj.FONT_HEIGHT) / 2, 0xFFFFFF);
+        DrawContextUtils.fill(tx, ty, tx + TOG_W, ty + TOG_H, hov ? (enabled ? 0x2244FF44 : 0x22FF4444) : 0);
+        DrawContextUtils.fill(tx, ty, tx + 4, ty + TOG_H, enabled ? 0xFF33BB55 : 0xFFBB3333);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), enabled ? "§a✔  ENABLED" : "§c✗  DISABLED", tx + TOG_W / 2, ty + (TOG_H - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2, 0xFFFFFF);
     }
 
     @Override
@@ -153,7 +153,7 @@ public class PrivacyNoticeScreen extends NetworkNoticeScreen {
         Page cur = pages[page];
         int ny = navY();
 
-        drawCenteredString(fontRendererObj, "§7" + (page + 1) + " / " + pages.length, px + PANEL_W / 2, ny - 14, 0x666666);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), "§7" + (page + 1) + " / " + pages.length, px + PANEL_W / 2, ny - 14, 0x666666);
 
         if (page > 0) {
             boolean hb = inBox(mouseX, mouseY, backX(), ny, NAV_W, NAV_H);
@@ -176,7 +176,7 @@ public class PrivacyNoticeScreen extends NetworkNoticeScreen {
         drawNavBtn(nextX(), ny, label, color, hn);
 
         if (firstLaunch && !cur.touched) {
-            drawCenteredString(fontRendererObj, "§8Continuing will keep this enabled", px + PANEL_W / 2, ny + NAV_H + 4, 0x555555);
+            drawCenteredString(MinecraftCompat.getFontRenderer(), "§8Continuing will keep this enabled", px + PANEL_W / 2, ny + NAV_H + 4, 0x555555);
         }
 
         if (firstLaunch) {

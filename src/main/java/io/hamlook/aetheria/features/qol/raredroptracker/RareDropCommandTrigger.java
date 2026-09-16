@@ -5,13 +5,11 @@ import io.hamlook.aetheria.events.ASMGuiDrawEvent;
 import io.hamlook.aetheria.events.ASMGuiMousePostEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
-
 /**
  * Handles the "click anywhere within 5 seconds" prompt fired after a tracked
  * Rare Drop Tracker item with a bound command is picked up. The click-to-open
@@ -58,13 +56,14 @@ public class RareDropCommandTrigger {
         }
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
+        int screenW = GuiScreenUtils.getScaledWindowWidth();
+        int screenH = GuiScreenUtils.getScaledWindowHeight();
 
-        Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0x38000000);
+        DrawContextUtils.fill(0, 0, screenW, screenH, 0x38000000);
 
         String msg = "§dClick anywhere to run your drop command!";
         int w = MinecraftCompat.getFontRenderer().getStringWidth(msg);
-        MinecraftCompat.getFontRenderer().drawStringWithShadow(msg, (sr.getScaledWidth() - w) / 2f, sr.getScaledHeight() / 2f, -1);
+        MinecraftCompat.getFontRenderer().drawStringWithShadow(msg, (screenW - w) / 2f, screenH / 2f, -1);
     }
 
     @HandleEvent

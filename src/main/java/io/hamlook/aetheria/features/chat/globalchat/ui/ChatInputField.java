@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 
 /**
  * Multi-line chat input with full text selection (mouse drag + keyboard),
@@ -232,7 +233,7 @@ public class ChatInputField extends Gui {
             return;
         }
         Minecraft mc = MinecraftCompat.getMinecraft();
-        int scale = GuiScreenUtils.getScaledResolution().getScaleFactor();
+        int scale = GuiScreenUtils.getScaleFactor();
         int mx = MouseCompat.getX() / scale;
         int my = GuiScreenUtils.getDisplayHeight() / scale - MouseCompat.getY() / scale;
         caret = xyToChar(mx, my);
@@ -277,13 +278,13 @@ public class ChatInputField extends Gui {
                 if (selEnd > selStart) {
                     int sx = x + PAD_X + stringWidth(line, selStart - ls, ls);
                     int ex = x + PAD_X + stringWidth(line, selEnd - ls, ls);
-                    drawRect(sx, ly, ex, ly + fr.FONT_HEIGHT, 0x50FFFFFF);
+                    DrawContextUtils.fill(sx, ly, ex, ly + fr.FONT_HEIGHT, 0x50FFFFFF);
                 }
             }
 
             if (i == ci && (System.currentTimeMillis() / 500) % 2 == 0) {
                 int cx = x + PAD_X + stringWidth(line, caret - ls, ls);
-                drawRect(cx, ly, cx + 1, ly + fr.FONT_HEIGHT, 0xFFE0E0E0);
+                DrawContextUtils.fill(cx, ly, cx + 1, ly + fr.FONT_HEIGHT, 0xFFE0E0E0);
             }
 
             drawLineWithEmoji(line, x + PAD_X, ly, ls);
@@ -293,8 +294,8 @@ public class ChatInputField extends Gui {
             int trackH = height - 4;
             int thumbH = Math.max(8, trackH * visibleLines / lines.size());
             int thumbY = y + 2 + (trackH - thumbH) * scrollLines / maxScroll;
-            drawRect(x + width - 3, y + 2, x + width - 1, y + 2 + trackH, 0x22000000);
-            drawRect(x + width - 3, thumbY, x + width - 1, thumbY + thumbH, 0x80FFFFFF);
+            DrawContextUtils.fill(x + width - 3, y + 2, x + width - 1, y + 2 + trackH, 0x22000000);
+            DrawContextUtils.fill(x + width - 3, thumbY, x + width - 1, thumbY + thumbH, 0x80FFFFFF);
         }
     }
 
@@ -369,7 +370,7 @@ public class ChatInputField extends Gui {
             } else {
                 String t = (String) seg[1];
                 for (int k = 0; k < t.length(); k++) {
-                    w += fr.getStringWidth(String.valueOf(t.charAt(k)));
+                    w += DrawContextUtils.getStringWidth(fr, String.valueOf(t.charAt(k)));
                     charIdx++;
                     if (w >= relX) return ls + charIdx;
                 }
@@ -515,7 +516,7 @@ public class ChatInputField extends Gui {
             if ("E".equals(seg[0])) {
                 w += DiscordMarkdown.EMOJI_SIZE;
             } else {
-                w += fr.getStringWidth((String) seg[1]);
+                w += DrawContextUtils.getStringWidth(fr, (String) seg[1]);
             }
         }
         return w;
@@ -547,7 +548,7 @@ public class ChatInputField extends Gui {
             } else {
                 String text = (String) seg[1];
                 fr.drawString(text, x, y, 0xFFE0E0E0);
-                x += fr.getStringWidth(text);
+                x += DrawContextUtils.getStringWidth(fr, text);
             }
         }
     }
@@ -564,7 +565,7 @@ public class ChatInputField extends Gui {
         }
         GCImage img = ImageManager.images.get(id);
         if (img == null || !img.isLoaded || img.width == 0) {
-            drawRect(x, y, x + DiscordMarkdown.EMOJI_SIZE, y + DiscordMarkdown.EMOJI_SIZE, 0x22FFFFFF);
+            DrawContextUtils.fill(x, y, x + DiscordMarkdown.EMOJI_SIZE, y + DiscordMarkdown.EMOJI_SIZE, 0x22FFFFFF);
             return;
         }
         ResourceLocation tex = img.getTextureToRender(false);

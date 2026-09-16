@@ -17,7 +17,8 @@ import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
+
+
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -67,7 +68,7 @@ public class BagsInfoTab extends Tab {
         
         float titleY = y - ProfileViewerGUI.getScaledF(16);
         TextRenderUtils.drawStringScaleAware(mpText, x, titleY, ProfileViewerGUI.getScaleText(), false);
-        Gui.drawRect((int)x, (int)(titleY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(titleY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
+        DrawContextUtils.fill((int)x, (int)(titleY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(titleY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
 
         float gridY = y + ProfileViewerGUI.getScaledF(4);
         float gridH = h - ProfileViewerGUI.getScaledF(4);
@@ -122,7 +123,7 @@ public class BagsInfoTab extends Tab {
         
         float fishTitleY = y - ProfileViewerGUI.getScaledF(16);
         TextRenderUtils.drawStringScaleAware("§eFishing Bag", x, fishTitleY, ProfileViewerGUI.getScaleText(), false);
-        Gui.drawRect((int)x, (int)(fishTitleY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(fishTitleY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
+        DrawContextUtils.fill((int)x, (int)(fishTitleY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(fishTitleY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
 
         if (fishData != null && fishData.baits != null) {
             float curY = y + ProfileViewerGUI.getScaledF(4);
@@ -145,7 +146,7 @@ public class BagsInfoTab extends Tab {
         float quiverY = y + halfH + pad;
         float quiverTitleY = quiverY - ProfileViewerGUI.getScaledF(16);
         TextRenderUtils.drawStringScaleAware("§eQuiver", x, quiverTitleY, ProfileViewerGUI.getScaleText(), false);
-        Gui.drawRect((int)x, (int)(quiverTitleY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(quiverTitleY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
+        DrawContextUtils.fill((int)x, (int)(quiverTitleY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(quiverTitleY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
 
         if (quiverData != null && quiverData.arrows != null) {
             float curY = quiverY + ProfileViewerGUI.getScaledF(4);
@@ -174,7 +175,7 @@ public class BagsInfoTab extends Tab {
         if (icon != null) {
             ItemRenderUtils.renderItemIcon(mc, icon, (int)(x + size*0.1f), (int)(y + size*0.1f), (int)(size*0.8f));
             int squareSize = (int) Math.max(3, size * 0.18f);
-            Gui.drawRect((int)(x + size - squareSize - 1), (int)(y + size - squareSize - 1), (int)(x + size - 1), (int)(y + size - 1), getRarityHex(rarityScore));
+            DrawContextUtils.fill((int)(x + size - squareSize - 1), (int)(y + size - squareSize - 1), (int)(x + size - 1), (int)(y + size - 1), getRarityHex(rarityScore));
         }
     }
 
@@ -201,8 +202,7 @@ public class BagsInfoTab extends Tab {
     }
 
     private void applyScissor(float x, float y, float w, float h) {
-        ScaledResolution res = GuiScreenUtils.getScaledResolution();
-        int f = res.getScaleFactor();
+        int f = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor((int)(x * f), (int)(GuiScreenUtils.getDisplayHeight() - (y + h) * f), (int)(w * f), (int)(h * f));
     }

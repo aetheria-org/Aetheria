@@ -4,13 +4,13 @@ import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.dungeons.DungeonMapConfig;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoom;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
@@ -50,25 +50,25 @@ public class DungeonMapRenderer {
             int rx = (int) grid.gridToPixelX(off.x);
             int ry = (int) grid.gridToPixelZ(off.y);
 
-            Gui.drawRect(rx, ry, rx + roomSize, ry + roomSize, cell.color | 0xFF000000);
+            DrawContextUtils.fill(rx, ry, rx + roomSize, ry + roomSize, cell.color | 0xFF000000);
 
             int doorOffset = Math.max(0, (roomSize - 6) / 2);
 
             if (cell.down.type == DungeonMapGrid.ConnectionType.ROOM_DIVIDER) {
-                Gui.drawRect(rx, ry + roomSize, rx + roomSize, ry + roomSize + connSize, cell.down.color | 0xFF000000);
+                DrawContextUtils.fill(rx, ry + roomSize, rx + roomSize, ry + roomSize + connSize, cell.down.color | 0xFF000000);
             } else if (cell.down.type == DungeonMapGrid.ConnectionType.CORRIDOR) {
-                Gui.drawRect(rx + doorOffset, ry + roomSize, rx + doorOffset + 6, ry + roomSize + connSize, cell.down.color | 0xFF000000);
+                DrawContextUtils.fill(rx + doorOffset, ry + roomSize, rx + doorOffset + 6, ry + roomSize + connSize, cell.down.color | 0xFF000000);
             }
 
             if (cell.right.type == DungeonMapGrid.ConnectionType.ROOM_DIVIDER) {
-                Gui.drawRect(rx + roomSize, ry, rx + roomSize + connSize, ry + roomSize, cell.right.color | 0xFF000000);
+                DrawContextUtils.fill(rx + roomSize, ry, rx + roomSize + connSize, ry + roomSize, cell.right.color | 0xFF000000);
             } else if (cell.right.type == DungeonMapGrid.ConnectionType.CORRIDOR) {
-                Gui.drawRect(rx + roomSize, ry + doorOffset, rx + roomSize + connSize, ry + doorOffset + 6, cell.right.color | 0xFF000000);
+                DrawContextUtils.fill(rx + roomSize, ry + doorOffset, rx + roomSize + connSize, ry + doorOffset + 6, cell.right.color | 0xFF000000);
             }
         }
 
         for (DungeonMapGrid.Junction j : grid.getJunctions()) {
-            Gui.drawRect(j.px, j.py, j.px + connSize, j.py + connSize, j.color | 0xFF000000);
+            DrawContextUtils.fill(j.px, j.py, j.px + connSize, j.py + connSize, j.color | 0xFF000000);
         }
 
         int checkmarkStyle = cfg.rooms.mapCheckmark;

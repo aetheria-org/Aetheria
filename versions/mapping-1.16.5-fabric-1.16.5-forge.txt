@@ -4,6 +4,15 @@ net.fabricmc.api.Environment net.minecraftforge.api.distmarker.OnlyIn
 
 net.fabricmc.loader.api.ModContainer net.minecraftforge.fml.ModContainer
 
+net.minecraft.client.font.TextRenderer net.minecraft.client.gui.FontRenderer
+
+net.minecraft.client.world.ClientWorld net.minecraft.client.multiplayer.ClientLevel
+
+net.minecraft.nbt.NbtCompound net.minecraft.nbt.CompoundTag
+net.minecraft.nbt.NbtList net.minecraft.nbt.ListTag
+
+net.minecraft.client.gui.widget.TextFieldWidget net.minecraft.client.gui.components.EditBox
+
 net.minecraft.client.gui.screen.GameMenuScreen net.minecraft.client.gui.screens.PauseScreen
 
 net.minecraft.client.network.ClientPlayerEntity net.minecraft.client.player.LocalPlayer
@@ -59,6 +68,9 @@ net.minecraft.server.network.ServerPlayerEntity net.minecraft.server.level.Serve
 
 net.minecraft.text.MutableText net.minecraft.network.chat.MutableComponent
 net.minecraft.text.Style net.minecraft.network.chat.Style
+net.minecraft.text.Text net.minecraft.network.chat.Component
+net.minecraft.text.Text io.hamlook.aetheria.utils.compat.Text
+net.minecraft.text.LiteralText net.minecraft.network.chat.TextComponent
 
 net.minecraft.text.MutableText setStyle() setStyle()
 

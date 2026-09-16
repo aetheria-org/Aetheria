@@ -1,16 +1,19 @@
 package io.hamlook.aetheria.events;
 
-import io.hamlook.aetheria.api.event.AetheriaEvent;
-import net.minecraft.client.gui.ScaledResolution;
+import io.hamlook.aetheria.api.event.RenderingAetheriaEvent;
+import io.hamlook.aetheria.utils.compat.DrawContext;
 
-public class ASMRenderOverlayEvent extends AetheriaEvent {
+public class ASMRenderOverlayEvent extends RenderingAetheriaEvent {
 
-    public final ScaledResolution resolution;
+    public final int scaledWidth;
+    public final int scaledHeight;
     public final float partialTicks;
     public final int type;
 
-    public ASMRenderOverlayEvent(ScaledResolution resolution, float partialTicks, int type) {
-        this.resolution = resolution;
+    public ASMRenderOverlayEvent(DrawContext context, int scaledWidth, int scaledHeight, float partialTicks, int type) {
+        super(context);
+        this.scaledWidth = scaledWidth;
+        this.scaledHeight = scaledHeight;
         this.partialTicks = partialTicks;
         this.type = type;
     }

@@ -5,7 +5,9 @@ import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.utils.MediaSaver;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
@@ -64,7 +66,7 @@ public class ImageViewerScreen extends AetheriaBaseScreen {
 
     @Override
     public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
-        drawRect(0, 0, width, height, 0xC8101418);
+        DrawContextUtils.fill(0, 0, width, height, 0xC8101418);
         if (images.isEmpty()) {
             mc.displayGuiScreen(null);
             return;
@@ -98,22 +100,22 @@ public class ImageViewerScreen extends AetheriaBaseScreen {
             }
         } else {
             String label = img != null && img.loadFailed ? "Could not load image" : "Loading...";
-            drawCenteredString(fontRendererObj, label, width / 2, height / 2 - 8, 0xFF949BA4);
+            drawCenteredString(MinecraftCompat.getFontRenderer(), label, width / 2, height / 2 - 8, 0xFF949BA4);
         }
 
         ImageRef ref = images.get(current);
         String info = ref.name != null && !ref.name.isEmpty()
                 ? (current + 1) + " / " + images.size() + "  -  " + ref.name
                 : (current + 1) + " / " + images.size();
-        drawCenteredString(fontRendererObj, info, width / 2, 12, 0xFFB5BAC1);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), info, width / 2, 12, 0xFFB5BAC1);
 
         closeX = width - 36;
         closeY = 8;
         closeW = 24;
         closeH = 22;
         boolean closeHover = mouseX >= closeX && mouseX <= closeX + closeW && mouseY >= closeY && mouseY <= closeY + closeH;
-        drawRect(closeX, closeY, closeX + closeW, closeY + closeH, closeHover ? 0xFF404249 : 0xFF2B2D31);
-        fontRendererObj.drawStringWithShadow("X", closeX + (closeW - fontRendererObj.getStringWidth("X")) / 2f, closeY + 6, 0xFFDCDDDE);
+        DrawContextUtils.fill(closeX, closeY, closeX + closeW, closeY + closeH, closeHover ? 0xFF404249 : 0xFF2B2D31);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), "X", closeX + (closeW - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), "X")) / 2f, closeY + 6, 0xFFDCDDDE);
 
         if (MediaSaver.isMediaUrl(ref.url)) {
             drawSaveButton(mouseX, mouseY);
@@ -131,8 +133,8 @@ public class ImageViewerScreen extends AetheriaBaseScreen {
 
         if (downloadMsg != null && System.currentTimeMillis() < downloadMsgUntil) {
             int toastY = height - 44;
-            drawRect(20, toastY, width - 20, toastY + 20, 0xE62B2D31);
-            drawCenteredString(fontRendererObj, downloadMsg, width / 2, toastY + 6, 0xFFDCDDDE);
+            DrawContextUtils.fill(20, toastY, width - 20, toastY + 20, 0xE62B2D31);
+            drawCenteredString(MinecraftCompat.getFontRenderer(), downloadMsg, width / 2, toastY + 6, 0xFFDCDDDE);
         }
     }
 
@@ -140,13 +142,13 @@ public class ImageViewerScreen extends AetheriaBaseScreen {
         int bx = closeX - 64;
         int bw = 56;
         boolean hover = mouseX >= bx && mouseX <= bx + bw && mouseY >= closeY && mouseY <= closeY + closeH;
-        drawRect(bx, closeY, bx + bw, closeY + closeH, hover ? 0xFF404249 : 0xFF2B2D31);
-        fontRendererObj.drawStringWithShadow("Save", bx + (bw - fontRendererObj.getStringWidth("Save")) / 2f, closeY + 6, 0xFFDCDDDE);
+        DrawContextUtils.fill(bx, closeY, bx + bw, closeY + closeH, hover ? 0xFF404249 : 0xFF2B2D31);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), "Save", bx + (bw - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), "Save")) / 2f, closeY + 6, 0xFFDCDDDE);
     }
 
     private void drawArrowButton(int x, int y, boolean left, boolean enabled, int mouseX, int mouseY) {
         boolean hover = enabled && mouseX >= x && mouseX <= x + arrowW && mouseY >= y && mouseY <= y + arrowH;
-        drawRect(x, y, x + arrowW, y + arrowH, hover ? 0x66FFFFFF : 0x2AFFFFFF);
+        DrawContextUtils.fill(x, y, x + arrowW, y + arrowH, hover ? 0x66FFFFFF : 0x2AFFFFFF);
         int cx = x + arrowW / 2;
         int cy = y + arrowH / 2;
         int s = 8;
@@ -188,15 +190,15 @@ public class ImageViewerScreen extends AetheriaBaseScreen {
                     GlStateManagerCompat.disableBlend();
                 }
             } else {
-                drawRect(tx, ty, tx + thumb, ty + thumb, 0xFF232428);
+                DrawContextUtils.fill(tx, ty, tx + thumb, ty + thumb, 0xFF232428);
             }
             boolean sel = i == current;
             boolean hover = mouseX >= tx && mouseX <= tx + thumb && mouseY >= ty && mouseY <= ty + thumb;
             int border = sel ? 0xFF5865F2 : hover ? 0x99FFFFFF : 0x40FFFFFF;
-            drawRect(tx, ty, tx + thumb, ty + 2, border);
-            drawRect(tx, ty + thumb - 2, tx + thumb, ty + thumb, border);
-            drawRect(tx, ty, tx + 2, ty + thumb, border);
-            drawRect(tx + thumb - 2, ty, tx + thumb, ty + thumb, border);
+            DrawContextUtils.fill(tx, ty, tx + thumb, ty + 2, border);
+            DrawContextUtils.fill(tx, ty + thumb - 2, tx + thumb, ty + thumb, border);
+            DrawContextUtils.fill(tx, ty, tx + 2, ty + thumb, border);
+            DrawContextUtils.fill(tx + thumb - 2, ty, tx + thumb, ty + thumb, border);
             thumbRects.add(new int[]{tx, ty, thumb, thumb});
         }
     }

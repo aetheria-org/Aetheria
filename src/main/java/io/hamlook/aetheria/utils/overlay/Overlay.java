@@ -6,13 +6,11 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
 import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
-import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 
@@ -29,11 +27,8 @@ public abstract class Overlay {
     protected static final int ICON_GAP = 2;
 
     protected static final Minecraft mc = MinecraftCompat.getMinecraft();
-    protected static ScaledResolution sr;
-
-    protected static ScaledResolution currentSr() {
-        return sr != null ? sr : GuiScreenUtils.getScaledResolution();
-    }
+    protected static int cachedWidth;
+    protected static int cachedHeight;
 
     protected int lastW;
     protected int lastH;
@@ -57,20 +52,20 @@ public abstract class Overlay {
     private static void drawRoundedRectRaw(int x, int y, int w, int h, int r, int color) {
         r = Math.min(r, Math.min(w - x, h - y) / 2);
         if (r <= 0) {
-            Gui.drawRect(x, y, w, h, color);
+            DrawContextUtils.fill(x, y, w, h, color);
             return;
         }
 
-        Gui.drawRect(x + r, y, w - r, h, color);
-        Gui.drawRect(x, y + r, x + r, h - r, color);
-        Gui.drawRect(w - r, y + r, w, h - r, color);
+        DrawContextUtils.fill(x + r, y, w - r, h, color);
+        DrawContextUtils.fill(x, y + r, x + r, h - r, color);
+        DrawContextUtils.fill(w - r, y + r, w, h - r, color);
 
         for (int i = 0; i < r; i++) {
             int cut = cornerCut(r, i);
-            Gui.drawRect(x + i, y + cut, x + i + 1, y + r, color);
-            Gui.drawRect(w - i - 1, y + cut, w - i, y + r, color);
-            Gui.drawRect(x + i, h - r, x + i + 1, h - cut, color);
-            Gui.drawRect(w - i - 1, h - r, w - i, h - cut, color);
+            DrawContextUtils.fill(x + i, y + cut, x + i + 1, y + r, color);
+            DrawContextUtils.fill(w - i - 1, y + cut, w - i, y + r, color);
+            DrawContextUtils.fill(x + i, h - r, x + i + 1, h - cut, color);
+            DrawContextUtils.fill(w - i - 1, h - r, w - i, h - cut, color);
         }
     }
 
@@ -90,12 +85,12 @@ public abstract class Overlay {
         int height = h - y;
 
         if (width - 2 * r > 0) {
-            Gui.drawRect(x + r, y, w - r, y + t, color);
-            Gui.drawRect(x + r, h - t, w - r, h, color);
+            DrawContextUtils.fill(x + r, y, w - r, y + t, color);
+            DrawContextUtils.fill(x + r, h - t, w - r, h, color);
         }
         if (height - 2 * r > 0) {
-            Gui.drawRect(x, y + r, x + t, h - r, color);
-            Gui.drawRect(w - t, y + r, w, h - r, color);
+            DrawContextUtils.fill(x, y + r, x + t, h - r, color);
+            DrawContextUtils.fill(w - t, y + r, w, h - r, color);
         }
         if (r <= 0) return;
 
@@ -107,13 +102,13 @@ public abstract class Overlay {
             int cr = x + width - 1 - i;
             if (i >= t && innerW > 0) {
                 int ci = cornerCut(ri, i - t);
-                Gui.drawRect(cl, y + co, cl + 1, y + t + ci, color);
-                Gui.drawRect(cl, h - t - ci, cl + 1, h - co, color);
-                Gui.drawRect(cr, y + co, cr + 1, y + t + ci, color);
-                Gui.drawRect(cr, h - t - ci, cr + 1, h - co, color);
+                DrawContextUtils.fill(cl, y + co, cl + 1, y + t + ci, color);
+                DrawContextUtils.fill(cl, h - t - ci, cl + 1, h - co, color);
+                DrawContextUtils.fill(cr, y + co, cr + 1, y + t + ci, color);
+                DrawContextUtils.fill(cr, h - t - ci, cr + 1, h - co, color);
             } else {
-                Gui.drawRect(cl, y + co, cl + 1, h - co, color);
-                Gui.drawRect(cr, y + co, cr + 1, h - co, color);
+                DrawContextUtils.fill(cl, y + co, cl + 1, h - co, color);
+                DrawContextUtils.fill(cr, y + co, cr + 1, h - co, color);
             }
         }
     }
@@ -148,7 +143,7 @@ public abstract class Overlay {
                 int top = sy + Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
                 int bot = sh - Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
                 if (top < bot) {
-                    Gui.drawRect(sx + i, top, sx + i + 1, bot, ChromaColour.applyChromaShift(base, (sx + i) / (float) ss, 0, mode, size));
+                    DrawContextUtils.fill(sx + i, top, sx + i + 1, bot, ChromaColour.applyChromaShift(base, (sx + i) / (float) ss, 0, mode, size));
                 }
             }
         });
@@ -180,10 +175,10 @@ public abstract class Overlay {
             for (int i = 0; i < width; i++) {
                 int color = colorForColumn.applyAsInt(x + i);
                 if (i < t || i >= width - t) {
-                    Gui.drawRect(x + i, y, x + i + 1, h, color);
+                    DrawContextUtils.fill(x + i, y, x + i + 1, h, color);
                 } else {
-                    Gui.drawRect(x + i, y, x + i + 1, y + t, color);
-                    Gui.drawRect(x + i, h - t, x + i + 1, h, color);
+                    DrawContextUtils.fill(x + i, y, x + i + 1, y + t, color);
+                    DrawContextUtils.fill(x + i, h - t, x + i + 1, h, color);
                 }
             }
             return;
@@ -198,19 +193,19 @@ public abstract class Overlay {
             int colorR = colorForColumn.applyAsInt(cr);
             if (i >= t && innerW > 0) {
                 int ci = cornerCut(ri, i - t);
-                Gui.drawRect(cl, y + co, cl + 1, y + t + ci, colorL);
-                Gui.drawRect(cl, h - t - ci, cl + 1, h - co, colorL);
-                Gui.drawRect(cr, y + co, cr + 1, y + t + ci, colorR);
-                Gui.drawRect(cr, h - t - ci, cr + 1, h - co, colorR);
+                DrawContextUtils.fill(cl, y + co, cl + 1, y + t + ci, colorL);
+                DrawContextUtils.fill(cl, h - t - ci, cl + 1, h - co, colorL);
+                DrawContextUtils.fill(cr, y + co, cr + 1, y + t + ci, colorR);
+                DrawContextUtils.fill(cr, h - t - ci, cr + 1, h - co, colorR);
             } else {
-                Gui.drawRect(cl, y + co, cl + 1, h - co, colorL);
-                Gui.drawRect(cr, y + co, cr + 1, h - co, colorR);
+                DrawContextUtils.fill(cl, y + co, cl + 1, h - co, colorL);
+                DrawContextUtils.fill(cr, y + co, cr + 1, h - co, colorR);
             }
         }
         for (int i = r; i < width - r; i++) {
             int color = colorForColumn.applyAsInt(x + i);
-            Gui.drawRect(x + i, y, x + i + 1, y + t, color);
-            Gui.drawRect(x + i, h - t, x + i + 1, h, color);
+            DrawContextUtils.fill(x + i, y, x + i + 1, y + t, color);
+            DrawContextUtils.fill(x + i, h - t, x + i + 1, h, color);
         }
     }
 
@@ -268,7 +263,8 @@ public abstract class Overlay {
     @HandleEvent
     public final void onRenderOverlay(ASMRenderOverlayEvent event) {
         if (event.type != 0) return;
-        sr = event.resolution;
+        cachedWidth = event.scaledWidth;
+        cachedHeight = event.scaledHeight;
         if (!isLiveActive()) return;
         render(false);
     }
@@ -319,16 +315,15 @@ public abstract class Overlay {
 
         int w = getBaseWidth();
         for (String line : lines)
-            w = Math.max(w, MinecraftCompat.getFontRenderer().getStringWidth(line)
+            w = Math.max(w, DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), line)
                     + (getLineIcon(line) != null ? getIconSize() + ICON_GAP : 0) + PADDING * 2);
         int h = lines.size() * LINE_HEIGHT + PADDING * 2;
         lastW = w;
         lastH = h;
 
         Position pos = getPosition();
-        ScaledResolution resolution = currentSr();
-        int x = pos.getAbsX(resolution, (int) (w * scale));
-        int y = pos.getAbsY(resolution, (int) (h * scale));
+        int x = pos.getAbsX(cachedWidth, (int) (w * scale));
+        int y = pos.getAbsY(cachedHeight, (int) (h * scale));
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 

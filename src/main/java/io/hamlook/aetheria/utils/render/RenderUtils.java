@@ -13,7 +13,6 @@ import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.resources.DefaultPlayerSkin;
@@ -23,6 +22,7 @@ import org.lwjgl.opengl.GL14;
 
 import java.util.HashMap;
 import java.util.Map;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public final class RenderUtils {
 
@@ -40,17 +40,17 @@ public final class RenderUtils {
     public static void drawSearchBar(GuiTextField field, boolean useTexture, boolean useGoldTexture) {
         if (field == null) return;
 
-        int x = field.xPosition;
-        int y = field.yPosition;
-        int w = field.width;
-        int h = field.height;
+        int x = GuiScreenUtils.getX(field);
+        int y = GuiScreenUtils.getY(field);
+        int w = GuiScreenUtils.getW(field);
+        int h = GuiScreenUtils.getH(field);
 
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         ResourceLocation texture = useGoldTexture ? SEARCH_BAR_TEX_GOLD : SEARCH_BAR_TEX;
         if (!useTexture || !drawSearchBarTexture(texture, x, y, w, h)) {
-            Gui.drawRect(x, y, x + w, y + h, 0xFF2C2C2C);
-            Gui.drawRect(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF111111);
+            DrawContextUtils.fill(x, y, x + w, y + h, 0xFF2C2C2C);
+            DrawContextUtils.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF111111);
         }
 
         Minecraft mc = MinecraftCompat.getMinecraft();
@@ -67,8 +67,8 @@ public final class RenderUtils {
             int cursor = Math.min(field.getCursorPosition(), text.length());
             if (System.currentTimeMillis() % 1000 > 500) {
                 String beforeCursor = text.substring(0, cursor);
-                int beforeWidth = fr.getStringWidth(fr.trimStringToWidth(beforeCursor, maxWidth));
-                Gui.drawRect(x + 5 + beforeWidth, y - 5 + h / 2, x + 6 + beforeWidth, y + 4 + h / 2, 0xFFFFFFFF);
+                int beforeWidth = DrawContextUtils.getStringWidth(fr, fr.trimStringToWidth(beforeCursor, maxWidth));
+                DrawContextUtils.fill(x + 5 + beforeWidth, y - 5 + h / 2, x + 6 + beforeWidth, y + 4 + h / 2, 0xFFFFFFFF);
             }
         } else {
             fr.drawString(toDisplay, x + 5, textY, 0x8F8F8F);
@@ -131,24 +131,17 @@ public final class RenderUtils {
     }
 
     private static boolean resourceExists(ResourceLocation location) {
-        return RESOURCE_CACHE.computeIfAbsent(location, loc -> {
-            try {
-                MinecraftCompat.getMinecraft().getResourceManager().getResource(loc);
-                return true;
-            } catch (Exception ignored) {
-                return false;
-            }
-        });
+        return RESOURCE_CACHE.computeIfAbsent(location, loc -> ResourceCompat.openResource(loc) != null);
     }
 
     public static boolean drawButton(int x, int y, int w, int h, String tooltip, Runnable drawIcon) {
         NineSliceUtils.draw(Resources.storageBackground(1), x, y, w, h, 6, 18);
 
-        int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledResolution());
+        int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
         boolean hovered = mouse[0] >= x && mouse[0] < x + w && mouse[1] >= y && mouse[1] < y + h;
         if (drawIcon != null) drawIcon.run();
         if (hovered) {
-            Gui.drawRect(x + 1, y + 1, x + w - 2, y + h - 1, 0x33FFFFFF);
+            DrawContextUtils.fill(x + 1, y + 1, x + w - 2, y + h - 1, 0x33FFFFFF);
             if (tooltip != null && !tooltip.isEmpty()) {
                 TextRenderUtils.drawHoveringText(tooltip, mouse[0], mouse[1], MinecraftCompat.getFontRenderer());
             }
@@ -186,14 +179,14 @@ public final class RenderUtils {
         int main = alpha | 0x202020;
         int light = 0xff2e2e2e;
         int dark = 0xff101010;
-        Gui.drawRect(x, y, x + 1, y + height, light);
-        Gui.drawRect(x + 1, y, x + width, y + 1, light);
-        Gui.drawRect(x + width - 1, y + 1, x + width, y + height, dark);
-        Gui.drawRect(x + 1, y + height - 1, x + width - 1, y + height, dark);
-        Gui.drawRect(x + 1, y + 1, x + width - 1, y + height - 1, main);
+        DrawContextUtils.fill(x, y, x + 1, y + height, light);
+        DrawContextUtils.fill(x + 1, y, x + width, y + 1, light);
+        DrawContextUtils.fill(x + width - 1, y + 1, x + width, y + height, dark);
+        DrawContextUtils.fill(x + 1, y + height - 1, x + width - 1, y + height, dark);
+        DrawContextUtils.fill(x + 1, y + 1, x + width - 1, y + height - 1, main);
         if (shadow) {
-            Gui.drawRect(x + width, y + 2, x + width + 2, y + height + 2, 0x70000000);
-            Gui.drawRect(x + 2, y + height, x + width, y + height + 2, 0x70000000);
+            DrawContextUtils.fill(x + width, y + 2, x + width + 2, y + height + 2, 0x70000000);
+            DrawContextUtils.fill(x + 2, y + height, x + width, y + height + 2, 0x70000000);
         }
     }
 
@@ -345,7 +338,7 @@ public final class RenderUtils {
         if (name == null || name.isEmpty()) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        float stringWidth = MinecraftCompat.getFontRenderer().getStringWidth(name);
+        float stringWidth = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), name);
 
         GlStateManagerCompat.pushMatrix();
         GlStateManagerCompat.enableBlend();
@@ -368,7 +361,7 @@ public final class RenderUtils {
             float x2 = stringWidth / 2f + paddingX;
             float y2 = MinecraftCompat.getFontRenderer().FONT_HEIGHT / 2f + paddingY;
 
-            Gui.drawRect((int) x1, (int) y1, (int) x2, (int) y2, 0x60000000);
+            DrawContextUtils.fill((int) x1, (int) y1, (int) x2, (int) y2, 0x60000000);
             GlStateManagerCompat.enableTexture2D();
             MinecraftCompat.getFontRenderer().drawString(name, (int) (-stringWidth / 2f), (int) (-MinecraftCompat.getFontRenderer().FONT_HEIGHT / 2f), 0xFFFFFFFF);
         } else {
@@ -407,7 +400,7 @@ public final class RenderUtils {
         float yTextOffset = words.length * fontHeight / -2f;
         for (int i = 0; i < words.length; i++) {
             String word = words[i];
-            MinecraftCompat.getFontRenderer().drawString(word, (int) (-MinecraftCompat.getFontRenderer().getStringWidth(word) / 2f), (int) (yTextOffset + i * fontHeight), color, true);
+            MinecraftCompat.getFontRenderer().drawString(word, (int) (-DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), word) / 2f), (int) (yTextOffset + i * fontHeight), color, true);
         }
         GlStateManagerCompat.popMatrix();
     }
@@ -652,12 +645,12 @@ public final class RenderUtils {
         int y1 = y + h;
         r = Math.min(r,Math.min(x1-x,y1-y)/2);
         if (r <= 0) {
-            Gui.drawRect(x,y,x1,y1,color);
+            DrawContextUtils.fill(x,y,x1,y1,color);
             return;
         }
-        Gui.drawRect(x + r, y, x1 - r, y1, color);
-        Gui.drawRect(x, y + r, x + r, y1 - r, color);
-        Gui.drawRect(x1 - r, y + r, x1, y1 - r, color);
+        DrawContextUtils.fill(x + r, y, x1 - r, y1, color);
+        DrawContextUtils.fill(x, y + r, x + r, y1 - r, color);
+        DrawContextUtils.fill(x1 - r, y + r, x1, y1 - r, color);
 
         drawCornerArc(x, y, r, color, false, false);
         drawCornerArc(x1 - r, y, r, color, true, false);
@@ -667,16 +660,16 @@ public final class RenderUtils {
     public static void drawRoundedBorder(int x, int y, int x2, int y2, int r, int color) {
         r = Math.min(r, Math.min(x2 - x, y2 - y) / 2);
         if (r <= 0) {
-            Gui.drawRect(x, y, x2, y + 1, color);
-            Gui.drawRect(x, y2 - 1, x2, y2, color);
-            Gui.drawRect(x, y + 1, x + 1, y2 - 1, color);
-            Gui.drawRect(x2 - 1, y + 1, x2, y2 - 1, color);
+            DrawContextUtils.fill(x, y, x2, y + 1, color);
+            DrawContextUtils.fill(x, y2 - 1, x2, y2, color);
+            DrawContextUtils.fill(x, y + 1, x + 1, y2 - 1, color);
+            DrawContextUtils.fill(x2 - 1, y + 1, x2, y2 - 1, color);
             return;
         }
-        Gui.drawRect(x + r, y, x2 - r, y + 1, color);
-        Gui.drawRect(x + r, y2 - 1, x2 - r, y2, color);
-        Gui.drawRect(x, y + r, x + 1, y2 - r, color);
-        Gui.drawRect(x2 - 1, y + r, x2, y2 - r, color);
+        DrawContextUtils.fill(x + r, y, x2 - r, y + 1, color);
+        DrawContextUtils.fill(x + r, y2 - 1, x2 - r, y2, color);
+        DrawContextUtils.fill(x, y + r, x + 1, y2 - r, color);
+        DrawContextUtils.fill(x2 - 1, y + r, x2, y2 - r, color);
 
         drawCornerArc(x, y, r, color, false, false);
         drawCornerArc(x2 - r, y, r, color, true, false);
@@ -702,6 +695,6 @@ public final class RenderUtils {
     private static void drawArcPixel(int cx, int cy, int r, int color, boolean flipX, boolean flipY, int u, int v) {
         int px = flipX ? cx + (r - 1 - u) : cx + u;
         int py = flipY ? cy + (r - 1 - v) : cy + v;
-        Gui.drawRect(px, py, px + 1, py + 1, color);
+        DrawContextUtils.fill(px, py, px + 1, py + 1, color);
     }
 }

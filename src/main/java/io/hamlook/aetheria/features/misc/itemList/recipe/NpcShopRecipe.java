@@ -8,7 +8,8 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
+
+
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -56,8 +57,7 @@ public class NpcShopRecipe extends Recipe {
         int gridX = x + (width  - gridW) / 2;
         int gridY = y + (height - gridH) / 2;
 
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int sf = sr.getScaleFactor();
+        int sf = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(gridX * sf, (MinecraftCompat.getMinecraft().displayHeight - (gridY + gridH) * sf), gridW * sf, gridH * sf);
 

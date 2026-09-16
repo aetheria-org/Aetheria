@@ -5,6 +5,7 @@ import io.hamlook.aetheria.features.misc.itemList.recipe.Recipe;
 import io.hamlook.aetheria.features.misc.itemList.recipe.RecipeFactory;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
@@ -63,11 +64,11 @@ public class RecipeViewerGUI extends AetheriaBaseScreen {
             contentH = (item.baseLore != null ? item.baseLore.size() * 10 : 0) + 10;
             contentW = 200;
 
-            if (this.fontRendererObj != null) {
-                if (item.displayName != null) contentW = Math.max(contentW, this.fontRendererObj.getStringWidth(item.displayName));
+            if (MinecraftCompat.getFontRenderer() != null) {
+                if (item.displayName != null) contentW = Math.max(contentW, DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), item.displayName));
                 if (item.baseLore != null) {
                     for (String line : item.baseLore)
-                        contentW = Math.max(contentW, this.fontRendererObj.getStringWidth(line));
+                        contentW = Math.max(contentW, DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), line));
                 }
             }
         }
@@ -138,7 +139,7 @@ public class RecipeViewerGUI extends AetheriaBaseScreen {
 
     @Override
     public void onDrawScreen(int mx, int my, float pt) {
-        drawRect(0, 0, width, height, 0xA0000000);
+        DrawContextUtils.fill(0, 0, width, height, 0xA0000000);
         computeBox();
 
         NineSliceUtils.draw(Resources.storageBackground(1), boxX, boxY, boxW, boxH, 6, 18);
@@ -148,7 +149,7 @@ public class RecipeViewerGUI extends AetheriaBaseScreen {
         if (recipes.isEmpty()) {
             ItemStack stack = item.getStack();
             String nameStr = item.displayName != null ? item.displayName : "";
-            int nameW = fontRendererObj.getStringWidth(nameStr);
+            int nameW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), nameStr);
             int rowW = (stack != null ? 18 + 4 : 0) + nameW;
             int rowX = cx - rowW / 2;
             int rowY = boxY + 12;
@@ -157,13 +158,13 @@ public class RecipeViewerGUI extends AetheriaBaseScreen {
                 ItemRenderUtils.drawItemStack(stack, rowX, rowY - 4);
                 rowX += 22;
             }
-            fontRendererObj.drawStringWithShadow(nameStr, rowX, rowY, 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), nameStr, rowX, rowY, 0xFFFFFF);
 
             if (item.baseLore != null) {
                 int ly = boxY + 32;
                 for (String line : item.baseLore) {
                     if (ly + 10 > boxY + boxH - NAV_H) break;
-                    drawCenteredString(fontRendererObj, line, cx, ly, 0xFFFFFF);
+                    drawCenteredString(MinecraftCompat.getFontRenderer(), line, cx, ly, 0xFFFFFF);
                     ly += 10;
                 }
             }
@@ -174,38 +175,38 @@ public class RecipeViewerGUI extends AetheriaBaseScreen {
             String nameStr   = item.displayName != null ? item.displayName : "";
             ItemStack stack  = item.getStack();
 
-            int typeW = fontRendererObj.getStringWidth(typeLabel);
-            int nameW = fontRendererObj.getStringWidth(nameStr);
+            int typeW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), typeLabel);
+            int nameW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), nameStr);
             int iconW = stack != null ? 18 : 0;
 
             int totalW   = typeW + (iconW > 0 ? 4 + iconW : 0) + 4 + nameW;
             int currentX = cx - totalW / 2;
             int textY    = boxY + 12;
 
-            fontRendererObj.drawStringWithShadow(typeLabel, currentX, textY, current.typeLabelColor());
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), typeLabel, currentX, textY, current.typeLabelColor());
             currentX += typeW + 4;
 
             if (stack != null) {
                 ItemRenderUtils.drawItemStack(stack, currentX, textY - 4);
                 currentX += 18 + 4;
             }
-            fontRendererObj.drawStringWithShadow(nameStr, currentX, textY, 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), nameStr, currentX, textY, 0xFFFFFF);
 
             int contentX = boxX;
             int contentY = boxY + HEADER_H;
             int contentH = boxH - HEADER_H - NAV_H;
-            current.draw(mx, my, contentX, contentY, boxW, contentH, scrollY, fontRendererObj, this);
+            current.draw(mx, my, contentX, contentY, boxW, contentH, scrollY, MinecraftCompat.getFontRenderer(), this);
 
             if (recipes.size() > 1) {
                 int arrowY = boxY + boxH - NAV_H + 4;
-                drawCenteredString(fontRendererObj, "<", boxX + 20, arrowY, 0xFFFFFF);
-                drawCenteredString(fontRendererObj, ">", boxX + boxW - 20, arrowY, 0xFFFFFF);
-                drawCenteredString(fontRendererObj, "§7" + (recipeIndex + 1) + " / " + recipes.size(), cx, arrowY, 0xFFFFFF);
+                drawCenteredString(MinecraftCompat.getFontRenderer(), "<", boxX + 20, arrowY, 0xFFFFFF);
+                drawCenteredString(MinecraftCompat.getFontRenderer(), ">", boxX + boxW - 20, arrowY, 0xFFFFFF);
+                drawCenteredString(MinecraftCompat.getFontRenderer(), "§7" + (recipeIndex + 1) + " / " + recipes.size(), cx, arrowY, 0xFFFFFF);
             }
 
             List<String> tip = current.getTooltip(mx, my, contentX, contentY, boxW, contentH, scrollY);
             if (tip != null && !tip.isEmpty())
-                TextRenderUtils.drawHoveringText(tip, mx, my, fontRendererObj);
+                TextRenderUtils.drawHoveringText(tip, mx, my, MinecraftCompat.getFontRenderer());
         }
 
         if (ItemPaneRenderer.INSTANCE != null)

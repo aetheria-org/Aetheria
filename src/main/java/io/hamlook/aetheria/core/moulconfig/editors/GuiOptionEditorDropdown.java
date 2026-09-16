@@ -4,12 +4,12 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 
 public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
@@ -69,13 +69,13 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
             int main = 0xff202026;
             int blue = 0xff2355ad;
-            Gui.drawRect(left, top, left + 1, top + dropdownHeight, blue); //Left
-            Gui.drawRect(left + 1, top, left + dropdownWidth, top + 1, blue); //Top
-            Gui.drawRect(left + dropdownWidth - 1, top + 1, left + dropdownWidth, top + dropdownHeight, blue); //Right
-            Gui.drawRect(left + 1, top + dropdownHeight - 1, left + dropdownWidth - 1, top + dropdownHeight, blue); //Bottom
-            Gui.drawRect(left + 1, top + 1, left + dropdownWidth - 1, top + dropdownHeight - 1, main); //Middle
+            DrawContextUtils.fill(left, top, left + 1, top + dropdownHeight, blue); //Left
+            DrawContextUtils.fill(left + 1, top, left + dropdownWidth, top + 1, blue); //Top
+            DrawContextUtils.fill(left + dropdownWidth - 1, top + 1, left + dropdownWidth, top + dropdownHeight, blue); //Right
+            DrawContextUtils.fill(left + 1, top + dropdownHeight - 1, left + dropdownWidth - 1, top + dropdownHeight, blue); //Bottom
+            DrawContextUtils.fill(left + 1, top + 1, left + dropdownWidth - 1, top + dropdownHeight - 1, main); //Middle
 
-            Gui.drawRect(left + 1, top + 14 - 1, left + dropdownWidth - 1, top + 14, blue); //Bar
+            DrawContextUtils.fill(left + 1, top + 14 - 1, left + dropdownWidth - 1, top + 14, blue); //Bar
 
             int dropdownY = 13;
             for (String option : values) {

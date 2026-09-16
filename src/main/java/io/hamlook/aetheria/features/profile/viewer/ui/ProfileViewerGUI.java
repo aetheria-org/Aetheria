@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class ProfileViewerGUI extends AetheriaBaseScreen {
 
@@ -196,10 +197,10 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
                     profileButton = new PVButton(0, profileX, profileY, profileW, profileH, profile);
                     this.buttonList.add(profileButton);
                 } else {
-                    profileButton.xPosition = profileX;
-                    profileButton.yPosition = profileY;
-                    profileButton.width = profileW;
-                    profileButton.height = profileH;
+                    GuiScreenUtils.setX(profileButton, profileX);
+                    GuiScreenUtils.setY(profileButton, profileY);
+                    GuiScreenUtils.setW(profileButton, profileW);
+                    GuiScreenUtils.setH(profileButton, profileH);
                     profileButton.displayString = profile;
                 }
             }
@@ -214,10 +215,10 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
                 tabButton = new PVButton(1, tabX, tabY, tabW, tabH, tabName);
                 this.buttonList.add(tabButton);
             } else {
-                tabButton.xPosition = tabX;
-                tabButton.yPosition = tabY;
-                tabButton.width = tabW;
-                tabButton.height = tabH;
+                GuiScreenUtils.setX(tabButton, tabX);
+                GuiScreenUtils.setY(tabButton, tabY);
+                GuiScreenUtils.setW(tabButton, tabW);
+                GuiScreenUtils.setH(tabButton, tabH);
                 tabButton.displayString = tabName;
             }
 
@@ -269,10 +270,10 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
         int numProfiles = this.playerProfile.profiles.size();
         itemHeight = getScaled(20);
 
-        dropX = profileButton.xPosition;
-        dropW = profileButton.width;
+        dropX = GuiScreenUtils.getX(profileButton);
+        dropW = GuiScreenUtils.getW(profileButton);
         dropH = itemHeight * numProfiles;
-        dropY = profileButton.yPosition + profileButton.height;
+        dropY = GuiScreenUtils.getY(profileButton) + GuiScreenUtils.getH(profileButton);
 
         GlStateManagerCompat.pushMatrix();
         GlStateManagerCompat.translate(0, 0, 300);
@@ -305,10 +306,10 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
         int numTabs = this.tabs.size();
         tabItemHeight = getScaled(20);
 
-        tabDropX = tabButton.xPosition;
-        tabDropW = tabButton.width;
+        tabDropX = GuiScreenUtils.getX(tabButton);
+        tabDropW = GuiScreenUtils.getW(tabButton);
         tabDropH = tabItemHeight * numTabs;
-        tabDropY = tabButton.yPosition + tabButton.height;
+        tabDropY = GuiScreenUtils.getY(tabButton) + GuiScreenUtils.getH(tabButton);
 
         GlStateManagerCompat.pushMatrix();
         GlStateManagerCompat.translate(0, 0, 300);
@@ -378,8 +379,8 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
                         isDropdownOpen = false;
                         return;
                     }
-                } else if (profileButton != null && !(mouseX >= profileButton.xPosition && mouseX <= profileButton.xPosition + profileButton.width &&
-                        mouseY >= profileButton.yPosition && mouseY <= profileButton.yPosition + profileButton.height)) {
+                } else if (profileButton != null && !(mouseX >= GuiScreenUtils.getX(profileButton) && mouseX <= GuiScreenUtils.getX(profileButton) + GuiScreenUtils.getW(profileButton) &&
+                        mouseY >= GuiScreenUtils.getY(profileButton) && mouseY <= GuiScreenUtils.getY(profileButton) + GuiScreenUtils.getH(profileButton))) {
                     isDropdownOpen = false;
                 }
             }
@@ -396,8 +397,8 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
                         isTabDropdownOpen = false;
                         return;
                     }
-                } else if (tabButton != null && !(mouseX >= tabButton.xPosition && mouseX <= tabButton.xPosition + tabButton.width &&
-                        mouseY >= tabButton.yPosition && mouseY <= tabButton.yPosition + tabButton.height)) {
+                } else if (tabButton != null && !(mouseX >= GuiScreenUtils.getX(tabButton) && mouseX <= GuiScreenUtils.getX(tabButton) + GuiScreenUtils.getW(tabButton) &&
+                        mouseY >= GuiScreenUtils.getY(tabButton) && mouseY <= GuiScreenUtils.getY(tabButton) + GuiScreenUtils.getH(tabButton))) {
                     isTabDropdownOpen = false;
                 }
             }

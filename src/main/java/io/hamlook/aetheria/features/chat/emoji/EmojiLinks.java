@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.chat.emoji;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.ResourceLocation;
 
 import java.io.File;
@@ -50,7 +51,7 @@ public class EmojiLinks {
     }
 
     public static ResourceLocation getSpriteResource(String sprite){
-        return new ResourceLocation(BASE_RESOURCE, "emojis/" + sprite);
+        return TextCompat.createResourceLocation(BASE_RESOURCE, "emojis/" + sprite);
     }
 
     public static String getCustomEmojiJSON() {

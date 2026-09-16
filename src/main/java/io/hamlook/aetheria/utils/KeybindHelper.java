@@ -4,7 +4,6 @@ import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.Map;
@@ -132,19 +131,15 @@ public final class KeybindHelper {
     }
 
     // Coordinate helpers, poll-based (for draw/render)
-    public static int[] getMouseCoords(ScaledResolution sr) {
-        return getMouseCoords(sr.getScaledWidth(), sr.getScaledHeight());
-    }
-
     public static int[] getMouseCoords(int guiWidth, int guiHeight) {
         int mouseX = MouseCompat.getX() * guiWidth / MC.displayWidth;
         int mouseY = guiHeight - MouseCompat.getY() * guiHeight / MC.displayHeight - 1;
         return new int[]{mouseX, mouseY};
     }
 
-    public static float[] getMouseCoordsFloat(ScaledResolution sr) {
-        float mouseX = (float) (MouseCompat.getX() * sr.getScaledWidth_double() / MC.displayWidth);
-        float mouseY = (float) (sr.getScaledHeight_double() - MouseCompat.getY() * sr.getScaledHeight_double() / MC.displayHeight - 1);
+    public static float[] getMouseCoordsFloat(double guiWidth, double guiHeight) {
+        float mouseX = (float) (MouseCompat.getX() * guiWidth / MC.displayWidth);
+        float mouseY = (float) (guiHeight - MouseCompat.getY() * guiHeight / MC.displayHeight - 1);
         return new float[]{mouseX, mouseY};
     }
 

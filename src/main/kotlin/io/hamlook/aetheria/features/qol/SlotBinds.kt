@@ -40,7 +40,7 @@ class SlotBinds {
 
     private fun slotCenter(container: Container, slotIndex: Int, gui: GuiInventory): Pair<Int, Int>? {
         val slot = container.getSlot(slotIndex) ?: return null
-        return (slot.xDisplayPosition + gui.guiLeft + 8) to (slot.yDisplayPosition + gui.guiTop + 8)
+        return (slot.xDisplayPosition + InventoryCompat.getGuiLeft(gui) + 8) to (slot.yDisplayPosition + InventoryCompat.getGuiTop(gui) + 8)
     }
 
     private fun MutableMap<Int, Int>.removeBind(slot: Int) {
@@ -68,7 +68,7 @@ class SlotBinds {
         val (from, to) = if (clicked.isHotbar()) bound to clicked else if (bound.isHotbar()) clicked to bound else return
 
         InventoryCompat.windowClick(
-            InventoryCompat.getContainer(gui).windowId, from, to - 36, 2, MinecraftCompat.getLocalPlayer() ?: return
+            InventoryCompat.getWindowId(InventoryCompat.getContainer(gui)), from, to - 36, 2, MinecraftCompat.getLocalPlayer() ?: return
         )
         event.cancel()
     }

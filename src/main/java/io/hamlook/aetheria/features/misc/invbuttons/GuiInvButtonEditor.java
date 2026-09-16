@@ -12,11 +12,12 @@ import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
@@ -123,7 +124,7 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
                     InvButtonIconRenderer.renderIcon(btn.icon, bx + 1, by + 1);
                 }
             } else {
-                fontRendererObj.drawString("+", bx + 6, by + 5, 0xffcccccc);
+                DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "+", bx + 6, by + 5, 0xffcccccc, false);
             }
         }
 
@@ -136,15 +137,15 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
         int lx = guiLeft - 88 - 2 - 22;
         int ly = guiTop + 2;
 
-        Gui.drawRect(lx, ly, lx + 88, ly + 20, validClipboard() ? 0xFF404040 : 0xFF282828);
-        Gui.drawRect(lx + 1, ly + 1, lx + 87, ly + 19, 0xFF1a1a1a);
-        fontRendererObj.drawString("Load preset", lx + 4, ly + 4, 0xffaaaaaa);
-        fontRendererObj.drawString("from Clipboard", lx + 4, ly + 12, 0xffaaaaaa);
+        DrawContextUtils.fill(lx, ly, lx + 88, ly + 20, validClipboard() ? 0xFF404040 : 0xFF282828);
+        DrawContextUtils.fill(lx + 1, ly + 1, lx + 87, ly + 19, 0xFF1a1a1a);
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "Load preset", lx + 4, ly + 4, 0xffaaaaaa, false);
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "from Clipboard", lx + 4, ly + 12, 0xffaaaaaa, false);
 
-        Gui.drawRect(lx, ly + 24, lx + 88, ly + 44, 0xFF404040);
-        Gui.drawRect(lx + 1, ly + 25, lx + 87, ly + 43, 0xFF1a1a1a);
-        fontRendererObj.drawString("Save preset", lx + 4, ly + 28, 0xffaaaaaa);
-        fontRendererObj.drawString("to Clipboard", lx + 4, ly + 36, 0xffaaaaaa);
+        DrawContextUtils.fill(lx, ly + 24, lx + 88, ly + 44, 0xFF404040);
+        DrawContextUtils.fill(lx + 1, ly + 25, lx + 87, ly + 43, 0xFF1a1a1a);
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "Save preset", lx + 4, ly + 28, 0xffaaaaaa, false);
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "to Clipboard", lx + 4, ly + 36, 0xffaaaaaa, false);
     }
 
     private void drawPresetsPanel() {
@@ -153,9 +154,9 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
         mc.getTextureManager().bindTexture(EDITOR_TEX);
         GlStateManagerCompat.color(1, 1, 1, 1);
         Utils.drawTexturedRect(px, py, 80, ySize, editorXSize / 256f, (editorXSize + 80) / 256f, 41 / 256f, (41 + ySize) / 256f, GL11.GL_NEAREST);
-        fontRendererObj.drawString("§nPresets", px + 8, py + 6, 0xffa0a0a0);
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "§nPresets", px + 8, py + 6, 0xffa0a0a0, false);
         for (int i = 0; i < presetNames.size(); i++)
-            fontRendererObj.drawString(presetNames.get(i), px + 8, py + 20 + i * 10, 0xff909090);
+            DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), presetNames.get(i), px + 8, py + 20 + i * 10, 0xff909090, false);
     }
 
     private void drawEditorPanel(int mouseX, int mouseY) {
@@ -187,35 +188,34 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
         if (showArrow)
             Utils.drawTexturedRect(bx + 8 - 3, by + 18, 10, 5, 0, 6 / 256f, 36 / 256f, 41 / 256f, GL11.GL_NEAREST);
 
-        fontRendererObj.drawString("Command", editorLeft + 7, editorTop + 7, 0xffa0a0a0);
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "Command", editorLeft + 7, editorTop + 7, 0xffa0a0a0, false);
         commandTextField.setSize(editorXSize - 14, 16);
         commandTextField.setText(commandTextField.getText().replaceAll("^ +", ""));
         commandTextField.setPrependText(commandTextField.getText().startsWith("/") ? "" : "§7/§r");
         commandTextField.render(editorLeft + 7, editorTop + 19);
 
-        fontRendererObj.drawString("Background", editorLeft + 7, editorTop + 40, 0xffa0a0a0);
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "Background", editorLeft + 7, editorTop + 40, 0xffa0a0a0, false);
         for (int i = 0; i < BACKGROUND_TYPES; i++) {
             if (i == editingButton.backgroundIndex)
-                Gui.drawRect(editorLeft + 7 + 20 * i - 1, editorTop + 50 - 1, editorLeft + 7 + 20 * i + 19, editorTop + 50 + 19, 0xff0000ff);
+                DrawContextUtils.fill(editorLeft + 7 + 20 * i - 1, editorTop + 50 - 1, editorLeft + 7 + 20 * i + 19, editorTop + 50 + 19, 0xff0000ff);
             mc.getTextureManager().bindTexture(EDITOR_TEX);
             GlStateManagerCompat.color(1, 1, 1, 1);
             Utils.drawTexturedRect(editorLeft + 7 + 20 * i, editorTop + 50, 18, 18, i * 18 / 256f, (i * 18 + 18) / 256f, 0, 18 / 256f, GL11.GL_NEAREST);
         }
 
-        fontRendererObj.drawString("Icon Type", editorLeft + 7, editorTop + 74, 0xffa0a0a0);
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "Icon Type", editorLeft + 7, editorTop + 74, 0xffa0a0a0, false);
         String[] tabs = {"Items", "Skulls", "Extra"};
         for (int i = 0; i < ICON_TYPES; i++) {
             boolean sel = iconTypeIndex == i;
-            Gui.drawRect(editorLeft + 7 + 48 * i, editorTop + 84, editorLeft + 51 + 48 * i, editorTop + 96, sel ? 0xff0055ff : 0xff333333);
-            fontRendererObj.drawString(tabs[i], editorLeft + 9 + 48 * i, editorTop + 87, sel ? 0xffffffff : 0xffaaaaaa);
+            DrawContextUtils.fill(editorLeft + 7 + 48 * i, editorTop + 84, editorLeft + 51 + 48 * i, editorTop + 96, sel ? 0xff0055ff : 0xff333333);
+            DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), tabs[i], editorLeft + 9 + 48 * i, editorTop + 87, sel ? 0xffffffff : 0xffaaaaaa, false);
         }
 
-        fontRendererObj.drawString("Icon Search", editorLeft + 7, editorTop + 100, 0xffa0a0a0);
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "Icon Search", editorLeft + 7, editorTop + 100, 0xffa0a0a0, false);
         iconTextField.render(editorLeft + 7, editorTop + 110);
 
         GlStateManagerCompat.enableDepth();
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        GlScissorStack.push(editorLeft, editorTop + 130, editorLeft + editorXSize, editorTop + editorYSize - 8, sr);
+        GlScissorStack.push(editorLeft, editorTop + 130, editorLeft + editorXSize, editorTop + editorYSize - 8, GuiScreenUtils.getScaleFactor());
 
         synchronized (searchedIcons) {
             int max = Math.max(0, (searchedIcons.size() - 1) / 6 * 20 - 40);
@@ -225,7 +225,7 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
             if (scrollBarH > 54) scrollBarH = 54;
             int scrollBarY = (searchedIcons.size() > 18) ? (int) Math.floor(54f * ((scroll / 20f) / ((searchedIcons.size() - 18) / 6f))) : 0;
             if (scrollBarY + scrollBarH > 54) scrollBarY = 54 - scrollBarH;
-            Gui.drawRect(editorLeft + 137, editorTop + 139 + scrollBarY, editorLeft + 139, editorTop + 139 + scrollBarY + scrollBarH, 0xff202020);
+            DrawContextUtils.fill(editorLeft + 137, editorTop + 139 + scrollBarY, editorLeft + 139, editorTop + 139 + scrollBarY + scrollBarH, 0xff202020);
 
             int startIndex = Math.max(0, scroll / 20 * 6);
             int endIndex = Math.min(searchedIcons.size(), startIndex + 24);
@@ -240,7 +240,7 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
             }
         }
 
-        GlScissorStack.pop(sr);
+        GlScissorStack.pop(GuiScreenUtils.getScaleFactor());
         GlStateManagerCompat.translate(0, 0, -300);
     }
 

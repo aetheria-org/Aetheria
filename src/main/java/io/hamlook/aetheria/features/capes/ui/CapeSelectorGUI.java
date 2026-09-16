@@ -9,7 +9,6 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
@@ -56,10 +55,9 @@ public class CapeSelectorGUI extends AetheriaBaseScreen {
         String localPlayer = MinecraftCompat.getLocalPlayer() != null ? MinecraftCompat.getLocalPlayer().getGameProfile().getName() : "";
         Cape equipped = CapeManager.getCapeForPlayer(localPlayer);
         String equippedId = equipped != null ? equipped.id : null;
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int scaleFactor = sr.getScaleFactor();
+        int scaleFactor = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(boxX * scaleFactor, (sr.getScaledHeight() - (boxY + boxH)) * scaleFactor, boxW * scaleFactor, boxH * scaleFactor);
+        GL11.glScissor(boxX * scaleFactor, (GuiScreenUtils.getScaledWindowHeight() - (boxY + boxH)) * scaleFactor, boxW * scaleFactor, boxH * scaleFactor);
 
         for (CapeDisplay card : capes) {
             if (cardX + card.width < boxX || cardX > boxX + boxW) {

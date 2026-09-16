@@ -8,6 +8,7 @@ import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class PVButton extends GuiButton {
 
@@ -21,14 +22,14 @@ public class PVButton extends GuiButton {
         if (this.visible) {
             FontRenderer fontrenderer = MinecraftCompat.getFontRenderer();
             GlStateManagerCompat.color(1.0F, 1.0F, 1.0F, 1.0F);
-            this.hovered = mouseX >= this.xPosition && mouseY >= this.yPosition && mouseX < this.xPosition + this.width && mouseY < this.yPosition + this.height;
+            this.hovered = mouseX >= GuiScreenUtils.getX(this) && mouseY >= GuiScreenUtils.getY(this) && mouseX < GuiScreenUtils.getX(this) + GuiScreenUtils.getW(this) && mouseY < GuiScreenUtils.getY(this) + GuiScreenUtils.getH(this);
             GlStateManagerCompat.enableBlend();
             GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
             GlStateManagerCompat.blendFunc(770, 771);
             NineSliceUtils.draw(ProfileViewerGUI.CONTAINER_BG,xPosition,yPosition,width,height,6,18);
             this.mouseDragged(mc, mouseX, mouseY);
-            float centerX = this.xPosition + (this.width / 2.0f);
-            float centerY = this.yPosition + (this.height / 2.0f);
+            float centerX = GuiScreenUtils.getX(this) + (GuiScreenUtils.getW(this) / 2.0f);
+            float centerY = GuiScreenUtils.getY(this) + (GuiScreenUtils.getH(this) / 2.0f);
 
             TextRenderUtils.drawCenteredStringScaleAware(this.displayString, centerX, centerY, (ProfileViewerGUI.uiScale * 2f), false);
         }

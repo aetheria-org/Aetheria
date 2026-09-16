@@ -7,6 +7,7 @@ import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.LerpUtils;
 import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -14,8 +15,6 @@ import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.EnumChatFormatting;
 import org.lwjgl.opengl.GL11;
 
@@ -83,8 +82,8 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
         MinecraftCompat.getMinecraft().getTextureManager().bindTexture(DELETE);
         Utils.drawTexturedRect(x + width / 6 + 27, y + 45 - 7 - 13, 11, 14, GL11.GL_NEAREST);
 
-        Gui.drawRect(x + 5, y + 45, x + width - 5, y + height - 5, 0xffdddddd);
-        Gui.drawRect(x + 6, y + 46, x + width - 6, y + height - 6, 0xff000000);
+        DrawContextUtils.fill(x + 5, y + 45, x + width - 5, y + height - 5, 0xffdddddd);
+        DrawContextUtils.fill(x + 6, y + 46, x + width - 6, y + height - 6, 0xff000000);
 
         int i = 0;
         int yOff = 0;
@@ -131,11 +130,11 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
 
             int main = 0xff202026;
             int outline = 0xff404046;
-            Gui.drawRect(left, top, left + 1, top + dropdownHeight, outline); //Left
-            Gui.drawRect(left + 1, top, left + dropdownWidth, top + 1, outline); //Top
-            Gui.drawRect(left + dropdownWidth - 1, top + 1, left + dropdownWidth, top + dropdownHeight, outline); //Right
-            Gui.drawRect(left + 1, top + dropdownHeight - 1, left + dropdownWidth - 1, top + dropdownHeight, outline); //Bottom
-            Gui.drawRect(left + 1, top + 1, left + dropdownWidth - 1, top + dropdownHeight - 1, main); //Middle
+            DrawContextUtils.fill(left, top, left + 1, top + dropdownHeight, outline); //Left
+            DrawContextUtils.fill(left + 1, top, left + dropdownWidth, top + 1, outline); //Top
+            DrawContextUtils.fill(left + dropdownWidth - 1, top + 1, left + dropdownWidth, top + dropdownHeight, outline); //Right
+            DrawContextUtils.fill(left + 1, top + dropdownHeight - 1, left + dropdownWidth - 1, top + dropdownHeight, outline); //Bottom
+            DrawContextUtils.fill(left + 1, top + 1, left + dropdownWidth - 1, top + dropdownHeight - 1, main); //Middle
 
             int dropdownY = -1;
             for (int strIndex : remaining) {
@@ -159,8 +158,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
 
             if (opacity < 20) return;
 
-            ScaledResolution scaledResolution = GuiScreenUtils.getScaledResolution();
-            int[] mouse = KeybindHelper.getMouseCoords(scaledResolution);
+            int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
             int mouseX = mouse[0], mouseY = mouse[1];
 
             String str = exampleText[currentDragging];

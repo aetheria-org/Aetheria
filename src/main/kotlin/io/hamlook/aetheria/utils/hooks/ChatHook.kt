@@ -3,15 +3,19 @@ package io.hamlook.aetheria.utils.hooks
 import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.features.chat.ChatLineHook
 import io.hamlook.aetheria.features.chat.GuiChatHook
+import io.hamlook.aetheria.utils.compat.DrawContextUtils
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.compat.TextCompat
 import net.minecraft.client.gui.ChatLine
-import net.minecraft.client.gui.Gui
 import net.minecraft.client.gui.GuiChat
-import net.minecraft.client.gui.ScaledResolution
-import net.minecraft.util.EnumChatFormatting
-import net.minecraft.util.MathHelper
+//#if MC < 1.21
+//#else
+//$$ import net.minecraft.client.gui.DrawContext
+//$$ import net.minecraft.client.gui.PlayerSkinDrawer
+//$$ import net.minecraft.client.gui.hud.ChatHudLine.Visible
+//#endif
 
 object ChatHook {
 
@@ -19,6 +23,8 @@ object ChatHook {
     var renderLine: ChatLine? = null
     @JvmStatic
     var hoveredLine: ChatLine? = null
+    @JvmStatic
+    var renderVisible: Any? = null
     @JvmStatic
     var animationStart: Long = 0L
 
@@ -68,10 +74,11 @@ object ChatHook {
             newColor = if (config.chat.transparentChat) 0x22AAAACC else 0x60AAAACC
         }
 
-        Gui.drawRect(left, top, newRight, bottom, newColor)
+        DrawContextUtils.fill(left, top, newRight, bottom, newColor)
         return newColor
     }
 
+    //#if MC < 1.21
     @JvmStatic
     fun drawChatHead(
         x: Float, y: Float, color: Int, renderLine: ChatLine?
@@ -99,16 +106,43 @@ object ChatHook {
         GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0)
         GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, headAlpha)
 
-        Gui.drawScaledCustomSizeModalRect(
-            x.toInt(), (y - 1f).toInt(), 8f, 8f, 8, 8, 8, 8, 64f, 64f
+        DrawContextUtils.drawScaledCustomSizeModalRect(
+            x.toInt(), (y - 1f).toInt(), 8f, 8f, 8, 8, 8f, 8f, 64f, 64f
         )
-        Gui.drawScaledCustomSizeModalRect(
-            x.toInt(), (y - 1f).toInt(), 40f, 8f, 8, 8, 8, 8, 64f, 64f
+        DrawContextUtils.drawScaledCustomSizeModalRect(
+            x.toInt(), (y - 1f).toInt(), 40f, 8f, 8, 8, 8f, 8f, 64f, 64f
         )
 
         GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f)
         return x + 10f
     }
+    //#else
+    //$$ @JvmStatic
+    //$$ fun drawChatHead(
+    //$$     context: DrawContext, x: Float, y: Float, color: Int, renderLine: Any?
+    //$$ ): Float {
+    //$$     val config = ATHRConfig.feature ?: return x
+    //$$     if (!config.chat.chatHeads) return x
+    //$$     if (renderLine !is ChatLineHook) return x
+    //$$
+    //$$     val info = renderLine.`athr$getPlayerInfo`() ?: run {
+    //$$         if (renderLine.`athr$isHeadHidden`() || config.chat.offsetNonPlayerMessages) {
+    //$$             return x + 10f
+    //$$         }
+    //$$         return x
+    //$$     }
+    //$$     if (renderLine.`athr$isHeadHidden`()) return x + 10f
+    //$$
+    //$$     val alpha = (color shr 24) and 0xFF
+    //$$     val headAlpha = if (alpha == 0) 1.0f else alpha / 255f
+    //$$
+    //$$     GlStateManagerCompat.enableBlend()
+    //$$     GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, headAlpha)
+    //$$     PlayerSkinDrawer.draw(context, info.getSkinTextures(), x.toInt(), (y - 1f).toInt(), 8)
+    //$$     GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f)
+    //$$     return x + 10f
+    //$$ }
+    //#endif
 
     @JvmStatic
     fun offsetClickX(mouseX: Int): Int {
@@ -120,11 +154,10 @@ object ChatHook {
     fun getHoveredChatLine(
         drawnChatLines: List<ChatLine>, scrollPos: Int, chatScale: Float, lineCount: Int, rawMouseX: Int, rawMouseY: Int
     ): ChatLine? {
-        val sr: ScaledResolution = GuiScreenUtils.getScaledResolution()
-        val scaleFactor = sr.scaleFactor
+        val scaleFactor = GuiScreenUtils.getScaleFactor()
         val mouseY = rawMouseY / scaleFactor
-        var y = (sr.scaledHeight - 27) - mouseY
-        y = MathHelper.floor_float(y.toFloat() / chatScale)
+        var y = (GuiScreenUtils.getScaledWindowHeight() - 27) - mouseY
+        y = TextCompat.floor(y.toFloat() / chatScale)
         if (y < 0) return null
 
         val visibleLines = Math.min(lineCount, drawnChatLines.size)
@@ -145,14 +178,48 @@ object ChatHook {
         if (!config.chat.chatCopyEnabled) return null
 
         return if (useFullMsg) {
+            //#if MC < 1.21
             val hook = line as? ChatLineHook
             val fullMsg = hook?.`athr$getFullMessage`()
-            val src = fullMsg ?: line.chatComponent
-            val raw = src.formattedText
-            if (formatted) raw else EnumChatFormatting.getTextWithoutFormattingCodes(raw)
+            val src = fullMsg ?: TextCompat.getChatLineContent(line)
+            val raw = TextCompat.getFormattedText(src)
+            if (formatted) raw else TextCompat.getTextWithoutFormattingCodes(raw)
+            //#else
+            //$$ val raw = TextCompat.getFormattedText(TextCompat.getChatLineContent(line))
+            //$$ if (formatted) raw else TextCompat.getTextWithoutFormattingCodes(raw)
+            //#endif
         } else {
-            val raw = line.chatComponent.formattedText
-            if (formatted) raw else EnumChatFormatting.getTextWithoutFormattingCodes(raw)
+            val raw = TextCompat.getFormattedText(TextCompat.getChatLineContent(line))
+            if (formatted) raw else TextCompat.getTextWithoutFormattingCodes(raw)
         }
     }
+
+    //#if MC < 1.21
+    //#else
+    //$$ @JvmStatic
+    //$$ fun computeHoveredVisible(
+    //$$     visibles: List<Visible>, scrollPos: Int, chatScale: Float, lineCount: Int, mouseX: Int, mouseY: Int
+    //$$ ) {
+    //$$     hoveredLine = null
+    //$$     val config = ATHRConfig.feature ?: return
+    //$$     if (!config.chat.chatCopyEnabled) return
+    //$$     if (MinecraftCompat.getCurrentScreen() !is ChatScreen) return
+    //$$     val screen = MinecraftCompat.getCurrentScreen() as? GuiChatHook ?: return
+    //$$     if (!screen.`athr$isTypingMode`()) return
+    //$$     var y = (GuiScreenUtils.getScaledWindowHeight() - 27) - mouseY
+    //$$     y = TextCompat.floor(y.toFloat() / chatScale)
+    //$$     if (y < 0) return
+    //$$
+    //$$     val visibleLines = Math.min(lineCount, visibles.size)
+    //$$     val lineHeight = MinecraftCompat.getFontRenderer().fontHeight + 1
+    //$$
+    //$$     if (y < MinecraftCompat.getFontRenderer().fontHeight * visibleLines + visibleLines) {
+    //$$         val index = y / lineHeight + scrollPos
+    //$$         if (index in visibles.indices) {
+    //$$             val hook = visibles[index] as? ChatLineHook
+    //$$             if (hook != null) hoveredLine = hook.`athr$getParentLine`()
+    //$$         }
+    //$$     }
+    //$$ }
+    //#endif
 }

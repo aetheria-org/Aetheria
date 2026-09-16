@@ -1,7 +1,9 @@
 package io.hamlook.aetheria.mixins.renderer;
 
+//#if MC < 1.21
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.RenderItemOverlayEvent;
+import io.hamlook.aetheria.utils.compat.DrawContext;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.ItemStack;
@@ -22,6 +24,7 @@ public class MixinRenderItem {
     @Inject(method = "renderItemOverlayIntoGUI", at = @At("TAIL"))
     private void ATHR$onItemOverlay(FontRenderer fr, ItemStack stack, int x, int y, String text, CallbackInfo ci) {
         if (stack != null)
-            new RenderItemOverlayEvent(stack, x, y).post();
+            new RenderItemOverlayEvent(new DrawContext(), stack, x, y).post();
     }
 }
+//#endif

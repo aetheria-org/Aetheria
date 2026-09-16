@@ -5,6 +5,7 @@ import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -28,7 +29,7 @@ public class InvButtonIconRenderer {
 
         if (icon.startsWith("extra:")) {
             String name = icon.substring("extra:".length());
-            ResourceLocation loc = new ResourceLocation("aetheria", "invbuttons/extraicons/" + name + ".png");
+            ResourceLocation loc = TextCompat.createResourceLocation("aetheria", "invbuttons/extraicons/" + name + ".png");
             MinecraftCompat.getMinecraft().getTextureManager().bindTexture(loc);
             GlStateManagerCompat.color(1, 1, 1, 1);
             Utils.drawTexturedRect(x, y, 16, 16);

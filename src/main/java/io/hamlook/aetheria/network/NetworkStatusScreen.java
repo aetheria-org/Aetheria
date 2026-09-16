@@ -2,11 +2,11 @@ package io.hamlook.aetheria.network;
 
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.gui.Gui;
 
 import java.util.*;
 
@@ -74,9 +74,9 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
 
     @Override
     protected void drawPageContent(int mouseX, int mouseY, int slide) {
-        drawCenteredString(fontRendererObj, "§lAetheria — Network Status", px + PANEL_W / 2, py + 10, 0xFFFFFF);
-        drawCenteredString(fontRendererObj, "§7Some features are disabled by your network settings.", px + PANEL_W / 2, py + 22, 0x888888);
-        Gui.drawRect(px + 20, py + 34, px + PANEL_W - 20, py + 35, 0x33FFFFFF);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), "§lAetheria — Network Status", px + PANEL_W / 2, py + 10, 0xFFFFFF);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), "§7Some features are disabled by your network settings.", px + PANEL_W / 2, py + 22, 0x888888);
+        DrawContextUtils.fill(px + 20, py + 34, px + PANEL_W - 20, py + 35, 0x33FFFFFF);
 
         for (int i = 0; i < sections.size(); i++) {
             drawSection(mouseX, mouseY, sections.get(i), i);
@@ -91,7 +91,7 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
 
         if (inRow(mouseX, mouseY, index)) {
             read.put(info.gate, true);
-            if (!inButton(mouseX, mouseY, index)) Gui.drawRect(x, y, x + w, y + ROW_H, 0x14FFFFFF);
+            if (!inButton(mouseX, mouseY, index)) DrawContextUtils.fill(x, y, x + w, y + ROW_H, 0x14FFFFFF);
         }
 
         String line1;
@@ -104,20 +104,20 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
             line2 = "§7while " + info.settingName + " are off.";
         }
 
-        fontRendererObj.drawString(trimToWidth(line1, btnX - x - 16), x + 8, y + 6, 0xFFFFFF, true);
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), trimToWidth(line1, btnX - x - 16), x + 8, y + 6, 0xFFFFFF, true);
 
         String hint = "§7Hover ▸ list";
-        int hintX = btnX - fontRendererObj.getStringWidth(hint) - 8;
-        fontRendererObj.drawString(trimToWidth(line2, hintX - x - 16), x + 8, y + 20, 0xCCCCCC, true);
-        fontRendererObj.drawString(hint, hintX, y + 20, 0x888888, true);
+        int hintX = btnX - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), hint) - 8;
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), trimToWidth(line2, hintX - x - 16), x + 8, y + 20, 0xCCCCCC, true);
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), hint, hintX, y + 20, 0x888888, true);
 
         drawButton(btnX, buttonY(index), BTN_W, BTN_H, "§aTurn on " + NetworkStatusInfo.enableLabel(info.gate), 0x55FF55, inButton(mouseX, mouseY, index));
     }
 
     private String trimToWidth(String text, int maxW) {
-        if (fontRendererObj.getStringWidth(text) <= maxW) return text;
+        if (DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), text) <= maxW) return text;
         StringBuilder sb = new StringBuilder(text);
-        while (sb.length() > 0 && fontRendererObj.getStringWidth(sb.toString()) > maxW) {
+        while (sb.length() > 0 && DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), sb.toString()) > maxW) {
             sb.deleteCharAt(sb.length() - 1);
             if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '§') sb.deleteCharAt(sb.length() - 1);
         }
@@ -126,8 +126,8 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
 
     private void drawButton(int x, int y, int w, int h, String label, int color, boolean hovered) {
         RenderUtils.drawFloatingRectDark(x, y, w, h, false);
-        if (hovered) Gui.drawRect(x, y, x + w, y + h, 0x18FFFFFF);
-        drawCenteredString(fontRendererObj, label, x + w / 2, y + (h - fontRendererObj.FONT_HEIGHT) / 2, color);
+        if (hovered) DrawContextUtils.fill(x, y, x + w, y + h, 0x18FFFFFF);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), label, x + w / 2, y + (h - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2, color);
     }
 
     @Override
@@ -135,7 +135,7 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
         for (int i = 0; i < sections.size(); i++) {
             NetworkStatusInfo.GateInfo info = sections.get(i);
             if (inRow(mouseX, mouseY, i) && !inButton(mouseX, mouseY, i)) {
-                TextRenderUtils.drawHoveringText(Arrays.asList(info.affected), mouseX, mouseY, fontRendererObj);
+                TextRenderUtils.drawHoveringText(Arrays.asList(info.affected), mouseX, mouseY, MinecraftCompat.getFontRenderer());
                 return;
             }
         }
@@ -151,7 +151,7 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
         int doneX = px + PANEL_W - NAV_PAD - DONE_W;
         if (!allRead()) {
             drawButton(doneX, ny, DONE_W, NAV_H, "§7Done", 0x666666, false);
-            drawCenteredString(fontRendererObj, "§7Hover every section to enable.", px + PANEL_W / 2, ny + NAV_H + 4, 0x555555);
+            drawCenteredString(MinecraftCompat.getFontRenderer(), "§7Hover every section to enable.", px + PANEL_W / 2, ny + NAV_H + 4, 0x555555);
         } else {
             boolean doneHover = inBox(mouseX, mouseY, doneX, ny, DONE_W, NAV_H);
             drawButton(doneX, ny, DONE_W, NAV_H, "§aDone §8— Don't show again", doneHover ? 0x55FF55 : 0xAAAAAA, doneHover);

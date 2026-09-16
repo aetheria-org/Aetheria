@@ -16,9 +16,7 @@ import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.util.IChatComponent;
@@ -135,9 +133,8 @@ public abstract class VisitorPanelBase {
         float scaledH = h * s;
 
         Position pos = pc != null ? pc.panelPos : new Position(-350, 120, false, false);
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int x = pos.getAbsX(sr, Math.round(scaledW));
-        int y = pos.getAbsY(sr, Math.round(scaledH));
+        int x = pos.getAbsX(GuiScreenUtils.getScaledWindowWidth(), Math.round(scaledW));
+        int y = pos.getAbsY(GuiScreenUtils.getScaledWindowHeight(), Math.round(scaledH));
         if (pos.isCenterX()) x -= Math.round(scaledW / 2f);
         if (pos.isCenterY()) y -= Math.round(scaledH / 2f);
 
@@ -184,10 +181,10 @@ public abstract class VisitorPanelBase {
                 boolean clickableRow = line.kind == VisitorLine.Kind.ITEM;
 
                 if (line.kind == VisitorLine.Kind.SEPARATOR) {
-                    Gui.drawRect(PAD, dy + 1, w - PAD, dy + 2, 0x40FFFFFF);
+                    DrawContextUtils.fill(PAD, dy + 1, w - PAD, dy + 2, 0x40FFFFFF);
                 } else {
                     // Highlight only where clicking actually does something
-                    if (hovered && clickableRow) Gui.drawRect(2, dy, w - 2, dy + rowH, 0x28FFFFFF);
+                    if (hovered && clickableRow) DrawContextUtils.fill(2, dy, w - 2, dy + rowH, 0x28FFFFFF);
                     int tx = PAD;
                     if (clickableRow) {
                         // renderItemIcon manages its own lighting/GL state; the

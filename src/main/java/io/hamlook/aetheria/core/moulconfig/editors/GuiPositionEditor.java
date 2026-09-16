@@ -7,12 +7,11 @@ import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Keyboard;
 
 import java.util.function.IntSupplier;
@@ -72,15 +71,18 @@ public class GuiPositionEditor extends AetheriaBaseScreen {
 
     @Override
     public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
-        ScaledResolution scaledResolution;
+        int scaledW, scaledH;
         if (guiScaleOverride >= 0) {
-            scaledResolution = Utils.pushGuiScale(guiScaleOverride);
+            int[] pushDims = Utils.pushGuiScale(guiScaleOverride);
+            scaledW = pushDims[0];
+            scaledH = pushDims[1];
         } else {
-            scaledResolution = GuiScreenUtils.getScaledResolution();
+            scaledW = GuiScreenUtils.getScaledWindowWidth();
+            scaledH = GuiScreenUtils.getScaledWindowHeight();
         }
 
-        this.width = scaledResolution.getScaledWidth();
-        this.height = scaledResolution.getScaledHeight();
+        this.width = scaledW;
+        this.height = scaledH;
         int[] coords = KeybindHelper.getMouseCoords(this.width, this.height);
         mouseX = coords[0];
         mouseY = coords[1];
@@ -88,44 +90,40 @@ public class GuiPositionEditor extends AetheriaBaseScreen {
         drawDefaultBackground();
 
         if (clicked) {
-            grabbedX += position.moveX(mouseX - grabbedX, scaledW(), scaledResolution);
-            grabbedY += position.moveY(mouseY - grabbedY, scaledH(), scaledResolution);
+            grabbedX += position.moveX(mouseX - grabbedX, scaledW(), scaledW);
+            grabbedY += position.moveY(mouseY - grabbedY, scaledH(), scaledH);
         }
 
         renderCallback.run();
 
-        int x = position.getAbsX(scaledResolution, scaledW());
-        int y = position.getAbsY(scaledResolution, scaledH());
+        int x = position.getAbsX(scaledW, scaledW());
+        int y = position.getAbsY(scaledH, scaledH());
 
         if (position.isCenterX()) x -= scaledW() / 2;
         if (position.isCenterY()) y -= scaledH() / 2;
-        Gui.drawRect(x, y, x + scaledW(), y + scaledH(), 0x80404040);
+        DrawContextUtils.fill(x, y, x + scaledW(), y + scaledH(), 0x80404040);
 
         if (guiScaleOverride >= 0) {
             Utils.pushGuiScale(-1);
         }
 
-        scaledResolution = GuiScreenUtils.getScaledResolution();
-        Utils.drawStringCentered("Position Editor", MinecraftCompat.getFontRenderer(), scaledResolution.getScaledWidth() / 2, 8, true, 0xffffff);
-        Utils.drawStringCentered("R to Reset - Arrow keys/mouse to move", MinecraftCompat.getFontRenderer(), (float) scaledResolution.getScaledWidth() / 2, 18, true, 0xffffff);
+        int textW = GuiScreenUtils.getScaledWindowWidth();
+        Utils.drawStringCentered("Position Editor", MinecraftCompat.getFontRenderer(), textW / 2, 8, true, 0xffffff);
+        Utils.drawStringCentered("R to Reset - Arrow keys/mouse to move", MinecraftCompat.getFontRenderer(), (float) textW / 2, 18, true, 0xffffff);
     }
 
     @Override
     protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
 
         if (mouseButton == 0) {
-            ScaledResolution scaledResolution;
-            if (guiScaleOverride >= 0) {
-                scaledResolution = Utils.pushGuiScale(guiScaleOverride);
-            } else {
-                scaledResolution = GuiScreenUtils.getScaledResolution();
-            }
+            int screenW = GuiScreenUtils.getScaledWindowWidth();
+            int screenH = GuiScreenUtils.getScaledWindowHeight();
             int[] coords = KeybindHelper.getMouseCoords(width, height);
             mouseX = coords[0];
             mouseY = coords[1];
 
-            int x = position.getAbsX(scaledResolution, scaledW());
-            int y = position.getAbsY(scaledResolution, scaledH());
+            int x = position.getAbsX(screenW, scaledW());
+            int y = position.getAbsY(screenH, scaledH());
             if (position.isCenterX()) x -= scaledW() / 2;
             if (position.isCenterY()) y -= scaledH() / 2;
 
@@ -133,10 +131,6 @@ public class GuiPositionEditor extends AetheriaBaseScreen {
                 clicked = true;
                 grabbedX = mouseX;
                 grabbedY = mouseY;
-            }
-
-            if (guiScaleOverride >= 0) {
-                Utils.pushGuiScale(-1);
             }
         }
     }
@@ -156,14 +150,16 @@ public class GuiPositionEditor extends AetheriaBaseScreen {
         } else if (!clicked) {
             boolean shiftHeld = KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) || KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT);
             int dist = shiftHeld ? 10 : 1;
+            int sw = GuiScreenUtils.getScaledWindowWidth();
+            int sh = GuiScreenUtils.getScaledWindowHeight();
             if (keyCode == Keyboard.KEY_DOWN) {
-                position.moveY(dist, scaledH(), GuiScreenUtils.getScaledResolution());
+                position.moveY(dist, scaledH(), sh);
             } else if (keyCode == Keyboard.KEY_UP) {
-                position.moveY(-dist, scaledH(), GuiScreenUtils.getScaledResolution());
+                position.moveY(-dist, scaledH(), sh);
             } else if (keyCode == Keyboard.KEY_LEFT) {
-                position.moveX(-dist, scaledW(), GuiScreenUtils.getScaledResolution());
+                position.moveX(-dist, scaledW(), sw);
             } else if (keyCode == Keyboard.KEY_RIGHT) {
-                position.moveX(dist, scaledW(), GuiScreenUtils.getScaledResolution());
+                position.moveX(dist, scaledW(), sw);
             }
         }
     }
@@ -177,18 +173,21 @@ public class GuiPositionEditor extends AetheriaBaseScreen {
     protected void onMouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
 
         if (clicked) {
-            ScaledResolution scaledResolution;
+            int screenW, screenH;
             if (guiScaleOverride >= 0) {
-                scaledResolution = Utils.pushGuiScale(guiScaleOverride);
+                int[] pushDims = Utils.pushGuiScale(guiScaleOverride);
+                screenW = pushDims[0];
+                screenH = pushDims[1];
             } else {
-                scaledResolution = GuiScreenUtils.getScaledResolution();
+                screenW = GuiScreenUtils.getScaledWindowWidth();
+                screenH = GuiScreenUtils.getScaledWindowHeight();
             }
             int[] coords = KeybindHelper.getMouseCoords(width, height);
             mouseX = coords[0];
             mouseY = coords[1];
 
-            grabbedX += position.moveX(mouseX - grabbedX, scaledW(), scaledResolution);
-            grabbedY += position.moveY(mouseY - grabbedY, scaledH(), scaledResolution);
+            grabbedX += position.moveX(mouseX - grabbedX, scaledW(), screenW);
+            grabbedY += position.moveY(mouseY - grabbedY, scaledH(), screenH);
             positionChangedCallback.run();
 
             if (guiScaleOverride >= 0) {

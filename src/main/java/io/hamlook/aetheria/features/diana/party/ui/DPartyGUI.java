@@ -13,7 +13,6 @@ import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
@@ -22,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 /**
  * Compact non-fullscreen party finder styled after ChatFilterGUI (BetterContainers
@@ -73,7 +74,7 @@ public class DPartyGUI extends AetheriaBaseScreen {
     @Override
     protected void onInitGui() {
         KeyboardCompat.enableRepeatEvents(true);
-        passwordField = new GuiTextField(0, fontRendererObj, 0, 0, 180, 16);
+        passwordField = new GuiTextField(0, MinecraftCompat.getFontRenderer(), 0, 0, 180, 16);
 
         boxW = getScaledX(525);
         boxH = getScaledY(390);
@@ -475,7 +476,7 @@ public class DPartyGUI extends AetheriaBaseScreen {
         if (loading) {
             TextRenderUtils.drawStringScaleAware("Loading parties...", listX + getScaledX(14), listY + getScaledY(14), textScale * 0.85f, false);
         } else if (loadError != null) {
-            TextRenderUtils.drawStringScaled(loadError, fontRendererObj, listX + getScaledX(14), listY + getScaledY(14), true, 0xFFFF6B6B, textScale * 0.85f);
+            TextRenderUtils.drawStringScaled(loadError, MinecraftCompat.getFontRenderer(), listX + getScaledX(14), listY + getScaledY(14), true, 0xFFFF6B6B, textScale * 0.85f);
         } else if (parties.isEmpty()) {
             TextRenderUtils.drawStringScaleAware("No Diana parties are active right now.", listX + getScaledX(14), listY + getScaledY(14), textScale * 0.85f, false);
         } else {
@@ -489,10 +490,10 @@ public class DPartyGUI extends AetheriaBaseScreen {
         }
 
         if (toast != null && System.currentTimeMillis() < toastUntil) {
-            int tw = fontRendererObj.getStringWidth(toast);
+            int tw = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), toast);
             int tx = Math.max(getScaledX(10), (width - tw) / 2 - 12);
-            drawRect(tx - 6, height - getScaledY(30), tx + tw + 12, height - getScaledY(12), 0xE62B2D31);
-            fontRendererObj.drawStringWithShadow(toast, tx, height - getScaledY(25), 0xFFFFFFFF);
+            DrawContextUtils.fill(tx - 6, height - getScaledY(30), tx + tw + 12, height - getScaledY(12), 0xE62B2D31);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), toast, tx, height - getScaledY(25), 0xFFFFFFFF);
         }
 
     }
@@ -556,13 +557,13 @@ public class DPartyGUI extends AetheriaBaseScreen {
 
         float titleScale = textScale * 1.1f;
         float subScale = textScale * 0.75f;
-        title = fontRendererObj.trimStringToWidth(title, (int) (textMaxW / titleScale));
-        creator = fontRendererObj.trimStringToWidth(creator, (int) (textMaxW / subScale));
-        membersText = fontRendererObj.trimStringToWidth(membersText, (int) (textMaxW / subScale));
+        title = MinecraftCompat.getFontRenderer().trimStringToWidth(title, (int) (textMaxW / titleScale));
+        creator = MinecraftCompat.getFontRenderer().trimStringToWidth(creator, (int) (textMaxW / subScale));
+        membersText = MinecraftCompat.getFontRenderer().trimStringToWidth(membersText, (int) (textMaxW / subScale));
 
-        TextRenderUtils.drawStringScaled(title, fontRendererObj, textX, cy + getScaledY(8), true, 0xFFFFFFFF, titleScale);
-        TextRenderUtils.drawStringScaled(creator, fontRendererObj, textX, cy + getScaledY(22), true, 0xFF949BA4, subScale);
-        TextRenderUtils.drawStringScaled(membersText, fontRendererObj, textX, cy + getScaledY(36), true, 0xFFB5BAC1, subScale);
+        TextRenderUtils.drawStringScaled(title, MinecraftCompat.getFontRenderer(), textX, cy + getScaledY(8), true, 0xFFFFFFFF, titleScale);
+        TextRenderUtils.drawStringScaled(creator, MinecraftCompat.getFontRenderer(), textX, cy + getScaledY(22), true, 0xFF949BA4, subScale);
+        TextRenderUtils.drawStringScaled(membersText, MinecraftCompat.getFontRenderer(), textX, cy + getScaledY(36), true, 0xFFB5BAC1, subScale);
 
         int[] btn = buttonRect(cx, cy);
         boolean onBtn = inRect(mouseX, mouseY, btn);
@@ -599,33 +600,32 @@ public class DPartyGUI extends AetheriaBaseScreen {
 
     private void drawPasswordPrompt(int mouseX, int mouseY) {
         int[] box = passwordBoxRect();
-        drawRect(0, 0, width, height, 0x66000000);
-        drawRect(box[0], box[1], box[0] + box[2], box[1] + box[3], 0xFF313338);
-        drawRect(box[0], box[1], box[0] + box[2], box[1] + 2, 0xFFF2C94C);
+        DrawContextUtils.fill(0, 0, width, height, 0x66000000);
+        DrawContextUtils.fill(box[0], box[1], box[0] + box[2], box[1] + box[3], 0xFF313338);
+        DrawContextUtils.fill(box[0], box[1], box[0] + box[2], box[1] + 2, 0xFFF2C94C);
 
-        drawCenteredString(fontRendererObj, "Password required", box[0] + box[2] / 2, box[1] + 16, 0xFFFFFFFF);
-        drawCenteredString(fontRendererObj, fontRendererObj.trimStringToWidth(passwordPromptParty.name, box[2] - 24),
+        drawCenteredString(MinecraftCompat.getFontRenderer(), "Password required", box[0] + box[2] / 2, box[1] + 16, 0xFFFFFFFF);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), MinecraftCompat.getFontRenderer().trimStringToWidth(passwordPromptParty.name, box[2] - 24),
                 box[0] + box[2] / 2, box[1] + 28, 0xFF949BA4);
 
-        passwordField.xPosition = box[0] + (box[2] - 180) / 2;
-        passwordField.yPosition = box[1] + 44;
+        GuiScreenUtils.setX(passwordField, box[0] + (box[2] - 180) / 2);
+        GuiScreenUtils.setY(passwordField, box[1] + 44);
         passwordField.drawTextBox();
 
         int joinX = box[0] + box[2] / 2 - 78, joinY = box[1] + box[3] - 30;
         boolean joinHover = mouseX >= joinX && mouseX <= joinX + 74 && mouseY >= joinY && mouseY <= joinY + 20;
-        drawRect(joinX, joinY, joinX + 74, joinY + 20, joinHover ? 0xFF5865F2 : 0xFF404249);
-        drawCenteredString(fontRendererObj, busy ? "..." : "Join", joinX + 37, joinY + 6, 0xFFFFFFFF);
+        DrawContextUtils.fill(joinX, joinY, joinX + 74, joinY + 20, joinHover ? 0xFF5865F2 : 0xFF404249);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), busy ? "..." : "Join", joinX + 37, joinY + 6, 0xFFFFFFFF);
 
         boolean cancelHover = mouseX >= joinX + 82 && mouseX <= joinX + 156 && mouseY >= joinY && mouseY <= joinY + 20;
-        drawRect(joinX + 82, joinY, joinX + 156, joinY + 20, cancelHover ? 0xFF35373C : 0xFF2B2D31);
-        drawCenteredString(fontRendererObj, "Cancel", joinX + 119, joinY + 6, 0xFFFFFFFF);
+        DrawContextUtils.fill(joinX + 82, joinY, joinX + 156, joinY + 20, cancelHover ? 0xFF35373C : 0xFF2B2D31);
+        drawCenteredString(MinecraftCompat.getFontRenderer(), "Cancel", joinX + 119, joinY + 6, 0xFFFFFFFF);
     }
 
     // ------------------------------------------------------------ scrollbar
 
     private void startScissor(int x, int y, int width, int height) {
-        ScaledResolution res = GuiScreenUtils.getScaledResolution();
-        int scale = res.getScaleFactor();
+        int scale = GuiScreenUtils.getScaleFactor();
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + height) * scale, width * scale, height * scale);
@@ -638,10 +638,10 @@ public class DPartyGUI extends AetheriaBaseScreen {
     private void drawScrollbar(int trackX, int listY, int listH, int totalH, int scrollY, int maxScroll) {
         if (maxScroll <= 0) return;
         int barW = getScaledX(5);
-        drawRect(trackX, listY, trackX + barW, listY + listH, 0x44000000);
+        DrawContextUtils.fill(trackX, listY, trackX + barW, listY + listH, 0x44000000);
         int thumbH = Math.max(getScaledY(20), listH * listH / Math.max(listH, totalH));
         int thumbY = listY + (int) ((float) scrollY / maxScroll * (listH - thumbH));
-        drawRect(trackX, thumbY, trackX + barW, thumbY + thumbH, 0xFFAAAAAA);
+        DrawContextUtils.fill(trackX, thumbY, trackX + barW, thumbY + thumbH, 0xFFAAAAAA);
     }
 
     private boolean tryStartScrollbarDrag(int mouseX, int mouseY, int trackX, int listY, int listH, int totalH, int scrollY, int maxScroll) {

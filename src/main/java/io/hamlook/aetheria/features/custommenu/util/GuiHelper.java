@@ -6,7 +6,14 @@ import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
 import io.hamlook.aetheria.features.custommenu.selector.CMMSelectorGUI;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraft.client.gui.*;
+import net.minecraft.client.gui.GuiControls;
+import net.minecraft.client.gui.GuiCreateWorld;
+import net.minecraft.client.gui.GuiLanguage;
+import net.minecraft.client.gui.GuiMultiplayer;
+import net.minecraft.client.gui.GuiOptions;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.GuiSelectWorld;
+import net.minecraft.client.gui.GuiVideoSettings;
 
 import java.util.HashMap;
 import java.util.Map;

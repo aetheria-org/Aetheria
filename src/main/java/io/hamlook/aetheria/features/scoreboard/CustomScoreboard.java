@@ -9,14 +9,15 @@ import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.ScoreboardCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.data.TablistParser;
 import io.hamlook.aetheria.utils.overlay.Overlay;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.overlay.OverlayUtils;
 import lombok.Getter;
-import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 
 import java.util.*;
@@ -130,7 +131,7 @@ public class CustomScoreboard extends Overlay {
     // alignment config: 0=Left, 1=Center, 2=Right
 
     private int xFor(String line, int boxW, int alignment) {
-        int w = MinecraftCompat.getFontRenderer().getStringWidth(line);
+        int w = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), line);
         switch (alignment) {
             case 1: return PAD_X + (boxW - PAD_X * 2 - w) / 2;
             case 2: return boxW - PAD_X - w;
@@ -436,18 +437,17 @@ public class CustomScoreboard extends Overlay {
 
         int maxW = minWidth;
         for (String line : lines)
-            maxW = Math.max(maxW, MinecraftCompat.getFontRenderer().getStringWidth(line));
+            maxW = Math.max(maxW, DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), line));
 
         int boxW = maxW + PAD_X * 2;
         int boxH = lines.size() * lh + PAD_Y * 2 - LINE_GAP;
         lastW = boxW;
         lastH = boxH;
 
-        ScaledResolution resolution = currentSr();
         Position pos = getPosition();
 
-        int x = pos.getAbsX(resolution, (int) (boxW * scale));
-        int y = pos.getAbsY(resolution, (int) (boxH * scale));
+        int x = pos.getAbsX(GuiScreenUtils.getScaledWindowWidth(), (int) (boxW * scale));
+        int y = pos.getAbsY(GuiScreenUtils.getScaledWindowHeight(), (int) (boxH * scale));
         if (pos.isCenterX()) x -= (int) (boxW * scale / 2);
         if (pos.isCenterY()) y -= (int) (boxH * scale / 2);
 
@@ -466,7 +466,7 @@ public class CustomScoreboard extends Overlay {
         if (SkyblockData.isOnSkyblock()) {
             // Line 0 is the Skyblock title — always centered
             String firstLine = lines.get(0);
-            int titleX = (boxW - MinecraftCompat.getFontRenderer().getStringWidth(firstLine)) / 2;
+            int titleX = (boxW - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), firstLine)) / 2;
             MinecraftCompat.getFontRenderer().drawStringWithShadow(firstLine, titleX, textY, -1);
             textY += lh;
             for (int i = 1; i < lines.size(); i++) {
@@ -477,7 +477,7 @@ public class CustomScoreboard extends Overlay {
         } else {
             // Outside Skyblock — first line always centered, rest use alignment
             String firstLine = lines.get(0);
-            int titleX = (boxW - MinecraftCompat.getFontRenderer().getStringWidth(firstLine)) / 2;
+            int titleX = (boxW - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), firstLine)) / 2;
             MinecraftCompat.getFontRenderer().drawStringWithShadow(firstLine, titleX, textY, -1);
             textY += lh;
             for (int i = 1; i < lines.size(); i++) {

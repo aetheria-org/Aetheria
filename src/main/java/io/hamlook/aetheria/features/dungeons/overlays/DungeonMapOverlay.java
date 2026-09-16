@@ -20,7 +20,6 @@ import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 import net.minecraft.client.entity.EntityPlayerSP;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.storage.MapData;
@@ -120,7 +119,8 @@ public class DungeonMapOverlay extends Overlay {
         if (info == null && !preview) return;
 
         float scale = getScale();
-        ScaledResolution sr = Overlay.sr != null ? Overlay.sr : GuiScreenUtils.getScaledResolution();
+        int screenW = Overlay.cachedWidth != 0 ? Overlay.cachedWidth : GuiScreenUtils.getScaledWindowWidth();
+        int screenH = Overlay.cachedHeight != 0 ? Overlay.cachedHeight : GuiScreenUtils.getScaledWindowHeight();
         Position pos = getPosition();
 
         int gridW = lastW;
@@ -128,8 +128,8 @@ public class DungeonMapOverlay extends Overlay {
         float scaledW = gridW * scale;
         float scaledH = gridH * scale;
 
-        int bx = pos.getAbsX(sr, (int) scaledW);
-        int by = pos.getAbsY(sr, (int) scaledH);
+        int bx = pos.getAbsX(screenW, (int) scaledW);
+        int by = pos.getAbsY(screenH, (int) scaledH);
         if (pos.isCenterX()) bx -= (int) scaledW / 2;
         if (pos.isCenterY()) by -= (int) scaledH / 2;
 

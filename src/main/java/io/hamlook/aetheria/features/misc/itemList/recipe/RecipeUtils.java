@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.misc.itemList.recipe;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import net.minecraft.client.gui.FontRenderer;
@@ -23,8 +24,8 @@ public final class RecipeUtils {
 
         GlStateManagerCompat.pushMatrix();
         GlStateManagerCompat.translate(0, 0, 300); // Render above the item stack
-        int strW = fr.getStringWidth(amount);
-        fr.drawStringWithShadow(amount, sx + 17 - strW, sy + 9, 0xFFFFFF);
+        int strW = DrawContextUtils.getStringWidth(fr, amount);
+        DrawContextUtils.drawTextWithShadow(fr, amount, sx + 17 - strW, sy + 9, 0xFFFFFF);
         GlStateManagerCompat.popMatrix();
     }
 

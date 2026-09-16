@@ -1,0 +1,8 @@
+accessWidener v2 named
+
+accessible field net/minecraft/client/gui/screen/ingame/HandledScreen focusedSlot Lnet/minecraft/screen/slot/Slot;
+accessible field net/minecraft/client/gui/screen/ingame/HandledScreen x I
+accessible field net/minecraft/client/gui/screen/ingame/HandledScreen y I
+accessible method net/minecraft/client/gui/screen/Screen addDrawableChild (Lnet/minecraft/client/gui/Element;)Lnet/minecraft/client/gui/Element;
+accessible method net/minecraft/client/gui/screen/Screen clearChildren ()V
+accessible method net/minecraft/client/gui/screen/Screen children ()Ljava/util/List;

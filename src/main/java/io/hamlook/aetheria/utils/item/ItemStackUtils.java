@@ -2,6 +2,7 @@
 
 package io.hamlook.aetheria.utils.item;
 
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
@@ -22,7 +23,7 @@ public class ItemStackUtils {
         FontRenderer fr = MinecraftCompat.getFontRenderer();
         GlStateManagerCompat.disableDepth();
         GlStateManagerCompat.disableBlend();
-        fr.drawStringWithShadow(tip, x + 17 - fr.getStringWidth(tip), y + 9, color);
+        fr.drawStringWithShadow(tip, x + 17 - DrawContextUtils.getStringWidth(fr, tip), y + 9, color);
         GlStateManagerCompat.enableDepth();
     }
 }

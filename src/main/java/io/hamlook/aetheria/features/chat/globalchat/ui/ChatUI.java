@@ -18,7 +18,6 @@ import io.hamlook.aetheria.utils.MediaSaver;
 import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
@@ -32,6 +31,8 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 /**
  * A Discord-style GUI for the global chat feature: a channel list down the left,
@@ -42,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * (matches the fields already used elsewhere in this codebase, e.g. GCImage's
  * use of {@code MinecraftCompat.getMinecraft().getTextureManager()}). If this mod
  * targets a different mapping set (e.g. {@code fontRenderer} instead of
- * {@code fontRendererObj} on newer versions), rename accordingly.
+ * {@code MinecraftCompat.getFontRenderer()} on newer versions), rename accordingly.
  * <p>
  * Open with {@code MinecraftCompat.getMinecraft().displayGuiScreen(new ChatUI())}, or
  * {@link #open()}.
@@ -171,7 +172,7 @@ public class ChatUI extends AetheriaBaseScreen {
         }
     }
 
-    /** Drop-in replacement for {@code fontRendererObj.drawStringWithShadow}: FontRenderer doesn't
+    /** Drop-in replacement for {@code MinecraftCompat.getFontRenderer().drawStringWithShadow}: FontRenderer doesn't
      *  enable GL blending on its own, so a translucent alpha byte in the color (from {@link #fadeColor})
      *  was being ignored and text rendered fully opaque even while the avatar/images correctly faded.
      *  Only wrap with blend state when actually translucent — keeps the common (opaque) path cheap. */
@@ -179,10 +180,10 @@ public class ChatUI extends AetheriaBaseScreen {
         if (msgAlpha < 0.999f && !msgFailed) {
             GlStateManagerCompat.enableBlend();
             GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
-            fontRendererObj.drawStringWithShadow(text, x, y, color);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), text, x, y, color);
             GlStateManagerCompat.disableBlend();
         } else {
-            fontRendererObj.drawStringWithShadow(text, x, y, color);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), text, x, y, color);
         }
     }
 
@@ -207,7 +208,7 @@ public class ChatUI extends AetheriaBaseScreen {
         int inputWidth = width - SIDEBAR_WIDTH - PADDING * 2;
         inputField = new ChatInputField(inputX + 8, boxY + 2, inputWidth - 16 - EMOJI_BUTTON_W * 2 - 24, INPUT_HEIGHT - 4);
         editField = new ChatInputField(editBoxX, editBoxY, editBoxWidth, INPUT_HEIGHT);
-        emojiSearchField = new GuiTextField(0, fontRendererObj, 0, 0, 0, 16);
+        emojiSearchField = new GuiTextField(0, MinecraftCompat.getFontRenderer(), 0, 0, 0, 16);
         emojiSearchField.setEnableBackgroundDrawing(false);
         emojiSearchField.setMaxStringLength(32);
     }
@@ -464,7 +465,7 @@ public class ChatUI extends AetheriaBaseScreen {
 
     @Override
     protected void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
-        drawRect(0, 0, width, height, 0xFF313338);
+        DrawContextUtils.fill(0, 0, width, height, 0xFF313338);
 
         if (selectedChannel != null && GlobalChat.channels.get(selectedChannel.channelID) != selectedChannel) {
             Channel replacement = null;
@@ -512,7 +513,7 @@ public class ChatUI extends AetheriaBaseScreen {
             editField.y = editBoxY;
             editField.width = editBoxWidth;
             editField.height = editBoxHeight;
-            drawRect(editBoxX, editBoxY, editBoxX + editBoxWidth, editBoxY + editBoxHeight, 0xFF383A40);
+            DrawContextUtils.fill(editBoxX, editBoxY, editBoxX + editBoxWidth, editBoxY + editBoxHeight, 0xFF383A40);
             editField.draw();
         }
         drawEmojiPanel(mouseX, mouseY);
@@ -522,7 +523,7 @@ public class ChatUI extends AetheriaBaseScreen {
         if (downloadMsg != null && System.currentTimeMillis() < downloadMsgUntil) {
             int toastBoxY = height - INPUT_HEIGHT - PADDING;
             int toastY = toastBoxY - 30;
-            drawRect(SIDEBAR_WIDTH, toastY, width, toastY + 20, 0xE62B2D31);
+            DrawContextUtils.fill(SIDEBAR_WIDTH, toastY, width, toastY + 20, 0xE62B2D31);
             drawText(downloadMsg, SIDEBAR_WIDTH + PADDING, toastY + 6, 0xFFDCDDDE);
         }
     }
@@ -532,8 +533,8 @@ public class ChatUI extends AetheriaBaseScreen {
         int boxY = height - INPUT_HEIGHT - PADDING;
         int bx = SIDEBAR_WIDTH + PADDING;
         int by = boxY - 26;
-        drawRect(bx, by, width - PADDING, boxY, 0xFF2B2D31);
-        drawRect(bx, by, bx + 3, boxY, 0xFF5865F2);
+        DrawContextUtils.fill(bx, by, width - PADDING, boxY, 0xFF2B2D31);
+        DrawContextUtils.fill(bx, by, bx + 3, boxY, 0xFF5865F2);
 
         String replyName = pendingReply.authorDisplay != null ? pendingReply.authorDisplay
                 : (pendingReply.author == null ? "a message" : pendingReply.author);
@@ -550,7 +551,7 @@ public class ChatUI extends AetheriaBaseScreen {
                 mentionNames.put(entry.getKey(), entry.getValue().display());
             }
         }
-        List<RenderLine> lines = DiscordMarkdown.parse(bannerText, null, mentionNames, fontRendererObj,
+        List<RenderLine> lines = DiscordMarkdown.parse(bannerText, null, mentionNames, MinecraftCompat.getFontRenderer(),
                 width - SIDEBAR_WIDTH - PADDING * 2 - 40);
         if (!lines.isEmpty()) {
             drawSpans(lines.get(0).spans, bx + 10, by + 8, 0xFFB5BAC1, true);
@@ -563,7 +564,7 @@ public class ChatUI extends AetheriaBaseScreen {
     }
 
     private void drawSidebar(int mouseX, int mouseY) {
-        drawRect(0, 0, SIDEBAR_WIDTH, height, 0xFF2B2D31);
+        DrawContextUtils.fill(0, 0, SIDEBAR_WIDTH, height, 0xFF2B2D31);
         drawText("CHANNELS", 10, 12, 0xFF949BA4);
 
         if (cachedChannelList == null || GlobalChat.channelsVersion != cachedChannelListVersion) {
@@ -581,10 +582,10 @@ public class ChatUI extends AetheriaBaseScreen {
             boolean hovered = mouseX >= 4 && mouseX <= SIDEBAR_WIDTH - 4 && mouseY >= y && mouseY <= y + 26;
 
             if (selected) {
-                drawRect(4, y, SIDEBAR_WIDTH - 4, y + 26, 0xFF404249);
-                drawRect(0, y + 3, 4, y + 23, 0xFF5865F2);
+                DrawContextUtils.fill(4, y, SIDEBAR_WIDTH - 4, y + 26, 0xFF404249);
+                DrawContextUtils.fill(0, y + 3, 4, y + 23, 0xFF5865F2);
             } else if (hovered) {
-                drawRect(4, y, SIDEBAR_WIDTH - 4, y + 26, 0xFF35373C);
+                DrawContextUtils.fill(4, y, SIDEBAR_WIDTH - 4, y + 26, 0xFF35373C);
             }
 
             int unread = channel.unreadCount.get();
@@ -592,12 +593,12 @@ public class ChatUI extends AetheriaBaseScreen {
             int badgeReserve = 0;
             if (unread > 0 && !selected) {
                 String badgeText = unread > 99 ? "99+" : String.valueOf(unread);
-                int badgeW = Math.max(16, fontRendererObj.getStringWidth(badgeText) + 8);
+                int badgeW = Math.max(16, DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), badgeText) + 8);
                 badgeReserve = badgeW + 8;
                 int bx = SIDEBAR_WIDTH - 8 - badgeW;
                 int by = y + 5;
-                drawRect(bx, by, bx + badgeW, by + 16, unreadPing ? 0xFFED4245 : 0xFF4E5058);
-                drawText(badgeText, bx + (badgeW - fontRendererObj.getStringWidth(badgeText)) / 2f, by + 4, 0xFFFFFFFF);
+                DrawContextUtils.fill(bx, by, bx + badgeW, by + 16, unreadPing ? 0xFFED4245 : 0xFF4E5058);
+                drawText(badgeText, bx + (badgeW - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), badgeText)) / 2f, by + 4, 0xFFFFFFFF);
             }
 
             // Unread channels get a brighter, bolded name so the sidebar reads at a glance which
@@ -605,7 +606,7 @@ public class ChatUI extends AetheriaBaseScreen {
             // from every modern chat app, instead of every channel looking identical until clicked.
             boolean unbold = unread == 0 || selected;
             String prefix = unbold ? "" : "§l";
-            String label = fontRendererObj.trimStringToWidth(prefix + "# " + channel.channelName, SIDEBAR_WIDTH - 22 - badgeReserve);
+            String label = MinecraftCompat.getFontRenderer().trimStringToWidth(prefix + "# " + channel.channelName, SIDEBAR_WIDTH - 22 - badgeReserve);
             int nameColor = selected ? 0xFFFFFFFF : (unread > 0 ? 0xFFF2F3F5 : 0xFFB5BAC1);
             drawText(label, 14, y + 9, nameColor);
 
@@ -619,7 +620,7 @@ public class ChatUI extends AetheriaBaseScreen {
 
     private void drawMarkdownBar(int mouseX, int mouseY) {
         int top = height - MARKDOWN_BAR_H;
-        drawRect(0, top, SIDEBAR_WIDTH, height, 0xFF1E1F22);
+        DrawContextUtils.fill(0, top, SIDEBAR_WIDTH, height, 0xFF1E1F22);
 
         int gap = 6;
         int btnH = 20;
@@ -647,7 +648,7 @@ public class ChatUI extends AetheriaBaseScreen {
         int dbw = SIDEBAR_WIDTH - 12;
         int dbh = 18;
         boolean dbHover = mouseX >= 6 && mouseX <= 6 + dbw && mouseY >= dby && mouseY <= dby + dbh;
-        drawRect(6, dby, 6 + dbw, dby + dbh, dbHover ? 0xFF404249 : 0xFF2B2D31);
+        DrawContextUtils.fill(6, dby, 6 + dbw, dby + dbh, dbHover ? 0xFF404249 : 0xFF2B2D31);
         String label = "``` " + selectedCodeLang + (langDropdownOpen ? " ▲" : " ▼");
         drawText(label, 11, dby + 5, 0xFFB5BAC1);
         clickRects.add(new ClickRect(6, dby, dbw, dbh, () -> langDropdownOpen = !langDropdownOpen));
@@ -657,7 +658,7 @@ public class ChatUI extends AetheriaBaseScreen {
             int itemH = 11;
             int panelH = rowsCount * itemH + 4;
             int px = 4, py = dby - panelH - 4;
-            drawRect(px - 2, py - 2, px + SIDEBAR_WIDTH - 4, dby - 2, 0xFF17181C);
+            DrawContextUtils.fill(px - 2, py - 2, px + SIDEBAR_WIDTH - 4, dby - 2, 0xFF17181C);
             for (int i = 0; i < CODE_LANGUAGES.length; i++) {
                 final String lang = CODE_LANGUAGES[i];
                 int col = i / rowsCount;
@@ -666,7 +667,7 @@ public class ChatUI extends AetheriaBaseScreen {
                 int iy = py + 2 + row * itemH;
                 int iw = (SIDEBAR_WIDTH - 8) / 2 - 2;
                 boolean hov = mouseX >= ix && mouseX <= ix + iw && mouseY >= iy && mouseY <= iy + itemH;
-                if (hov) drawRect(ix, iy, ix + iw, iy + itemH, 0xFF35373C);
+                if (hov) DrawContextUtils.fill(ix, iy, ix + iw, iy + itemH, 0xFF35373C);
                 drawText(lang, ix + 2, iy + 1,
                         lang.equals(selectedCodeLang) ? 0xFFFFFFFF : (hov ? 0xFFFFFFFF : 0xFFB5BAC1));
                 clickRects.add(new ClickRect(ix, iy, iw, itemH, () -> {
@@ -680,10 +681,10 @@ public class ChatUI extends AetheriaBaseScreen {
 
     private void drawMarkdownButton(int x, int y, int w, int h, String label, int mouseX, int mouseY, Runnable action) {
         boolean hover = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
-        drawRect(x, y, x + w, y + h, hover ? 0xFF404249 : 0xFF2B2D31);
+        DrawContextUtils.fill(x, y, x + w, y + h, hover ? 0xFF404249 : 0xFF2B2D31);
         drawText(label,
-                x + (w - fontRendererObj.getStringWidth(label)) / 2f,
-                y + (h - fontRendererObj.FONT_HEIGHT) / 2f,
+                x + (w - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), label)) / 2f,
+                y + (h - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2f,
                 hover ? 0xFFFFFFFF : 0xFFB5BAC1);
         clickRects.add(new ClickRect(x, y, w, h, action));
     }
@@ -856,9 +857,9 @@ public class ChatUI extends AetheriaBaseScreen {
         int maxScroll = panelMaxScroll(panel);
         int thumbH = panelThumbHeight(panel, tr[3]);
         int thumbY = tr[1] + Math.round((tr[3] - thumbH) * (panelScroll(panel) / (float) maxScroll));
-        drawRect(tr[0], tr[1], tr[0] + tr[2], tr[1] + tr[3], 0x14FFFFFF);
+        DrawContextUtils.fill(tr[0], tr[1], tr[0] + tr[2], tr[1] + tr[3], 0x14FFFFFF);
         boolean hover = mouseX >= tr[0] && mouseX <= tr[0] + tr[2] && mouseY >= thumbY && mouseY <= thumbY + thumbH;
-        drawRect(tr[0], thumbY, tr[0] + tr[2], thumbY + thumbH, hover || dragPanel == panel ? 0xFF5865F2 : 0xFF5E6673);
+        DrawContextUtils.fill(tr[0], thumbY, tr[0] + tr[2], thumbY + thumbH, hover || dragPanel == panel ? 0xFF5865F2 : 0xFF5E6673);
     }
 
     // ------------------------------------------------------------ emojis
@@ -870,14 +871,14 @@ public class ChatUI extends AetheriaBaseScreen {
         int boxY = height - INPUT_HEIGHT - PADDING;
         int px = Math.max(SIDEBAR_WIDTH, width - PADDING - EMOJI_PANEL_W);
         int py = boxY - EMOJI_PANEL_TOTAL_H - 6;
-        drawRect(px, py, px + EMOJI_PANEL_W, py + EMOJI_PANEL_TOTAL_H, 0xFF17181C);
+        DrawContextUtils.fill(px, py, px + EMOJI_PANEL_W, py + EMOJI_PANEL_TOTAL_H, 0xFF17181C);
 
         int[] sr = emojiSearchRect();
-        drawRect(sr[0] - 2, sr[1] - 2, sr[0] + sr[2] + 2, sr[1] + sr[3] + 2, 0xFF232428);
-        emojiSearchField.xPosition = sr[0];
-        emojiSearchField.yPosition = sr[1];
-        emojiSearchField.width = sr[2];
-        emojiSearchField.height = sr[3];
+        DrawContextUtils.fill(sr[0] - 2, sr[1] - 2, sr[0] + sr[2] + 2, sr[1] + sr[3] + 2, 0xFF232428);
+        GuiScreenUtils.setX(emojiSearchField, sr[0]);
+        GuiScreenUtils.setY(emojiSearchField, sr[1]);
+        GuiScreenUtils.setW(emojiSearchField, sr[2]);
+        GuiScreenUtils.setH(emojiSearchField, sr[3]);
         emojiSearchField.drawTextBox();
         if (emojiSearchField.getText().isEmpty() && !emojiSearchField.isFocused()) {
             drawText("Search emojis...", sr[0] + 2, sr[1] + 4, 0xFF6D6F78);
@@ -900,7 +901,7 @@ public class ChatUI extends AetheriaBaseScreen {
                 int cx = px + 4 + c * EMOJI_PANEL_CELL;
                 int cy = gridTop + r * EMOJI_PANEL_CELL;
                 boolean hover = mouseX >= cx && mouseX <= cx + EMOJI_PANEL_CELL && mouseY >= cy && mouseY <= cy + EMOJI_PANEL_CELL;
-                if (hover) drawRect(cx, cy, cx + EMOJI_PANEL_CELL, cy + EMOJI_PANEL_CELL, 0xFF35373C);
+                if (hover) DrawContextUtils.fill(cx, cy, cx + EMOJI_PANEL_CELL, cy + EMOJI_PANEL_CELL, 0xFF35373C);
                 drawInlineEmoji(ref, cx + (EMOJI_PANEL_CELL - 16) / 2, cy + (EMOJI_PANEL_CELL - 16) / 2);
                 clickRects.add(new ClickRect(cx, cy, EMOJI_PANEL_CELL, EMOJI_PANEL_CELL,
                         () -> {
@@ -950,7 +951,7 @@ public class ChatUI extends AetheriaBaseScreen {
         int boxY = height - INPUT_HEIGHT - PADDING;
         int px = Math.max(SIDEBAR_WIDTH, width - PADDING - STICKER_PANEL_W);
         int py = boxY - STICKER_PANEL_H - 6;
-        drawRect(px, py, px + STICKER_PANEL_W, py + STICKER_PANEL_H, 0xFF17181C);
+        DrawContextUtils.fill(px, py, px + STICKER_PANEL_W, py + STICKER_PANEL_H, 0xFF17181C);
 
         if (stickers.isEmpty()) {
             drawText("No stickers available.", px + 8, py + 12, 0xFF6D6F78);
@@ -969,7 +970,7 @@ public class ChatUI extends AetheriaBaseScreen {
                 int cx = px + 4 + c * STICKER_PANEL_CELL;
                 int cy = py + 4 + r * STICKER_PANEL_CELL;
                 boolean hover = mouseX >= cx && mouseX <= cx + STICKER_PANEL_CELL && mouseY >= cy && mouseY <= cy + STICKER_PANEL_CELL;
-                if (hover) drawRect(cx, cy, cx + STICKER_PANEL_CELL, cy + STICKER_PANEL_CELL, 0xFF35373C);
+                if (hover) DrawContextUtils.fill(cx, cy, cx + STICKER_PANEL_CELL, cy + STICKER_PANEL_CELL, 0xFF35373C);
                 drawImageBlock(st.name, st.url, cx + 3, cy + 3, STICKER_PANEL_CELL - 6, STICKER_PANEL_CELL - 6, mouseX, mouseY);
                 clickRects.add(new ClickRect(cx, cy, STICKER_PANEL_CELL, STICKER_PANEL_CELL, () -> sendSticker(st)));
             }
@@ -1010,12 +1011,12 @@ public class ChatUI extends AetheriaBaseScreen {
         int rowH = 18;
         int dh = matches.size() * rowH + 6;
         int dy = boxY - dh - 6;
-        drawRect(dx, dy, dx + dw, dy + dh, 0xFF17181C);
+        DrawContextUtils.fill(dx, dy, dx + dw, dy + dh, 0xFF17181C);
         for (int i = 0; i < matches.size(); i++) {
             EmojiRef ref = matches.get(i);
             int ry = dy + 3 + i * rowH;
             boolean hover = mouseX >= dx && mouseX <= dx + dw && mouseY >= ry && mouseY <= ry + rowH;
-            if (hover) drawRect(dx, ry, dx + dw, ry + rowH, 0xFF35373C);
+            if (hover) DrawContextUtils.fill(dx, ry, dx + dw, ry + rowH, 0xFF35373C);
             drawInlineEmoji(ref, dx + 4, ry + 1);
             drawText(ref.name, dx + 24, ry + 5, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
             final int selStart = start - 1;
@@ -1062,15 +1063,15 @@ public class ChatUI extends AetheriaBaseScreen {
         int rowH = 18;
         int dh = matches.size() * rowH + 6;
         int dy = boxY - dh - 6;
-        drawRect(dx, dy, dx + dw, dy + dh, 0xFF17181C);
+        DrawContextUtils.fill(dx, dy, dx + dw, dy + dh, 0xFF17181C);
         for (int i = 0; i < matches.size(); i++) {
             ChannelUser user = matches.get(i);
             int ry = dy + 3 + i * rowH;
             boolean hover = mouseX >= dx && mouseX <= dx + dw && mouseY >= ry && mouseY <= ry + rowH;
-            if (hover) drawRect(dx, ry, dx + dw, ry + rowH, 0xFF35373C);
+            if (hover) DrawContextUtils.fill(dx, ry, dx + dw, ry + rowH, 0xFF35373C);
             drawText("@" + user.display(), dx + 4, ry + 5, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
             if (user.dcId != null && !user.dcId.isEmpty()) {
-                drawText("Discord", dx + dw - 4 - fontRendererObj.getStringWidth("Discord"), ry + 5, 0xFF5865F2);
+                drawText("Discord", dx + dw - 4 - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), "Discord"), ry + 5, 0xFF5865F2);
             }
             final int selStart = start - 1;
             final int selEnd = caret;
@@ -1123,17 +1124,17 @@ public class ChatUI extends AetheriaBaseScreen {
     }
 
     private void drawHeader(int mouseX, int mouseY) {
-        drawRect(SIDEBAR_WIDTH, 0, width, HEADER_HEIGHT, 0xFF2B2D31);
-        drawRect(SIDEBAR_WIDTH, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, 0xFF1E1F22);
+        DrawContextUtils.fill(SIDEBAR_WIDTH, 0, width, HEADER_HEIGHT, 0xFF2B2D31);
+        DrawContextUtils.fill(SIDEBAR_WIDTH, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, 0xFF1E1F22);
 
         String title = selectedChannel != null ? ("# " + selectedChannel.channelName) : "No channel selected";
-        drawText(title, SIDEBAR_WIDTH + PADDING, (HEADER_HEIGHT - fontRendererObj.FONT_HEIGHT) / 2f, 0xFFFFFFFF);
-        int afterTitleX = SIDEBAR_WIDTH + PADDING + fontRendererObj.getStringWidth(title) + 10;
+        drawText(title, SIDEBAR_WIDTH + PADDING, (HEADER_HEIGHT - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2f, 0xFFFFFFFF);
+        int afterTitleX = SIDEBAR_WIDTH + PADDING + DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), title) + 10;
         if (selectedChannel != null && !selectedChannel.canSend) {
             String badge = "READ ONLY";
-            drawRect(afterTitleX, 7, afterTitleX + fontRendererObj.getStringWidth(badge) + 10, HEADER_HEIGHT - 7, 0xFF4E5058);
-            drawText(badge, afterTitleX + 5, (HEADER_HEIGHT - fontRendererObj.FONT_HEIGHT) / 2f, 0xFFB5BAC1);
-            afterTitleX += fontRendererObj.getStringWidth(badge) + 20;
+            DrawContextUtils.fill(afterTitleX, 7, afterTitleX + DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), badge) + 10, HEADER_HEIGHT - 7, 0xFF4E5058);
+            drawText(badge, afterTitleX + 5, (HEADER_HEIGHT - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2f, 0xFFB5BAC1);
+            afterTitleX += DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), badge) + 20;
         }
 
         // Small live connection dot: quiet reassurance while everything's fine, and an at-a-glance
@@ -1142,7 +1143,7 @@ public class ChatUI extends AetheriaBaseScreen {
         boolean connected = Aetheria.webSocketClient != null && WebSocketClient.isConnected;
         int dotX = afterTitleX + 4;
         int dotY = HEADER_HEIGHT / 2;
-        drawRect(dotX, dotY - 3, dotX + 6, dotY + 3, connected ? 0xFF3BA55D : 0xFFED4245);
+        DrawContextUtils.fill(dotX, dotY - 3, dotX + 6, dotY + 3, connected ? 0xFF3BA55D : 0xFFED4245);
         boolean dotHover = mouseX >= dotX - 4 && mouseX <= dotX + 10 && mouseY >= dotY - 6 && mouseY <= dotY + 6;
         if (dotHover) {
             String tip = connected ? "Connected" : "Disconnected - reconnecting...";
@@ -1168,15 +1169,15 @@ public class ChatUI extends AetheriaBaseScreen {
         int boxH = lines * lineH + 12;
         int boxY = HEADER_HEIGHT + 6;
 
-        drawRect(areaX - 4, boxY, areaX - 4 + boxW + 8, boxY + boxH, 0xFF232428);
-        drawRect(areaX - 4, boxY, areaX - 2, boxY + boxH, 0xFF5865F2);
+        DrawContextUtils.fill(areaX - 4, boxY, areaX - 4 + boxW + 8, boxY + boxH, 0xFF232428);
+        DrawContextUtils.fill(areaX - 4, boxY, areaX - 2, boxY + boxH, 0xFF5865F2);
         drawText("SYSTEM", areaX, boxY + 4, 0xFF949BA4);
 
         int start = Math.max(0, notices.size() - lines);
         int y = boxY + 4 + lineH;
         for (int i = start; i < notices.size(); i++) {
             String text = notices.get(i);
-            String trimmed = fontRendererObj.trimStringToWidth(text, boxW - 8);
+            String trimmed = MinecraftCompat.getFontRenderer().trimStringToWidth(text, boxW - 8);
             drawText(trimmed, areaX, y, 0xFFDCDDDE);
             y += lineH;
         }
@@ -1196,11 +1197,11 @@ public class ChatUI extends AetheriaBaseScreen {
 
     private void drawInputArea(int mouseX, int mouseY) {
         int boxY = height - INPUT_HEIGHT - PADDING;
-        drawRect(SIDEBAR_WIDTH, boxY - PADDING, width, height, 0xFF313338);
-        drawRect(SIDEBAR_WIDTH + PADDING, boxY, width - PADDING, boxY + INPUT_HEIGHT, 0xFF383A40);
+        DrawContextUtils.fill(SIDEBAR_WIDTH, boxY - PADDING, width, height, 0xFF313338);
+        DrawContextUtils.fill(SIDEBAR_WIDTH + PADDING, boxY, width - PADDING, boxY + INPUT_HEIGHT, 0xFF383A40);
 
         if (selectedChannel != null && !selectedChannel.canSend) {
-            drawText("Read only channel - you cannot send messages here.", SIDEBAR_WIDTH + PADDING + 10, boxY + (INPUT_HEIGHT - fontRendererObj.FONT_HEIGHT) / 2f + 1, 0xFF949BA4);
+            drawText("Read only channel - you cannot send messages here.", SIDEBAR_WIDTH + PADDING + 10, boxY + (INPUT_HEIGHT - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2f + 1, 0xFF949BA4);
             return;
         }
 
@@ -1210,23 +1211,23 @@ public class ChatUI extends AetheriaBaseScreen {
 
         boolean stickerHover = mouseX >= sx && mouseX <= sx + EMOJI_BUTTON_W && mouseY >= by && mouseY <= by + EMOJI_BUTTON_W;
 
-        drawRect(sx, by, sx + EMOJI_BUTTON_W, by + EMOJI_BUTTON_W, stickerHover || stickerPanelOpen ? 0xFF404249 : 0xFF2B2D31);
+        DrawContextUtils.fill(sx, by, sx + EMOJI_BUTTON_W, by + EMOJI_BUTTON_W, stickerHover || stickerPanelOpen ? 0xFF404249 : 0xFF2B2D31);
         int sfx = sx + (EMOJI_BUTTON_W - 14) / 2;
         int sfy = by + (EMOJI_BUTTON_W - 14) / 2;
-        drawRect(sfx, sfy, sfx + 11, sfy + 12, 0xFFF2C94C);
-        drawRect(sfx + 7, sfy, sfx + 11, sfy + 4, 0xFFF2C94C);
-        drawRect(sfx + 7, sfy, sfx + 9, sfy + 2, 0xFF2B2D31);
-        drawRect(sfx + 3, sfy + 6, sfx + 4, sfy + 7, 0xFF1E1F22);
-        drawRect(sfx + 6, sfy + 6, sfx + 7, sfy + 7, 0xFF1E1F22);
+        DrawContextUtils.fill(sfx, sfy, sfx + 11, sfy + 12, 0xFFF2C94C);
+        DrawContextUtils.fill(sfx + 7, sfy, sfx + 11, sfy + 4, 0xFFF2C94C);
+        DrawContextUtils.fill(sfx + 7, sfy, sfx + 9, sfy + 2, 0xFF2B2D31);
+        DrawContextUtils.fill(sfx + 3, sfy + 6, sfx + 4, sfy + 7, 0xFF1E1F22);
+        DrawContextUtils.fill(sfx + 6, sfy + 6, sfx + 7, sfy + 7, 0xFF1E1F22);
 
         boolean emojiHover = mouseX >= ex && mouseX <= ex + EMOJI_BUTTON_W && mouseY >= by && mouseY <= by + EMOJI_BUTTON_W;
-        drawRect(ex, by, ex + EMOJI_BUTTON_W, by + EMOJI_BUTTON_W, emojiHover || emojiPanelOpen ? 0xFF404249 : 0xFF2B2D31);
+        DrawContextUtils.fill(ex, by, ex + EMOJI_BUTTON_W, by + EMOJI_BUTTON_W, emojiHover || emojiPanelOpen ? 0xFF404249 : 0xFF2B2D31);
         int fx = ex + (EMOJI_BUTTON_W - 14) / 2;
         int fy = by + (EMOJI_BUTTON_W - 14) / 2;
-        drawRect(fx, fy, fx + 14, fy + 14, 0xFFF2C94C);
-        drawRect(fx + 3, fy + 4, fx + 5, fy + 6, 0xFF1E1F22);
-        drawRect(fx + 9, fy + 4, fx + 11, fy + 6, 0xFF1E1F22);
-        drawRect(fx + 4, fy + 9, fx + 10, fy + 10, 0xFF1E1F22);
+        DrawContextUtils.fill(fx, fy, fx + 14, fy + 14, 0xFFF2C94C);
+        DrawContextUtils.fill(fx + 3, fy + 4, fx + 5, fy + 6, 0xFF1E1F22);
+        DrawContextUtils.fill(fx + 9, fy + 4, fx + 11, fy + 6, 0xFF1E1F22);
+        DrawContextUtils.fill(fx + 4, fy + 9, fx + 10, fy + 10, 0xFF1E1F22);
         clickRects.add(new ClickRect(sx, by, EMOJI_BUTTON_W, EMOJI_BUTTON_W, this::toggleStickerPanel));
         clickRects.add(new ClickRect(ex, by, EMOJI_BUTTON_W, EMOJI_BUTTON_W, this::toggleEmojiPanel));
     }
@@ -1305,19 +1306,19 @@ public class ChatUI extends AetheriaBaseScreen {
 
     private void drawScrollbar(int areaX, int areaY, int areaW, int areaH, int totalHeight) {
         int trackX = areaX + areaW - 8;
-        drawRect(trackX, areaY, trackX + 6, areaY + areaH, 0x22000000);
+        DrawContextUtils.fill(trackX, areaY, trackX + 6, areaY + areaH, 0x22000000);
         float ratio = areaH / (float) totalHeight;
         int thumbH = Math.max(20, Math.round(areaH * ratio));
         int maxScroll = Math.max(1, totalHeight - areaH);
         float scrollRatio = scrollPixels / (float) maxScroll;
         int thumbY = areaY + Math.round((areaH - thumbH) * (1f - scrollRatio));
-        drawRect(trackX, thumbY, trackX + 6, thumbY + thumbH, 0x66FFFFFF);
+        DrawContextUtils.fill(trackX, thumbY, trackX + 6, thumbY + thumbH, 0x66FFFFFF);
     }
 
     // ------------------------------------------------------------ messages
 
     private int replyAllowance(ChatMessage msg) {
-        return msg.replying ? fontRendererObj.FONT_HEIGHT + 3 : 0;
+        return msg.replying ? MinecraftCompat.getFontRenderer().FONT_HEIGHT + 3 : 0;
     }
 
     /** Content to render: for replies, drops the leading "<a href="https://discord.com/channels/">...</a>..." hyperlink prefix the server prepends on Discord. */
@@ -1373,7 +1374,7 @@ public class ChatUI extends AetheriaBaseScreen {
 
     private int headerAllowance(boolean groupStart) {
         if (!groupStart) return 2;
-        return 2 + fontRendererObj.FONT_HEIGHT + DiscordMarkdown.LINE_SPACING;
+        return 2 + MinecraftCompat.getFontRenderer().FONT_HEIGHT + DiscordMarkdown.LINE_SPACING;
     }
 
     private int blockHeight(ChatMessage msg, LayoutCache layout, boolean groupStart, int contentWidth) {
@@ -1447,20 +1448,20 @@ public class ChatUI extends AetheriaBaseScreen {
         boolean hovered = mouseX >= x - 4 && mouseX < x + AVATAR_SIZE + 8 + contentWidth + PADDING
                 && mouseY >= y - 2 && mouseY < y + rowHeight;
         if (hovered) {
-            drawRect(x - 4, y - 2, x + AVATAR_SIZE + 8 + contentWidth + PADDING, y + rowHeight, 0x14FFFFFF);
+            DrawContextUtils.fill(x - 4, y - 2, x + AVATAR_SIZE + 8 + contentWidth + PADDING, y + rowHeight, 0x14FFFFFF);
             drawMessageActions(msg, x + AVATAR_SIZE + 8 + contentWidth, y, mouseX, mouseY);
         }
 
         // Mentions, @everyone/@here pings and replies to you get a soft blurple tint + accent bar.
         if (msg.highlighted) {
-            drawRect(x - 4, y - 2, x + AVATAR_SIZE + 8 + contentWidth + PADDING, y + rowHeight, fadeColor(0x145865F2));
-            drawRect(x - 4, y - 2, x - 1, y + rowHeight, fadeColor(0xCC5865F2));
+            DrawContextUtils.fill(x - 4, y - 2, x + AVATAR_SIZE + 8 + contentWidth + PADDING, y + rowHeight, fadeColor(0x145865F2));
+            DrawContextUtils.fill(x - 4, y - 2, x - 1, y + rowHeight, fadeColor(0xCC5865F2));
         }
 
         if (msgFailed) {
             // A thin red accent bar, same treatment Discord gives a failed send, so it reads at a
             // glance even before you register the dimmed/red-tinted content next to it.
-            drawRect(x - 4, y - 2, x - 1, y + rowHeight, 0xCCED4245);
+            DrawContextUtils.fill(x - 4, y - 2, x - 1, y + rowHeight, 0xCCED4245);
         }
 
         if (highlightMessageId != null && highlightMessageId.equals(msg.discordID)) {
@@ -1471,7 +1472,7 @@ public class ChatUI extends AetheriaBaseScreen {
                 float fade = 1f - elapsed / (float) JUMP_HIGHLIGHT_MS;
                 int alpha = (int) (fade * (0.35f + 0.65f * Math.abs(Math.sin(elapsed / 150.0))) * 36);
                 if (alpha > 2) {
-                    drawRect(x - 4, y - 2, x + AVATAR_SIZE + 8 + contentWidth + PADDING, y + rowHeight,
+                    DrawContextUtils.fill(x - 4, y - 2, x + AVATAR_SIZE + 8 + contentWidth + PADDING, y + rowHeight,
                             (alpha << 24) | 0xFFFFFF);
                 }
             }
@@ -1485,8 +1486,8 @@ public class ChatUI extends AetheriaBaseScreen {
             if (msg.replyingMessage != null && !msg.replyingMessage.isEmpty()) {
                 final String replyUrl = "https://discord.com/channels/1479556885769093192/"
                         + msg.channelId + "/" + msg.replyingMessage;
-                clickRects.add(new ClickRect(textX, y + 1, fontRendererObj.getStringWidth(replyLabel),
-                        fontRendererObj.FONT_HEIGHT, () -> handleLinkClick(replyUrl)));
+                clickRects.add(new ClickRect(textX, y + 1, DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), replyLabel),
+                        MinecraftCompat.getFontRenderer().FONT_HEIGHT, () -> handleLinkClick(replyUrl)));
             }
         }
 
@@ -1497,7 +1498,7 @@ public class ChatUI extends AetheriaBaseScreen {
             String author = msg.authorDisplay != null ? msg.authorDisplay : (msg.author == null ? "Unknown" : msg.author);
             int nameColor = fadeColor(userColor(msg.author == null ? "?" : msg.author));
             drawText(author, textX, afterReplyY + 2, nameColor);
-            int nameWidth = fontRendererObj.getStringWidth(author);
+            int nameWidth = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), author);
             String headerTime = formatTimestamp(msg);
             if (msg.client != null && !msg.client.isEmpty()) headerTime += " (" + msg.client + ")";
             if (msg.edited) headerTime += " (edited)";
@@ -1523,7 +1524,7 @@ public class ChatUI extends AetheriaBaseScreen {
                         && (li == 0 || layout.lines.get(li - 1).type != LineType.CODE_BLOCK)) {
                     drawCodeCopyButton(layout.lines, li, textX, cursorY, contentWidth, mouseX, mouseY);
                 }
-                cursorY += DiscordMarkdown.lineHeight(line.type, fontRendererObj);
+                cursorY += DiscordMarkdown.lineHeight(line.type, MinecraftCompat.getFontRenderer());
             }
         }
 
@@ -1596,7 +1597,7 @@ public class ChatUI extends AetheriaBaseScreen {
         int totalW = 0;
         List<Integer> widths = new ArrayList<>();
         for (String label : labels) {
-            int w = fontRendererObj.getStringWidth(label) + 12;
+            int w = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), label) + 12;
             widths.add(w);
             totalW += w + gap;
         }
@@ -1605,7 +1606,7 @@ public class ChatUI extends AetheriaBaseScreen {
         for (int i = 0; i < labels.size(); i++) {
             int w = widths.get(i);
             boolean hover = mouseX >= bx && mouseX <= bx + w && mouseY >= by && mouseY <= by + bh;
-            drawRect(bx, by, bx + w, by + bh, hover ? 0xFF404249 : 0xFF2B2D31);
+            DrawContextUtils.fill(bx, by, bx + w, by + bh, hover ? 0xFF404249 : 0xFF2B2D31);
             drawText(labels.get(i), bx + 6, by + 3,
                     hover ? 0xFFFFFFFF : 0xFFB5BAC1);
             clickRects.add(new ClickRect(bx, by, w, bh, actions.get(i)));
@@ -1614,14 +1615,14 @@ public class ChatUI extends AetheriaBaseScreen {
     }
 
     private void drawRenderLine(RenderLine line, int x, int y, int maxWidth) {
-        int lh = DiscordMarkdown.lineHeight(line.type, fontRendererObj);
+        int lh = DiscordMarkdown.lineHeight(line.type, MinecraftCompat.getFontRenderer());
         x += line.listIndent;
         maxWidth -= line.listIndent;
 
         if (line.type == LineType.QUOTE) {
-            drawRect(x - 8, y, x - 6, y + lh - 2, fadeColor(0xFF4E5058));
+            DrawContextUtils.fill(x - 8, y, x - 6, y + lh - 2, fadeColor(0xFF4E5058));
         } else if (line.type == LineType.CODE_BLOCK) {
-            drawRect(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, fadeColor(0xFF232428));
+            DrawContextUtils.fill(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, fadeColor(0xFF232428));
         }
 
         int color = fadeColor(line.type == LineType.CODE_BLOCK ? 0xFFDCDDDE
@@ -1643,12 +1644,12 @@ public class ChatUI extends AetheriaBaseScreen {
 
     /** Draws a syntax-highlighted code line from pre-tokenized {@link CodeParser.HighlightedToken}s. */
     private void drawCodeLine(RenderLine line, int x, int y, int maxWidth) {
-        int lh = DiscordMarkdown.lineHeight(line.type, fontRendererObj);
-        drawRect(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, fadeColor(0xFF232428));
+        int lh = DiscordMarkdown.lineHeight(line.type, MinecraftCompat.getFontRenderer());
+        DrawContextUtils.fill(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, fadeColor(0xFF232428));
         int cx = x;
         for (CodeParser.HighlightedToken token : line.codeTokens) {
             drawText(token.text, cx, y, fadeColor(0xFF000000 | token.mcColor));
-            cx += fontRendererObj.getStringWidth(token.text);
+            cx += DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), token.text);
         }
     }
 
@@ -1676,14 +1677,14 @@ public class ChatUI extends AetheriaBaseScreen {
 
         boolean copied = System.currentTimeMillis() - lastCopyTime < 1000;
         String label = copied ? "Copied" : "Copy";
-        int labelWidth = fontRendererObj.getStringWidth(label);
+        int labelWidth = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), label);
         int bw = labelWidth + 12;
-        int bh = fontRendererObj.FONT_HEIGHT + 4;
+        int bh = MinecraftCompat.getFontRenderer().FONT_HEIGHT + 4;
         int bx = x + maxWidth - bw;
         int by = y - 1;
         boolean hover = mouseX >= bx && mouseX <= bx + bw && mouseY >= by && mouseY <= by + bh;
 
-        drawRect(bx, by, bx + bw, by + bh, hover ? 0x66FFFFFF : 0x30FFFFFF);
+        DrawContextUtils.fill(bx, by, bx + bw, by + bh, hover ? 0x66FFFFFF : 0x30FFFFFF);
         drawText(label, bx + 6, by + 2, hover ? 0xFFFFFFFF : 0xFF949BA4);
         if (!copied) {
             clickRects.add(new ClickRect(bx, by, bw, bh, () -> {
@@ -1696,7 +1697,7 @@ public class ChatUI extends AetheriaBaseScreen {
     /** registerClicks is disabled for scaled (header) text since click rects would need extra transform math. */
     private void drawSpans(List<Span> spans, int x, int y, int baseColor, boolean registerClicks) {
         int cursorX = x;
-        int spaceWidth = fontRendererObj.getStringWidth(" ");
+        int spaceWidth = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), " ");
         for (final Span span : spans) {
             if (span.spaceBefore) cursorX += spaceWidth;
 
@@ -1711,13 +1712,13 @@ public class ChatUI extends AetheriaBaseScreen {
                 if ("everyone".equalsIgnoreCase(span.text) || "here".equalsIgnoreCase(span.text)) {
                     String raw = "@" + span.text;
                     drawText(raw, cursorX, y, fadeColor(0xFFFAA81A));
-                    cursorX += fontRendererObj.getStringWidth(raw);
+                    cursorX += DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), raw);
                     continue;
                 }
                 String pill = DiscordMarkdown.MENTION_FONT + "@" + name;
-                int w = fontRendererObj.getStringWidth(pill);
+                int w = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), pill);
                 int px = cursorX - 2;
-                drawRect(px, y - 1, px + w + 4, y + fontRendererObj.FONT_HEIGHT + 1, fadeColor(0x4D5865F2));
+                DrawContextUtils.fill(px, y - 1, px + w + 4, y + MinecraftCompat.getFontRenderer().FONT_HEIGHT + 1, fadeColor(0x4D5865F2));
                 drawText(pill, cursorX, y, fadeColor(0xFFDEE0FC));
                 cursorX += w;
                 continue;
@@ -1725,18 +1726,18 @@ public class ChatUI extends AetheriaBaseScreen {
 
             if (span.discordChannelId != null) {
                 String formatted = span.text;
-                int w = fontRendererObj.getStringWidth(formatted);
+                int w = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), formatted);
                 int px = cursorX - 1;
                 if (span.discordMessageId != null) {
-                    drawRect(px, y - 1, px + w + 2, y + fontRendererObj.FONT_HEIGHT + 1, fadeColor(0x335865F2));
+                    DrawContextUtils.fill(px, y - 1, px + w + 2, y + MinecraftCompat.getFontRenderer().FONT_HEIGHT + 1, fadeColor(0x335865F2));
                     drawText(formatted, cursorX, y, fadeColor(0xFF9EA6FF));
                 } else {
-                    drawRect(px, y - 1, px + w + 2, y + fontRendererObj.FONT_HEIGHT + 1, fadeColor(0x12FFFFFF));
+                    DrawContextUtils.fill(px, y - 1, px + w + 2, y + MinecraftCompat.getFontRenderer().FONT_HEIGHT + 1, fadeColor(0x12FFFFFF));
                     drawText(formatted, cursorX, y, fadeColor(0xFF00A8FC));
                 }
                 if (registerClicks) {
                     int ry = y - 1;
-                    int rh = fontRendererObj.FONT_HEIGHT + 2;
+                    int rh = MinecraftCompat.getFontRenderer().FONT_HEIGHT + 2;
                     clickRects.add(new ClickRect(cursorX, ry, w, rh, () -> handleLinkClick(span.discordUrl)));
                 }
                 cursorX += w;
@@ -1744,17 +1745,17 @@ public class ChatUI extends AetheriaBaseScreen {
             }
 
             String formatted = DiscordMarkdown.toFormatted(span);
-            int w = fontRendererObj.getStringWidth(formatted);
+                int w = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), formatted);
 
             if (span.linkUrl != null) {
                 if (span.plainLink) {
                     drawText(formatted, cursorX, y, baseColor);
                 } else {
                     drawText(formatted, cursorX, y, fadeColor(0xFF00A8FC));
-                    drawRect(cursorX, y + fontRendererObj.FONT_HEIGHT - 1, cursorX + w, y + fontRendererObj.FONT_HEIGHT, fadeColor(0xFF00A8FC));
+                    DrawContextUtils.fill(cursorX, y + MinecraftCompat.getFontRenderer().FONT_HEIGHT - 1, cursorX + w, y + MinecraftCompat.getFontRenderer().FONT_HEIGHT, fadeColor(0xFF00A8FC));
                 }
                 if (registerClicks) {
-                    int rh = fontRendererObj.FONT_HEIGHT;
+                    int rh = MinecraftCompat.getFontRenderer().FONT_HEIGHT;
                     clickRects.add(new ClickRect(cursorX, y, w, rh, () -> handleLinkClick(span.linkUrl)));
                 }
                 cursorX += w;
@@ -1762,15 +1763,15 @@ public class ChatUI extends AetheriaBaseScreen {
             }
 
             if (span.spoiler && !revealedSpoilers.contains(span)) {
-                drawRect(cursorX, y, cursorX + Math.max(w, 4), y + fontRendererObj.FONT_HEIGHT, fadeColor(0xFF1E1F22));
+                DrawContextUtils.fill(cursorX, y, cursorX + Math.max(w, 4), y + MinecraftCompat.getFontRenderer().FONT_HEIGHT, fadeColor(0xFF1E1F22));
                 if (registerClicks) {
                     int rw = Math.max(w, 4);
-                    int rh = fontRendererObj.FONT_HEIGHT;
+                    int rh = MinecraftCompat.getFontRenderer().FONT_HEIGHT;
                     clickRects.add(new ClickRect(cursorX, y, rw, rh, () -> revealedSpoilers.add(span)));
                 }
             } else {
                 int color = span.code ? fadeColor(0xFF95D8A6) : baseColor;
-                if (span.code) drawRect(cursorX - 1, y - 1, cursorX + w + 1, y + fontRendererObj.FONT_HEIGHT, fadeColor(0xFF2B2D31));
+                if (span.code) DrawContextUtils.fill(cursorX - 1, y - 1, cursorX + w + 1, y + MinecraftCompat.getFontRenderer().FONT_HEIGHT, fadeColor(0xFF2B2D31));
                 drawText(formatted, cursorX, y, color);
             }
             cursorX += w;
@@ -1808,13 +1809,13 @@ public class ChatUI extends AetheriaBaseScreen {
         } else if (msg.mentionDisplays != null && !msg.mentionDisplays.isEmpty()) {
             mentionNames = msg.mentionDisplays;
         }
-        cache.lines = DiscordMarkdown.parse(displayContent(msg), msg.emojiRefs, mentionNames, fontRendererObj, width);
+        cache.lines = DiscordMarkdown.parse(displayContent(msg), msg.emojiRefs, mentionNames, MinecraftCompat.getFontRenderer(), width);
         cache.embeds = computeEmbeds(msg, cache);
         cache.imgs = computeImages(msg, cache);
 
         int textHeight = 0;
         for (RenderLine line : cache.lines) {
-            textHeight += DiscordMarkdown.lineHeight(line.type, fontRendererObj);
+            textHeight += DiscordMarkdown.lineHeight(line.type, MinecraftCompat.getFontRenderer());
         }
 
         int extra = 0;
@@ -1860,7 +1861,7 @@ public class ChatUI extends AetheriaBaseScreen {
                 return;
             }
         }
-        drawRect(x, y, x + AVATAR_SIZE, y + AVATAR_SIZE, fadeColor((userColor(msg.author == null ? "?" : msg.author) & 0x00FFFFFF) | 0x66000000));
+        DrawContextUtils.fill(x, y, x + AVATAR_SIZE, y + AVATAR_SIZE, fadeColor((userColor(msg.author == null ? "?" : msg.author) & 0x00FFFFFF) | 0x66000000));
     }
 
     private void drawInlineEmoji(EmojiRef ref, int x, int y) {
@@ -1878,7 +1879,7 @@ public class ChatUI extends AetheriaBaseScreen {
     private void drawEmojiImage(String url, int x, int y) {
         GCImage img = getImage(url, false);
         if (img == null || !img.isLoaded || img.width == 0) {
-            drawRect(x, y, x + DiscordMarkdown.EMOJI_SIZE, y + DiscordMarkdown.EMOJI_SIZE, fadeColor(0x22FFFFFF));
+            DrawContextUtils.fill(x, y, x + DiscordMarkdown.EMOJI_SIZE, y + DiscordMarkdown.EMOJI_SIZE, fadeColor(0x22FFFFFF));
             return;
         }
         ResourceLocation tex = img.getTextureToRender(false);
@@ -1902,14 +1903,14 @@ public class ChatUI extends AetheriaBaseScreen {
         int cap = Math.min(maxWidth, MAX_IMAGE_DRAW_W);
 
         if (img != null && img.loadFailed) {
-            drawRect(x, y, x + cap, y + boxHeight, fadeColor(0xFF232428));
+            DrawContextUtils.fill(x, y, x + cap, y + boxHeight, fadeColor(0xFF232428));
             String label = (name == null || name.isEmpty()) ? url : name;
             drawText("Could not load Image: " + label, x + 8, y + boxHeight / 2f - 4, fadeColor(0xFF6D6F78));
             return;
         }
 
         if (img == null || !img.isLoaded || img.width == 0 || img.height == 0) {
-            drawRect(x, y, x + cap, y + boxHeight, fadeColor(0xFF232428));
+            DrawContextUtils.fill(x, y, x + cap, y + boxHeight, fadeColor(0xFF232428));
             drawText("Loading...", x + 8, y + boxHeight / 2f - 4, fadeColor(0xFF6D6F78));
             return;
         }
@@ -1979,9 +1980,9 @@ public class ChatUI extends AetheriaBaseScreen {
 
             GCImage img = getImage(ref.url, false);
             if (img == null || img.loadFailed || !img.isLoaded || img.width == 0 || img.height == 0) {
-                drawRect(cx, cy, cx + cell, cy + cell, fadeColor(0xFF232428));
+                DrawContextUtils.fill(cx, cy, cx + cell, cy + cell, fadeColor(0xFF232428));
                 String label = img != null && img.loadFailed ? "!" : "Loading...";
-                drawText(label, cx + (cell - fontRendererObj.getStringWidth(label)) / 2f,
+                drawText(label, cx + (cell - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), label)) / 2f,
                         cy + cell / 2f - 4, fadeColor(0xFF6D6F78));
             } else {
                 boolean cellHover = mouseX >= cx && mouseX <= cx + cell && mouseY >= cy && mouseY <= cy + cell;
@@ -2029,19 +2030,19 @@ public class ChatUI extends AetheriaBaseScreen {
 
     /** Shared file-embed banner: background, accent strip, file-type square, name + meta. Buttons are drawn by the caller. */
     private void drawFileBanner(int x, int y, int maxWidth, int accent, String extLabel, String name, String meta) {
-        drawRect(x, y, x + maxWidth, y + EMBED_BOX_H, fadeColor(0xFF232428));
-        drawRect(x, y, x + 3, y + EMBED_BOX_H, fadeColor(accent));
+        DrawContextUtils.fill(x, y, x + maxWidth, y + EMBED_BOX_H, fadeColor(0xFF232428));
+        DrawContextUtils.fill(x, y, x + 3, y + EMBED_BOX_H, fadeColor(accent));
 
         String label = extLabel == null || extLabel.isEmpty() ? "FILE" : extLabel;
         if (label.length() > 4) label = label.substring(0, 4);
 
-        drawRect(x + 10, y + 9, x + 36, y + 35, fadeColor(0xFF2B2D31));
+        DrawContextUtils.fill(x + 10, y + 9, x + 36, y + 35, fadeColor(0xFF2B2D31));
         drawText(label,
-                x + 10 + (26 - fontRendererObj.getStringWidth(label)) / 2f,
-                y + 9 + (26 - fontRendererObj.FONT_HEIGHT) / 2f, fadeColor(0xFFB5BAC1));
+                x + 10 + (26 - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), label)) / 2f,
+                y + 9 + (26 - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2f, fadeColor(0xFFB5BAC1));
 
         int tx = x + 46;
-        drawText(fontRendererObj.trimStringToWidth(name, maxWidth - 60), tx, y + 7, fadeColor(0xFFDCDDDE));
+        drawText(MinecraftCompat.getFontRenderer().trimStringToWidth(name, maxWidth - 60), tx, y + 7, fadeColor(0xFFDCDDDE));
         drawText(meta, tx, y + 18, fadeColor(0xFF949BA4));
     }
 
@@ -2061,7 +2062,7 @@ public class ChatUI extends AetheriaBaseScreen {
             if (media) downloadMedia(att.url, att.name);
             else pendingLinkUrl = att.url;
         });
-        int bw = fontRendererObj.getStringWidth(media ? "Download" : "Open") + 14;
+            int bw = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), media ? "Download" : "Open") + 14;
         if (msg.discordID != null && !msg.discordID.isEmpty()) {
             drawEmbedButton(x + 10 + bw + 6, by, "Open in Discord", mouseX, mouseY, () ->
                     pendingLinkUrl = "https://discord.com/channels/1479556885769093192/" + msg.channelId + "/" + msg.discordID);
@@ -2079,7 +2080,7 @@ public class ChatUI extends AetheriaBaseScreen {
         int by = y + 35;
         if (media) {
             drawEmbedButton(x + 10, by, "Download", mouseX, mouseY, () -> downloadMedia(e.url, e.name));
-            int bw = fontRendererObj.getStringWidth("Download") + 14;
+            int bw = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), "Download") + 14;
             drawEmbedButton(x + 10 + bw + 6, by, "Open", mouseX, mouseY, () -> pendingLinkUrl = e.url);
         } else {
             drawEmbedButton(x + 10, by, "Open", mouseX, mouseY, () -> pendingLinkUrl = e.url);
@@ -2112,9 +2113,9 @@ public class ChatUI extends AetheriaBaseScreen {
     }
 
     private void drawEmbedButton(int x, int y, String label, int mouseX, int mouseY, Runnable action) {
-        int w = fontRendererObj.getStringWidth(label) + 14;
+        int w = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), label) + 14;
         boolean hover = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + 16;
-        drawRect(x, y, x + w, y + 16, hover ? 0xFF404249 : 0xFF2B2D31);
+        DrawContextUtils.fill(x, y, x + w, y + 16, hover ? 0xFF404249 : 0xFF2B2D31);
         drawText(label, x + 7, y + 4, hover ? 0xFFFFFFFF : 0xFFB5BAC1);
         clickRects.add(new ClickRect(x, y, w, 16, action));
     }
@@ -2249,8 +2250,8 @@ public class ChatUI extends AetheriaBaseScreen {
 
     /** Discord-style website/rich embed: accent bar, site name, title, description, fields, thumbnail. */
     private void drawWebEmbed(Embed e, int x, int y, int maxWidth, int height, int mouseX, int mouseY) {
-        drawRect(x, y, x + maxWidth, y + height, fadeColor(0xFF232428));
-        drawRect(x, y, x + 3, y + height, fadeColor(0xFF5865F2));
+        DrawContextUtils.fill(x, y, x + maxWidth, y + height, fadeColor(0xFF232428));
+        DrawContextUtils.fill(x, y, x + 3, y + height, fadeColor(0xFF5865F2));
 
         if (e == null || "failed".equals(e.type)) {
             drawText("No preview available", x + 10, y + 8, fadeColor(0xFF949BA4));
@@ -2368,15 +2369,15 @@ public class ChatUI extends AetheriaBaseScreen {
     private int drawMarkdown(String text, int x, int y, int maxWidth, int maxLines, int color) {
         if (text == null || text.isEmpty()) return y;
         color = fadeColor(color);
-        List<RenderLine> lines = DiscordMarkdown.parse(text, null, fontRendererObj, maxWidth);
+        List<RenderLine> lines = DiscordMarkdown.parse(text, null, MinecraftCompat.getFontRenderer(), maxWidth);
         int drawn = 0;
         for (RenderLine line : lines) {
             if (drawn >= maxLines) break;
-            int lh = DiscordMarkdown.lineHeight(line.type, fontRendererObj);
+            int lh = DiscordMarkdown.lineHeight(line.type, MinecraftCompat.getFontRenderer());
             if (line.type == LineType.CODE_BLOCK) {
-                drawRect(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, fadeColor(0xFF232428));
+                DrawContextUtils.fill(x - 4, y - 1, x + maxWidth + 4, y + lh - 1, fadeColor(0xFF232428));
             } else if (line.type == LineType.QUOTE) {
-                drawRect(x - 8, y, x - 6, y + lh - 2, fadeColor(0xFF4E5058));
+                DrawContextUtils.fill(x - 8, y, x - 6, y + lh - 2, fadeColor(0xFF4E5058));
             }
             float scale = DiscordMarkdown.lineScale(line.type);
             if (scale != 1f) {
@@ -2397,10 +2398,10 @@ public class ChatUI extends AetheriaBaseScreen {
     /** Pixel height of markdown text (parsed + wrapped), capped at maxLines. */
     private int markdownHeight(String text, int maxWidth, int maxLines) {
         if (text == null || text.isEmpty()) return 0;
-        List<RenderLine> lines = DiscordMarkdown.parse(text, null, fontRendererObj, maxWidth);
+        List<RenderLine> lines = DiscordMarkdown.parse(text, null, MinecraftCompat.getFontRenderer(), maxWidth);
         int h = 0;
         for (int i = 0; i < lines.size() && i < maxLines; i++) {
-            h += DiscordMarkdown.lineHeight(lines.get(i).type, fontRendererObj);
+            h += DiscordMarkdown.lineHeight(lines.get(i).type, MinecraftCompat.getFontRenderer());
         }
         return h;
     }
@@ -2408,7 +2409,7 @@ public class ChatUI extends AetheriaBaseScreen {
     private void drawEmbedThumb(String url, int x, int y, int size, int mouseX, int mouseY) {
         GCImage img = getImage(url, false);
         if (img == null || !img.isLoaded || img.width == 0 || img.height == 0) {
-            drawRect(x, y, x + size, y + size, fadeColor(0xFF2B2D31));
+            DrawContextUtils.fill(x, y, x + size, y + size, fadeColor(0xFF2B2D31));
             return;
         }
         float ratio = img.width / (float) img.height;
@@ -2490,8 +2491,7 @@ public class ChatUI extends AetheriaBaseScreen {
     }
 
     private void enableScissor(int x, int y, int w, int h) {
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int scale = sr.getScaleFactor();
+        int scale = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + h) * scale, w * scale, h * scale);
     }

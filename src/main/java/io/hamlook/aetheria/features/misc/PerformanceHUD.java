@@ -6,12 +6,12 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.overlay.OverlayUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.network.play.client.C16PacketClientStatus;
 import net.minecraft.util.EnumChatFormatting;
 import org.lwjgl.opengl.GL11;
@@ -201,9 +201,8 @@ public class PerformanceHUD extends Overlay {
         lastH = h;
 
         Position pos = getPosition();
-        ScaledResolution resolution = currentSr();
-        int x = pos.getAbsX(resolution, (int) (w * scale));
-        int y = pos.getAbsY(resolution, (int) (h * scale));
+        int x = pos.getAbsX(GuiScreenUtils.getScaledWindowWidth(), (int) (w * scale));
+        int y = pos.getAbsY(GuiScreenUtils.getScaledWindowHeight(), (int) (h * scale));
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 

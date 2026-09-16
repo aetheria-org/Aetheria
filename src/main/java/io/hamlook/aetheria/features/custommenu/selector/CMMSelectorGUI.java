@@ -22,6 +22,8 @@ import org.lwjgl.input.Keyboard;
 import java.awt.*;
 import java.io.IOException;
 import java.util.HashMap;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class CMMSelectorGUI extends GuiScreen {
 
@@ -52,8 +54,8 @@ public class CMMSelectorGUI extends GuiScreen {
         };
         updateSearchBar();
         updateButtons();
-        Aetheria.logger.info("SearchBar Coords: " + searchBar.xPosition + " | "  + searchBar.yPosition);
-        Aetheria.logger.info("SearchBar Size: " + searchBar.width + " | " + searchBar.height);
+        Aetheria.logger.info("SearchBar Coords: " + GuiScreenUtils.getX(searchBar) + " | "  + GuiScreenUtils.getY(searchBar));
+        Aetheria.logger.info("SearchBar Size: " + GuiScreenUtils.getW(searchBar) + " | " + GuiScreenUtils.getH(searchBar));
         CONFIG_BOX_WIDTH = ScreenHelper.getStaticWidth(150);
         CONFIG_BOX_HEIGHT = ScreenHelper.getStaticHeight(40);
         PADDING = ScreenHelper.getStaticWidth(5);
@@ -63,7 +65,7 @@ public class CMMSelectorGUI extends GuiScreen {
     }
 
     private void updateButtons() {
-        addButton.xPos = ScreenHelper.getAnchoredX(ScreenHelper.Anchor.LEFT,(ScreenHelper.getStaticWidth(35)+searchBar.width));
+        addButton.xPos = ScreenHelper.getAnchoredX(ScreenHelper.Anchor.LEFT,(ScreenHelper.getStaticWidth(35)+GuiScreenUtils.getW(searchBar)));
         addButton.yPos = ScreenHelper.getAnchoredY(ScreenHelper.Anchor.TOP,-ScreenHelper.getStaticHeight(35));
         addButton.width = ScreenHelper.getStaticWidth(70);
         addButton.height = ScreenHelper.getStaticHeight(30);
@@ -89,10 +91,10 @@ public class CMMSelectorGUI extends GuiScreen {
     }
 
     private void updateSearchBar() {
-        searchBar.xPosition = ScreenHelper.getAnchoredX(ScreenHelper.Anchor.LEFT,ScreenHelper.getStaticWidth(10));
-        searchBar.yPosition = ScreenHelper.getAnchoredY(ScreenHelper.Anchor.TOP,-ScreenHelper.getStaticHeight(35));
-        searchBar.width = ScreenHelper.getStaticWidth(300);
-        searchBar.height = ScreenHelper.getStaticHeight(30);
+        GuiScreenUtils.setX(searchBar, ScreenHelper.getAnchoredX(ScreenHelper.Anchor.LEFT,ScreenHelper.getStaticWidth(10)));
+        GuiScreenUtils.setY(searchBar, ScreenHelper.getAnchoredY(ScreenHelper.Anchor.TOP,-ScreenHelper.getStaticHeight(35)));
+        GuiScreenUtils.setW(searchBar, ScreenHelper.getStaticWidth(300));
+        GuiScreenUtils.setH(searchBar, ScreenHelper.getStaticHeight(30));
     }
 
     private void updateCMMList() {
@@ -152,24 +154,24 @@ public class CMMSelectorGUI extends GuiScreen {
         if(searchBar.getEnableBackgroundDrawing()){
             searchBar.setEnableBackgroundDrawing(false);
         }
-        GuiScreen.drawRect(searchBar.xPosition,searchBar.yPosition,
-                searchBar.xPosition+searchBar.width,
-                searchBar.yPosition+searchBar.height,new Color(255,255,255).getRGB());
-        GuiScreen.drawRect(searchBar.xPosition+1,searchBar.yPosition+1,searchBar.xPosition+searchBar.width-1,
-                searchBar.yPosition+searchBar.height-1,new Color(28, 28, 28).getRGB());
+        DrawContextUtils.fill(GuiScreenUtils.getX(searchBar),GuiScreenUtils.getY(searchBar),
+                GuiScreenUtils.getX(searchBar)+GuiScreenUtils.getW(searchBar),
+                GuiScreenUtils.getY(searchBar)+GuiScreenUtils.getH(searchBar),new Color(255,255,255).getRGB());
+        DrawContextUtils.fill(GuiScreenUtils.getX(searchBar)+1,GuiScreenUtils.getY(searchBar)+1,GuiScreenUtils.getX(searchBar)+GuiScreenUtils.getW(searchBar)-1,
+                GuiScreenUtils.getY(searchBar)+GuiScreenUtils.getH(searchBar)-1,new Color(28, 28, 28).getRGB());
 
         GlStateManager.pushMatrix();
-        GlStateManager.translate(searchBar.xPosition, searchBar.yPosition+ScreenHelper.getStaticHeight(5), 0);
+        GlStateManager.translate(GuiScreenUtils.getX(searchBar), GuiScreenUtils.getY(searchBar)+ScreenHelper.getStaticHeight(5), 0);
         GlStateManager.scale(2*ScreenHelper.getScaleFactor(), 2*ScreenHelper.getScaleFactor(), 1.0f);
 
-        int originalX = searchBar.xPosition;
-        int originalY = searchBar.yPosition;
-        searchBar.xPosition = 0;
-        searchBar.yPosition = 0;
+        int originalX = GuiScreenUtils.getX(searchBar);
+        int originalY = GuiScreenUtils.getY(searchBar);
+        GuiScreenUtils.setX(searchBar, 0);
+        GuiScreenUtils.setY(searchBar, 0);
 
         searchBar.drawTextBox();
-        searchBar.xPosition = originalX;
-        searchBar.yPosition = originalY;
+        GuiScreenUtils.setX(searchBar, originalX);
+        GuiScreenUtils.setY(searchBar, originalY);
         GlStateManager.popMatrix();
     }
 
@@ -217,7 +219,7 @@ public class CMMSelectorGUI extends GuiScreen {
     }
 
     private void drawBG() {
-        drawRect(0,0,this.width,this.height,0);
+        DrawContextUtils.fill(0,0,this.width,this.height,0);
         ResourceLocation location = getBGTex();
         NineSliceUtils.draw(location,1,1,this.width-2,this.height-2,6,18);
         TextRenderUtils.drawStringScaleAware("Select Menu Configuration",

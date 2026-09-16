@@ -6,14 +6,13 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour
 import io.hamlook.aetheria.features.chat.PlayerNameButtonListener
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI
 import io.hamlook.aetheria.utils.chat.ChatUtils
+import io.hamlook.aetheria.utils.compat.DrawContextUtils
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import io.hamlook.aetheria.utils.compat.MouseCompat
 import io.hamlook.aetheria.utils.compat.TextCompat
 import io.hamlook.aetheria.utils.render.RenderUtils
 import net.minecraft.client.gui.FontRenderer
-import net.minecraft.client.gui.Gui
 import net.minecraft.client.gui.GuiTextField
-import net.minecraft.event.ClickEvent
 import net.minecraft.util.IChatComponent
 import org.lwjgl.input.Keyboard
 import kotlin.math.max
@@ -101,31 +100,31 @@ object PlayerButtonHook {
         val hoverColor = (accent and 0x00FFFFFF) or 0x80000000.toInt()
 
         RenderUtils.drawGradientRect(0, bx, by, bx + MENU_WIDTH, by + boxH, bg, bgFade)
-        Gui.drawRect(bx, by, bx + MENU_WIDTH, by + MENU_HEADER_H, accent)
-        fr.drawStringWithShadow(
-            player,
-            (bx + (MENU_WIDTH - fr.getStringWidth(player)) / 2).toFloat(),
-            (by + 3).toFloat(),
+        DrawContextUtils.fill(bx, by, bx + MENU_WIDTH, by + MENU_HEADER_H, accent)
+        DrawContextUtils.drawTextWithShadow(
+            fr, player,
+            bx + (MENU_WIDTH - DrawContextUtils.getStringWidth(fr, player)) / 2,
+            by + 3,
             0xFFFFFFFF.toInt()
         )
 
         val cogHovered = mouseX in cogX..bx + MENU_WIDTH && mouseY in by until by + MENU_HEADER_H
-        if (cogHovered) Gui.drawRect(cogX, by, bx + MENU_WIDTH, by + MENU_HEADER_H, hoverColor)
-        fr.drawStringWithShadow(
-            "\u2699",
-            (cogX + MENU_HEADER_H / 2 - fr.getStringWidth("\u2699") / 2).toFloat(),
-            (by + 3).toFloat(),
+        if (cogHovered) DrawContextUtils.fill(cogX, by, bx + MENU_WIDTH, by + MENU_HEADER_H, hoverColor)
+        DrawContextUtils.drawTextWithShadow(
+            fr, "\u2699",
+            cogX + MENU_HEADER_H / 2 - DrawContextUtils.getStringWidth(fr, "\u2699") / 2,
+            by + 3,
             0xFFFFFFFF.toInt()
         )
 
         for (i in MENU_LABELS.indices) {
             val ry = by + MENU_HEADER_H + 2 + i * MENU_ROW_H
             val hovered = mouseX in bx..bx + MENU_WIDTH && mouseY in ry until ry + MENU_ROW_H
-            if (hovered) Gui.drawRect(bx + 1, ry, bx + MENU_WIDTH - 1, ry + MENU_ROW_H, hoverColor)
-            fr.drawStringWithShadow(
-                MENU_LABELS[i],
-                (bx + 6).toFloat(),
-                (ry + 3).toFloat(),
+            if (hovered) DrawContextUtils.fill(bx + 1, ry, bx + MENU_WIDTH - 1, ry + MENU_ROW_H, hoverColor)
+            DrawContextUtils.drawTextWithShadow(
+                fr, MENU_LABELS[i],
+                bx + 6,
+                ry + 3,
                 if (hovered) 0xFFFFFFFF.toInt() else 0xFFB5BAC1.toInt()
             )
         }
@@ -174,14 +173,17 @@ object PlayerButtonHook {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.playerButtons.enabled) return false
         if (mouseButton != 0) return false
 
+        //#if MC < 1.16
         val comp = MinecraftCompat.getMinecraft().ingameGUI.chatGUI
             .getChatComponent(MouseCompat.getX(), MouseCompat.getY()) ?: return false
-
         val style = TextCompat.getChatStyle(comp)
-        val click = TextCompat.getClickEvent(style) ?: return false
-        if (click.action != ClickEvent.Action.SUGGEST_COMMAND) return false
+        //#else
+        //$$ val style = MinecraftCompat.getMinecraft().inGameHud.chatHud
+        //$$     .getTextStyleAt(MouseCompat.getX().toDouble(), MouseCompat.getY().toDouble()) ?: return false
+        //#endif
+        if (!TextCompat.isClickAction(style, "SUGGEST_COMMAND")) return false
 
-        val value = click.value ?: return false
+        val value = TextCompat.getClickValue(style) ?: return false
         if (!value.startsWith(PlayerNameButtonListener.MARKER_PREFIX)) return false
 
         val player = value.substring(PlayerNameButtonListener.MARKER_PREFIX.length)
@@ -247,19 +249,19 @@ object PlayerButtonHook {
                 val baseStyle = TextCompat.getChatStyle(sib)
 
                 val beforeComp = TextCompat.createText(before)
-                TextCompat.setChatStyle(beforeComp, baseStyle.createDeepCopy())
+                TextCompat.setChatStyle(beforeComp, TextCompat.createDeepCopy(baseStyle))
 
                 val nameComp = TextCompat.createText(name)
-                val nameStyle = baseStyle.createDeepCopy()
-                nameStyle.underlined = true
-                TextCompat.setClickSuggestCommand(nameStyle, PlayerNameButtonListener.MARKER_PREFIX + ign)
-                TextCompat.setHoverShowText(nameStyle, "\u00a7eClick for player options")
+                var nameStyle = TextCompat.createDeepCopy(baseStyle)
+                nameStyle = TextCompat.setUnderlined(nameStyle, true)
+                nameStyle = TextCompat.setClickSuggestCommand(nameStyle, PlayerNameButtonListener.MARKER_PREFIX + ign)
+                nameStyle = TextCompat.setHoverShowText(nameStyle, "\u00a7eClick for player options")
                 TextCompat.setChatStyle(nameComp, nameStyle)
 
                 val afterComp = TextCompat.createText(after)
-                TextCompat.setChatStyle(afterComp, baseStyle.createDeepCopy())
-                for (child in sib.siblings) {
-                    afterComp.appendSibling(child)
+                TextCompat.setChatStyle(afterComp, TextCompat.createDeepCopy(baseStyle))
+                for (child in TextCompat.getSiblings(sib)) {
+                    TextCompat.appendSibling(afterComp, child)
                 }
 
                 siblings[i] = beforeComp

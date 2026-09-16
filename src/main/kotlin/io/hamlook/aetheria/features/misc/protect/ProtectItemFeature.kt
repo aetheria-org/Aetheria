@@ -11,12 +11,14 @@ import io.hamlook.aetheria.events.SlotClickEvent.ClickType
 import io.hamlook.aetheria.events.TickPhase
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.ContainerUtils
+import io.hamlook.aetheria.utils.compat.DrawContextUtils
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
+import io.hamlook.aetheria.utils.compat.InventoryCompat
 import io.hamlook.aetheria.utils.compat.KeyboardCompat
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import io.hamlook.aetheria.utils.compat.TextCompat
+import io.hamlook.aetheria.utils.compat.getDisplayNameCompat
 import io.hamlook.aetheria.utils.item.ItemUtils
-import net.minecraft.client.gui.Gui
 import net.minecraft.item.ItemStack
 import net.minecraft.util.EnumChatFormatting
 import org.lwjgl.input.Keyboard
@@ -38,10 +40,10 @@ class ProtectItemFeature {
             }
             if (ProtectedItemStorage.contains(uuid)) {
                 ProtectedItemStorage.remove(uuid)
-                notifyRaw("${EnumChatFormatting.YELLOW}${stack.displayName} ${EnumChatFormatting.GRAY}is no longer protected.")
+                notifyRaw("${EnumChatFormatting.YELLOW}${stack.getDisplayNameCompat()} ${EnumChatFormatting.GRAY}is no longer protected.")
             } else {
                 ProtectedItemStorage.add(uuid)
-                notifyRaw("${EnumChatFormatting.GREEN}${stack.displayName} ${EnumChatFormatting.GRAY}is now protected!")
+                notifyRaw("${EnumChatFormatting.GREEN}${stack.getDisplayNameCompat()} ${EnumChatFormatting.GRAY}is now protected!")
             }
         }
 
@@ -80,7 +82,7 @@ class ProtectItemFeature {
         if (!isProtected(stack)) return
 
         event.cancel()
-        notifyBlocked(stack.displayName, "dropped")
+        notifyBlocked(stack.getDisplayNameCompat(), "dropped")
     }
 
 
@@ -110,11 +112,11 @@ class ProtectItemFeature {
     }
 
     private fun handleClickOutsideWindow(event: SlotClickEvent) {
-        val cursorItem = MinecraftCompat.getLocalPlayer()?.inventory?.itemStack ?: return
+        val cursorItem = InventoryCompat.getCursorStack(MinecraftCompat.getLocalPlayer() ?: return) ?: return
         if (!isProtected(cursorItem)) return
 
         event.cancel()
-        notifyBlocked(cursorItem.displayName, "thrown away")
+        notifyBlocked(cursorItem.getDisplayNameCompat(), "thrown away")
     }
 
 
@@ -130,7 +132,7 @@ class ProtectItemFeature {
         if (!isProtected(stack)) return
 
         event.cancel()
-        notifyBlocked(stack.displayName, "dropped")
+        notifyBlocked(stack.getDisplayNameCompat(), "dropped")
     }
 
     private fun isDangerousGuiInteraction(event: SlotClickEvent): Boolean {
@@ -145,16 +147,16 @@ class ProtectItemFeature {
             val stack = slot.stack
             if (stack != null && isProtected(stack)) {
                 event.cancel()
-                notifyBlocked(stack.displayName, "moved in this menu")
+                notifyBlocked(stack.getDisplayNameCompat(), "moved in this menu")
                 return
             }
         }
 
         // Check if the cursor has a protected item
-        val cursorItem = MinecraftCompat.getLocalPlayer()?.inventory?.itemStack
+        val cursorItem = InventoryCompat.getCursorStack(MinecraftCompat.getLocalPlayer() ?: return)
         if (cursorItem != null && isProtected(cursorItem)) {
             event.cancel()
-            notifyBlocked(cursorItem.displayName, "moved in this menu")
+            notifyBlocked(cursorItem.getDisplayNameCompat(), "moved in this menu")
         }
     }
 
@@ -182,10 +184,17 @@ class ProtectItemFeature {
         GlStateManagerCompat.color(1f, 1f, 1f, opacity)
         GlStateManagerCompat.disableDepth()
 
+        //#if MC < 1.21
         mc.textureManager.bindTexture(Resources.PROTECT_ITEM_STAR)
-        Gui.drawModalRectWithCustomSizedTexture(
+        DrawContextUtils.drawModalRectWithCustomSizedTexture(
             x, y, 0f, 0f, STAR_SIZE, STAR_SIZE, STAR_SIZE.toFloat(), STAR_SIZE.toFloat()
         )
+        //#else
+        //$$ DrawContextUtils.drawModalRectWithCustomSizedTexture(
+        //$$     Resources.PROTECT_ITEM_STAR,
+        //$$     x, y, 0f, 0f, STAR_SIZE, STAR_SIZE, STAR_SIZE.toFloat(), STAR_SIZE.toFloat()
+        //$$ )
+        //#endif
 
         GlStateManagerCompat.enableDepth()
         GlStateManagerCompat.disableBlend()

@@ -5,6 +5,7 @@ import io.hamlook.aetheria.features.chat.GuiChatHook;
 import io.hamlook.aetheria.features.chat.emoji.EmojiSuggestionBar;
 import io.hamlook.aetheria.features.qol.ChatStateManager;
 import io.hamlook.aetheria.utils.hooks.GuiChatMixinHook;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.hooks.PlayerButtonHook;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.gui.GuiChat;
@@ -36,7 +37,7 @@ public abstract class MixinGuiChat extends GuiScreen implements GuiChatHook {
 
     @Inject(method = "drawScreen", at = @At("TAIL"))
     private void athr$drawPlayerMenu(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        PlayerButtonHook.drawMenu(mouseX, mouseY, this.width, this.height, this.fontRendererObj);
+        PlayerButtonHook.drawMenu(mouseX, mouseY, this.width, this.height, MinecraftCompat.getFontRenderer());
     }
 
     @Inject(method = "keyTyped", at = @At("HEAD"), cancellable = true)

@@ -10,7 +10,7 @@ import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
-import net.minecraft.client.gui.ScaledResolution;
+
 import org.lwjgl.opengl.GL11;
 
 import java.util.function.Consumer;
@@ -40,8 +40,9 @@ public class GuiElementSlider extends GuiElement {
 
     @Override
     public void render() {
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int mouseX = KeybindHelper.getMouseCoords(sr)[0];
+        int screenW = GuiScreenUtils.getScaledWindowWidth();
+        int screenH = GuiScreenUtils.getScaledWindowHeight();
+        int mouseX = KeybindHelper.getMouseCoords(screenW, screenH)[0];
 
         float v = value;
         if (clicked) {

@@ -32,7 +32,16 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.*;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTTagByte;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagDouble;
+import net.minecraft.nbt.NBTTagFloat;
+import net.minecraft.nbt.NBTTagInt;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTTagLong;
+import net.minecraft.nbt.NBTTagShort;
+import net.minecraft.nbt.NBTTagString;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;

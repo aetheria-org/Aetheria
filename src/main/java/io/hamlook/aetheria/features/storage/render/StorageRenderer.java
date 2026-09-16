@@ -21,6 +21,7 @@ import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.LinkedHashMap;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 
 public class StorageRenderer extends Gui {
 
@@ -111,7 +112,7 @@ public class StorageRenderer extends Gui {
     private void drawPanelBackground(int x, int y, int width, int height) {
         GlStateManagerCompat.disableBlend();
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
-        drawRect(x, y, x + width, y + height, 0xFF000000);
+        DrawContextUtils.fill(x, y, x + width, y + height, 0xFF000000);
         GlStateManagerCompat.enableBlend();
         NineSliceUtils.draw(getContainerBg(), x, y, width, height, NINE_SLICE_CORNER, NINE_SLICE_SIZE);
     }
@@ -391,7 +392,7 @@ public class StorageRenderer extends Gui {
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
         GlStateManagerCompat.colorMask(true, true, true, false);
-        drawRect(x, y, x + SLOT_SIZE, y + SLOT_SIZE, 0x80FFFFFF);
+        DrawContextUtils.fill(x, y, x + SLOT_SIZE, y + SLOT_SIZE, 0x80FFFFFF);
         GlStateManagerCompat.colorMask(true, true, true, true);
         GlStateManagerCompat.disableBlend();
     }
@@ -438,7 +439,7 @@ public class StorageRenderer extends Gui {
 
         int scrollbarWidth = 4;
 
-        drawRect(sbX, sbTrackY, sbX + scrollbarWidth, sbTrackY + sbTrackHeight, 0x80000000);
+        DrawContextUtils.fill(sbX, sbTrackY, sbX + scrollbarWidth, sbTrackY + sbTrackHeight, 0x80000000);
 
         int visibleHeight = storageAreaH - NINE_SLICE_CORNER * 2;
         int totalHeight = visibleHeight + maxScroll;
@@ -448,7 +449,7 @@ public class StorageRenderer extends Gui {
         float scrollRatio = scrollOffset / maxScroll;
         int thumbY = sbTrackY + (int) ((sbTrackHeight - thumbHeight) * scrollRatio);
 
-        drawRect(sbX, thumbY, sbX + scrollbarWidth, thumbY + thumbHeight, 0xFFAAAAAA);
+        DrawContextUtils.fill(sbX, thumbY, sbX + scrollbarWidth, thumbY + thumbHeight, 0xFFAAAAAA);
     }
 
     public boolean isMouseOverScrollbar(int mouseX, int mouseY) {
@@ -650,7 +651,7 @@ public class StorageRenderer extends Gui {
             GlStateManagerCompat.enableBlend();
             GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
             GlStateManagerCompat.disableTexture2D();
-            drawRect(layout.x, layout.y, layout.x + layout.width, layout.y + layout.height, 0x55000000);
+            DrawContextUtils.fill(layout.x, layout.y, layout.x + layout.width, layout.y + layout.height, 0x55000000);
             GlStateManagerCompat.enableTexture2D();
             GlStateManagerCompat.disableBlend();
         }

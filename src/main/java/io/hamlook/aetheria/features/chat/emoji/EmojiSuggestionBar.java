@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.chat.emoji;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.chat.EmojiConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
@@ -10,9 +11,7 @@ import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
@@ -285,13 +284,13 @@ public class EmojiSuggestionBar {
     private static void drawRoundedBorder(int x, int y, int x2, int y2, int r, int color) {
         r = Math.min(r, Math.min(x2 - x, y2 - y) / 2);
         if (r <= 0) {
-            Gui.drawRect(x, y, x2, y2, color);
+            DrawContextUtils.fill(x, y, x2, y2, color);
             return;
         }
-        Gui.drawRect(x + r, y, x2 - r, y + 1, color);
-        Gui.drawRect(x + r, y2 - 1, x2 - r, y2, color);
-        Gui.drawRect(x, y + r, x + 1, y2 - r, color);
-        Gui.drawRect(x2 - 1, y + r, x2, y2 - r, color);
+        DrawContextUtils.fill(x + r, y, x2 - r, y + 1, color);
+        DrawContextUtils.fill(x + r, y2 - 1, x2 - r, y2, color);
+        DrawContextUtils.fill(x, y + r, x + 1, y2 - r, color);
+        DrawContextUtils.fill(x2 - 1, y + r, x2, y2 - r, color);
         drawCornerArc(x, y, r, color, false, false);
         drawCornerArc(x2 - r, y, r, color, true, false);
         drawCornerArc(x, y2 - r, r, color, false, true);
@@ -316,7 +315,7 @@ public class EmojiSuggestionBar {
     private static void drawArcPixel(int cx, int cy, int r, int color, boolean flipX, boolean flipY, int u, int v) {
         int px = flipX ? cx + (r - 1 - u) : cx + u;
         int py = flipY ? cy + (r - 1 - v) : cy + v;
-        Gui.drawRect(px, py, px + 1, py + 1, color);
+        DrawContextUtils.fill(px, py, px + 1, py + 1, color);
     }
 
     public static void render(GuiTextField inputField, int mouseX, int mouseY) {
@@ -327,7 +326,6 @@ public class EmojiSuggestionBar {
         if (matches.isEmpty()) return;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         lastMouseX = mouseX;
         lastMouseY = mouseY;
 
@@ -345,13 +343,13 @@ public class EmojiSuggestionBar {
 
         boxW = PAD * 2 + GRID_WIDTH + (maxScroll > 0 ? SCROLLBAR_WIDTH + PAD : 0);
         boxH = PAD * 2 + cachedGridHeight;
-        boxX = inputField.xPosition;
-        boxY = inputField.yPosition - boxH - 2;
+        boxX = GuiScreenUtils.getX(inputField);
+        boxY = GuiScreenUtils.getY(inputField) - boxH - 2;
 
         float halfW = boxW / 2f * scale;
         float halfH = boxH / 2f * scale;
-        int snapW = sr.getScaledWidth();
-        int snapH = sr.getScaledHeight();
+        int snapW = GuiScreenUtils.getScaledWindowWidth();
+        int snapH = GuiScreenUtils.getScaledWindowHeight();
         int minX = Math.round(halfW - boxW / 2f);
         int maxX = Math.round(snapW - halfW - boxW / 2f);
         boxX = minX > maxX ? Math.round((snapW - boxW) / 2f) : Math.max(minX, Math.min(maxX, boxX));
@@ -389,7 +387,7 @@ public class EmojiSuggestionBar {
         int sGridBot = Math.round(cy + (gyBot - cy) * scale);
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        int factor = sr.getScaleFactor();
+        int factor = GuiScreenUtils.getScaleFactor();
         GL11.glScissor(sGridLeft * factor, GuiScreenUtils.getDisplayHeight() - sGridBot * factor, (sGridRight - sGridLeft) * factor, (sGridBot - sGridTop) * factor);
 
         int firstRow = (int) scrollOffset;
@@ -407,7 +405,7 @@ public class EmojiSuggestionBar {
 
             if (idx == hovered) {
                 int highlightColor = ChromaColour.specialToChromaRGB(cfg.rowHighlightColor);
-                Gui.drawRect(gridLeft(), cellY, gRight, cellY + CELL_SIZE, highlightColor);
+                DrawContextUtils.fill(gridLeft(), cellY, gRight, cellY + CELL_SIZE, highlightColor);
             }
 
             String emojiName = matches.get(idx);
@@ -431,7 +429,7 @@ public class EmojiSuggestionBar {
             int ty = Math.round(cy - halfH) - 11;
             if (ty < 2) ty = Math.round(cy + halfH) + 2;
             ty = Math.max(2, Math.min(ty, snapH - 10));
-            Gui.drawRect(tx - 2, ty - 1, tx + tw + 2, ty + 9, 0xCC222222);
+            DrawContextUtils.fill(tx - 2, ty - 1, tx + tw + 2, ty + 9, 0xCC222222);
             fr.drawString(tooltip, tx, ty, 0xCCCCCC, false);
         }
     }
@@ -440,7 +438,7 @@ public class EmojiSuggestionBar {
         int sbX = scrollbarX();
         boolean hovering = isMouseOverScrollbar(mouseX, mouseY);
 
-        Gui.drawRect(sbX, cachedScrollbarY, sbX + SCROLLBAR_WIDTH, cachedScrollbarY + cachedScrollbarH, 0x66000000);
+        DrawContextUtils.fill(sbX, cachedScrollbarY, sbX + SCROLLBAR_WIDTH, cachedScrollbarY + cachedScrollbarH, 0x66000000);
 
         float thumbPercent = scrollOffset / Math.max(1, maxScroll);
         int thumbH = Math.max(10, (int) (cachedScrollbarH * (MAX_VISIBLE_ROWS / (float) totalRows)));
@@ -448,7 +446,7 @@ public class EmojiSuggestionBar {
         int thumbY = cachedScrollbarY + (int) (thumbPercent * (cachedScrollbarH - thumbH));
 
         int thumbColor = hovering || isDraggingScrollbar ? 0xAAEEEEEE : 0x88CCCCCC;
-        Gui.drawRect(sbX, thumbY, sbX + SCROLLBAR_WIDTH, thumbY + thumbH, thumbColor);
+        DrawContextUtils.fill(sbX, thumbY, sbX + SCROLLBAR_WIDTH, thumbY + thumbH, thumbColor);
     }
 
     public static int hitTest(int mouseX, int mouseY) {

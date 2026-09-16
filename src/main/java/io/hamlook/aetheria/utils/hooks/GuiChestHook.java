@@ -4,6 +4,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.features.qol.BetterContainers;
 import io.hamlook.aetheria.features.storage.StorageManager;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -29,7 +30,7 @@ public final class GuiChestHook {
         if (!BetterContainers.isEnabled() || !BetterContainers.getInstance().isLoaded() || ATHRConfig.feature == null)
             return;
         String label = "ASM";
-        int textW = MinecraftCompat.getFontRenderer().getStringWidth(label);
+        int textW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), label);
         int x = gui.xSize - textW - 10;
         int y = 6;
         int baseColor = ChromaColour.specialToChromaRGB(ATHRConfig.feature.qol.betterContainers.watermarkColor);

@@ -17,6 +17,7 @@ public class HotswapSupport {
         isForgeSidePresent = present;
 
         HotswapSupportHandle handle = null;
+        //#if MC < 1.16
         if (isForgeSidePresent) {
             try {
                 handle = new HotswapSupportImpl();
@@ -24,6 +25,7 @@ public class HotswapSupport {
                 Aetheria.logger.warning("[ATHR] HotSwap support failed to init: " + t.getMessage());
             }
         }
+        //#endif
         obj = handle;
     }
 

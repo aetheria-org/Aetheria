@@ -7,12 +7,13 @@ import io.hamlook.aetheria.events.TickPhase
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.SoundUtils
 import io.hamlook.aetheria.utils.Utils
+import io.hamlook.aetheria.utils.compat.EntityCompat
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.compat.TextCompat
 import io.hamlook.aetheria.utils.compat.WorldCompat
 import io.hamlook.aetheria.utils.overlay.SimpleOverlay
-import net.minecraft.client.gui.ScaledResolution
+
 import net.minecraft.entity.boss.EntityWither
-import net.minecraft.util.EnumChatFormatting
 import org.lwjgl.opengl.GL11
 import kotlin.math.sqrt
 
@@ -48,7 +49,7 @@ class CrushAlert : SimpleOverlay() {
         }
 
         val storm = MinecraftCompat.getLocalWorld()?.let { WorldCompat.getAllEntities(it) }?.filterIsInstance<EntityWither>()
-            ?.firstOrNull { EnumChatFormatting.getTextWithoutFormattingCodes(it.name) == "Storm" }
+            ?.firstOrNull { EntityCompat.getName(it) == "Storm" }
 
         if (storm == null) {
             alertActive = false; return
@@ -70,18 +71,18 @@ class CrushAlert : SimpleOverlay() {
 
     override fun shouldRender() = alertActive && config?.enabled == true
 
-    override fun render(sr: ScaledResolution) {
+    override fun render(scaledWidth: Int, scaledHeight: Int) {
         val mc = MinecraftCompat.getMinecraft()
         val fr = MinecraftCompat.getFontRenderer()
 
         val pillar = activePillar
         val pillarText = if (pillar != null) " ${pillar.color}${pillar.name}" else ""
-        val text = "${EnumChatFormatting.RED}${EnumChatFormatting.BOLD}CRUSH STORM$pillarText"
+        val text = "§c§lCRUSH STORM$pillarText"
 
         GL11.glPushMatrix()
         GL11.glScalef(2f, 2f, 1f)
         Utils.drawStringCentered(
-            text, fr, sr.scaledWidth / 4f, (sr.scaledHeight / 2f - 40f) / 2f, true, 0xFFFFFF
+            text, fr, scaledWidth / 4f, (scaledHeight / 2f - 40f) / 2f, true, 0xFFFFFF
         )
         GL11.glPopMatrix()
     }

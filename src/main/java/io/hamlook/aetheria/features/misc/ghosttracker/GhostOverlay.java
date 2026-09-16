@@ -7,6 +7,7 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
@@ -149,8 +150,8 @@ public class GhostOverlay extends Overlay {
         lastH = h;
 
         Position pos = getPosition();
-        int x = pos.getAbsX(sr, (int) (w * scale));
-        int y = pos.getAbsY(sr, (int) (h * scale));
+        int x = pos.getAbsX(GuiScreenUtils.getScaledWindowWidth(), (int) (w * scale));
+        int y = pos.getAbsY(GuiScreenUtils.getScaledWindowHeight(), (int) (h * scale));
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 

@@ -20,7 +20,6 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.ChromaTextRenderer;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
@@ -179,18 +178,18 @@ public class EnchantProcessor {
     }
 
     private int correctTooltipWidth(int maxTooltipWidth) {
-        final ScaledResolution scaled = GuiScreenUtils.getScaledResolution();
-        final int mouseX = KeybindHelper.getMouseCoords(scaled)[0];
+        final int screenW = GuiScreenUtils.getScaledWindowWidth();
+        final int mouseX = KeybindHelper.getMouseCoords(screenW, GuiScreenUtils.getScaledWindowHeight())[0];
         int tooltipX = mouseX + 12;
-        if (tooltipX + maxTooltipWidth + 4 > scaled.getScaledWidth()) {
+        if (tooltipX + maxTooltipWidth + 4 > screenW) {
             tooltipX = mouseX - 16 - maxTooltipWidth;
             if (tooltipX < 4) {
-                if (mouseX > scaled.getScaledWidth() / 2) maxTooltipWidth = mouseX - 12 - 8;
-                else maxTooltipWidth = scaled.getScaledWidth() - 16 - mouseX;
+                if (mouseX > screenW / 2) maxTooltipWidth = mouseX - 12 - 8;
+                else maxTooltipWidth = screenW - 16 - mouseX;
             }
         }
-        if (scaled.getScaledWidth() > 0 && maxTooltipWidth > scaled.getScaledWidth()) {
-            maxTooltipWidth = scaled.getScaledWidth();
+        if (screenW > 0 && maxTooltipWidth > screenW) {
+            maxTooltipWidth = screenW;
         }
         return maxTooltipWidth;
     }

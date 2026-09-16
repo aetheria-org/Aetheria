@@ -13,7 +13,6 @@ import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import lombok.Setter;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.inventory.ContainerChest;
 
@@ -236,9 +235,8 @@ public class StorageListener {
         if (!switchingContainer || !overlayInitialized || !StorageManager.isOverlayActive()) return;
         if (MinecraftCompat.getCurrentScreen() != null) return;
 
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int width = sr.getScaledWidth();
-        int height = sr.getScaledHeight();
+        int width = GuiScreenUtils.getScaledWindowWidth();
+        int height = GuiScreenUtils.getScaledWindowHeight();
 
         // Keep the background dim during container switch so the screen never flashes un-dimmed
         GlStateManagerCompat.disableLighting();

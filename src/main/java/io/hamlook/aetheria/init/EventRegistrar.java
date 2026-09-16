@@ -2,10 +2,9 @@ package io.hamlook.aetheria.init;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.api.event.AetheriaEventBus;
+import io.hamlook.aetheria.utils.compat.EventBusCompat;
 import io.hamlook.aetheria.utils.compat.KeybindCompat;
 import net.minecraft.client.settings.KeyBinding;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -19,7 +18,7 @@ import java.util.List;
  * initialization and registers them based on annotations:
  * <ul>
  *   <li>{@link RegisterEvents {@code @RegisterEvents}} → {@link
- *       MinecraftForge#EVENT_BUS}</li>
+ *       EventBusCompat#register}</li>
  *   <li>{@link RegisterInstance {@code @RegisterInstance}} → event bus listener</li>
  *   <li>{@link RegisterKeybind {@code @RegisterKeybind}} → {@link
  *       ClientRegistry#registerKeyBinding}</li>
@@ -45,14 +44,14 @@ public class EventRegistrar {
 
     public static void stopAllListeners() {
         for (Object instance : REGISTERED_EVENT_INSTANCES) {
-            MinecraftForge.EVENT_BUS.unregister(instance);
+            EventBusCompat.unregister(instance);
         }
     }
     public static void reloadAllListeners() {
         for (Object instance : REGISTERED_EVENT_INSTANCES) {
-            MinecraftForge.EVENT_BUS.unregister(instance);
+            EventBusCompat.unregister(instance);
             AetheriaEventBus.INSTANCE.unregister(instance);
-            MinecraftForge.EVENT_BUS.register(instance);
+            EventBusCompat.register(instance);
             AetheriaEventBus.INSTANCE.register(instance);
         }
     }
@@ -73,13 +72,13 @@ public class EventRegistrar {
 
     /**
      * If {@code clazz} is annotated with {@code @RegisterEvents}, instantiate it
-     * and subscribe it to {@link MinecraftForge#EVENT_BUS}.
+     * and subscribe it to the event bus.
      */
     private static void tryRegisterEvents(Class<?> clazz) {
         if (!clazz.isAnnotationPresent(RegisterEvents.class)) return;
         try {
             Object instance = newInstance(clazz);
-            MinecraftForge.EVENT_BUS.register(instance);
+            EventBusCompat.register(instance);
             AetheriaEventBus.INSTANCE.register(instance);
             REGISTERED_EVENT_INSTANCES.add(instance);
         } catch (Throwable t) {
@@ -106,7 +105,7 @@ public class EventRegistrar {
                     Aetheria.logger.severe("[ATHR] @RegisterInstance field is null: " + field.getName());
                     continue;
                 }
-                MinecraftForge.EVENT_BUS.register(instance);
+                EventBusCompat.register(instance);
                 AetheriaEventBus.INSTANCE.register(instance);
                 REGISTERED_EVENT_INSTANCES.add(instance);
             } catch (Throwable t) {
@@ -118,7 +117,7 @@ public class EventRegistrar {
     /**
      * For every {@code @RegisterKeybind} static {@link KeyBinding} field in
      * {@code clazz}, read the field value and register it with
-     * {@link ClientRegistry#registerKeyBinding}.
+     * {@link KeybindCompat#registerKeyBinding}.
      */
     private static void tryRegisterKeybindFields(Class<?> clazz) {
         for (Field field : clazz.getDeclaredFields()) {

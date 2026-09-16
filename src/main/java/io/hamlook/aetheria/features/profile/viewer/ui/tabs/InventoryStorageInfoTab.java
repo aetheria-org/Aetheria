@@ -14,7 +14,8 @@ import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
+
+
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -56,7 +57,7 @@ public class InventoryStorageInfoTab extends Tab {
         // Vertical Separator
         float sepX = xPos + leftWidth + gap / 2;
         float titleTop = yPos - ProfileViewerGUI.getScaledF(13);
-        Gui.drawRect((int)sepX, (int)titleTop, (int)sepX + 1, (int)(yPos + height - pad), 0xFF555555);
+        DrawContextUtils.fill((int)sepX, (int)titleTop, (int)sepX + 1, (int)(yPos + height - pad), 0xFF555555);
 
         // 2. Draw Storage Section (Right)
         ItemData storageHovered = drawStorage(mc, xPos + leftWidth + gap, yPos, rightWidth, height, data, pad);
@@ -78,7 +79,7 @@ public class InventoryStorageInfoTab extends Tab {
         ItemData hoveredItem = null;
         float titleY = y - ProfileViewerGUI.getScaledF(16);
         TextRenderUtils.drawStringScaleAware("§eInventory", x + ProfileViewerGUI.getScaledF(6), titleY, ProfileViewerGUI.getScaleText(), false);
-        Gui.drawRect((int)x, (int)(titleY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(titleY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
+        DrawContextUtils.fill((int)x, (int)(titleY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(titleY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
 
         if (data == null || data.inventoryData == null) return null;
         float gridY = y + ProfileViewerGUI.getScaledF(8);
@@ -139,7 +140,7 @@ public class InventoryStorageInfoTab extends Tab {
         String title = selectedContainerIndex == -1 ? "§eStorage" : "§eContainer Viewer";
         float titleY = y - ProfileViewerGUI.getScaledF(16);
         TextRenderUtils.drawStringScaleAware(title, x, titleY, ProfileViewerGUI.getScaleText(), false);
-        Gui.drawRect((int)x, (int)(titleY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(titleY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
+        DrawContextUtils.fill((int)x, (int)(titleY + ProfileViewerGUI.getScaledF(12)), (int)(x + w), (int)(titleY + ProfileViewerGUI.getScaledF(13)), 0xFF555555);
 
         float contentY = y + ProfileViewerGUI.getScaledF(8);
         float contentH = h - ProfileViewerGUI.getScaledF(8);
@@ -244,7 +245,7 @@ public class InventoryStorageInfoTab extends Tab {
     private void drawButton(String text, float x, float y, float w, float h) {
         boolean hover = isMouseOver(x, y, w, h);
         int color = hover ? 0xFF666666 : 0xFF444444;
-        Gui.drawRect((int)x, (int)y, (int)(x + w), (int)(y + h), color);
+        DrawContextUtils.fill((int)x, (int)y, (int)(x + w), (int)(y + h), color);
         TextRenderUtils.drawCenteredStringScaleAware(text, x + w/2, y + h/2, ProfileViewerGUI.getScaleText() * 0.8f, false);
     }
 
@@ -299,8 +300,7 @@ public class InventoryStorageInfoTab extends Tab {
     }
 
     private void applyScissor(float x, float y, float w, float h) {
-        ScaledResolution res = GuiScreenUtils.getScaledResolution();
-        int f = res.getScaleFactor();
+        int f = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor((int)(x * f), (int)(GuiScreenUtils.getDisplayHeight() - (y + h) * f), (int)(w * f), (int)(h * f));
     }
@@ -313,10 +313,10 @@ public class InventoryStorageInfoTab extends Tab {
         if (icon != null) {
             int color = getRarityHex(rarityScore);
             int b = 1;
-            Gui.drawRect((int)x + 1, (int)y + 1, (int)(x + size) - 1, (int)y + 1 + b, color);
-            Gui.drawRect((int)x + 1, (int)(y + size) - 1 - b, (int)(x + size) - 1, (int)(y + size) - 1, color);
-            Gui.drawRect((int)x + 1, (int)y + 1, (int)x + 1 + b, (int)(y + size) - 1, color);
-            Gui.drawRect((int)(x + size) - 1 - b, (int)y + 1, (int)(x + size) - 1, (int)(y + size) - 1, color);
+            DrawContextUtils.fill((int)x + 1, (int)y + 1, (int)(x + size) - 1, (int)y + 1 + b, color);
+            DrawContextUtils.fill((int)x + 1, (int)(y + size) - 1 - b, (int)(x + size) - 1, (int)(y + size) - 1, color);
+            DrawContextUtils.fill((int)x + 1, (int)y + 1, (int)x + 1 + b, (int)(y + size) - 1, color);
+            DrawContextUtils.fill((int)(x + size) - 1 - b, (int)y + 1, (int)(x + size) - 1, (int)(y + size) - 1, color);
 
             ItemRenderUtils.renderItemIcon(mc, icon, (int)(x + size*0.15f), (int)(y + size*0.15f), (int)(size*0.7f));
         }

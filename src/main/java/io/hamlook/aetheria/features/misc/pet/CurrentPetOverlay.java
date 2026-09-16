@@ -4,6 +4,8 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
@@ -12,8 +14,6 @@ import io.hamlook.aetheria.utils.overlay.OverlayUtils;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 
@@ -103,9 +103,8 @@ public class CurrentPetOverlay extends Overlay {
         lastH = h;
 
         Position pos = getPosition();
-        ScaledResolution resolution = currentSr();
-        int x = pos.getAbsX(resolution, (int) (w * scale));
-        int y = pos.getAbsY(resolution, (int) (h * scale));
+        int x = pos.getAbsX(GuiScreenUtils.getScaledWindowWidth(), (int) (w * scale));
+        int y = pos.getAbsY(GuiScreenUtils.getScaledWindowHeight(), (int) (h * scale));
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 
@@ -119,7 +118,7 @@ public class CurrentPetOverlay extends Overlay {
         if (skullItem != null) {
             ItemRenderUtils.renderItemWithEffects(mc, skullItem, 0, 0);
         } else {
-            Gui.drawRect(0, 0, SKULL_SIZE, SKULL_SIZE, 0xFF555555);
+            DrawContextUtils.fill(0, 0, SKULL_SIZE, SKULL_SIZE, 0xFF555555);
         }
 
         int textY = (SKULL_SIZE - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2;

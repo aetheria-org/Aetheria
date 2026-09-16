@@ -10,15 +10,24 @@ import io.hamlook.aetheria.features.qol.BetterContainers;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.ClipboardCompat;
+import io.hamlook.aetheria.utils.compat.DrawContext;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
 import io.hamlook.aetheria.utils.modcompat.NefSlotClickCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.NBTFormatter;
 import io.hamlook.aetheria.utils.render.HighlightUtils;
-import net.minecraft.client.gui.GuiButton;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
+//#if MC < 1.21
+import net.minecraft.client.gui.GuiButton;
+//#else
+//$$ import net.minecraft.client.gui.screen.ingame.HandledScreen;
+//$$ import net.minecraft.client.gui.widget.ButtonWidget;
+//$$ import net.minecraft.client.gui.widget.ClickableWidget;
+//$$ import net.minecraft.text.Text;
+//#endif
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
@@ -34,8 +43,8 @@ public final class GuiContainerHook {
     private GuiContainerHook() {
     }
 
-    public static void afterDrawForeground(GuiContainer gui, int mouseX, int mouseY) {
-        new GuiContainerRenderBeforeTooltipEvent(gui, mouseX, mouseY).post();
+    public static void afterDrawForeground(DrawContext context, GuiContainer gui, int mouseX, int mouseY) {
+        new GuiContainerRenderBeforeTooltipEvent(context, gui, mouseX, mouseY).post();
     }
 
     public static void onGuiClosed(GuiContainer gui) {
@@ -65,21 +74,41 @@ public final class GuiContainerHook {
         return true;
     }
 
+    //#if MC < 1.21
     public static void profileInitGui(GuiContainer gui, List<GuiButton> buttonList) {
         ContainerChest chest = ContainerUtils.getOpenChest(gui);
         if (chest != null && chest.getLowerChestInventory().getName().equals("View Profile") && !SkyblockData.getEnvironment().isTest()) {
             buttonList.add(new GuiButton(1000, gui.guiLeft - 200, gui.guiTop, 80, 20, "Parse Profile"));
         }
     }
+    //#else
+    //$$ public static void profileInitGui(HandledScreen<?> gui, List<ClickableWidget> buttonList) {
+    //$$     ContainerChest chest = ContainerUtils.getOpenChest((GuiContainer)(Object)gui);
+    //$$     if (chest != null && chest.getLowerChestInventory().getName().equals("View Profile") && !SkyblockData.getEnvironment().isTest()) {
+    //$$         buttonList.add(ButtonWidget.builder(Text.literal("Parse Profile"), b -> ProfileParser.parse("Diyansh", gui.getScreenHandler())).dimensions(gui.x - 200, gui.y, 80, 20).build());
+    //$$     }
+    //$$ }
+    //#endif
 
+    //#if MC < 1.21
     public static boolean profileMouseReleased(GuiContainer gui, int mouseX, int mouseY, GuiButton button) {
         if (button == null) return false;
-        if (mouseX > button.xPosition && mouseX < button.xPosition + button.width && mouseY > button.yPosition && mouseY < button.yPosition + button.height) {
+        if (mouseX > GuiScreenUtils.getX(button) && mouseX < GuiScreenUtils.getX(button) + GuiScreenUtils.getW(button) && mouseY > GuiScreenUtils.getY(button) && mouseY < GuiScreenUtils.getY(button) + GuiScreenUtils.getH(button)) {
             ProfileParser.parse("Diyansh", gui.inventorySlots);
             return true;
         }
         return false;
     }
+    //#else
+    //$$ public static boolean profileMouseReleased(HandledScreen<?> gui, int mouseX, int mouseY, ClickableWidget button) {
+    //$$     if (button == null) return false;
+    //$$     if (mouseX > GuiScreenUtils.getX(button) && mouseX < GuiScreenUtils.getX(button) + GuiScreenUtils.getW(button) && mouseY > GuiScreenUtils.getY(button) && mouseY < GuiScreenUtils.getY(button) + GuiScreenUtils.getH(button)) {
+    //$$         ProfileParser.parse("Diyansh", gui.getScreenHandler());
+    //$$         return true;
+    //$$     }
+    //$$     return false;
+    //$$ }
+    //#endif
 
     public static boolean profileMouseClicked(GuiContainer gui, Slot theSlot, int mouseButton) {
         if (mouseButton != 0) return false;

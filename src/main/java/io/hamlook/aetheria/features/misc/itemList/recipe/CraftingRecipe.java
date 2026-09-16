@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.misc.itemList.recipe;
 
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
@@ -55,7 +56,7 @@ public class CraftingRecipe extends Recipe {
         }
 
         int arrowX = gridStartX + 3 * S + 4;
-        fr.drawStringWithShadow(">", arrowX, gridStartY + S + 4, 0xFFFFFF);
+        DrawContextUtils.drawTextWithShadow(fr, ">", arrowX, gridStartY + S + 4, 0xFFFFFF);
 
         int resultX = arrowX + 12;
         int resultY = gridStartY + S - 4;

@@ -7,7 +7,9 @@ import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.repo.data.UpdateData;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
@@ -84,7 +86,7 @@ public class OptionsMenu extends AetheriaBaseScreen {
         openProgress = Math.min(1f, openProgress + 0.045f);
 
         drawDefaultBackground();
-        drawRect(0, 0, width, height, 0x90000000);
+        DrawContextUtils.fill(0, 0, width, height, 0x90000000);
 
         // Particles (additive blend)
         GlStateManagerCompat.disableTexture2D();
@@ -108,7 +110,7 @@ public class OptionsMenu extends AetheriaBaseScreen {
 
         // Animated title
         float scale = Math.max(1.8f, Math.min(2.8f, width / 155f));
-        float scaledW = fontRendererObj.getStringWidth(TITLE) * scale;
+        float scaledW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), TITLE) * scale;
         float titleX = (width - scaledW) / 2f;
         float titleY = height * 0.22f;
 
@@ -127,17 +129,17 @@ public class OptionsMenu extends AetheriaBaseScreen {
             GlStateManagerCompat.pushMatrix();
             GlStateManagerCompat.translate(0f, bob, 0f);
             String ch = String.valueOf(TITLE.charAt(i));
-            fontRendererObj.drawStringWithShadow(ch, curX, 0, argb);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), ch, curX, 0, argb);
             GlStateManagerCompat.popMatrix();
-            curX += fontRendererObj.getStringWidth(ch);
+            curX += DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), ch);
         }
         GlStateManagerCompat.popMatrix();
 
         // Version string
         String ver = "v" + Aetheria.VERSION;
-        float verX = (width - fontRendererObj.getStringWidth(ver)) / 2f;
-        float verY = titleY + fontRendererObj.FONT_HEIGHT * scale + 5f;
-        fontRendererObj.drawStringWithShadow(ver, verX, verY, blendColor(openProgress));
+        float verX = (width - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), ver)) / 2f;
+        float verY = titleY + MinecraftCompat.getFontRenderer().FONT_HEIGHT * scale + 5f;
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), ver, verX, verY, blendColor(openProgress));
 
         // Update badge
         if (updateVersion != null) drawUpdateBadge();
@@ -152,11 +154,11 @@ public class OptionsMenu extends AetheriaBaseScreen {
             boolean hov = mouseX >= btnX && mouseX <= btnX + BTN_W && mouseY >= by && mouseY <= by + BTN_H;
 
             RenderUtils.drawFloatingRectDark(btnX, by, BTN_W, BTN_H, false);
-            if (hov) drawRect(btnX, by, btnX + BTN_W, by + BTN_H, 0x18FFFFFF);
+            if (hov) DrawContextUtils.fill(btnX, by, btnX + BTN_W, by + BTN_H, 0x18FFFFFF);
 
             int labelColor = hov ? 0x00C8C8 : 0xA0A0A0;
             String lbl = BTN_LABELS[i];
-            fontRendererObj.drawStringWithShadow(lbl, btnX + (BTN_W - fontRendererObj.getStringWidth(lbl)) / 2f, by + (BTN_H - fontRendererObj.FONT_HEIGHT) / 2f, labelColor);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), lbl, btnX + (BTN_W - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), lbl)) / 2f, by + (BTN_H - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2f, labelColor);
         }
 
         int iconY = height - ICON_SIZE - 8;
@@ -233,12 +235,12 @@ public class OptionsMenu extends AetheriaBaseScreen {
         float titleScale = Math.max(1.8f, Math.min(2.8f, width / 155f));
         float splashScale = titleScale * 0.52f;
         float bounce = 1f - (float) (Math.abs(Math.sin(splashBounce)) * 0.06f);
-        float scaledW = fontRendererObj.getStringWidth(TITLE) * titleScale;
+        float scaledW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), TITLE) * titleScale;
         float anchorX = (width - scaledW) / 2f + scaledW + 10f;
-        float anchorY = height * 0.22f + fontRendererObj.FONT_HEIGHT * titleScale * 0.3f + 15f;
+        float anchorY = height * 0.22f + MinecraftCompat.getFontRenderer().FONT_HEIGHT * titleScale * 0.3f + 15f;
 
-        float renderedW = fontRendererObj.getStringWidth(updateText) * splashScale * bounce;
-        float renderedH = fontRendererObj.FONT_HEIGHT * splashScale * bounce;
+        float renderedW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), updateText) * splashScale * bounce;
+        float renderedH = MinecraftCompat.getFontRenderer().FONT_HEIGHT * splashScale * bounce;
         updateButtonX = anchorX - renderedW / 2f;
         updateButtonY = anchorY - renderedH / 2f;
         updateButtonW = renderedW;
@@ -248,7 +250,7 @@ public class OptionsMenu extends AetheriaBaseScreen {
         GlStateManagerCompat.translate(anchorX, anchorY, 0f);
         GlStateManagerCompat.rotate(-12f, 0f, 0f, 1f);
         GlStateManagerCompat.scale(splashScale * bounce, splashScale * bounce, 1f);
-        fontRendererObj.drawStringWithShadow(updateText, -fontRendererObj.getStringWidth(updateText) / 2f, -fontRendererObj.FONT_HEIGHT / 2f, 0xFF00FFB3);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), updateText, -DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), updateText) / 2f, -MinecraftCompat.getFontRenderer().FONT_HEIGHT / 2f, 0xFF00FFB3);
         GlStateManagerCompat.popMatrix();
     }
 

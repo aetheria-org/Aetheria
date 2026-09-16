@@ -14,7 +14,6 @@ import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.ScaledResolution;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -76,9 +75,8 @@ public class ItemLogAlerts {
         if (System.currentTimeMillis() > endTime) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
         FontRenderer fr = MinecraftCompat.getFontRenderer();
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int screenWidth = sr.getScaledWidth();
-        int screenHeight = sr.getScaledHeight();
+        int screenWidth = GuiScreenUtils.getScaledWindowWidth();
+        int screenHeight = GuiScreenUtils.getScaledWindowHeight();
         int textWidth = fr.getStringWidth(displayText);
         float scale = Math.min(6.0f, (screenWidth - 20f) / textWidth);
         scale = Math.max(1.0f, scale);

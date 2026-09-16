@@ -1,4 +1,3 @@
-import io.hamlook.aetheria.sharedvariables.MinecraftVersion
 import io.hamlook.aetheria.sharedvariables.ProjectTarget
 import com.replaymod.gradle.preprocess.PreprocessExtension
 import org.apache.commons.lang3.SystemUtils
@@ -7,9 +6,9 @@ plugins {
     idea
     java
     id("com.gradleup.shadow") version "9.4.1"
+    kotlin("jvm") version "2.0.10"
     id("gg.essential.multi-version")
     id("gg.essential.loom")
-    kotlin("jvm") version "2.0.10"
     id("dev.architectury.architectury-pack200")
 }
 
@@ -45,6 +44,8 @@ loom {
                 accessTransformer(transformerFile)
             }
         }
+    } else {
+        accessWidenerPath.set(rootProject.file("src/main/resources/aetheria.accesswidener"))
     }
     @Suppress("UnstableApiUsage")
     mixin {
@@ -66,17 +67,19 @@ extensions.configure<PreprocessExtension> {
 
 pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
     the<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension>().sourceSets.named("main") {
-        kotlin.srcDir(rootProject.file("src/main/kotlin"))
-        kotlin.srcDir(rootProject.file("src/main/java"))
+        if (target == ProjectTarget.MAIN) {
+            kotlin.srcDir(rootProject.file("src/main/kotlin"))
+            kotlin.srcDir(rootProject.file("src/main/java"))
+        }
     }
     val compileKotlin = tasks.named<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>("compileKotlin")
     tasks.named<JavaCompile>("compileJava") {
         dependsOn(compileKotlin)
         classpath += files(compileKotlin.get().destinationDirectory)
+        // options.isFork = true
     }
 }
 
-// Build path exclusion (SkyHanni pattern):
 // Files listed in versions/<target>/buildpaths-excluded.txt are excluded from compilation on that target.
 
 fun excludeBuildPaths(buildPathsFile: File, sourceSet: Provider<SourceSet>) {
@@ -89,9 +92,11 @@ fun excludeBuildPaths(buildPathsFile: File, sourceSet: Provider<SourceSet>) {
             kotlin.exclude(buildPaths)
             java.exclude(buildPaths)
         }
+    } else {
+        logger.warn("buildpaths-excluded.txt not found: ${buildPathsFile.path} — no files excluded")
     }
 }
-val buildPathsFile = file("versions/${target.projectName}/buildpaths-excluded.txt")
+val buildPathsFile = file("buildpaths-excluded.txt")
 excludeBuildPaths(buildPathsFile, sourceSets.main)
 excludeBuildPaths(buildPathsFile, sourceSets.test)
 
@@ -138,6 +143,7 @@ dependencies {
     } else {
         target.fabricLoaderVersion?.let { modImplementation(it) }
         target.fabricApiVersion?.let { modImplementation(it) }
+        modImplementation("net.fabricmc:fabric-language-kotlin:1.12.0+kotlin.2.0.10")
     }
 
     shadowImpl("org.java-websocket:Java-WebSocket:1.6.0") { isTransitive = false }
@@ -149,9 +155,10 @@ dependencies {
     shadowImpl("com.google.code.gson:gson:2.10.1") { isTransitive = false }
     shadowImpl("com.fifesoft:rsyntaxtextarea:3.3.3") { isTransitive = false }
 
+    compileOnly("org.projectlombok:lombok:1.18.46")
+    annotationProcessor("org.projectlombok:lombok:1.18.46")
+
     if (target == ProjectTarget.MAIN) {
-        compileOnly("org.projectlombok:lombok:1.18.30")
-        annotationProcessor("org.projectlombok:lombok:1.18.30")
         shadowImpl("com.mojang:brigadier:1.0.18") { isTransitive = false }
         runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.1")
         implementation("moe.nea:hotswapagent-forge:1.0.1")
@@ -165,6 +172,7 @@ dependencies {
 
 tasks.withType(JavaCompile::class) {
     options.encoding = "UTF-8"
+    options.compilerArgs.addAll(listOf("-Xmaxerrs", "10000", "-Xmaxwarns", "10000"))
 }
 
 tasks.withType(Jar::class) {
@@ -202,7 +210,7 @@ tasks.processResources {
 
 val remapJar by tasks.named<net.fabricmc.loom.task.RemapJarTask>("remapJar") {
     archiveClassifier.set("")
-    input.set(tasks.shadowJar.get().archiveFile)
+    inputFile.set(tasks.shadowJar.get().archiveFile)
 }
 
 tasks.jar {
@@ -230,3 +238,5 @@ tasks.shadowJar {
 }
 
 tasks.assemble.get().dependsOn(tasks.remapJar)
+
+

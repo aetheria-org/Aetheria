@@ -11,17 +11,32 @@ import net.minecraft.entity.Entity
 
 object MinecraftCompat {
     @JvmStatic
-    fun getMinecraft(): Minecraft = Minecraft.getMinecraft()
+    fun getMinecraft(): Minecraft =
+        //#if MC < 1.16
+        Minecraft.getMinecraft()
+        //#else
+        //$$ MinecraftClient.getInstance()
+        //#endif
 
     @JvmStatic
-    fun getLocalPlayer(): EntityPlayerSP? = Minecraft.getMinecraft().thePlayer
+    fun getLocalPlayer(): EntityPlayerSP? =
+        //#if MC < 1.16
+        Minecraft.getMinecraft().thePlayer
+        //#else
+        //$$ MinecraftClient.getInstance().player
+        //#endif
 
     @JvmStatic
     fun getLocalPlayerOrError(): EntityPlayerSP =
         getLocalPlayer() ?: error("thePlayer is null")
 
     @JvmStatic
-    fun getLocalWorld(): WorldClient? = Minecraft.getMinecraft().theWorld
+    fun getLocalWorld(): WorldClient? =
+        //#if MC < 1.16
+        Minecraft.getMinecraft().theWorld
+        //#else
+        //$$ MinecraftClient.getInstance().world
+        //#endif
 
     @JvmStatic
     fun getLocalWorldOrError(): WorldClient =
@@ -38,25 +53,68 @@ object MinecraftCompat {
         entity != null && entity == getLocalPlayer()
 
     @JvmStatic
-    fun getShowDebugHud(): Boolean = Minecraft.getMinecraft().gameSettings.showDebugInfo
+    fun getShowDebugHud(): Boolean =
+        //#if MC < 1.16
+        Minecraft.getMinecraft().gameSettings.showDebugInfo
+        //#elseif MC < 1.21
+        //$$ MinecraftClient.getInstance().debugHud.shouldShowDebugHud()
+        //#else
+        //$$ MinecraftClient.getInstance().getDebugHud().shouldShowDebugHud()
+        //#endif
 
     @JvmStatic
-    fun getGameSettings(): GameSettings = Minecraft.getMinecraft().gameSettings
+    fun getGameSettings(): GameSettings =
+        //#if MC < 1.16
+        Minecraft.getMinecraft().gameSettings
+        //#else
+        //$$ MinecraftClient.getInstance().options
+        //#endif
 
     @JvmStatic
-    fun getDisplayWidth(): Int = Minecraft.getMinecraft().displayWidth
+    fun getDisplayWidth(): Int =
+        //#if MC < 1.16
+        Minecraft.getMinecraft().displayWidth
+        //#else
+        //$$ MinecraftClient.getInstance().window.width.toInt()
+        //#endif
 
     @JvmStatic
-    fun getDisplayHeight(): Int = Minecraft.getMinecraft().displayHeight
+    fun getDisplayHeight(): Int =
+        //#if MC < 1.16
+        Minecraft.getMinecraft().displayHeight
+        //#else
+        //$$ MinecraftClient.getInstance().window.height.toInt()
+        //#endif
 
     @JvmStatic
     fun getFontRenderer(): FontRenderer =
+        //#if MC < 1.16
         Minecraft.getMinecraft().fontRendererObj
+        //#else
+        //$$ MinecraftClient.getInstance().textRenderer
+        //#endif
 
     @JvmStatic
-    fun getCurrentScreen(): GuiScreen? = Minecraft.getMinecraft().currentScreen
+    fun getCurrentScreen(): GuiScreen? =
+        //#if MC < 1.16
+        Minecraft.getMinecraft().currentScreen
+        //#else
+        //$$ MinecraftClient.getInstance().currentScreen
+        //#endif
 
     @JvmStatic
     fun getRenderGlobal(): RenderGlobal =
+        //#if MC < 1.16
         Minecraft.getMinecraft().renderGlobal
+        //#else
+        //$$ MinecraftClient.getInstance().worldRenderer
+        //#endif
+
+    @JvmStatic
+    fun getIngameGui(): net.minecraft.client.gui.GuiIngame =
+        //#if MC < 1.16
+        Minecraft.getMinecraft().ingameGUI
+        //#else
+        //$$ MinecraftClient.getInstance().inGameHud
+        //#endif
 }

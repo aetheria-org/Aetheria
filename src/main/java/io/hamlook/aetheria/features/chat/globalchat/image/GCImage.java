@@ -7,6 +7,7 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ResourceCompat;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
@@ -185,8 +186,12 @@ public class GCImage {
 
         ThreadUtils.run("GCImage-ResourceLoader-" + gcImage.id, () -> {
             try {
-                InputStream stream = MinecraftCompat.getMinecraft().getResourceManager().getResource(loc).getInputStream();
-                BufferedImage image = ImageIO.read(stream);
+                byte[] data = ResourceCompat.openResource(loc);
+                if (data == null) {
+                    handleFailure(gcImage, new IOException("Missing resource " + loc));
+                    return;
+                }
+                BufferedImage image = ImageIO.read(new ByteArrayInputStream(data));
                 handleLoadedImage(gcImage, image);
             } catch (Exception e) {
                 handleFailure(gcImage, e);

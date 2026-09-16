@@ -2,6 +2,7 @@ package io.hamlook.aetheria.utils.render;
 
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
 import io.hamlook.aetheria.mixins.accessors.FontRendererAccessor;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import net.minecraft.client.gui.FontRenderer;
 
@@ -38,7 +39,7 @@ public class ChromaTextRenderer {
     public static int drawString(FontRenderer fr, ChromaStyle style, String text, int x, int y, int color, boolean shadow) {
         pushStyle(style);
         try {
-            return fr.drawString(text, x, y, color, shadow);
+            return DrawContextUtils.drawText(fr, text, x, y, color, shadow);
         } finally {
             popStyle();
         }

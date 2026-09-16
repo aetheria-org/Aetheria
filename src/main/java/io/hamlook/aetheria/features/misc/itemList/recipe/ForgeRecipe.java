@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.misc.itemList.recipe;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
@@ -61,12 +62,12 @@ public class ForgeRecipe extends Recipe {
         int cx = x + width / 2;
         if (dur > 0) {
             String t = "§7Time: §f" + (dur / 3600) + "h " + ((dur % 3600) / 60) + "m";
-            fr.drawStringWithShadow(t, cx - fr.getStringWidth(t) / 2f, textY, 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(fr, t, (int) (cx - DrawContextUtils.getStringWidth(fr, t) / 2f), textY, 0xFFFFFF);
             textY += 12;
         }
         if (recipeData.has("coins")) {
             String c = "§7Coins: §6" + String.format("%,d", recipeData.get("coins").getAsInt());
-            fr.drawStringWithShadow(c, cx - fr.getStringWidth(c) / 2f, textY, 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(fr, c, (int) (cx - DrawContextUtils.getStringWidth(fr, c) / 2f), textY, 0xFFFFFF);
         }
 
         int slotRowW = n * (S + 2) + 14 + S;
@@ -89,7 +90,7 @@ public class ForgeRecipe extends Recipe {
         }
 
         int arrowX = slotX + n * (S + 2) + 2;
-        fr.drawStringWithShadow(">", arrowX, slotY + 5, 0xFFFFFF);
+        DrawContextUtils.drawTextWithShadow(fr, ">", arrowX, slotY + 5, 0xFFFFFF);
 
         int resultX = arrowX + 12;
         RecipeUtils.drawSlot(resultX, slotY, S);

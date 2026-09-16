@@ -5,11 +5,11 @@ import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.events.ASMGuiDrawEvent
 import io.hamlook.aetheria.events.SignSubmitEvent
 import io.hamlook.aetheria.init.RegisterEvents
-import io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor
 import io.hamlook.aetheria.utils.CalculatorUtils
 import io.hamlook.aetheria.utils.Utils
+import io.hamlook.aetheria.utils.compat.GuiEditSignCompat
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
-import net.minecraft.client.gui.inventory.GuiEditSign
+import io.hamlook.aetheria.utils.compat.getSignLineCompat
 import net.minecraft.util.EnumChatFormatting.*
 import java.math.BigDecimal
 
@@ -24,13 +24,12 @@ class SignCalculator {
     fun onSignDrawn(event: ASMGuiDrawEvent) {
         if (!ATHRConfig.feature.misc.signCalculator) return
 
-        val gui = event.gui as? GuiEditSign ?: return
-        val sign = (gui as GuiEditSignAccessor).`ATHR$getTileSign`()
+        val gui = event.gui as? GuiEditSignCompat ?: return
 
-        val trigger = sign.signText[1].unformattedText
+        val trigger = gui.getSignLineCompat(1)
         if (trigger != "^^^^^^^^^^^^^^^" && trigger != "^^^^^^") return
 
-        val source = sign.signText[0].unformattedText
+        val source = gui.getSignLineCompat(0)
         refresh(source)
 
         MinecraftCompat.getMinecraft()

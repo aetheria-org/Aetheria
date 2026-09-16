@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.utils.render;
 
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TessellatorCompat;
@@ -155,7 +156,7 @@ public final class WorldRenderUtils {
 
     public static void drawTextInWorld(String text, double x, double y, double z) {
         if (MinecraftCompat.getFontRenderer() == null) return;
-        int w = MinecraftCompat.getFontRenderer().getStringWidth(net.minecraft.util.StringUtils.stripControlCodes(text));
+        int w = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), net.minecraft.util.StringUtils.stripControlCodes(text));
         float scale = 0.04f;
         GL11.glPushMatrix();
         GL11.glTranslated(x, y, z);

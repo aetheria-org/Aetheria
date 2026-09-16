@@ -31,6 +31,7 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 
 @RegisterEvents
 public class DungeonLeapOverlay {
@@ -91,7 +92,7 @@ public class DungeonLeapOverlay {
     private void drawLeapGUI(int mouseX, int mouseY, GuiScreen gui) {
         MapLayout mapLayout = getMapLayout(gui);
 
-        GuiScreen.drawRect(
+        DrawContextUtils.fill(
                 (int) mapLayout.left,
                 (int) mapLayout.top,
                 (int) (mapLayout.left + (MAP_SIZE * MAP_SCALE)),
@@ -158,7 +159,7 @@ public class DungeonLeapOverlay {
                     bounds.x, bounds.y, bounds.width, bounds.height, 3, 18
             );
 
-            GuiScreen.drawRect(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, bgColor);
+            DrawContextUtils.fill(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, bgColor);
 
             ResourceLocation skin = getPlayerSkin(player, mc);
             RenderUtils.renderPlayerHead(bounds.x + 3, bounds.y + 3, -1, 2f, skin, 0);

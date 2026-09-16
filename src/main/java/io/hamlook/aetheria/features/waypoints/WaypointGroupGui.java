@@ -11,15 +11,14 @@ import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.EnumChatFormatting;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
 import java.lang.reflect.Type;
 import java.util.*;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class WaypointGroupGui extends GuiElement {
 
@@ -113,11 +112,13 @@ public class WaypointGroupGui extends GuiElement {
         return Double.parseDouble(String.valueOf(o));
     }
 
-    private void updatePanel(ScaledResolution sr) {
-        pw = Math.min(MAX_W, sr.getScaledWidth() - PAD * 2);
-        ph = Math.min(MAX_H, sr.getScaledHeight() - PAD * 2);
-        px = (sr.getScaledWidth() - pw) / 2;
-        py = (sr.getScaledHeight() - ph) / 2;
+    private void updatePanel() {
+        int screenW = GuiScreenUtils.getScaledWindowWidth();
+        int screenH = GuiScreenUtils.getScaledWindowHeight();
+        pw = Math.min(MAX_W, screenW - PAD * 2);
+        ph = Math.min(MAX_H, screenH - PAD * 2);
+        px = (screenW - pw) / 2;
+        py = (screenH - ph) / 2;
     }
 
     private int computeTotalH(List<WaypointGroup> groups) {
@@ -161,11 +162,10 @@ public class WaypointGroupGui extends GuiElement {
     @Override
     public void render() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
         FontRenderer fr = MinecraftCompat.getFontRenderer();
-        updatePanel(sr);
+        updatePanel();
 
-        Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0xaa050508);
+        DrawContextUtils.fill(0, 0, GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight(), 0xaa050508);
 
         GlStateManagerCompat.color(0.18f, 0.18f, 0.18f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), px, py, pw, ph, 6, 18);
@@ -176,7 +176,7 @@ public class WaypointGroupGui extends GuiElement {
         fr.drawStringWithShadow(EnumChatFormatting.WHITE + "" + EnumChatFormatting.BOLD + "Waypoints", px + PAD, curY + 5, -1);
         String escHint = EnumChatFormatting.DARK_GRAY + "ESC";
         fr.drawStringWithShadow(escHint, px + pw - fr.getStringWidth(escHint) - PAD, curY + 5, -1);
-        Gui.drawRect(px + PAD, curY + TITLE_H, px + pw - PAD, curY + TITLE_H + 1, 0xff252535);
+        DrawContextUtils.fill(px + PAD, curY + TITLE_H, px + pw - PAD, curY + TITLE_H + 1, 0xff252535);
         curY += TITLE_H + ROW_PAD + 2;
 
         WaypointState state = WaypointState.getInstance();
@@ -199,10 +199,10 @@ public class WaypointGroupGui extends GuiElement {
 
         int sfW = pw - PAD * 2 - BTN_W * 2 - 12;
         ensureSearchField(px + PAD, curY, sfW, fr);
-        searchField.xPosition = px + PAD;
-        searchField.yPosition = curY;
-        searchField.width = sfW;
-        searchField.height = SF_H;
+        GuiScreenUtils.setX(searchField, px + PAD);
+        GuiScreenUtils.setY(searchField, curY);
+        GuiScreenUtils.setW(searchField, sfW);
+        GuiScreenUtils.setH(searchField, SF_H);
         drawInputBg(px + PAD, curY, sfW);
         searchField.drawTextBox();
         if (searchField.getText().isEmpty() && !searchField.isFocused())
@@ -217,10 +217,10 @@ public class WaypointGroupGui extends GuiElement {
         if (importOpen) {
             int ifW = pw - PAD * 2 - BTN_W - 8;
             importField = ensureGenericField(importField, 2, px + PAD, curY, ifW, fr);
-            importField.xPosition = px + PAD;
-            importField.yPosition = curY;
-            importField.width = ifW;
-            importField.height = SF_H;
+            GuiScreenUtils.setX(importField, px + PAD);
+            GuiScreenUtils.setY(importField, curY);
+            GuiScreenUtils.setW(importField, ifW);
+            GuiScreenUtils.setH(importField, SF_H);
             drawInputBg(px + PAD, curY, ifW);
             importField.drawTextBox();
             if (importField.getText().isEmpty())
@@ -233,10 +233,10 @@ public class WaypointGroupGui extends GuiElement {
         if (createOpen) {
             int cfW = pw - PAD * 2 - BTN_W - 8;
             createField = ensureGenericField(createField, 3, px + PAD, curY, cfW, fr);
-            createField.xPosition = px + PAD;
-            createField.yPosition = curY;
-            createField.width = cfW;
-            createField.height = SF_H;
+            GuiScreenUtils.setX(createField, px + PAD);
+            GuiScreenUtils.setY(createField, curY);
+            GuiScreenUtils.setW(createField, cfW);
+            GuiScreenUtils.setH(createField, SF_H);
             drawInputBg(px + PAD, curY, cfW);
             createField.drawTextBox();
             if (createField.getText().isEmpty())
@@ -245,7 +245,7 @@ public class WaypointGroupGui extends GuiElement {
             drawToolBtn(createBtnX, curY, EnumChatFormatting.WHITE + "Create", fr, isHovered(createBtnX, curY, BTN_W, SF_H));
             curY += SF_H + ROW_PAD;
         }
-        Gui.drawRect(px + PAD, curY, px + pw - PAD, curY + 1, 0xff252535);
+        DrawContextUtils.fill(px + PAD, curY, px + pw - PAD, curY + 1, 0xff252535);
         curY += 4;
         int listTopY = curY;
         int listBottomY = py + ph - PAD;
@@ -256,7 +256,7 @@ public class WaypointGroupGui extends GuiElement {
         int maxScroll = Math.max(0, totalH - visibleH);
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
         List<RowItem> rows = buildRows(listTopY, groups);
-        int scale = sr.getScaleFactor();
+        int scale = GuiScreenUtils.getScaleFactor();
         GlStateManagerCompat.pushMatrix();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(px * scale, GuiScreenUtils.getDisplayHeight() - listBottomY * scale, pw * scale, visibleH * scale);
@@ -280,9 +280,9 @@ public class WaypointGroupGui extends GuiElement {
             int sbX = px + pw - 5;
             int barH = Math.max(16, (int) (visibleH * (float) visibleH / totalH));
             int barY = listTopY + (int) ((visibleH - barH) * ((float) scrollOffset / maxScroll));
-            Gui.drawRect(sbX, listTopY, sbX + 4, listBottomY, 0xff141418);
-            Gui.drawRect(sbX, barY, sbX + 4, barY + barH, 0xff505060);
-            Gui.drawRect(sbX, barY, sbX + 4, barY + 1, 0xff8080a0);
+            DrawContextUtils.fill(sbX, listTopY, sbX + 4, listBottomY, 0xff141418);
+            DrawContextUtils.fill(sbX, barY, sbX + 4, barY + barH, 0xff505060);
+            DrawContextUtils.fill(sbX, barY, sbX + 4, barY + 1, 0xff8080a0);
         }
     }
 
@@ -292,7 +292,7 @@ public class WaypointGroupGui extends GuiElement {
         GlStateManagerCompat.color(isLoaded ? 0.12f : 0.14f, isLoaded ? 0.16f : 0.14f, isLoaded ? 0.12f : 0.14f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), panelX + PAD, gr.y, panelW - PAD * 2, ROW_H, 6, 18);
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
-        if (isLoaded) Gui.drawRect(panelX + PAD, gr.y, panelX + PAD + 2, gr.y + ROW_H, 0xff55aa55);
+        if (isLoaded) DrawContextUtils.fill(panelX + PAD, gr.y, panelX + PAD + 2, gr.y + ROW_H, 0xff55aa55);
         String arrow = gr.expanded ? EnumChatFormatting.GRAY + "▼" : EnumChatFormatting.DARK_GRAY + "▶";
         fr.drawStringWithShadow(arrow, panelX + PAD + 5, gr.y + 7, -1);
         String nameStr = (isLoaded ? EnumChatFormatting.GREEN : EnumChatFormatting.WHITE) + gr.g.name + EnumChatFormatting.DARK_GRAY + " (" + gr.g.waypoints.size() + ")";
@@ -310,8 +310,8 @@ public class WaypointGroupGui extends GuiElement {
     private void renderWpRow(int panelX, int panelW, WpRow wr, FontRenderer fr) {
         WaypointPoint wp = wr.g.waypoints.get(wr.idx);
         int rowBg = wr.idx % 2 == 0 ? 0x18ffffff : 0x10ffffff;
-        Gui.drawRect(panelX + PAD + INDENT, wr.y, panelX + panelW - PAD, wr.y + WP_H, rowBg);
-        Gui.drawRect(panelX + PAD + INDENT, wr.y, panelX + PAD + INDENT + 2, wr.y + WP_H, 0xff303048);
+        DrawContextUtils.fill(panelX + PAD + INDENT, wr.y, panelX + panelW - PAD, wr.y + WP_H, rowBg);
+        DrawContextUtils.fill(panelX + PAD + INDENT, wr.y, panelX + PAD + INDENT + 2, wr.y + WP_H, 0xff303048);
 
         String idxStr = EnumChatFormatting.DARK_GRAY + "" + (wr.idx + 1) + ".";
         fr.drawStringWithShadow(idxStr, panelX + PAD + INDENT + 5, wr.y + 5, -1);
@@ -339,7 +339,7 @@ public class WaypointGroupGui extends GuiElement {
     private void renderAddRow(int panelX, int panelW, AddRow ar, FontRenderer fr) {
         int rx = panelX + PAD + INDENT, rw = panelW - PAD - INDENT - PAD;
         boolean hov = isHovered(rx, ar.y, rw, WP_H);
-        Gui.drawRect(rx, ar.y, rx + rw, ar.y + WP_H, hov ? 0x20ffffff : 0x10ffffff);
+        DrawContextUtils.fill(rx, ar.y, rx + rw, ar.y + WP_H, hov ? 0x20ffffff : 0x10ffffff);
         fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "+ " + EnumChatFormatting.GRAY + "Add waypoint here", rx + 6, ar.y + 5, -1);
     }
 
@@ -353,8 +353,7 @@ public class WaypointGroupGui extends GuiElement {
         if (!MouseCompat.getEventButtonState() || MouseCompat.getEventButton() != 0) return false;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        updatePanel(sr);
+        updatePanel();
         WaypointState state = WaypointState.getInstance();
         WaypointStorage storage = WaypointStorage.getInstance();
         int curY = py + PAD + TITLE_H + ROW_PAD + 2;
@@ -555,29 +554,29 @@ public class WaypointGroupGui extends GuiElement {
     }
 
     private void drawBtn(int x, int y, String label, FontRenderer fr, boolean hov) {
-        Gui.drawRect(x, y, x + BTN_W, y + BTN_H, hov ? 0xff282830 : 0xff1a1a22);
-        Gui.drawRect(x, y, x + BTN_W, y + 1, hov ? 0xff505060 : 0xff303038);
-        Gui.drawRect(x, y + BTN_H - 1, x + BTN_W, y + BTN_H, 0xff0a0a0e);
+        DrawContextUtils.fill(x, y, x + BTN_W, y + BTN_H, hov ? 0xff282830 : 0xff1a1a22);
+        DrawContextUtils.fill(x, y, x + BTN_W, y + 1, hov ? 0xff505060 : 0xff303038);
+        DrawContextUtils.fill(x, y + BTN_H - 1, x + BTN_W, y + BTN_H, 0xff0a0a0e);
         TextRenderUtils.drawStringCenteredScaledMaxWidth(label, fr, x + BTN_W / 2f, y + BTN_H / 2f + 1, false, BTN_W - 4, -1);
     }
 
     private void drawSmallBtn(int x, int y, String label, FontRenderer fr, boolean hov) {
-        Gui.drawRect(x, y, x + SBTN_W, y + SBTN_H, hov ? 0xff282830 : 0xff1a1a22);
-        Gui.drawRect(x, y, x + SBTN_W, y + 1, 0xff303038);
+        DrawContextUtils.fill(x, y, x + SBTN_W, y + SBTN_H, hov ? 0xff282830 : 0xff1a1a22);
+        DrawContextUtils.fill(x, y, x + SBTN_W, y + 1, 0xff303038);
         TextRenderUtils.drawStringCenteredScaledMaxWidth(label, fr, x + SBTN_W / 2f, y + SBTN_H / 2f + 1, false, SBTN_W - 2, -1);
     }
 
     private void drawToolBtn(int x, int y, String label, FontRenderer fr, boolean hov) {
-        Gui.drawRect(x, y, x + BTN_W, y + SF_H, hov ? 0xff282830 : 0xff1a1a22);
-        Gui.drawRect(x, y, x + BTN_W, y + 1, hov ? 0xff505060 : 0xff303038);
-        Gui.drawRect(x, y + SF_H - 1, x + BTN_W, y + SF_H, 0xff0a0a0e);
+        DrawContextUtils.fill(x, y, x + BTN_W, y + SF_H, hov ? 0xff282830 : 0xff1a1a22);
+        DrawContextUtils.fill(x, y, x + BTN_W, y + 1, hov ? 0xff505060 : 0xff303038);
+        DrawContextUtils.fill(x, y + SF_H - 1, x + BTN_W, y + SF_H, 0xff0a0a0e);
         TextRenderUtils.drawStringCenteredScaledMaxWidth(label, fr, x + BTN_W / 2f, y + SF_H / 2f + 1, false, BTN_W - 4, -1);
     }
 
     private void drawInputBg(int x, int y, int w) {
-        Gui.drawRect(x, y, x + w, y + SF_H, 0xff111118);
-        Gui.drawRect(x, y, x + w, y + 1, 0xff252530);
-        Gui.drawRect(x, y + SF_H - 1, x + w, y + SF_H, 0xff252530);
+        DrawContextUtils.fill(x, y, x + w, y + SF_H, 0xff111118);
+        DrawContextUtils.fill(x, y, x + w, y + 1, 0xff252530);
+        DrawContextUtils.fill(x, y + SF_H - 1, x + w, y + SF_H, 0xff252530);
     }
 
 
@@ -614,8 +613,7 @@ public class WaypointGroupGui extends GuiElement {
 
     private boolean isHovered(int x, int y, int w, int h) {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        ScaledResolution sr = GuiScreenUtils.getScaledResolution();
-        int[] mouse = KeybindHelper.getMouseCoords(sr);
+        int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
         int mx = mouse[0], my = mouse[1];
         return inBounds(mx, my, x, y, w, h);
     }

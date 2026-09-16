@@ -1,14 +1,72 @@
 package io.hamlook.aetheria.utils.compat
 
+//#if MC < 1.16
 import org.lwjgl.input.Keyboard
+//#else
+//$$ import org.lwjgl.glfw.GLFW
+//#endif
 
 object KeyboardCompat {
-    @JvmStatic fun isKeyDown(key: Int): Boolean = Keyboard.isKeyDown(key)
-    @JvmStatic fun getEventKey(): Int = Keyboard.getEventKey()
-    @JvmStatic fun getEventKeyState(): Boolean = Keyboard.getEventKeyState()
-    @JvmStatic fun getKeyName(key: Int): String = Keyboard.getKeyName(key)
-    @JvmStatic fun getEventCharacter(): Char = Keyboard.getEventCharacter()
-    @JvmStatic fun next(): Boolean = Keyboard.next()
-    @JvmStatic fun isRepeatEvent(): Boolean = Keyboard.isRepeatEvent()
-    @JvmStatic fun enableRepeatEvents(enable: Boolean) = Keyboard.enableRepeatEvents(enable)
+    @JvmStatic
+    fun isKeyDown(key: Int): Boolean =
+        //#if MC < 1.16
+        Keyboard.isKeyDown(key)
+        //#else
+        //$$ GLFW.glfwGetKey(MinecraftCompat.getMinecraft().window.handle, key) == GLFW.GLFW_PRESS
+        //#endif
+
+    @JvmStatic
+    fun getEventKey(): Int =
+        //#if MC < 1.16
+        Keyboard.getEventKey()
+        //#else
+        //$$ TODO("Keyboard event queue needs Part B producers")
+        //#endif
+
+    @JvmStatic
+    fun getEventKeyState(): Boolean =
+        //#if MC < 1.16
+        Keyboard.getEventKeyState()
+        //#else
+        //$$ TODO("Keyboard event queue needs Part B producers")
+        //#endif
+
+    @JvmStatic
+    fun getKeyName(key: Int): String =
+        //#if MC < 1.16
+        Keyboard.getKeyName(key)
+        //#else
+        //$$ GLFW.glfwGetKeyName(key, 0) ?: "UNKNOWN"
+        //#endif
+
+    @JvmStatic
+    fun getEventCharacter(): Char =
+        //#if MC < 1.16
+        Keyboard.getEventCharacter()
+        //#else
+        //$$ TODO("Keyboard event queue needs Part B producers")
+        //#endif
+
+    @JvmStatic
+    fun next(): Boolean =
+        //#if MC < 1.16
+        Keyboard.next()
+        //#else
+        //$$ TODO("Keyboard event queue needs Part B producers")
+        //#endif
+
+    @JvmStatic
+    fun isRepeatEvent(): Boolean =
+        //#if MC < 1.16
+        Keyboard.isRepeatEvent()
+        //#else
+        //$$ TODO("Keyboard event queue needs Part B producers")
+        //#endif
+
+    @JvmStatic
+    fun enableRepeatEvents(enable: Boolean) {
+        //#if MC < 1.16
+        Keyboard.enableRepeatEvents(enable)
+        //#endif
+    }
 }

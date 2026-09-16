@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "version": "${version}",
+  "id": "aetheria",
+  "name": "Aetheria",
+  "description": "Aetheria is a Minecraft mod for SkyBlock.",
+  "environment": "client",
+  "accessWidener": "aetheria.accesswidener",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "io.hamlook.aetheria.Aetheria"
+      }
+    ]
+  },
+  "depends": {
+    "fabric-api": "*",
+    "fabric-language-kotlin": ">=1.10.0+kotlin.2.0.10",
+    "minecraft": ">=1.16"
+  }
+}

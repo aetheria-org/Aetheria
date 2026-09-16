@@ -12,8 +12,8 @@ import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
+
+
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -80,8 +80,7 @@ public class CollectionInfoTab extends Tab {
         scrollY += (scrollTarget - scrollY) * scrollSpeed;
         if (Math.abs(scrollTarget - scrollY) < 0.5f) scrollY = scrollTarget;
 
-        ScaledResolution res = GuiScreenUtils.getScaledResolution();
-        int scaleFactor = res.getScaleFactor();
+        int scaleFactor = GuiScreenUtils.getScaleFactor();
 
         int scissorX = (int) (xPos * scaleFactor);
         int scissorY = (int) ((GuiScreenUtils.getDisplayHeight() - (gridY + gridH) * scaleFactor));
@@ -296,7 +295,7 @@ public class CollectionInfoTab extends Tab {
                     mouseY >= itemY && mouseY <= itemY + itemHeight;
 
             if (isHovered) {
-                Gui.drawRect((int) dropX + 4, (int) itemY, (int) (dropX + dropW - 4), (int) (itemY + itemHeight), 0x30FFFFFF);
+                DrawContextUtils.fill((int) dropX + 4, (int) itemY, (int) (dropX + dropW - 4), (int) (itemY + itemHeight), 0x30FFFFFF);
             }
 
             float centerX = dropX + (dropW / 2.0f);

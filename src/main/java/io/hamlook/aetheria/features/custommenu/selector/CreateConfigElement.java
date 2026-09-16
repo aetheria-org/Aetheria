@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 
 import java.awt.*;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class CreateConfigElement {
 
@@ -60,24 +61,24 @@ public class CreateConfigElement {
         if(nameField.getEnableBackgroundDrawing()){
             nameField.setEnableBackgroundDrawing(false);
         }
-        GuiScreen.drawRect(nameField.xPosition,nameField.yPosition,
-                nameField.xPosition+nameField.width,
-                nameField.yPosition+nameField.height,new Color(255,255,255).getRGB());
-        GuiScreen.drawRect(nameField.xPosition+1,nameField.yPosition+1,nameField.xPosition+nameField.width-1,
-                nameField.yPosition+nameField.height-1,new Color(28, 28, 28).getRGB());
+        GuiScreen.drawRect(GuiScreenUtils.getX(nameField),GuiScreenUtils.getY(nameField),
+                GuiScreenUtils.getX(nameField)+GuiScreenUtils.getW(nameField),
+                GuiScreenUtils.getY(nameField)+GuiScreenUtils.getH(nameField),new Color(255,255,255).getRGB());
+        GuiScreen.drawRect(GuiScreenUtils.getX(nameField)+1,GuiScreenUtils.getY(nameField)+1,GuiScreenUtils.getX(nameField)+GuiScreenUtils.getW(nameField)-1,
+                GuiScreenUtils.getY(nameField)+GuiScreenUtils.getH(nameField)-1,new Color(28, 28, 28).getRGB());
 
         GlStateManager.pushMatrix();
-        GlStateManager.translate(nameField.xPosition, nameField.yPosition+ScreenHelper.getStaticHeight(5), 0);
+        GlStateManager.translate(GuiScreenUtils.getX(nameField), GuiScreenUtils.getY(nameField)+ScreenHelper.getStaticHeight(5), 0);
         GlStateManager.scale(2*ScreenHelper.getScaleFactor(),2* ScreenHelper.getScaleFactor(), 1.0f);
 
-        int originalX = nameField.xPosition;
-        int originalY = nameField.yPosition;
-        nameField.xPosition = 0;
-        nameField.yPosition = 0;
+        int originalX = GuiScreenUtils.getX(nameField);
+        int originalY = GuiScreenUtils.getY(nameField);
+        GuiScreenUtils.setX(nameField, 0);
+        GuiScreenUtils.setY(nameField, 0);
 
         nameField.drawTextBox();
-        nameField.xPosition = originalX;
-        nameField.yPosition = originalY;
+        GuiScreenUtils.setX(nameField, originalX);
+        GuiScreenUtils.setY(nameField, originalY);
         GlStateManager.popMatrix();
     }
 
@@ -86,10 +87,10 @@ public class CreateConfigElement {
         GUI_HEIGHT = ScreenHelper.getStaticHeight(200);
 
         // Name Field
-        nameField.xPosition = (int)(x + (GUI_WIDTH * 0.1));
-        nameField.yPosition = ScreenHelper.getAnchoredY(ScreenHelper.Anchor.CENTER,ScreenHelper.getStaticHeight(30));
-        nameField.width = (int)(GUI_WIDTH * 0.8);
-        nameField.height = ScreenHelper.getStaticHeight(30);
+        GuiScreenUtils.setX(nameField, (int)(x + (GUI_WIDTH * 0.1)));
+        GuiScreenUtils.setY(nameField, ScreenHelper.getAnchoredY(ScreenHelper.Anchor.CENTER,ScreenHelper.getStaticHeight(30)));
+        GuiScreenUtils.setW(nameField, (int)(GUI_WIDTH * 0.8));
+        GuiScreenUtils.setH(nameField, ScreenHelper.getStaticHeight(30));
 
         // Create Button
         createButton.xPos = ScreenHelper.getAnchoredX(ScreenHelper.Anchor.CENTER,-ScreenHelper.getStaticWidth(225));
