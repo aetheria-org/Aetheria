@@ -8,6 +8,7 @@ import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
@@ -127,7 +128,7 @@ public class BrewingStandHelper {
         for (int i = 0; i < container.inventorySlots.size(); i++) {
             ItemStack stack = container.getSlot(i).getStack();
             if (stack == null) continue;
-            Matcher matcher = TIME_REGEX.matcher(stack.getDisplayName());
+            Matcher matcher = TIME_REGEX.matcher(TextCompat.getFormattedText(stack.getDisplayName()));
             if (matcher.find()) {
                 try {
                     time = Double.parseDouble(matcher.group(1));

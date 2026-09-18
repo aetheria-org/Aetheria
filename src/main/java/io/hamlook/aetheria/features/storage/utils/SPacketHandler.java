@@ -4,14 +4,9 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.compat.ClickData;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.network.play.client.C0EPacketClickWindow;
-import net.minecraft.network.play.server.S2DPacketOpenWindow;
-import net.minecraft.network.play.server.S2EPacketCloseWindow;
-import net.minecraft.network.play.server.S2FPacketSetSlot;
-import net.minecraft.network.play.server.S30PacketWindowItems;
 
 import java.util.regex.Matcher;
 
@@ -28,10 +23,9 @@ public class SPacketHandler {
         return StorageData.containers.get(currentContainerId);
     }
 
-    public void handleOpenWindow(S2DPacketOpenWindow packet) {
+    public void handleOpenWindow(String windowTitle) {
         if (!ATHRConfig.feature.storage.enabled) return;
 
-        String windowTitle = TextCompat.getUnformattedText(packet.getWindowTitle());
         windowTitle = windowTitle.replaceAll("§[0-9a-fk-or]", "");
 
         resetCurrentState();
@@ -108,17 +102,17 @@ public class SPacketHandler {
         StorageManager.setActiveContainer(currentContainerId);
     }
 
-    public void handleCloseWindow(S2EPacketCloseWindow packet) {
+    public void handleCloseWindow() {
         currentContainerId = null;
     }
 
-    public void handleClickWindow(C0EPacketClickWindow packet) {
+    public void handleClickWindow(ClickData click) {
         if (!ATHRConfig.feature.storage.enabled) return;
         if (currentContainerId == null) return;
         if (!ContainerUtils.isChestOpen()) return;
 
         int windowId = getCurrentWindowId();
-        if (windowId == -1 || windowId != packet.getWindowId()) return;
+        if (windowId == -1 || windowId != click.getWindowId()) return;
 
         SContainer container = getCurrentContainer();
         if (container == null) return;
@@ -137,18 +131,15 @@ public class SPacketHandler {
         StorageData.markDirty(container);
     }
 
-    public void handleSetSlot(S2FPacketSetSlot packet) {
+    public void handleSetSlot(int windowId, int slot, ItemStack stack) {
         if (!ATHRConfig.feature.storage.enabled) return;
         if (currentContainerId == null) return;
 
-        int windowId = getCurrentWindowId();
-        if (windowId == -1 || windowId != packet.func_149175_c()) return;
+        int currentId = getCurrentWindowId();
+        if (currentId == -1 || currentId != windowId) return;
 
         SContainer container = getCurrentContainer();
         if (container == null) return;
-
-        int slot = packet.func_149173_d();
-        ItemStack stack = packet.func_149174_e();
 
         if (slot >= 9 && slot < 9 + container.slotCount) {
             int storageSlot = slot - 9;
@@ -163,17 +154,15 @@ public class SPacketHandler {
         }
     }
 
-    public void handleWindowItems(S30PacketWindowItems packet) {
+    public void handleWindowItems(int windowId, ItemStack[] items) {
         if (!ATHRConfig.feature.storage.enabled) return;
         if (currentContainerId == null) return;
 
-        int windowId = getCurrentWindowId();
-        if (windowId == -1 || windowId != packet.func_148911_c()) return;
+        int currentId = getCurrentWindowId();
+        if (currentId == -1 || currentId != windowId) return;
 
         SContainer container = getCurrentContainer();
         if (container == null) return;
-
-        ItemStack[] items = packet.getItemStacks();
 
         container.slots.clear();
 

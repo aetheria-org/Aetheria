@@ -22,7 +22,6 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.client.ClientCommandHandler;
 import org.lwjgl.opengl.GL11;
 
 import java.lang.reflect.Method;
@@ -176,8 +175,7 @@ public class InvButtonRenderer {
         if (fire) {
             String cmd = btn.command.trim();
             if (!cmd.startsWith("/")) cmd = "/" + cmd;
-            if (ClientCommandHandler.instance.executeCommand(MinecraftCompat.getLocalPlayer(), cmd) == 0)
-                ChatUtils.sendChatCommand(cmd);
+            ChatUtils.sendChatCommand(cmd);
         }
     }
 }

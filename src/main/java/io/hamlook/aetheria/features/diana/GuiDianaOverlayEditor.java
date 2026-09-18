@@ -71,7 +71,7 @@ public class GuiDianaOverlayEditor extends AetheriaBaseScreen {
             if (e.position.isCenterX()) x -= e.scaledW() / 2;
             if (e.position.isCenterY()) y -= e.scaledH() / 2;
             DrawContextUtils.fill(x, y, x + e.scaledW(), y + e.scaledH(), 0x80404040);
-            MinecraftCompat.getFontRenderer().drawStringWithShadow(e.label, x + 2, y + 2, 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), e.label, x + 2, y + 2, 0xFFFFFF);
         }
 
         Utils.drawStringCentered("Diana Overlay Editor", MinecraftCompat.getFontRenderer(), width / 2, 8, true, 0xFFFFFF);

@@ -25,7 +25,11 @@ public final class TextRenderUtils {
 
     public static void drawStringScaled(String str, FontRenderer fr, float x, float y, boolean shadow, int colour, float factor) {
         GlStateManagerCompat.scale(factor, factor, 1);
+        //#if MC < 1.21
         fr.drawString(str, x / factor, y / factor, colour, shadow);
+        //#else
+        //$$ DrawContextUtils.drawText(fr, str, x / factor, y / factor, colour, shadow);
+        //#endif
         GlStateManagerCompat.scale(1 / factor, 1 / factor, 1);
     }
 
@@ -46,7 +50,11 @@ public final class TextRenderUtils {
 
         GlStateManagerCompat.translate(xPos, yPos, 0);
         GlStateManagerCompat.scale(finalScale, finalScale, 1f);
+        //#if MC < 1.21
         MinecraftCompat.getFontRenderer().drawString(text, 0, 0, color);
+        //#else
+        //$$ DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), text, 0f, 0f, color, false);
+        //#endif
         GlStateManagerCompat.popMatrix();
     }
 
@@ -70,7 +78,11 @@ public final class TextRenderUtils {
         GlStateManagerCompat.scale(finalScale, finalScale, 1f);
 
         FontRenderer fr = MinecraftCompat.getFontRenderer();
+        //#if MC < 1.21
         fr.drawString(text, -DrawContextUtils.getStringWidth(fr, text) / 2f, -fr.FONT_HEIGHT / 2f, color, false);
+        //#else
+        //$$ DrawContextUtils.drawText(fr, text, -DrawContextUtils.getStringWidth(fr, text) / 2f, -fr.fontHeight / 2f, color, false);
+        //#endif
         GlStateManagerCompat.popMatrix();
     }
 
@@ -149,7 +161,7 @@ public final class TextRenderUtils {
         RenderUtils.drawGradientRect(z, tooltipX - 3, tooltipY + tooltipHeight + 2, tooltipX + tooltipTextWidth + 3, tooltipY + tooltipHeight + 3, borderEnd, borderEnd);
 
         for (int i = 0; i < textLines.size(); i++) {
-            font.drawStringWithShadow(textLines.get(i), tooltipX, tooltipY, -1);
+            DrawContextUtils.drawTextWithShadow(font, textLines.get(i), tooltipX, tooltipY, -1);
             if (i + 1 == titleLinesCount) tooltipY += 2;
             tooltipY += 10;
         }

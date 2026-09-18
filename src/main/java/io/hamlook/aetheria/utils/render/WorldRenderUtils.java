@@ -1,7 +1,9 @@
 package io.hamlook.aetheria.utils.render;
 
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.WorldCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TessellatorCompat;
 import io.hamlook.aetheria.utils.compat.VertexBuilder;
@@ -22,8 +24,13 @@ public final class WorldRenderUtils {
     private WorldRenderUtils() {
     }
 
-    private static double[] viewerPos() {
+    public static double[] viewerPos() {
+        //#if MC < 1.21
         return new double[]{mc.getRenderManager().viewerPosX, mc.getRenderManager().viewerPosY, mc.getRenderManager().viewerPosZ};
+        //#else
+        //$$ net.minecraft.util.math.Vec3d pos = MinecraftCompat.getMinecraft().gameRenderer.getCamera().getPos();
+        //$$ return new double[]{pos.x, pos.y, pos.z};
+        //#endif
     }
 
     public static void beginWorldRender(float lineWidth) {
@@ -135,7 +142,7 @@ public final class WorldRenderUtils {
     public static void drawTracer(Vec3 target, float partialTicks, Color color, float lineWidth) {
         if (MinecraftCompat.getLocalPlayer() == null) return;
         double[] v = viewerPos();
-        Vec3 eyes = MinecraftCompat.getLocalPlayer().getPositionEyes(partialTicks);
+        Vec3 eyes = EntityCompat.getEyePosition(MinecraftCompat.getLocalPlayer(), partialTicks);
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue(), a = color.getAlpha();
 
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
@@ -160,11 +167,15 @@ public final class WorldRenderUtils {
         float scale = 0.04f;
         GL11.glPushMatrix();
         GL11.glTranslated(x, y, z);
-        GL11.glRotatef(-mc.getRenderManager().playerViewY, 0f, 1f, 0f);
-        GL11.glRotatef(mc.getRenderManager().playerViewX, 1f, 0f, 0f);
+        GL11.glRotatef(-MinecraftCompat.getViewerYaw(), 0f, 1f, 0f);
+        GL11.glRotatef(MinecraftCompat.getViewerPitch(), 1f, 0f, 0f);
         GL11.glScalef(-scale, -scale, scale);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
+        //#if MC < 1.16
         MinecraftCompat.getFontRenderer().drawStringWithShadow(text, -w / 2f, 0f, 0xFFFFFF);
+        //#else
+        //$$ // TODO(world-text): world-space text needs a matrix-stack port; DrawContext text is GUI-only.
+        //#endif
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glPopMatrix();
     }
@@ -265,7 +276,7 @@ public final class WorldRenderUtils {
         GlStateManagerCompat.depthFunc(GL11.GL_LEQUAL);
         GlStateManagerCompat.depthMask(false);
 
-        double time = MinecraftCompat.getLocalWorld().getTotalWorldTime() + partialTicks;
+        double time = WorldCompat.getTotalWorldTime(MinecraftCompat.getLocalWorld()) + partialTicks;
         double texShift = -time * 0.2 - Math.floor(-time * 0.1);
         texShift -= Math.floor(texShift);
 

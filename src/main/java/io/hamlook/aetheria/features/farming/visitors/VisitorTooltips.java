@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 public final class VisitorTooltips {
 
@@ -32,7 +33,7 @@ public final class VisitorTooltips {
         if (stack == null || ATHRConfig.feature == null) return null;
         VisitorsConfig cfg = ATHRConfig.feature.farming.visitors;
         if (cfg == null || !cfg.enabled || !cfg.customTooltip) return null;
-        if (!"Accept Offer".equals(ColorUtils.stripColor(stack.getDisplayName()).trim())) return null;
+        if (!"Accept Offer".equals(ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim())) return null;
 
         String visitor = openVisitorName();
         if (visitor == null) return null;

@@ -248,13 +248,13 @@ public class RareDropTrackerGUI extends GuiElement {
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         int curY = py + PAD;
-        fr.drawStringWithShadow(EnumChatFormatting.LIGHT_PURPLE + "" + EnumChatFormatting.BOLD + "Rare Drop Tracker", px + PAD, curY + 5, -1);
+        DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.LIGHT_PURPLE + "" + EnumChatFormatting.BOLD + "Rare Drop Tracker", px + PAD, curY + 5, -1);
         String escHint = EnumChatFormatting.DARK_GRAY + "ESC";
-        fr.drawStringWithShadow(escHint, px + pw - fr.getStringWidth(escHint) - PAD, curY + 5, -1);
+        DrawContextUtils.drawTextWithShadow(fr, escHint, px + pw - fr.getStringWidth(escHint) - PAD, curY + 5, -1);
         DrawContextUtils.fill(px + PAD, curY + TITLE_H, px + pw - PAD, curY + TITLE_H + 1, 0xff252535);
         curY += TITLE_H + PAD;
 
-        fr.drawStringWithShadow(EnumChatFormatting.GRAY + "Type " + MIN_QUERY_LENGTH + "+ letters to search:", px + PAD, curY, -1);
+        DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.GRAY + "Type " + MIN_QUERY_LENGTH + "+ letters to search:", px + PAD, curY, -1);
         curY += 10;
 
         int sfW = pw - PAD * 2 - BTN_W - 6;
@@ -270,14 +270,14 @@ public class RareDropTrackerGUI extends GuiElement {
         curY += SF_H + 6;
 
         if (!message.isEmpty()) {
-            fr.drawStringWithShadow(message, px + PAD, curY, messageColor);
+            DrawContextUtils.drawTextWithShadow(fr, message, px + PAD, curY, messageColor);
         }
         curY += 12;
 
         DrawContextUtils.fill(px + PAD, curY, px + pw - PAD, curY + 1, 0xff252535);
         curY += 6;
 
-        fr.drawStringWithShadow(EnumChatFormatting.GRAY + "Tracked items: §8(click count to type a goal, CMD to set a command, e.g. /echest 5 or /storage 3)", px + PAD, curY, -1);
+        DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.GRAY + "Tracked items: §8(click count to type a goal, CMD to set a command, e.g. /echest 5 or /storage 3)", px + PAD, curY, -1);
         curY += 12;
 
         RareDropTrackerConfig config = ATHRConfig.feature.qol.rareDropTracker;
@@ -286,7 +286,7 @@ public class RareDropTrackerGUI extends GuiElement {
         int listBottom = py + ph - PAD;
 
         if (entries.isEmpty()) {
-            fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "Nothing tracked yet.", px + PAD, listTop, -1);
+            DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.DARK_GRAY + "Nothing tracked yet.", px + PAD, listTop, -1);
         } else {
             int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
             int rowY = listTop - scrollOffset;
@@ -343,14 +343,14 @@ public class RareDropTrackerGUI extends GuiElement {
         } else {
             String rawName = item.displayName != null ? item.displayName : "";
             String name = fr.trimStringToWidth(rawName, Math.max(10, nameMaxWidth));
-            fr.drawStringWithShadow(EnumChatFormatting.WHITE + name, px + PAD, rowY, -1);
+            DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.WHITE + name, px + PAD, rowY, -1);
         }
 
         if (editingGoal) {
             positionEditField(progX, rowY - 1, progW);
             editField.drawTextBox();
         } else {
-            fr.drawStringWithShadow(progressStr, progX, rowY, -1);
+            DrawContextUtils.drawTextWithShadow(fr, progressStr, progX, rowY, -1);
         }
 
         drawBracketBtn(cmdStr, cmdX, rowY, cmdW, mouse, fr);
@@ -372,7 +372,7 @@ public class RareDropTrackerGUI extends GuiElement {
         if (hovered) {
             DrawContextUtils.fill(x - 1, y - 1, x + w + 1, y + ROW_H - 2, 0x33FFFFFF);
         }
-        fr.drawStringWithShadow(label, x, y, -1);
+        DrawContextUtils.drawTextWithShadow(fr, label, x, y, -1);
     }
 
     private void drawSuggestions(FontRenderer fr) {
@@ -389,7 +389,7 @@ public class RareDropTrackerGUI extends GuiElement {
             if (hovered) {
                 DrawContextUtils.fill(GuiScreenUtils.getX(searchField), itemTop, GuiScreenUtils.getX(searchField) + GuiScreenUtils.getW(searchField), itemTop + SUGGESTION_H, 0x44FFFFFF);
             }
-            fr.drawStringWithShadow(filteredNames.get(i), GuiScreenUtils.getX(searchField) + 3, itemTop + 2, hovered ? 0xFFFFA0 : 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(fr, filteredNames.get(i), GuiScreenUtils.getX(searchField) + 3, itemTop + 2, hovered ? 0xFFFFA0 : 0xFFFFFF);
         }
     }
 

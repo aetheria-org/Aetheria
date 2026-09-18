@@ -10,6 +10,7 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -148,13 +149,13 @@ public class PestAlertOverlay extends SimpleOverlay {
         GlStateManagerCompat.pushMatrix();
         GlStateManagerCompat.translate(xMain, yMain, 0);
         GlStateManagerCompat.scale(scale, scale, 1);
-        fr.drawStringWithShadow(main, 0, 0, alpha(mainAlpha));
+        DrawContextUtils.drawTextWithShadow(fr, main, 0, 0, alpha(mainAlpha));
         GlStateManagerCompat.popMatrix();
 
         GlStateManagerCompat.pushMatrix();
         GlStateManagerCompat.translate(xSub, yMain + fr.FONT_HEIGHT * scale + gap, 0);
         GlStateManagerCompat.scale(subScale, subScale, 1);
-        fr.drawStringWithShadow(sub, 0, 0, alpha(subAlpha));
+        DrawContextUtils.drawTextWithShadow(fr, sub, 0, 0, alpha(subAlpha));
         GlStateManagerCompat.popMatrix();
 
         if (mainAlpha < 1f || subAlpha < 1f) {

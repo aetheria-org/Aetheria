@@ -11,6 +11,26 @@ net.minecraft.client.world.ClientWorld net.minecraft.client.multiplayer.ClientLe
 net.minecraft.nbt.NbtCompound net.minecraft.nbt.CompoundTag
 net.minecraft.nbt.NbtList net.minecraft.nbt.ListTag
 
+net.minecraft.network.packet.s2c.play.InventoryS2CPacket net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket
+net.minecraft.network.packet.s2c.play.StatisticsS2CPacket net.minecraft.network.protocol.game.ClientboundAwardStatsPacket
+net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket net.minecraft.network.protocol.game.ServerboundClientCommandPacket
+net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket net.minecraft.network.protocol.game.ServerboundContainerClickPacket
+net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket net.minecraft.network.protocol.game.ClientboundOpenScreenPacket
+net.minecraft.network.packet.s2c.play.CloseScreenS2CPacket net.minecraft.network.protocol.game.ClientboundContainerClosePacket
+net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket
+net.minecraft.network.packet.s2c.play.WorldTimeUpdateS2CPacket net.minecraft.network.protocol.game.ClientboundSetTimePacket
+net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket
+net.minecraft.network.packet.s2c.play.ChunkDeltaUpdateS2CPacket net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket
+net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket net.minecraft.network.protocol.game.ClientboundSoundPacket
+
+net.minecraft.block.entity.BlockEntity net.minecraft.world.level.block.entity.BlockEntity
+net.minecraft.block.entity.BrewingStandBlockEntity net.minecraft.world.level.block.entity.BrewingStandBlockEntity
+net.minecraft.block.entity.ChestBlockEntity net.minecraft.world.level.block.entity.ChestBlockEntity
+net.minecraft.block.MapColor net.minecraft.world.level.material.MaterialColor
+net.minecraft.entity.TntEntity net.minecraft.world.entity.item.PrimedTnt
+net.minecraft.entity.passive.BatEntity net.minecraft.world.entity.ambient.Bat
+net.minecraft.client.texture.SpriteAtlasTexture net.minecraft.client.renderer.texture.TextureAtlas
+
 net.minecraft.client.gui.widget.TextFieldWidget net.minecraft.client.gui.components.EditBox
 
 net.minecraft.client.gui.screen.GameMenuScreen net.minecraft.client.gui.screens.PauseScreen

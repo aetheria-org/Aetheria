@@ -72,7 +72,7 @@ public class GuiDropdownTextField extends GuiTextField {
 
             int textColor = isHovered ? 0xFFFFA0 : 0xFFFFFF;
 
-            MinecraftCompat.getFontRenderer().drawStringWithShadow(
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), 
                     filteredOptions.get(i),
                     GuiScreenUtils.getX(this) + 4,
                     itemMinY + 2,

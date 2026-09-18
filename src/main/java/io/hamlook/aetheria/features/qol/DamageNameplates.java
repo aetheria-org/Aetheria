@@ -35,7 +35,7 @@ public class DamageNameplates {
 
         if (!hideCrit && !hideNonCrit && !formatDamage) return entity.getDisplayName();
 
-        String text = entity.getCustomNameTag();
+        String text = TextCompat.getFormattedText(entity.getCustomNameTag());
         if (text == null || text.isEmpty()) return entity.getDisplayName();
 
         boolean hasStar = text.indexOf(STAR) != -1 || text.indexOf(OVERLOAD_STAR) != -1;

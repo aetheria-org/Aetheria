@@ -144,6 +144,25 @@ object ChatHook {
     //$$ }
     //#endif
 
+    //#if MC < 1.21
+    //#else
+    //$$ @JvmStatic
+    //$$ fun getBackgroundColor(context: DrawContext, left: Int, top: Int, right: Int, bottom: Int, color: Int, chatOpen: Boolean): Int {
+    //$$     val config = ATHRConfig.feature ?: return color
+    //$$
+    //$$     val newRight = if (config.chat.chatHeads) right + 10 else right
+    //$$     var newColor = if (config.chat.transparentChat) 0x00000000 else color
+    //$$
+    //$$     val renderParent = (renderVisible as? ChatLineHook)?.`athr$getParentLine`()
+    //$$     if (config.chat.chatCopyEnabled && chatOpen && hoveredLine != null && renderParent == hoveredLine) {
+    //$$         newColor = if (config.chat.transparentChat) 0x22AAAACC else 0x60AAAACC
+    //$$     }
+    //$$
+    //$$     context.fill(left, top, newRight, bottom, newColor)
+    //$$     return newColor
+    //$$ }
+    //#endif
+
     @JvmStatic
     fun offsetClickX(mouseX: Int): Int {
         val config = ATHRConfig.feature ?: return mouseX

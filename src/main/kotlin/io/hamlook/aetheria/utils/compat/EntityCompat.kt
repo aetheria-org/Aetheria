@@ -11,6 +11,7 @@ import net.minecraft.world.World
 //$$ import net.minecraft.world.level.Level
 //$$ import net.minecraft.world.entity.EquipmentSlot
 //#endif
+import net.minecraft.util.Vec3
 
 object EntityCompat {
 
@@ -169,5 +170,13 @@ object EntityCompat {
         entity.posZ
         //#else
         //$$ entity.z
+        //#endif
+
+    @JvmStatic
+    fun getEyePosition(entity: Entity, partialTicks: Float): Vec3 =
+        //#if MC < 1.16
+        entity.getPositionEyes(partialTicks)
+        //#else
+        //$$ entity.getCameraPosVec(partialTicks)
         //#endif
 }

@@ -83,7 +83,7 @@ public class SyncCommand {
                     return;
                 }
 
-                String playerName = MinecraftCompat.getLocalPlayer().getName();
+                String playerName = TextCompat.getUnformattedText(MinecraftCompat.getLocalPlayer().getName());
                 String syncCode = generateSyncCode();
                 ThreadUtils.run(() -> {
                     try {

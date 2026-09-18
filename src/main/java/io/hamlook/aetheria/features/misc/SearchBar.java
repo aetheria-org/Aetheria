@@ -22,6 +22,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 
 import java.util.*;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 @RegisterEvents
 public class SearchBar {
@@ -434,7 +435,7 @@ public class SearchBar {
     @HandleEvent
     public void onItemTooltip(ASMTooltipEvent event) {
         if (!isEnabled() || event.itemStack == null) return;
-        hoveredItemName = ColorUtils.stripColor(event.itemStack.getDisplayName()).trim();
+        hoveredItemName = ColorUtils.stripColor(TextCompat.getUnformattedText(event.itemStack.getDisplayName())).trim();
     }
 
     @HandleEvent

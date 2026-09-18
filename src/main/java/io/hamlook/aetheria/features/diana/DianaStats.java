@@ -11,6 +11,7 @@ import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
@@ -54,7 +55,7 @@ public class DianaStats extends ProfileManagedStorage implements StorageManager.
         if (MinecraftCompat.getLocalPlayer() == null) return false;
         for (int i = 0; i < 9; i++) {
             ItemStack stack = ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getLocalPlayer().inventory.mainInventory)[i];
-            if (stack != null && stack.hasDisplayName() && StringUtils.stripControlCodes(stack.getDisplayName()).contains("Ancestral Spade")) {
+            if (stack != null && stack.hasDisplayName() && StringUtils.stripControlCodes(TextCompat.getUnformattedText(stack.getDisplayName())).contains("Ancestral Spade")) {
                 return true;
             }
         }

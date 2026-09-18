@@ -10,6 +10,7 @@ import io.hamlook.aetheria.utils.RomanNumeralParser;
 import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.DungeonUtils;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -145,7 +146,7 @@ public class ChestListener {
         Slot hovered = chest.getSlotUnderMouse();
         if (hovered == null || !hovered.getHasStack()) return;
 
-        String name = hovered.getStack().getDisplayName();
+        String name = TextCompat.getUnformattedText(hovered.getStack().getDisplayName());
 
         name = StringUtils.cleanColour(name);
         name = StringUtils.clean(name);

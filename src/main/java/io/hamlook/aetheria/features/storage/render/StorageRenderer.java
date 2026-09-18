@@ -206,7 +206,7 @@ public class StorageRenderer extends Gui {
     private boolean itemMatchesSearch(ItemStack stack) {
         if (searchText == null || searchText.isEmpty()) return false;
         if (stack == null) return false;
-        return stack.getDisplayName().toLowerCase().contains(searchText);
+        return TextCompat.getUnformattedText(stack.getDisplayName()).toLowerCase().contains(searchText);
     }
 
     private int getContainerDisplayHeight(SContainer container) {

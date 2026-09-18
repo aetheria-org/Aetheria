@@ -21,4 +21,12 @@ object WorldCompat {
         //#else
         //$$ world.entities.toList()
         //#endif
+
+    @JvmStatic
+    fun getTotalWorldTime(world: WorldClient): Long =
+        //#if MC < 1.14
+        world.getTotalWorldTime()
+        //#else
+        //$$ world.getTime()
+        //#endif
 }

@@ -257,7 +257,7 @@ public abstract class Overlay {
     }
 
     protected void drawLine(String line, int x, int y) {
-        MinecraftCompat.getFontRenderer().drawStringWithShadow(line, x, y, 0xFFFFFF);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line, x, y, 0xFFFFFF);
     }
 
     @HandleEvent

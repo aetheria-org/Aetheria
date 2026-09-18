@@ -15,8 +15,6 @@ import java.util.regex.Pattern;
 @RegisterEvents
 public class ActionBarDispatcher {
 
-    private static final byte ACTION_BAR_TYPE = 2;
-
     private static final Pattern SB_XP_STRIPPED = Pattern.compile("\\+(\\d+) SkyBlock XP");
 
     private static final Pattern SB_XP_FORMATTED = Pattern.compile("(\\+.*?SkyBlock XP)");
@@ -31,7 +29,7 @@ public class ActionBarDispatcher {
 
     @HandleEvent
     public void onActionBar(ASMChatEvent event) {
-        if (event.type != ACTION_BAR_TYPE) return;
+        if (event.type != ASMChatEvent.Type.ACTION_BAR) return;
 
         String stripped = StringUtils.stripControlCodes(TextCompat.getUnformattedText(event.message));
         String formatted = TextCompat.getFormattedText(event.message);

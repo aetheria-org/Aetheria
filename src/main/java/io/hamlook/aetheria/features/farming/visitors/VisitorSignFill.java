@@ -2,7 +2,9 @@ package io.hamlook.aetheria.features.farming.visitors;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.farming.FarmingApi;
+//#if MC < 1.21
 import io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor;
+//#endif
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.inventory.GuiEditSign;
@@ -14,6 +16,7 @@ public final class VisitorSignFill {
     }
 
     public static void onSignOpened(GuiEditSign gui) {
+        //#if MC < 1.21
         if (ATHRConfig.feature == null) return;
         if (ATHRConfig.feature.farming.visitors.signFillMode != 0) return;
         if (VisitorShoppingList.isSearchExpired()) {
@@ -50,5 +53,8 @@ public final class VisitorSignFill {
         sign.signText[0] = TextCompat.createText(String.valueOf(missing));
         VisitorShoppingList.noteParse("[signfill] filled " + missing + "x " + FarmingApi.getSearchedItemName());
         VisitorShoppingList.scheduleSignSubmit(gui);
+        //#else
+        // TODO(sign-port): SignEditScreen uses SignBlockEntity front text; needs the SignText model port
+        //#endif
     }
 }

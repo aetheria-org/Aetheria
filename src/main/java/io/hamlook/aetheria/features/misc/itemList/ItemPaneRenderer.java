@@ -410,7 +410,7 @@ private boolean shouldntShow() {
     }
 
     private void drawCenteredText(Minecraft mc, String text, int x, int y, int color) {
-        MinecraftCompat.getFontRenderer().drawStringWithShadow(text, x - MinecraftCompat.getFontRenderer().getStringWidth(text) / 2f, y, color);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), text, x - MinecraftCompat.getFontRenderer().getStringWidth(text) / 2f, y, color);
     }
 
     @HandleEvent

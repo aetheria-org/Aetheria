@@ -122,7 +122,7 @@ public class CurrentPetOverlay extends Overlay {
         }
 
         int textY = (SKULL_SIZE - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2;
-        MinecraftCompat.getFontRenderer().drawStringWithShadow(formattedName, SKULL_SIZE + GAP, textY, 0xFFFFFF);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), formattedName, SKULL_SIZE + GAP, textY, 0xFFFFFF);
 
         GL11.glPopMatrix();
     }

@@ -5,7 +5,9 @@ import io.hamlook.aetheria.events.PacketEvent;
 import io.hamlook.aetheria.events.SlotClickEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.ClickData;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.PacketCompat;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
@@ -44,9 +46,9 @@ public class NefSlotClickCompat {
         lastRecordMs = System.currentTimeMillis();
     }
 
-    private static boolean consumeMatchingGuiClick(C0EPacketClickWindow packet) {
+    private static boolean consumeMatchingGuiClick(ClickData click) {
         if (System.currentTimeMillis() - lastRecordMs > MARKER_TTL_MS) return false;
-        if (packet.getWindowId() == lastWindowId && packet.getSlotId() == lastSlotId && packet.getUsedButton() == lastButton && packet.getMode() == lastClickType) {
+        if (click.getWindowId() == lastWindowId && click.getSlotId() == lastSlotId && click.getButton() == lastButton && click.getMode() == lastClickType) {
             lastRecordMs = 0;
             return true;
         }
@@ -57,12 +59,12 @@ public class NefSlotClickCompat {
     public void onPacketSend(PacketEvent.Send event) {
         if (posting) return;
         if (!(event.packet instanceof C0EPacketClickWindow)) return;
-        C0EPacketClickWindow packet = (C0EPacketClickWindow) event.packet;
-        if (consumeMatchingGuiClick(packet)) return;
+        ClickData click = PacketCompat.clickData((C0EPacketClickWindow) event.packet);
+        if (consumeMatchingGuiClick(click)) return;
         if (!ContainerUtils.isGuiContainerOpen()) return;
         int guiWindowId = ContainerUtils.getWindowId();
-        if (guiWindowId == -1 || guiWindowId != packet.getWindowId()) return;
-        int slotId = packet.getSlotId();
+        if (guiWindowId == -1 || guiWindowId != click.getWindowId()) return;
+        int slotId = click.getSlotId();
         if (slotId < 0) return;
         ContainerChest chest = ContainerUtils.getOpenChest();
         if (chest == null) return;
@@ -76,7 +78,7 @@ public class NefSlotClickCompat {
         GuiContainer gui = (GuiContainer) MinecraftCompat.getMinecraft().currentScreen;
         posting = true;
         try {
-            new SlotClickEvent(gui, slot, slotId, packet.getUsedButton(), SlotClickEvent.ClickType.fromId(packet.getMode())).post();
+            new SlotClickEvent(gui, slot, slotId, click.getButton(), SlotClickEvent.ClickType.fromId(click.getMode())).post();
         } finally {
             posting = false;
         }

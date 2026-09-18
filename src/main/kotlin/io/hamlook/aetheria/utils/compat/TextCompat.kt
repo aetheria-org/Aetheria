@@ -24,6 +24,9 @@ import net.minecraft.util.MathHelper
 //$$ import net.minecraft.util.Formatting
 //$$ import net.minecraft.util.Identifier
 //#endif
+//#if FORGE
+import net.minecraftforge.client.ClientCommandHandler
+//#endif
 
 object TextCompat {
 
@@ -34,6 +37,50 @@ object TextCompat {
         //#else
         //$$ Component.literal(text)
         //#endif
+
+    @JvmStatic
+    fun fromFormatted(text: String): IChatComponent =
+        //#if MC < 1.16
+        ChatComponentText(text)
+        //#else
+        //$$ parseFormattingCodes(text)
+        //#endif
+
+    //#if MC < 1.16
+    //#else
+    //$$ private fun parseFormattingCodes(text: String): MutableText {
+    //$$     var out = Text.empty()
+    //$$     var style = Style.EMPTY
+    //$$     val cur = StringBuilder()
+    //$$     fun flush() {
+    //$$         if (cur.isNotEmpty()) {
+    //$$             out.append(Text.literal(cur.toString()).setStyle(style))
+    //$$             cur.setLength(0)
+    //$$         }
+    //$$     }
+    //$$     var i = 0
+    //$$     while (i < text.length) {
+    //$$         val c = text[i]
+    //$$         if (c == '§' && i + 1 < text.length) {
+    //$$             flush()
+    //$$             val fmt = Formatting.byCode(text[i + 1].lowercaseChar())
+    //$$             if (fmt == null) {
+    //$$                 cur.append(c)
+    //$$             } else if (fmt == Formatting.RESET) {
+    //$$                 style = Style.EMPTY
+    //$$             } else {
+    //$$                 style = style.withFormatting(fmt)
+    //$$             }
+    //$$             i += 2
+    //$$         } else {
+    //$$             cur.append(c)
+    //$$             i++
+    //$$         }
+    //$$     }
+    //$$     flush()
+    //$$     return out
+    //$$ }
+    //#endif
 
     //#if MC < 1.21
     @JvmStatic
@@ -68,6 +115,12 @@ object TextCompat {
         //#else
         //$$ ColorUtils.stripColor(component.string)
         //#endif
+
+    @JvmStatic
+    fun getUnformattedText(text: String): String = ColorUtils.stripColor(text)
+
+    @JvmStatic
+    fun getFormattedText(text: String): String = text
 
     @JvmStatic
     fun getUnformattedTextForChat(component: IChatComponent): String =
@@ -421,9 +474,14 @@ object TextCompat {
     @JvmStatic
     fun sendChatMessage(message: String) {
         //#if FORGE
-        MinecraftCompat.getLocalPlayer()?.sendChatMessage(message)
+        val player = MinecraftCompat.getLocalPlayer() ?: return
+        if (!message.startsWith("/") || ClientCommandHandler.instance.executeCommand(player, message) == 0) {
+            player.sendChatMessage(message)
+        }
         //#else
-        //$$ MinecraftCompat.getMinecraft().player?.sendMessage(Text.literal(message), false)
+        //$$ val handler = MinecraftCompat.getMinecraft().networkHandler ?: return
+        //$$ if (message.startsWith("/")) handler.sendChatCommand(message.substring(1))
+        //$$ else handler.sendChatMessage(message)
         //#endif
     }
 

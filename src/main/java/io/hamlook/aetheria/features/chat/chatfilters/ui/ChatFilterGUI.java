@@ -63,20 +63,21 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
         searchField.setFocused(true);
         GuiScreenUtils.clearButtons(this);
 
-        GuiScreenUtils.addButton(this, new CFButton(0, boxX + boxW - getScaledX(135), boxY + getScaledY(24), getScaledX(BTN_W + 20), getScaledY(BTN_H), "Add Filter", 0.2f, 0.4f, 0.8f));
+        GuiScreenUtils.addButton(this, CFButton.create(0, boxX + boxW - getScaledX(135), boxY + getScaledY(24), getScaledX(BTN_W + 20), getScaledY(BTN_H), "Add Filter", 0.2f, 0.4f, 0.8f, () -> mc.displayGuiScreen(new ChatFilterEditorGUI(this, null))));
 
         int ty = boxY + getScaledY(68);
         int th = getScaledY(TOGGLE_H);
         int tw = getScaledX(TOGGLE_W);
 
-        GuiScreenUtils.addButton(this, new CFButton(1, boxX + getScaledX(20), ty, tw, th, "STARTS", true, showStarts));
-        GuiScreenUtils.addButton(this, new CFButton(2, boxX + getScaledX(100), ty, tw, th, "ENDS", true, showEnds));
-        GuiScreenUtils.addButton(this, new CFButton(3, boxX + getScaledX(180), ty, getScaledX(TOGGLE_W + 10), th, "CONTAINS", true, showContains));
+        GuiScreenUtils.addButton(this, CFButton.create(1, boxX + getScaledX(20), ty, tw, th, "STARTS", true, showStarts, () -> { showStarts = !showStarts; initGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(2, boxX + getScaledX(100), ty, tw, th, "ENDS", true, showEnds, () -> { showEnds = !showEnds; initGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(3, boxX + getScaledX(180), ty, getScaledX(TOGGLE_W + 10), th, "CONTAINS", true, showContains, () -> { showContains = !showContains; initGui(); }));
 
-        GuiScreenUtils.addButton(this, new CFButton(4, boxX + getScaledX(275), ty, getScaledX(TOGGLE_W + 10), th, "SENSITIVE", true, showSensitive));
-        GuiScreenUtils.addButton(this, new CFButton(5, boxX + getScaledX(370), ty, getScaledX(TOGGLE_W + 20), th, "INSENSITIVE", true, showInsensitive));
+        GuiScreenUtils.addButton(this, CFButton.create(4, boxX + getScaledX(275), ty, getScaledX(TOGGLE_W + 10), th, "SENSITIVE", true, showSensitive, () -> { showSensitive = !showSensitive; initGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(5, boxX + getScaledX(370), ty, getScaledX(TOGGLE_W + 20), th, "INSENSITIVE", true, showInsensitive, () -> { showInsensitive = !showInsensitive; initGui(); }));
     }
 
+    //#if MC < 1.21
     @Override
     protected void actionPerformed(GuiButton button) {
         switch (button.id) {
@@ -102,6 +103,7 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
 
         initGui();
     }
+    //#endif
 
     @Override
     protected void guiClosed() {
@@ -231,8 +233,11 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
             TextRenderUtils.drawStringScaleAware(info, boxX + getScaledX(32), curY + getScaledY(29), textScale * 0.85f, false);
             int btnY = curY + getScaledY(14);
 
+            //#if MC < 1.21
             new CFButton(-1, boxX + boxW - rightPad - editW - delW - getScaledX(8), btnY, editW, btnH, "Edit", 0.2f, 0.7f, 0.2f).drawButton(mc, mouseX, mouseY);
             new CFButton(-2, boxX + boxW - rightPad - delW, btnY, delW, btnH, "Delete", 0.8f, 0.2f, 0.2f).drawButton(mc, mouseX, mouseY);
+            //#endif
+            // TODO(button-batch): ephemeral row buttons need host GUI port (no DrawContext in scope on modern)
             curY += l.itemH;
         }
         stopScissor();
@@ -262,12 +267,23 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
                 int itemY = curY + i * l.itemH;
                 if (mouseY >= itemY && mouseY <= itemY + getScaledY(44)) {
                     int btnY = itemY + getScaledY(14);
-                    if (new CFButton(-1, boxX + boxW - rightPad - editW - delW - getScaledX(8), btnY, editW, btnH, "Edit", 0.2f, 0.7f, 0.2f).mousePressed(mc, mouseX, mouseY)) {
+                    //#if MC < 1.21
+                    boolean editHit = new CFButton(-1, boxX + boxW - rightPad - editW - delW - getScaledX(8), btnY, editW, btnH, "Edit", 0.2f, 0.7f, 0.2f).mousePressed(mc, mouseX, mouseY);
+                    //#else
+                    // TODO(button-batch): ephemeral row hit-test needs host GUI port
+                    //$$ boolean editHit = false;
+                    //#endif
+                    if (editHit) {
                         mc.displayGuiScreen(new ChatFilterEditorGUI(this, cf));
                         return;
                     }
 
-                    if (new CFButton(-2, boxX + boxW - rightPad - delW, btnY, delW, btnH, "Delete", 0.8f, 0.2f, 0.2f).mousePressed(mc, mouseX, mouseY)) {
+                    //#if MC < 1.21
+                    boolean deleteHit = new CFButton(-2, boxX + boxW - rightPad - delW, btnY, delW, btnH, "Delete", 0.8f, 0.2f, 0.2f).mousePressed(mc, mouseX, mouseY);
+                    //#else
+                    //$$ boolean deleteHit = false;
+                    //#endif
+                    if (deleteHit) {
 
                         chatFilters.remove(cf);
                         ChatFilterManager.chatFilters.remove(cf);

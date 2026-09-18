@@ -20,7 +20,7 @@ object KeyboardCompat {
         //#if MC < 1.16
         Keyboard.getEventKey()
         //#else
-        //$$ TODO("Keyboard event queue needs Part B producers")
+        //$$ InputEventQueue.eventKey
         //#endif
 
     @JvmStatic
@@ -28,7 +28,7 @@ object KeyboardCompat {
         //#if MC < 1.16
         Keyboard.getEventKeyState()
         //#else
-        //$$ TODO("Keyboard event queue needs Part B producers")
+        //$$ InputEventQueue.eventKeyState
         //#endif
 
     @JvmStatic
@@ -44,7 +44,7 @@ object KeyboardCompat {
         //#if MC < 1.16
         Keyboard.getEventCharacter()
         //#else
-        //$$ TODO("Keyboard event queue needs Part B producers")
+        //$$ InputEventQueue.eventChar
         //#endif
 
     @JvmStatic
@@ -52,7 +52,7 @@ object KeyboardCompat {
         //#if MC < 1.16
         Keyboard.next()
         //#else
-        //$$ TODO("Keyboard event queue needs Part B producers")
+        //$$ InputEventQueue.pollKey()
         //#endif
 
     @JvmStatic
@@ -60,7 +60,7 @@ object KeyboardCompat {
         //#if MC < 1.16
         Keyboard.isRepeatEvent()
         //#else
-        //$$ TODO("Keyboard event queue needs Part B producers")
+        //$$ InputEventQueue.eventRepeat
         //#endif
 
     @JvmStatic

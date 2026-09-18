@@ -53,7 +53,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     }
 
     private static PetItemData parsePetItem(ItemStack item) {
-        String rawName = item.getDisplayName().replace("§", "§");
+        String rawName = TextCompat.getFormattedText(item.getDisplayName()).replace("§", "§");
         String stripped = StringUtils.stripControlCodes(rawName).trim();
 
         int level = 0;

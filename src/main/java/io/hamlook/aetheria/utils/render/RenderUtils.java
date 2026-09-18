@@ -14,7 +14,9 @@ import io.hamlook.aetheria.utils.compat.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiTextField;
+//#if MC < 1.21
 import net.minecraft.client.renderer.OpenGlHelper;
+//#endif
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
@@ -62,7 +64,7 @@ public final class RenderUtils {
 
         String toDisplay = display.isEmpty() ? "§7Search..." : display;
         if (field.isFocused()) {
-            fr.drawStringWithShadow(toDisplay, x + 5, textY, display.isEmpty() ? 0x8F8F8F : 0xFFFFFFFF);
+            DrawContextUtils.drawTextWithShadow(fr, toDisplay, x + 5, textY, display.isEmpty() ? 0x8F8F8F : 0xFFFFFFFF);
 
             int cursor = Math.min(field.getCursorPosition(), text.length());
             if (System.currentTimeMillis() % 1000 > 500) {
@@ -175,7 +177,11 @@ public final class RenderUtils {
     }
 
     public static void drawFloatingRectDark(int x, int y, int width, int height, boolean shadow) {
+        //#if MC < 1.21
         int alpha = OpenGlHelper.isFramebufferEnabled() ? 0xf0000000 : 0xff000000;
+        //#else
+        //$$ int alpha = 0xf0000000;
+        //#endif
         int main = alpha | 0x202020;
         int light = 0xff2e2e2e;
         int dark = 0xff101010;

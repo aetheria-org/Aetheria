@@ -194,8 +194,8 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
             if(activeProfileData != null && activeProfileData.baseData != null && activeProfileData.baseData.playerProfile != null) {
                 String profile = "§aProfile: §f" + this.activeProfileData.baseData.playerProfile + " §7▼";
                 if (profileButton == null) {
-                    profileButton = new PVButton(0, profileX, profileY, profileW, profileH, profile);
-                    this.buttonList.add(profileButton);
+                    profileButton = PVButton.create(0, profileX, profileY, profileW, profileH, profile, () -> { isDropdownOpen = !isDropdownOpen; isTabDropdownOpen = false; });
+                    GuiScreenUtils.addButton(this, profileButton);
                 } else {
                     GuiScreenUtils.setX(profileButton, profileX);
                     GuiScreenUtils.setY(profileButton, profileY);
@@ -212,8 +212,8 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
 
             String tabName = "§a" + tabs.get(tab).name + " §7▼";
             if (tabButton == null) {
-                tabButton = new PVButton(1, tabX, tabY, tabW, tabH, tabName);
-                this.buttonList.add(tabButton);
+                tabButton = PVButton.create(1, tabX, tabY, tabW, tabH, tabName, () -> { isTabDropdownOpen = !isTabDropdownOpen; isDropdownOpen = false; });
+                GuiScreenUtils.addButton(this, tabButton);
             } else {
                 GuiScreenUtils.setX(tabButton, tabX);
                 GuiScreenUtils.setY(tabButton, tabY);
@@ -410,6 +410,7 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
     }
 
     @Override
+    //#if MC < 1.21
     protected void actionPerformed(GuiButton button) {
         if (profileButton != null && button.id == profileButton.id) {
             isDropdownOpen = !isDropdownOpen;
@@ -419,6 +420,7 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
             isDropdownOpen = false;
         }
     }
+    //#endif
 
     public int drawBasicBG(int mouseX, int mouseY) {
         String name = "§a" + this.username;

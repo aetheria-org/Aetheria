@@ -173,9 +173,9 @@ public class WaypointGroupGui extends GuiElement {
 
         int curY = py + PAD;
 
-        fr.drawStringWithShadow(EnumChatFormatting.WHITE + "" + EnumChatFormatting.BOLD + "Waypoints", px + PAD, curY + 5, -1);
+        DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.WHITE + "" + EnumChatFormatting.BOLD + "Waypoints", px + PAD, curY + 5, -1);
         String escHint = EnumChatFormatting.DARK_GRAY + "ESC";
-        fr.drawStringWithShadow(escHint, px + pw - fr.getStringWidth(escHint) - PAD, curY + 5, -1);
+        DrawContextUtils.drawTextWithShadow(fr, escHint, px + pw - fr.getStringWidth(escHint) - PAD, curY + 5, -1);
         DrawContextUtils.fill(px + PAD, curY + TITLE_H, px + pw - PAD, curY + TITLE_H + 1, 0xff252535);
         curY += TITLE_H + ROW_PAD + 2;
 
@@ -189,11 +189,11 @@ public class WaypointGroupGui extends GuiElement {
         if (state.hasGroup()) {
             String dot = EnumChatFormatting.GREEN + "▶ ";
             String label = EnumChatFormatting.WHITE + state.loadedGroup.name + EnumChatFormatting.DARK_GRAY + " (" + (state.currentIndex + 1) + "/" + state.size() + ")";
-            fr.drawStringWithShadow(dot + label, px + PAD + 6, curY + 6, -1);
+            DrawContextUtils.drawTextWithShadow(fr, dot + label, px + PAD + 6, curY + 6, -1);
             int bx = px + pw - BTN_W - PAD - 4;
             drawBtn(bx, curY + 5, EnumChatFormatting.RED + "Unload", fr, isHovered(bx, curY + 5, BTN_W, BTN_H));
         } else {
-            fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "No group loaded", px + PAD + 6, curY + 6, -1);
+            DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.DARK_GRAY + "No group loaded", px + PAD + 6, curY + 6, -1);
         }
         curY += ROW_H + ROW_PAD;
 
@@ -206,7 +206,7 @@ public class WaypointGroupGui extends GuiElement {
         drawInputBg(px + PAD, curY, sfW);
         searchField.drawTextBox();
         if (searchField.getText().isEmpty() && !searchField.isFocused())
-            fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "Search...", px + PAD + 3, curY + 4, -1);
+            DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.DARK_GRAY + "Search...", px + PAD + 3, curY + 4, -1);
 
         int impTogX = px + pw - BTN_W * 2 - 10;
         int newTogX = px + pw - BTN_W - PAD;
@@ -224,7 +224,7 @@ public class WaypointGroupGui extends GuiElement {
             drawInputBg(px + PAD, curY, ifW);
             importField.drawTextBox();
             if (importField.getText().isEmpty())
-                fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "Group name for import...", px + PAD + 3, curY + 4, -1);
+                DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.DARK_GRAY + "Group name for import...", px + PAD + 3, curY + 4, -1);
             int goBtnX = px + pw - BTN_W - PAD;
             drawToolBtn(goBtnX, curY, EnumChatFormatting.WHITE + "Go", fr, isHovered(goBtnX, curY, BTN_W, SF_H));
             curY += SF_H + ROW_PAD;
@@ -240,7 +240,7 @@ public class WaypointGroupGui extends GuiElement {
             drawInputBg(px + PAD, curY, cfW);
             createField.drawTextBox();
             if (createField.getText().isEmpty())
-                fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "New group name...", px + PAD + 3, curY + 4, -1);
+                DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.DARK_GRAY + "New group name...", px + PAD + 3, curY + 4, -1);
             int createBtnX = px + pw - BTN_W - PAD;
             drawToolBtn(createBtnX, curY, EnumChatFormatting.WHITE + "Create", fr, isHovered(createBtnX, curY, BTN_W, SF_H));
             curY += SF_H + ROW_PAD;
@@ -273,7 +273,7 @@ public class WaypointGroupGui extends GuiElement {
 
         if (groups.isEmpty()) {
             String msg = query.isEmpty() ? EnumChatFormatting.DARK_GRAY + "No groups — click " + EnumChatFormatting.WHITE + "+ New" + EnumChatFormatting.DARK_GRAY + " or /w create <name>" : EnumChatFormatting.DARK_GRAY + "No groups match \"" + query + "\"";
-            fr.drawStringWithShadow(msg, px + PAD + 6, listTopY + 16, -1);
+            DrawContextUtils.drawTextWithShadow(fr, msg, px + PAD + 6, listTopY + 16, -1);
         }
 
         if (maxScroll > 0) {
@@ -294,7 +294,7 @@ public class WaypointGroupGui extends GuiElement {
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         if (isLoaded) DrawContextUtils.fill(panelX + PAD, gr.y, panelX + PAD + 2, gr.y + ROW_H, 0xff55aa55);
         String arrow = gr.expanded ? EnumChatFormatting.GRAY + "▼" : EnumChatFormatting.DARK_GRAY + "▶";
-        fr.drawStringWithShadow(arrow, panelX + PAD + 5, gr.y + 7, -1);
+        DrawContextUtils.drawTextWithShadow(fr, arrow, panelX + PAD + 5, gr.y + 7, -1);
         String nameStr = (isLoaded ? EnumChatFormatting.GREEN : EnumChatFormatting.WHITE) + gr.g.name + EnumChatFormatting.DARK_GRAY + " (" + gr.g.waypoints.size() + ")";
         int maxNameW = panelW - PAD * 2 - INDENT - BTN_W * 3 - 20;
         TextRenderUtils.drawStringScaledMaxWidth(nameStr, fr, panelX + PAD + INDENT, gr.y + 7, false, maxNameW, -1);
@@ -314,7 +314,7 @@ public class WaypointGroupGui extends GuiElement {
         DrawContextUtils.fill(panelX + PAD + INDENT, wr.y, panelX + PAD + INDENT + 2, wr.y + WP_H, 0xff303048);
 
         String idxStr = EnumChatFormatting.DARK_GRAY + "" + (wr.idx + 1) + ".";
-        fr.drawStringWithShadow(idxStr, panelX + PAD + INDENT + 5, wr.y + 5, -1);
+        DrawContextUtils.drawTextWithShadow(fr, idxStr, panelX + PAD + INDENT + 5, wr.y + 5, -1);
         int indexW = fr.getStringWidth("99.") + 4;
 
         int delX = panelX + panelW - PAD - SBTN_W - 4;
@@ -327,7 +327,7 @@ public class WaypointGroupGui extends GuiElement {
 
         String coords = EnumChatFormatting.DARK_GRAY + "" + (int) wp.x + ", " + (int) wp.y + ", " + (int) wp.z;
         int coordsX = upX - fr.getStringWidth(coords) - 5;
-        fr.drawStringWithShadow(coords, coordsX, wr.y + 5, -1);
+        DrawContextUtils.drawTextWithShadow(fr, coords, coordsX, wr.y + 5, -1);
 
         int nameAreaW = coordsX - (panelX + PAD + INDENT + indexW) - 4;
         if (nameAreaW > 0) {
@@ -340,7 +340,7 @@ public class WaypointGroupGui extends GuiElement {
         int rx = panelX + PAD + INDENT, rw = panelW - PAD - INDENT - PAD;
         boolean hov = isHovered(rx, ar.y, rw, WP_H);
         DrawContextUtils.fill(rx, ar.y, rx + rw, ar.y + WP_H, hov ? 0x20ffffff : 0x10ffffff);
-        fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "+ " + EnumChatFormatting.GRAY + "Add waypoint here", rx + 6, ar.y + 5, -1);
+        DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.DARK_GRAY + "+ " + EnumChatFormatting.GRAY + "Add waypoint here", rx + 6, ar.y + 5, -1);
     }
 
     @Override

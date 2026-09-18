@@ -1,0 +1,32 @@
+# Forge-only files excluded from Fabric compilation.
+# GuiFactory implements Forge's IModGuiFactory (no Fabric counterpart); the only
+# reference is the FORGE-gated guiFactory string in Aetheria's @Mod annotation.
+
+io.hamlook.aetheria.GuiFactory.java
+
+# Deprecated on modern; zero references outside itself.
+io.hamlook.aetheria.features.dungeons.puzzles.WaterSolver.java
+
+# Legacy mixins excluded from Fabric compilation. Each has a modern twin under
+# versions/1.21.1-fabric/src (same package scan, no registration step), or no
+# modern expression yet (RenderItem glint/overlay, FontRenderer pos) — either
+# way the legacy target class does not exist on 1.21. Prefer this over a
+# whole-file //#if MC < 1.21 gate: same effect, no empty-file indirection.
+io.hamlook.aetheria.mixins.gui.MixinGuiIngame.java
+io.hamlook.aetheria.mixins.input.MixinMouseHelper.java
+io.hamlook.aetheria.mixins.network.MixinNetHandlerPlayClient.java
+io.hamlook.aetheria.mixins.renderer.MixinRenderItem.java
+io.hamlook.aetheria.mixins.renderer.MixinRender.java
+io.hamlook.aetheria.mixins.renderer.MixinLayerArmorBase.java
+io.hamlook.aetheria.mixins.renderer.MixinRenderPlayer.java
+io.hamlook.aetheria.mixins.renderer.MixinRendererLivingEntity.java
+io.hamlook.aetheria.mixins.accessors.FontRendererAccessor.java
+io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor.java
+
+# FontRenderer text mixins: targets (renderStringAtPos/renderChar/drawString
+# overloads) do not exist on TextRenderer — injections warn-and-skip (emoji) or
+# fail at apply (chroma), and §z/flow-chroma has no modern expression yet (see
+# ChromaTextRenderer TODO(chroma-twin)). Twins need Drawer-level interception
+# plus a modern emoji-sprite pipeline; tracked as follow-up port work.
+io.hamlook.aetheria.mixins.core.MixinFontRendererChroma.java
+io.hamlook.aetheria.mixins.core.MixinFontRendererEmoji.java

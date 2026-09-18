@@ -123,7 +123,7 @@ public class TrophyFishTracker {
             ItemStack item = slot.getStack();
             if (item == null) continue;
 
-            String fishName = ColorUtils.stripColor(item.getDisplayName().replace("§k", "")).trim();
+            String fishName = ColorUtils.stripColor(TextCompat.getFormattedText(item.getDisplayName()).replace("§k", "")).trim();
             if (fishName.isEmpty()) continue;
 
             boolean hasRarityLine = false;
@@ -166,7 +166,7 @@ public class TrophyFishTracker {
         boolean discovered = lore.stream().anyMatch(l -> DISCOVERED.matcher(l).find());
         if (!discovered) return;
 
-        String fishName = ColorUtils.stripColor(event.itemStack.getDisplayName().replace("§k", "")).trim();
+        String fishName = ColorUtils.stripColor(TextCompat.getFormattedText(event.itemStack.getDisplayName()).replace("§k", "")).trim();
         TrophyFishStorage storage = TrophyFishStorage.getInstance();
 
         int total = storage.getTotal(fishName);

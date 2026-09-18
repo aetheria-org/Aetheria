@@ -7,9 +7,18 @@ import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
+import net.minecraft.util.ResourceLocation;
+import org.lwjgl.opengl.GL11;
+
 public class NineSliceUtils {
 
     public static void draw(ResourceLocation texture, int x, int y, int w, int h, int cornerSize, int texSize) {
+        //#if MC < 1.21
         MinecraftCompat.getMinecraft().getTextureManager().bindTexture(texture);
         GlStateManagerCompat.enableTexture2D();
         GlStateManagerCompat.enableBlend();
@@ -44,6 +53,9 @@ public class NineSliceUtils {
 
         vb.draw();
         GlStateManagerCompat.disableBlend();
+        //#else
+        //$$ drawNineRegions(texture, x, y, w, h, cornerSize, texSize);
+        //#endif
     }
 
     private static void drawQuad(VertexBuilder vb,
@@ -65,6 +77,7 @@ public class NineSliceUtils {
     }
 
     public static void draw(ResourceLocation texture, int x, int y, int w, int h, int cornerSize, int texSize, boolean hovered) {
+        //#if MC < 1.21
         MinecraftCompat.getMinecraft().getTextureManager().bindTexture(texture);
         GlStateManagerCompat.enableTexture2D();
         GlStateManagerCompat.enableBlend();
@@ -108,5 +121,35 @@ public class NineSliceUtils {
         vb.draw();
         GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f);
         GlStateManagerCompat.disableBlend();
+        //#else
+        //$$ float tint = hovered ? 0.7f : 1.0f;
+        //$$ GlStateManagerCompat.color(tint, tint, tint, tint);
+        //$$ drawNineRegions(texture, x, y, w, h, cornerSize, texSize);
+        //$$ GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f);
+        //#endif
     }
+
+    //#if MC < 1.21
+    //#else
+    //$$ private static void drawNineRegions(Identifier texture, int x, int y, int w, int h, int cornerSize, int texSize) {
+    //$$     int c = cornerSize;
+    //$$     int m = texSize - cornerSize;
+    //$$     int x2 = x + cornerSize, x3 = x + w - cornerSize;
+    //$$     int y2 = y + cornerSize, y3 = y + h - cornerSize;
+    //$$     int t = texSize;
+    //$$     drawRegion(texture, x, y, x2, y2, 0, 0, c, c, t);
+    //$$     drawRegion(texture, x3, y, x + w, y2, m, 0, t, c, t);
+    //$$     drawRegion(texture, x, y3, x2, y + h, 0, m, c, t, t);
+    //$$     drawRegion(texture, x3, y3, x + w, y + h, m, m, t, t, t);
+    //$$     drawRegion(texture, x2, y, x3, y2, c, 0, m, c, t);
+    //$$     drawRegion(texture, x2, y3, x3, y + h, c, m, m, t, t);
+    //$$     drawRegion(texture, x, y2, x2, y3, 0, c, c, m, t);
+    //$$     drawRegion(texture, x3, y2, x + w, y3, m, c, t, m, t);
+    //$$     drawRegion(texture, x2, y2, x3, y3, c, c, m, m, t);
+    //$$ }
+    //$$
+    //$$ private static void drawRegion(Identifier texture, int x1, int y1, int x2, int y2, int u1, int v1, int u2, int v2, int texSize) {
+    //$$     DrawContextUtils.drawTexturedRegion(texture, x1, y1, x2 - x1, y2 - y1, (float) u1, (float) v1, u2 - u1, v2 - v1, texSize, texSize);
+    //$$ }
+    //#endif
 }

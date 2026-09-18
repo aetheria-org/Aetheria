@@ -8,6 +8,7 @@ package io.hamlook.aetheria.utils.compat
 //#endif
 import net.minecraft.client.gui.FontRenderer
 import net.minecraft.client.renderer.GlStateManager
+import net.minecraft.item.ItemStack
 import java.nio.FloatBuffer
 
 object DrawContextUtils {
@@ -165,6 +166,16 @@ object DrawContextUtils {
     ) = drawContext.drawText(fr, text, x, y, color, shadow)
 
     @JvmStatic
+    fun drawText(
+        fr: FontRenderer,
+        text: String,
+        x: Float,
+        y: Float,
+        color: Int,
+        shadow: Boolean
+    ) = drawContext.drawText(fr, text, x.toInt(), y.toInt(), color, shadow)
+
+    @JvmStatic
     fun drawTextWithShadow(
         fr: FontRenderer,
         text: String,
@@ -193,6 +204,14 @@ object DrawContextUtils {
     @JvmStatic
     fun fill(left: Int, top: Int, right: Int, bottom: Int, color: Int) =
         drawContext.fill(left, top, right, bottom, color)
+
+    @JvmStatic
+    fun drawItem(item: ItemStack, x: Int, y: Int) =
+        drawContext.drawItem(item, x, y)
+
+    @JvmStatic
+    fun drawItemInSlot(fr: FontRenderer, item: ItemStack, x: Int, y: Int) =
+        drawContext.drawItemInSlot(fr, item, x, y)
 
     //#if MC < 1.21
     @JvmStatic
@@ -259,6 +278,18 @@ object DrawContextUtils {
     //$$     textureWidth: Float, textureHeight: Float
     //$$ ) =
     //$$     drawContext.drawTexture(texture, x, y, u, v, width, height, textureWidth.toInt(), textureHeight.toInt())
+    //#endif
+
+    //#if MC < 1.21
+    //#else
+    //$$ @JvmStatic
+    //$$ fun drawTexturedRegion(
+    //$$     texture: Identifier,
+    //$$     x: Int, y: Int, width: Int, height: Int,
+    //$$     u: Float, v: Float, regionWidth: Int, regionHeight: Int,
+    //$$     textureWidth: Int, textureHeight: Int
+    //$$ ) =
+    //$$     drawContext.drawTexture(texture, x, y, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight)
     //#endif
 
     @JvmStatic

@@ -9,6 +9,7 @@ import io.hamlook.aetheria.utils.RomanNumeralParser;
 import io.hamlook.aetheria.utils.item.ItemStackUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.item.ItemStack;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 @RegisterEvents
 public class EnchantLevelTip {
@@ -27,7 +28,7 @@ public class EnchantLevelTip {
     }
 
     private static String getEnchantLevel(ItemStack stack) {
-        String name = ColorUtils.stripColor(stack.getDisplayName());
+        String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName()));
         if (name.isEmpty()) return null;
         String[] parts = name.split(" ");
         String last = parts[parts.length - 1];

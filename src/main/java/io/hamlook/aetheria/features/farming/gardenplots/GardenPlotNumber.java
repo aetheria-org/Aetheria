@@ -21,6 +21,7 @@ import net.minecraft.item.ItemStack;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 @RegisterEvents
 public class GardenPlotNumber {
@@ -110,7 +111,7 @@ public class GardenPlotNumber {
     }
 
     private static PlotInfo compute(ItemStack stack) {
-        String name = ColorUtils.stripColor(stack.getDisplayName());
+        String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName()));
         if (name.isEmpty()) return NON_PLOT;
         Matcher matcher = PLOT_PATTERN.matcher(name);
         if (!matcher.find()) return NON_PLOT;

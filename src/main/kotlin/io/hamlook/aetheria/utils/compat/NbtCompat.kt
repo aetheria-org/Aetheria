@@ -1,9 +1,6 @@
 package io.hamlook.aetheria.utils.compat
 
 //#if MC < 1.16
-import net.minecraft.item.ItemStack
-import net.minecraft.nbt.NBTTagCompound
-import net.minecraft.nbt.NBTTagList
 //#else
 //$$ import net.minecraft.item.ItemStack
 //$$ import net.minecraft.nbt.CompoundTag
@@ -11,6 +8,16 @@ import net.minecraft.nbt.NBTTagList
 //#endif
 //#if MC > 1.21
 //$$ import net.minecraft.component.DataComponentTypes
+//#endif
+//#if MC < 1.21
+import net.minecraft.item.ItemStack
+import net.minecraft.nbt.JsonToNBT
+import net.minecraft.nbt.NBTTagCompound
+import net.minecraft.nbt.NBTTagList
+
+//#else
+//$$ import net.minecraft.nbt.StringNbtReader
+//$$ import com.mojang.brigadier.exceptions.CommandSyntaxException
 //#endif
 
 object NbtCompat {
@@ -107,6 +114,22 @@ object NbtCompat {
         //$$ return compound.contains(key) && compound.get(key) is NbtList
         //#endif
     }
+
+    @JvmStatic
+    fun parseTagFromJson(data: String): NBTTagCompound? =
+        //#if MC < 1.21
+        try {
+            JsonToNBT.getTagFromJson(data)
+        } catch (e: Exception) {
+            null
+        }
+    //#else
+    //$$ try {
+    //$$     StringNbtReader.parse(data)
+    //$$ } catch (e: CommandSyntaxException) {
+    //$$     null
+    //$$ }
+    //#endif
 }
 
 //#if MC > 1.21

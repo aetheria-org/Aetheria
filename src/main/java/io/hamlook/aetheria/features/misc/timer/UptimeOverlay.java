@@ -7,6 +7,7 @@ import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
@@ -139,8 +140,8 @@ public class UptimeOverlay extends Overlay {
         GL11.glScalef(2f, 2f, 1f);
 
         int white = (a << 24) | 0x00FFFFFF;
-        MinecraftCompat.getFontRenderer().drawStringWithShadow(line1, -MinecraftCompat.getFontRenderer().getStringWidth(line1) / 2f, -12f, white);
-        MinecraftCompat.getFontRenderer().drawStringWithShadow(line2, -MinecraftCompat.getFontRenderer().getStringWidth(line2) / 2f, 2f, white);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line1, -MinecraftCompat.getFontRenderer().getStringWidth(line1) / 2f, -12f, white);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line2, -MinecraftCompat.getFontRenderer().getStringWidth(line2) / 2f, 2f, white);
 
         GL11.glPopMatrix();
     }

@@ -5,15 +5,8 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
 import io.hamlook.aetheria.features.custommenu.selector.CMMSelectorGUI;
-import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraft.client.gui.GuiControls;
-import net.minecraft.client.gui.GuiCreateWorld;
-import net.minecraft.client.gui.GuiLanguage;
-import net.minecraft.client.gui.GuiMultiplayer;
-import net.minecraft.client.gui.GuiOptions;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.GuiSelectWorld;
-import net.minecraft.client.gui.GuiVideoSettings;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,19 +19,22 @@ public class GuiHelper {
         return instanceCache.computeIfAbsent(name, key -> {
             switch (key) {
                 case "Singleplayer Menu":
-                    return new GuiSelectWorld(parentScreen);
+                    return GuiScreenUtils.createSingleplayerScreen(parentScreen);
                 case "Multiplayer Menu":
-                    return new GuiMultiplayer(parentScreen);
+                    return GuiScreenUtils.createMultiplayerScreen(parentScreen);
                 case "Options Menu":
-                    return new GuiOptions(parentScreen, MinecraftCompat.getMinecraft().gameSettings);
+                    return GuiScreenUtils.createOptionsScreen(parentScreen);
                 case "Controls Menu":
-                    return new GuiControls(parentScreen, MinecraftCompat.getMinecraft().gameSettings);
+                    return GuiScreenUtils.createControlsScreen(parentScreen);
                 case "Video Settings":
-                    return new GuiVideoSettings(parentScreen, MinecraftCompat.getMinecraft().gameSettings);
+                    return GuiScreenUtils.createVideoSettingsScreen(parentScreen);
                 case "Language Menu":
-                    return new GuiLanguage(parentScreen, MinecraftCompat.getMinecraft().gameSettings, MinecraftCompat.getMinecraft().getLanguageManager());
+                    return GuiScreenUtils.createLanguageScreen(parentScreen);
                 case "Create World Menu":
-                    return new GuiCreateWorld(parentScreen);
+                    // Side-effect open: modern has no public constructor, the
+                    // factory opens the screen itself. Null signals already-opened.
+                    GuiScreenUtils.openCreateWorldScreen(parentScreen);
+                    return null;
                 case "ASM Config":
                     return new GuiScreenElementWrapper(new ConfigEditor(ATHRConfig.feature));
                 case "ASM Options Menu":

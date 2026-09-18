@@ -8,7 +8,9 @@ import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.RenderHelperCompat;
 import net.minecraft.client.entity.AbstractClientPlayer;
+//#if MC < 1.21
 import net.minecraft.client.renderer.OpenGlHelper;
+//#endif
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.ResourceLocation;

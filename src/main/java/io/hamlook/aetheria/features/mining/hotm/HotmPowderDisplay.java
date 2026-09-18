@@ -15,6 +15,7 @@ import org.lwjgl.input.Keyboard;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 @RegisterEvents
 public class HotmPowderDisplay {
@@ -138,7 +139,7 @@ public class HotmPowderDisplay {
         if (event.toolTip == null || event.itemStack == null) return;
         if (!HOTM_TITLE.equals(getContainerName())) return;
 
-        String displayName = ColorUtils.stripColor(event.itemStack.getDisplayName());
+        String displayName = ColorUtils.stripColor(TextCompat.getUnformattedText(event.itemStack.getDisplayName()));
 
         // TODO: Uncomment when Core of the Mountain is updated
         /*

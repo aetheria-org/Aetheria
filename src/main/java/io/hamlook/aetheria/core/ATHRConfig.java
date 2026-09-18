@@ -63,7 +63,9 @@ import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.settings.KeyBinding;
+//#if FORGE
 import net.minecraftforge.common.MinecraftForge;
+//#endif
 //#if MC < 1.16
 import org.lwjgl.input.Keyboard;
 //#else
@@ -120,7 +122,9 @@ public class ATHRConfig {
     public static void register() {
         if (registered) return;
         init();
+        //#if FORGE
         MinecraftForge.EVENT_BUS.register(new ATHRConfig());
+        //#endif
         AetheriaEventBus.INSTANCE.register(new ATHRConfig());
         KeybindCompat.registerKeyBinding(openGuiKey);
         registered = true;

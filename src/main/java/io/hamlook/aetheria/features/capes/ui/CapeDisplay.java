@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.capes.ui;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.capes.Cape;
 import io.hamlook.aetheria.features.capes.CapeManager;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
@@ -67,7 +68,7 @@ public class CapeDisplay {
         GlStateManagerCompat.disableLighting();
         String label = CapeManager.getCape(capeID) != null ? CapeManager.getCape(capeID).name : capeID;
         int labelX = xPos + (width / 2) - (MinecraftCompat.getFontRenderer().getStringWidth(label) / 2);
-        MinecraftCompat.getFontRenderer().drawStringWithShadow(label, labelX, yPos + height - 14, selected ? 0xFFD700 : 0xFFFFFF);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), label, labelX, yPos + height - 14, selected ? 0xFFD700 : 0xFFFFFF);
         GlStateManagerCompat.enableDepth();
         GlStateManagerCompat.enableLighting();
         GlStateManagerCompat.popMatrix();

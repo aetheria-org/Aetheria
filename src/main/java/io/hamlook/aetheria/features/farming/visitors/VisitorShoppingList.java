@@ -534,7 +534,7 @@ public final class VisitorShoppingList {
     }
 
     private static String stripped(ItemStack stack) {
-        return ColorUtils.stripColor(stack.getDisplayName()).trim();
+        return ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
     }
 
     public static String resolveItemId(String displayName) {

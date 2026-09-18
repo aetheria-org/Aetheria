@@ -6,6 +6,7 @@ import io.hamlook.aetheria.core.features.misc.GhostTrackerConfig;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -165,21 +166,21 @@ public class GhostOverlay extends Overlay {
         GlStateManagerCompat.enableAlpha();
         GlStateManagerCompat.enableBlend();
 
-        MinecraftCompat.getFontRenderer().drawStringWithShadow(header, 3, 3, 0xFFFFFF);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), header, 3, 3, 0xFFFFFF);
 
         int dy = 3 + LINE_HEIGHT;
         for (HudEntry e : entries) {
             mc.getTextureManager().bindTexture(e.icon);
             Utils.drawTexturedRect(ICON_PAD, dy + 1, ICON_SIZE, ICON_SIZE);
             int textX = ICON_SIZE + ICON_PAD * 2;
-            MinecraftCompat.getFontRenderer().drawStringWithShadow(e.label, textX, dy, 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), e.label, textX, dy, 0xFFFFFF);
             String[] parts = e.value.split(" §7\\(");
             String mainVal = parts[0];
             int labelEnd = textX + MinecraftCompat.getFontRenderer().getStringWidth(e.label);
-            MinecraftCompat.getFontRenderer().drawStringWithShadow(mainVal, labelEnd, dy, e.color);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), mainVal, labelEnd, dy, e.color);
             if (parts.length > 1) {
                 int mainEnd = labelEnd + MinecraftCompat.getFontRenderer().getStringWidth(mainVal);
-                MinecraftCompat.getFontRenderer().drawStringWithShadow(" §7(" + parts[1], mainEnd, dy, 0xFFFFFF);
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), " §7(" + parts[1], mainEnd, dy, 0xFFFFFF);
             }
             dy += LINE_HEIGHT;
         }

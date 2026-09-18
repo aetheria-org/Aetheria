@@ -1,13 +1,28 @@
 package io.hamlook.aetheria.utils.compat
 //#if MC < 1.21
 import net.minecraft.client.gui.GuiButton
+import net.minecraft.client.gui.GuiControls
+import net.minecraft.client.gui.GuiCreateWorld
+import net.minecraft.client.gui.GuiLanguage
+import net.minecraft.client.gui.GuiMultiplayer
+import net.minecraft.client.gui.GuiOptions
 import net.minecraft.client.gui.GuiScreen
+import net.minecraft.client.gui.GuiSelectWorld
 import net.minecraft.client.gui.GuiTextField
+import net.minecraft.client.gui.GuiVideoSettings
 import net.minecraft.client.gui.ScaledResolution
 //#else
 //$$ import net.minecraft.client.gui.screen.Screen
+//$$ import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen
+//$$ import net.minecraft.client.gui.screen.option.ControlsOptionsScreen
+//$$ import net.minecraft.client.gui.screen.option.LanguageOptionsScreen
+//$$ import net.minecraft.client.gui.screen.option.OptionsScreen
+//$$ import net.minecraft.client.gui.screen.option.VideoOptionsScreen
+//$$ import net.minecraft.client.gui.screen.world.CreateWorldScreen
+//$$ import net.minecraft.client.gui.screen.world.SelectWorldScreen
 //$$ import net.minecraft.client.gui.widget.ClickableWidget
 //$$ import net.minecraft.client.gui.widget.TextFieldWidget
+//$$ import net.minecraft.text.Text
 //#endif
 
 object GuiScreenUtils {
@@ -149,6 +164,14 @@ object GuiScreenUtils {
     //$$ @JvmStatic fun setW(field: TextFieldWidget, v: Int) = field.setWidth(v)
     //$$ @JvmStatic fun getH(field: TextFieldWidget) = field.getHeight()
     //$$ @JvmStatic fun setH(field: TextFieldWidget, v: Int) = field.setHeight(v)
+    //$$ @JvmStatic fun getX(b: ClickableWidget) = b.getX()
+    //$$ @JvmStatic fun setX(b: ClickableWidget, v: Int) = b.setX(v)
+    //$$ @JvmStatic fun getY(b: ClickableWidget) = b.getY()
+    //$$ @JvmStatic fun setY(b: ClickableWidget, v: Int) = b.setY(v)
+    //$$ @JvmStatic fun getW(b: ClickableWidget) = b.getWidth()
+    //$$ @JvmStatic fun setW(b: ClickableWidget, v: Int) = b.setWidth(v)
+    //$$ @JvmStatic fun getH(b: ClickableWidget) = b.getHeight()
+    //$$ @JvmStatic fun setH(b: ClickableWidget, v: Int) = b.setHeight(v)
     //$$ @JvmStatic fun getButtonX(b: ClickableWidget) = b.getX()
     //$$ @JvmStatic fun getButtonY(b: ClickableWidget) = b.getY()
     //$$ @JvmStatic fun getButtonW(b: ClickableWidget) = b.getWidth()
@@ -161,4 +184,61 @@ object GuiScreenUtils {
     //$$ @JvmStatic fun clearButtons(screen: Screen) = screen.clearChildren()
     //$$ @JvmStatic fun isButtonListEmpty(screen: Screen) = screen.children().isEmpty()
     //#endif
+
+    @JvmStatic
+    fun createSingleplayerScreen(parent: GuiScreen): GuiScreen =
+        //#if MC < 1.21
+        GuiSelectWorld(parent)
+        //#else
+        //$$ SelectWorldScreen(parent)
+        //#endif
+
+    @JvmStatic
+    fun createMultiplayerScreen(parent: GuiScreen): GuiScreen =
+        //#if MC < 1.21
+        GuiMultiplayer(parent)
+        //#else
+        //$$ MultiplayerScreen(parent)
+        //#endif
+
+    @JvmStatic
+    fun createOptionsScreen(parent: GuiScreen): GuiScreen =
+        //#if MC < 1.21
+        GuiOptions(parent, MinecraftCompat.getMinecraft().gameSettings)
+        //#else
+        //$$ OptionsScreen(parent, MinecraftCompat.getGameSettings())
+        //#endif
+
+    @JvmStatic
+    fun createControlsScreen(parent: GuiScreen): GuiScreen =
+        //#if MC < 1.21
+        GuiControls(parent, MinecraftCompat.getMinecraft().gameSettings)
+        //#else
+        //$$ ControlsOptionsScreen(parent, MinecraftCompat.getGameSettings())
+        //#endif
+
+    @JvmStatic
+    fun createVideoSettingsScreen(parent: GuiScreen): GuiScreen =
+        //#if MC < 1.21
+        GuiVideoSettings(parent, MinecraftCompat.getMinecraft().gameSettings)
+        //#else
+        //$$ VideoOptionsScreen(parent, MinecraftCompat.getMinecraft(), MinecraftCompat.getGameSettings())
+        //#endif
+
+    @JvmStatic
+    fun createLanguageScreen(parent: GuiScreen): GuiScreen =
+        //#if MC < 1.21
+        GuiLanguage(parent, MinecraftCompat.getMinecraft().gameSettings, MinecraftCompat.getMinecraft().languageManager)
+        //#else
+        //$$ LanguageOptionsScreen(parent, MinecraftCompat.getGameSettings(), MinecraftCompat.getMinecraft().languageManager)
+        //#endif
+
+    @JvmStatic
+    fun openCreateWorldScreen(parent: GuiScreen) {
+        //#if MC < 1.21
+        MinecraftCompat.getMinecraft().displayGuiScreen(GuiCreateWorld(parent))
+        //#else
+        //$$ CreateWorldScreen.create(MinecraftCompat.getMinecraft(), parent)
+        //#endif
+    }
 }

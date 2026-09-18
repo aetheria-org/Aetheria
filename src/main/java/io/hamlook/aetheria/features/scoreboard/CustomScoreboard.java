@@ -12,6 +12,7 @@ import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.ScoreboardCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.data.TablistParser;
 import io.hamlook.aetheria.utils.overlay.Overlay;
@@ -156,7 +157,7 @@ public class CustomScoreboard extends Overlay {
                 try {
                     net.minecraft.scoreboard.ScoreObjective obj =
                             ScoreboardCompat.getSidebarObjective(MinecraftCompat.getLocalWorld().getScoreboard());
-                    if (obj != null) vanillaTitle = obj.getDisplayName();
+                    if (obj != null) vanillaTitle = TextCompat.getUnformattedText(obj.getDisplayName());
                 } catch (Exception ignored) {}
             }
             if (vanillaTitle != null && !vanillaTitle.isEmpty()) result.add(vanillaTitle);
@@ -467,22 +468,22 @@ public class CustomScoreboard extends Overlay {
             // Line 0 is the Skyblock title — always centered
             String firstLine = lines.get(0);
             int titleX = (boxW - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), firstLine)) / 2;
-            MinecraftCompat.getFontRenderer().drawStringWithShadow(firstLine, titleX, textY, -1);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), firstLine, titleX, textY, -1);
             textY += lh;
             for (int i = 1; i < lines.size(); i++) {
                 String line = lines.get(i);
-                MinecraftCompat.getFontRenderer().drawStringWithShadow(line, xFor(line, boxW, alignment), textY, 0xFFFFFF);
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line, xFor(line, boxW, alignment), textY, 0xFFFFFF);
                 textY += lh;
             }
         } else {
             // Outside Skyblock — first line always centered, rest use alignment
             String firstLine = lines.get(0);
             int titleX = (boxW - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), firstLine)) / 2;
-            MinecraftCompat.getFontRenderer().drawStringWithShadow(firstLine, titleX, textY, -1);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), firstLine, titleX, textY, -1);
             textY += lh;
             for (int i = 1; i < lines.size(); i++) {
                 String line = lines.get(i);
-                MinecraftCompat.getFontRenderer().drawStringWithShadow(line, xFor(line, boxW, alignment), textY, 0xFFFFFF);
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line, xFor(line, boxW, alignment), textY, 0xFFFFFF);
                 textY += lh;
             }
         }

@@ -9,6 +9,7 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.SimpleOverlay;
 import net.minecraft.client.Minecraft;
@@ -64,7 +65,7 @@ public class LockMouse extends SimpleOverlay {
         if (ATHRConfig.feature.farming.lockMouseConfig.showUnlockHint) {
             String hint = "Use /lockyp to unlock mouse";
             float textX = (w - MinecraftCompat.getFontRenderer().getStringWidth(hint)) / 2f;
-            MinecraftCompat.getFontRenderer().drawStringWithShadow(hint, textX, iconY + iconSize + 4, 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), hint, textX, iconY + iconSize + 4, 0xFFFFFF);
         }
     }
 }

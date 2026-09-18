@@ -10,6 +10,9 @@ import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.data.SkyblockData;
+import io.hamlook.aetheria.utils.render.EntityHighlight;
+import io.hamlook.aetheria.utils.render.EntityOutlines;
+import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -51,7 +54,7 @@ public class BloodMobHighlight {
         Set<EntityLivingBase> found = new HashSet<>();
         for (Entity entity : WorldCompat.getAllEntities(MinecraftCompat.getLocalWorld())) {
             if (!(entity instanceof EntityArmorStand)) continue;
-            String name = entity.getName();
+            String name = TextCompat.getUnformattedText(entity.getName());
             if (name == null || !MOB_NAME.matcher(name).matches()) continue;
 
             EntityLivingBase mob = MinecraftCompat.getLocalWorld().getEntitiesWithinAABB(EntityLivingBase.class, entity.getEntityBoundingBox().expand(0.5, 3.0, 0.5), e -> e != null && !(e instanceof EntityArmorStand) && e != MinecraftCompat.getLocalPlayer()).stream().findFirst().orElse(null);
@@ -59,6 +62,10 @@ public class BloodMobHighlight {
             if (mob != null && !isDying(mob)) found.add(mob);
         }
         bloodMobs = found;
+        if (ATHRConfig.feature.dungeons.bloodMobHighlight == 1) {
+            Color color = getColor();
+            for (EntityLivingBase mob : found) EntityOutlines.xray(mob, color);
+        }
     }
 
     @HandleEvent(priority = HandleEvent.HIGH)
@@ -66,7 +73,7 @@ public class BloodMobHighlight {
         if (ATHRConfig.feature == null || ATHRConfig.feature.dungeons.bloodMobHighlight != 1) return;
         EntityLivingBase entity = event.getEntity();
         if (!bloodMobs.contains(entity) || isDying(entity) || entity.isInvisible()) return;
-        renderCleanOutline(event, getColor());
+        EntityHighlight.renderEntityOutline(event, getColor());
     }
 
     @HandleEvent
@@ -78,9 +85,8 @@ public class BloodMobHighlight {
         Color c = getColor();
         float r = c.getRed() / 255f, g = c.getGreen() / 255f, b = c.getBlue() / 255f, a = c.getAlpha() / 255f;
 
-        double vx = mc.getRenderManager().viewerPosX;
-        double vy = mc.getRenderManager().viewerPosY;
-        double vz = mc.getRenderManager().viewerPosZ;
+        double[] vp = WorldRenderUtils.viewerPos();
+        double vx = vp[0], vy = vp[1], vz = vp[2];
 
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
         GL11.glDisable(GL11.GL_TEXTURE_2D);
@@ -115,36 +121,6 @@ public class BloodMobHighlight {
         if (name == null) return false;
         String text = TextCompat.getUnformattedText(name);
         return DYING1.matcher(text).matches() || DYING2.matcher(text).matches();
-    }
-
-    private void renderCleanOutline(RenderEntityModelEvent event, Color color) {
-        EntityLivingBase entity = event.getEntity();
-        GlStateManagerCompat.pushMatrix();
-        GlStateManagerCompat.pushAttrib();
-        GlStateManagerCompat.disableLighting();
-        GlStateManagerCompat.disableTexture2D();
-        GlStateManagerCompat.disableDepth();
-        GlStateManagerCompat.enableBlend();
-        GlStateManagerCompat.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlStateManagerCompat.depthMask(false);
-
-        GlStateManagerCompat.color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 0.22f);
-        GlStateManagerCompat.scale(1.04f, 1.04f, 1.04f);
-        event.getModel().render(entity, event.getLimbSwing(), event.getLimbSwingAmount(), event.getAgeInTicks(), event.getHeadYaw(), event.getHeadPitch(), event.getScaleFactor());
-
-        GlStateManagerCompat.color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 0.88f);
-        float shrink = 1.025f / 1.04f;
-        GlStateManagerCompat.scale(shrink, shrink, shrink);
-        event.getModel().render(entity, event.getLimbSwing(), event.getLimbSwingAmount(), event.getAgeInTicks(), event.getHeadYaw(), event.getHeadPitch(), event.getScaleFactor());
-
-        GlStateManagerCompat.depthMask(true);
-        GlStateManagerCompat.enableDepth();
-        GlStateManagerCompat.enableTexture2D();
-        GlStateManagerCompat.enableLighting();
-        GlStateManagerCompat.disableBlend();
-        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
-        GlStateManagerCompat.popAttrib();
-        GlStateManagerCompat.popMatrix();
     }
 
     private void drawBox(AxisAlignedBB bb, float r, float g, float b, float a) {

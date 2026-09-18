@@ -1,7 +1,9 @@
 package io.hamlook.aetheria.utils.render;
 
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
+//#if MC < 1.21
 import io.hamlook.aetheria.mixins.accessors.FontRendererAccessor;
+//#endif
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import net.minecraft.client.gui.FontRenderer;
@@ -67,8 +69,13 @@ public class ChromaTextRenderer {
         if (!chromaActive || !chromaOn || fr == null) return;
         if (ch == 32) return;
 
+        //#if MC < 1.21
         FontRendererAccessor accessor = (FontRendererAccessor) fr;
         int rgb = currentStyle().toArgb(accessor.ATHR$getPosX(), accessor.ATHR$getPosY());
+        //#else
+        // TODO(chroma-twin): TextRenderer has no persistent cursor; position-shifted chroma needs the modern render path
+        //$$ int rgb = currentStyle().toArgb(0, 0);
+        //#endif
         if (renderingShadow) {
             int a = (rgb >>> 24) & 255;
             int r = ((rgb >>> 16) & 255) / 4;

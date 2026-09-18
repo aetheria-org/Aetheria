@@ -41,9 +41,11 @@ public final class GuiIngameMenuHook {
     //$$ }
     //#endif
 
+    //#if MC < 1.21
     public static void actionPerformed(GuiButton button) {
         if (button.id == BTN_ATHR) {
             MinecraftCompat.getMinecraft().displayGuiScreen(new OptionsMenu());
         }
     }
+    //#endif
 }

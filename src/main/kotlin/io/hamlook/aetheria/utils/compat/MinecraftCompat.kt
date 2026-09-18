@@ -103,6 +103,22 @@ object MinecraftCompat {
         //#endif
 
     @JvmStatic
+    fun getViewerYaw(): Float =
+        //#if MC < 1.16
+        Minecraft.getMinecraft().getRenderManager().playerViewY
+        //#else
+        //$$ MinecraftClient.getInstance().gameRenderer.getCamera().getYaw()
+        //#endif
+
+    @JvmStatic
+    fun getViewerPitch(): Float =
+        //#if MC < 1.16
+        Minecraft.getMinecraft().getRenderManager().playerViewX
+        //#else
+        //$$ MinecraftClient.getInstance().gameRenderer.getCamera().getPitch()
+        //#endif
+
+    @JvmStatic
     fun getRenderGlobal(): RenderGlobal =
         //#if MC < 1.16
         Minecraft.getMinecraft().renderGlobal

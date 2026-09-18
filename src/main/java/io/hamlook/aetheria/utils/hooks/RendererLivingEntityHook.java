@@ -35,6 +35,7 @@ public class RendererLivingEntityHook {
      * Called via @Inject after renderLayers() invoke.
      */
     public static void fireRenderEntityModelEvent(EntityLivingBase entity, float partialTicks, ModelBase mainModel) {
+        //#if MC < 1.21
         float limbSwing = entity.limbSwing - entity.limbSwingAmount * (1.0F - partialTicks);
         float limbSwingAmount = entity.prevLimbSwingAmount + (entity.limbSwingAmount - entity.prevLimbSwingAmount) * partialTicks;
         float ageInTicks = entity.ticksExisted + partialTicks;
@@ -42,5 +43,11 @@ public class RendererLivingEntityHook {
         float headPitch = entity.prevRotationPitch + (entity.rotationPitch - entity.prevRotationPitch) * partialTicks;
 
         new RenderEntityModelEvent(entity, limbSwing, limbSwingAmount, ageInTicks, headYaw, headPitch, 0.0625F, mainModel).post();
+        //#else
+        //$$ // TODO(outline-strategy): limb/head floats have no modern source yet (LimbAnimator port).
+        //$$ new RenderEntityModelEvent(entity, 0f, 0f, 0f, 0f, 0f, 0.0625F, mainModel).post();
+        //#endif
+        // TODO(outline-strategy): modern renderer hook twin not yet written (needs LivingEntityRenderer.render inject)
+        // to supply entity/partialTicks/model on modern.
     }
 }

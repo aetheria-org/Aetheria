@@ -36,7 +36,7 @@ object MouseCompat {
         //#if MC < 1.16
         Mouse.getEventButtonState()
         //#else
-        //$$ TODO("Mouse event queue needs Part B producers")
+        //$$ InputEventQueue.mouseButtonState
         //#endif
 
     @JvmStatic
@@ -44,7 +44,7 @@ object MouseCompat {
         //#if MC < 1.16
         Mouse.getEventButton()
         //#else
-        //$$ TODO("Mouse event queue needs Part B producers")
+        //$$ InputEventQueue.mouseButton
         //#endif
 
     @JvmStatic
@@ -52,7 +52,7 @@ object MouseCompat {
         //#if MC < 1.16
         Mouse.getDWheel()
         //#else
-        //$$ TODO("Mouse event queue needs Part B producers")
+        //$$ InputEventQueue.consumeWheel()
         //#endif
 
     @JvmStatic
@@ -60,7 +60,7 @@ object MouseCompat {
         //#if MC < 1.16
         Mouse.getEventDWheel()
         //#else
-        //$$ TODO("Mouse event queue needs Part B producers")
+        //$$ InputEventQueue.consumeWheel()
         //#endif
 
     @JvmStatic
@@ -84,7 +84,7 @@ object MouseCompat {
         //#if MC < 1.16
         Mouse.getEventDY()
         //#else
-        //$$ TODO("Mouse event queue needs Part B producers")
+        //$$ InputEventQueue.mouseDY
         //#endif
 
     @JvmStatic
@@ -92,7 +92,7 @@ object MouseCompat {
         //#if MC < 1.16
         Mouse.getEventDWheel()
         //#else
-        //$$ TODO("Mouse event queue needs Part B producers")
+        //$$ InputEventQueue.consumeWheel()
         //#endif
 
     @JvmStatic
@@ -100,7 +100,7 @@ object MouseCompat {
         //#if MC < 1.16
         Mouse.getEventNanoseconds()
         //#else
-        //$$ TODO("Mouse event queue needs Part B producers")
+        //$$ InputEventQueue.mouseNanos
         //#endif
 
     @JvmStatic
@@ -108,7 +108,7 @@ object MouseCompat {
         //#if MC < 1.16
         Mouse.next()
         //#else
-        //$$ TODO("Mouse event queue needs Part B producers")
+        //$$ InputEventQueue.pollMouse()
         //#endif
 
     @JvmStatic

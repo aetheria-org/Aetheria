@@ -46,7 +46,7 @@ public class ChatUtils {
     }
 
     public static boolean isFromServer(ASMChatEvent event) {
-        return event.type == 0 || event.type == 1;
+        return event.type == ASMChatEvent.Type.CHAT || event.type == ASMChatEvent.Type.SYSTEM;
     }
 
     public static boolean isPartyMessage(String msg) {
@@ -162,6 +162,12 @@ public class ChatUtils {
 
     public static void sendMessage(IChatComponent component) {
         TextCompat.addChatMessage(component);
+    }
+
+    public static void simulateIncomingChat(IChatComponent message) {
+        ASMChatEvent event = new ASMChatEvent(message, ASMChatEvent.Type.CHAT);
+        event.post();
+        if (!event.isCancelled()) sendMessage(event.message);
     }
 
     public static void sendMultilineMessage(String message) {

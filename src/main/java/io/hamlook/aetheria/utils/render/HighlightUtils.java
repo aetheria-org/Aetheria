@@ -8,6 +8,7 @@ import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
@@ -86,7 +87,7 @@ public class HighlightUtils {
     }
 
     private static boolean matches(ItemStack stack, String query) {
-        String display = stack.getDisplayName();
+        String display = TextCompat.getUnformattedText(stack.getDisplayName());
         if (display != null && ColorUtils.stripColor(display).toLowerCase(Locale.ROOT).contains(query)) return true;
 
         List<String> tooltip = ItemCompatKt.getTooltipCompat(stack, MinecraftCompat.getLocalPlayer(), false);

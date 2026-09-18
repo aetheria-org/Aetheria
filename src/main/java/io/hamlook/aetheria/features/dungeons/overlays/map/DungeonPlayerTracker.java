@@ -8,7 +8,12 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
+//#if MC < 1.21
 import net.minecraft.util.Vec4b;
+//#else
+//$$ import net.minecraft.item.map.MapDecoration;
+//$$ import net.minecraft.registry.Registries;
+//#endif
 
 import java.util.*;
 
@@ -18,7 +23,11 @@ public class DungeonPlayerTracker {
     public final List<String> playerNames = new ArrayList<>();
     private final List<EntityPlayer> players = new ArrayList<>();
     private final Map<String, float[]> currentPositions = new HashMap<>();
+    //#if MC < 1.21
     private final List<Vec4b> decorationBuffer = new ArrayList<>();
+    //#else
+    //$$ private final List<MapDecoration> decorationBuffer = new ArrayList<>();
+    //#endif
 
     private static boolean isPlausibleUsername(String name) {
         if (name == null || name.length() < 3 || name.length() > 16) return false;
@@ -109,6 +118,7 @@ public class DungeonPlayerTracker {
      * only changes the drawn coordinates of that anchored slot, so it can never be
      * mis-assigned to a teammate.
      */
+    //#if MC < 1.21
     public void matchDecorations(Map<String, Vec4b> mapDecorations) {
         Minecraft mc = MinecraftCompat.getMinecraft();
         if (MinecraftCompat.getLocalPlayer() == null || playerNames.isEmpty()) return;
@@ -158,6 +168,62 @@ public class DungeonPlayerTracker {
             currentPositions.put(playerName, new float[]{x, z, yaw});
         }
     }
+    //#else
+    //$$ public void matchDecorations(Iterable<MapDecoration> mapDecorations) {
+    //$$     matchDecorationsModern(mapDecorations);
+    //$$ }
+    //#endif
+
+    //#if MC < 1.21
+    //#else
+    //$$ private void matchDecorationsModern(Iterable<MapDecoration> mapDecorations) {
+    //$$     Minecraft mc = MinecraftCompat.getMinecraft();
+    //$$     if (MinecraftCompat.getLocalPlayer() == null || playerNames.isEmpty()) return;
+    //$$     if (mapDecorations == null) return;
+    //$$
+    //$$     currentPositions.clear();
+    //$$
+    //$$     decorationBuffer.clear();
+    //$$     for (MapDecoration deco : mapDecorations) decorationBuffer.add(deco);
+    //$$     List<MapDecoration> decorations = decorationBuffer;
+    //$$
+    //$$     int selfDecoIndex = 0;
+    //$$     for (int i = 0; i < decorations.size(); i++) {
+    //$$         if (decoType(decorations.get(i)) == 1) {
+    //$$             selfDecoIndex = i;
+    //$$             break;
+    //$$         }
+    //$$     }
+    //$$
+    //$$     int decoIndex = 0;
+    //$$     for (String playerName : playerNames) {
+    //$$         if (decoIndex >= decorations.size()) break;
+    //$$
+    //$$         int slot = decoIndex;
+    //$$         if (decoIndex == 0 && selfDecoIndex > 0) {
+    //$$             slot = selfDecoIndex;
+    //$$         } else if (decoIndex == selfDecoIndex && selfDecoIndex > 0) {
+    //$$             slot = 0;
+    //$$         }
+    //$$
+    //$$         MapDecoration deco = decorations.get(slot);
+    //$$         decoIndex++;
+    //$$         int type = decoType(deco);
+    //$$
+    //$$         if (type != 0 && type != 1 && type != 3) continue;
+    //$$
+    //$$         float x = (float) deco.x() / 2.0F + 64.0F;
+    //$$         float z = (float) deco.z() / 2.0F + 64.0F;
+    //$$         float yaw = (float) (deco.rotation() * 360) / 16.0F + 180F;
+    //$$
+    //$$         currentPositions.put(playerName, new float[]{x, z, yaw});
+    //$$     }
+    //$$ }
+    //$$
+    //$$ private static int decoType(MapDecoration deco) {
+    //$$     return Registries.MAP_DECORATION_TYPE.getRawId(deco.type().value());
+    //$$ }
+    //#endif
 
     public float[] getPosition(String name) {
         return currentPositions.get(name);

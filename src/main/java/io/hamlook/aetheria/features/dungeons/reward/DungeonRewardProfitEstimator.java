@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 @RegisterEvents
 public class DungeonRewardProfitEstimator {
@@ -65,7 +66,7 @@ public class DungeonRewardProfitEstimator {
             ItemStack stack = slot.getStack();
             if(stack == null || Objects.equals(stack.getItem().getRegistryName(), ColoredBlockCompat.WHITE.createGlassPaneStack(1).getItem().getRegistryName())) continue;
 
-            if(ColorUtils.stripColor(stack.getDisplayName()).trim().
+            if(ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim().
             startsWith("Open Reward Chest")){
                 List<String> lore = ItemUtils.getLoreLinesWithoutColor(stack);
                 for(String s : lore){

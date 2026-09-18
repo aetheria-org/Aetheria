@@ -10,6 +10,7 @@ import net.minecraft.item.ItemStack;
 
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 public class StorageParser {
 
@@ -47,7 +48,7 @@ public class StorageParser {
             if (stack == null) continue;
 
             String id = Type.ECHEST.prefix + "-" + page;
-            String title = ColorUtils.stripColor(stack.getDisplayName());
+            String title = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName()));
 
             if (!title.contains("Ender") || !(Block.getBlockFromItem(stack.getItem()) instanceof BlockStainedGlassPane)) {
                 continue;

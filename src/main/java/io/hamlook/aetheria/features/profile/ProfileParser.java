@@ -52,14 +52,13 @@ import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.JsonToNBT;
-import net.minecraft.nbt.NBTException;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 public class ProfileParser {
 
@@ -217,7 +216,7 @@ public class ProfileParser {
                                                         for(int i = 0; i < 9;i++){
                                                             ItemStack stack = bags.getSlot(i).getStack();
                                                             if(stack == null)continue;
-                                                            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+                                                            String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
                                                             if(name.equals("Blocked Page.")) continue;
                                                             if(name.startsWith("Ender Chest")){
                                                                 slotsToCheck.add(i);
@@ -226,7 +225,7 @@ public class ProfileParser {
                                                         for(int i = 18;i < 36;i++){
                                                             ItemStack stack = bags.getSlot(i).getStack();
                                                             if(stack == null)continue;
-                                                            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+                                                            String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
                                                             if(name.equals("Empty Backpack slot")) continue;
                                                             if(name.endsWith("Backpack")){
                                                                 slotsToCheck.add(i);
@@ -368,9 +367,9 @@ public class ProfileParser {
         for(int i = 19; i < 44; i++){
             if(i % 9 == 0 || (i + 1) % 9 == 0) continue;
             ItemStack stack = container.getSlot(i).getStack();
-            if(stack == null || stack.getDisplayName().isEmpty()) continue;
+            if(stack == null || TextCompat.getUnformattedText(stack.getDisplayName()).isEmpty()) continue;
 
-            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
             String[] words = name.split(" ");
             if (words.length < 1) continue;
 
@@ -435,7 +434,7 @@ public class ProfileParser {
         for(int i = 0; i < lower.getSizeInventory();i++){
             ItemStack stack = lower.getStackInSlot(i);
             if(stack == null)continue;
-            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
             if(name.isEmpty() || name.equals("Go Back")) continue;
 
             Arrow arrow = Arrow.getArrow(name);
@@ -458,7 +457,7 @@ public class ProfileParser {
         for(int i = 0; i < lower.getSizeInventory();i++){
             ItemStack stack = lower.getStackInSlot(i);
             if(stack == null)continue;
-            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
             if(name.isEmpty() || name.equals("Go Back") || name.equals("Next Page") || name.equals("Previous Page")) continue;
             accessory.add(parseItemData(stack));
         }
@@ -476,7 +475,7 @@ public class ProfileParser {
         for(int i = 0; i < lower.getSizeInventory();i++){
             ItemStack stack = lower.getStackInSlot(i);
             if(stack == null)continue;
-            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
             if(name.isEmpty() || name.equals("Go Back")) continue;
 
             Bait bait = Bait.getBait(name);
@@ -507,7 +506,7 @@ public class ProfileParser {
         for(int i = 0; i < lower.getSizeInventory();i++){
             ItemStack stack = lower.getStackInSlot(i);
             if(stack == null)continue;
-            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
             if(name.isEmpty() || name.equals("Go Back")) continue;
             data.put(i, parseItemData(stack));
         }
@@ -550,7 +549,7 @@ public class ProfileParser {
             ItemStack stack = container.getSlot(i).getStack();
             if(stack == null) continue;
 
-            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
 
             int realSlotNumber = (i - 36) + 1;
             try {
@@ -583,10 +582,10 @@ public class ProfileParser {
 
             if(helm == null || chestplate == null || leggings == null || boots == null) continue;
 
-            String hName = ColorUtils.stripColor(helm.getDisplayName()).trim();
-            String cName = ColorUtils.stripColor(chestplate.getDisplayName()).trim();
-            String lName = ColorUtils.stripColor(leggings.getDisplayName()).trim();
-            String bName = ColorUtils.stripColor(boots.getDisplayName()).trim();
+            String hName = ColorUtils.stripColor(TextCompat.getUnformattedText(helm.getDisplayName())).trim();
+            String cName = ColorUtils.stripColor(TextCompat.getUnformattedText(chestplate.getDisplayName())).trim();
+            String lName = ColorUtils.stripColor(TextCompat.getUnformattedText(leggings.getDisplayName())).trim();
+            String bName = ColorUtils.stripColor(TextCompat.getUnformattedText(boots.getDisplayName())).trim();
 
             ItemData helmData = null;
             ItemData chestData = null;
@@ -620,8 +619,8 @@ public class ProfileParser {
             Aetheria.logger.info("[Slayer1] " + slayer);
             ItemStack stack = container.getSlot(slayer.itemSlot).getStack();
             if(stack == null) { Aetheria.logger.info("[Slayer] Null stack at slot " + slayer.itemSlot + " for " + slayer + " — skipping"); continue; }
-            if(!ColorUtils.stripColor(stack.getDisplayName()).equals(slayer.itemName)) {
-                Aetheria.logger.info("[Slayer] Name mismatch for " + slayer + " at slot " + slayer.itemSlot + " — got: " + ColorUtils.stripColor(stack.getDisplayName()) + ", expected: " + slayer.itemName + " — skipping");
+            if(!ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).equals(slayer.itemName)) {
+                Aetheria.logger.info("[Slayer] Name mismatch for " + slayer + " at slot " + slayer.itemSlot + " — got: " + ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())) + ", expected: " + slayer.itemName + " — skipping");
                 continue;
             }
             List<String> lore = getLore(stack);
@@ -685,7 +684,7 @@ public class ProfileParser {
 
         ItemStack skill = container.getSlot(4).getStack();
         if(skill == null) return null;
-        String name = ColorUtils.stripColor(skill.getDisplayName()).trim();
+        String name = ColorUtils.stripColor(TextCompat.getUnformattedText(skill.getDisplayName())).trim();
         String[] words = name.split(" ");
         int level,hLevel = -1,mLevel = -1,aLevel = -1,bLevel = -1,tLevel = -1;
         long curPorgress = -1,reqProgress = -1;
@@ -754,7 +753,7 @@ public class ProfileParser {
     public static FloorData parseFloor(ItemStack stack){
         if(stack == null)return null;
 
-        Floor floor = Floor.getFloor(ColorUtils.stripColor(stack.getDisplayName()));
+        Floor floor = Floor.getFloor(ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())));
         if(floor == null) return null;
         if(floor == Floor.FLOOR_SEVEN){
             Aetheria.logger.info("Parsing Floor Seven");
@@ -912,13 +911,13 @@ public class ProfileParser {
         if (leggings   != null) armorData.put(EquipmentSlot.LEGGINGS,   parseItemData(leggings));
         if (boots      != null) armorData.put(EquipmentSlot.BOOTS,      parseItemData(boots));
 
-        if (necklace != null && !ColorUtils.stripColor(necklace.getDisplayName()).equals("Necklace"))
+        if (necklace != null && !ColorUtils.stripColor(TextCompat.getUnformattedText(necklace.getDisplayName())).equals("Necklace"))
             armorData.put(EquipmentSlot.NECKLACE, parseItemData(necklace));
-        if (cloak    != null && !ColorUtils.stripColor(cloak.getDisplayName()).equals("Cloak"))
+        if (cloak    != null && !ColorUtils.stripColor(TextCompat.getUnformattedText(cloak.getDisplayName())).equals("Cloak"))
             armorData.put(EquipmentSlot.CLOAK,    parseItemData(cloak));
-        if (belt     != null && !ColorUtils.stripColor(belt.getDisplayName()).equals("Belt"))
+        if (belt     != null && !ColorUtils.stripColor(TextCompat.getUnformattedText(belt.getDisplayName())).equals("Belt"))
             armorData.put(EquipmentSlot.BELT,     parseItemData(belt));
-        if (gloves   != null && !ColorUtils.stripColor(gloves.getDisplayName()).equals("Gloves"))
+        if (gloves   != null && !ColorUtils.stripColor(TextCompat.getUnformattedText(gloves.getDisplayName())).equals("Gloves"))
             armorData.put(EquipmentSlot.GLOVES,   parseItemData(gloves));
 
         for (int i = 0; i < 36; i++) {
@@ -931,7 +930,7 @@ public class ProfileParser {
 
     public static ItemData parseItemData(ItemStack stack) {
         if (stack == null) return null;
-        String displayName = stack.getDisplayName();
+        String displayName = TextCompat.getFormattedText(stack.getDisplayName());
         String skyblockID = ItemUtils.getInternalName(stack);
         List<String> lore = getLoreColored(stack);
         return new ItemData(displayName, lore, skyblockID,stack.isItemEnchanted(),stack.stackSize);
@@ -939,12 +938,12 @@ public class ProfileParser {
 
 
     public static ItemStack itemFromNBT(String data) {
-        try {
-            return ItemStack.loadItemStackFromNBT(JsonToNBT.getTagFromJson(data));
-        } catch (NBTException e) {
+        NBTTagCompound tag = NbtCompat.parseTagFromJson(data);
+        if (tag == null) {
             Aetheria.logger.info("Error parsing item from NBT: " + data);
             return null;
         }
+        return ItemStack.loadItemStackFromNBT(tag);
     }
 
     public static void parseName(ItemStack stack) {
@@ -968,7 +967,7 @@ public class ProfileParser {
         List<String> lore = getLore(basicInfo);
         if (lore.isEmpty()) return null;
 
-        String playerName = ColorUtils.stripColor(basicInfo.getDisplayName()).split("'")[0];
+        String playerName = ColorUtils.stripColor(TextCompat.getUnformattedText(basicInfo.getDisplayName())).split("'")[0];
         int level = -1;
         long profileAge = 0L;
         ProfileMode mode = ProfileMode.NORMAL;
@@ -1122,7 +1121,7 @@ public class ProfileParser {
         for(Skill skill : Skill.values()){
             ItemStack stack = container.getSlot(skill.slot).getStack();
             if (stack == null) continue;
-            String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+            String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
             String[] words = name.split(" ");
             if(!skill.name.equalsIgnoreCase(words[0])) {
                 Aetheria.logger.info("Wrong Slot for Skill: " + skill.name + " | " + skill.slot + " | " + words[0]);

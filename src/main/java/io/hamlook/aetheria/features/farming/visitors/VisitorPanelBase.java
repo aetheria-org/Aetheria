@@ -208,7 +208,7 @@ public abstract class VisitorPanelBase {
                                 line.itemId, line.amount);
                     }
                     if (line.text != null && !line.text.isEmpty()) {
-                        MinecraftCompat.getFontRenderer().drawStringWithShadow(line.text, tx, dy + 2, 0xFFFFFF);
+                        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line.text, tx, dy + 2, 0xFFFFFF);
                     }
                 }
                 if (clickable != null) clickTargets.add(clickable);

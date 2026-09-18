@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.mixins.network;
 
-import io.hamlook.aetheria.utils.hooks.NetHandlerPlayClientHook;
+import io.hamlook.aetheria.events.PacketEvent;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S03PacketTimeUpdate;
@@ -22,51 +22,51 @@ public class MixinNetHandlerPlayClient {
 
     @Inject(method = "addToSendQueue", at = @At("HEAD"))
     public void ATHR$addToSendQueue(Packet<?> packet, CallbackInfo ci) {
-        NetHandlerPlayClientHook.onAddToSendQueue(packet);
+        new PacketEvent.Send(packet).post();
     }
 
     @Inject(method = "handleSetSlot", at = @At("RETURN"))
     public void ATHR$handleSetSlot(S2FPacketSetSlot packetIn, CallbackInfo ci) {
-        NetHandlerPlayClientHook.onHandleSetSlot(packetIn);
+        new PacketEvent.Receive(packetIn).post();
     }
 
     @Inject(method = "handleOpenWindow", at = @At("RETURN"))
     public void ATHR$handleOpenWindow(S2DPacketOpenWindow packetIn, CallbackInfo ci) {
-        NetHandlerPlayClientHook.onHandleOpenWindow(packetIn);
+        new PacketEvent.Receive(packetIn).post();
     }
 
     @Inject(method = "handleCloseWindow", at = @At("RETURN"))
     public void ATHR$handleCloseWindow(S2EPacketCloseWindow packetIn, CallbackInfo ci) {
-        NetHandlerPlayClientHook.onHandleCloseWindow(packetIn);
+        new PacketEvent.Receive(packetIn).post();
     }
 
     @Inject(method = "handleWindowItems", at = @At("RETURN"))
     public void ATHR$handleWindowItems(S30PacketWindowItems packetIn, CallbackInfo ci) {
-        NetHandlerPlayClientHook.onHandleWindowItems(packetIn);
+        new PacketEvent.Receive(packetIn).post();
     }
 
     @Inject(method = "handleTimeUpdate", at = @At("HEAD"))
     private void ATHR$onTimeUpdate(S03PacketTimeUpdate packet, CallbackInfo ci) {
-        NetHandlerPlayClientHook.onTimeUpdate(packet);
+        new PacketEvent.Receive(packet).post();
     }
 
     @Inject(method = "handleStatistics", at = @At("HEAD"))
     private void ATHR$onStatistics(S37PacketStatistics packet, CallbackInfo ci) {
-        NetHandlerPlayClientHook.onStatistics(packet);
+        new PacketEvent.Receive(packet).post();
     }
 
     @Inject(method = "handleBlockChange", at = @At("HEAD"))
     private void ATHR$onBlockChange(S23PacketBlockChange packet, CallbackInfo ci) {
-        NetHandlerPlayClientHook.onBlockChange(packet);
+        new PacketEvent.Receive(packet).post();
     }
 
     @Inject(method = "handleMultiBlockChange", at = @At("HEAD"))
     private void ATHR$onMultiBlockChange(S22PacketMultiBlockChange packet, CallbackInfo ci) {
-        NetHandlerPlayClientHook.onMultiBlockChange(packet);
+        new PacketEvent.Receive(packet).post();
     }
 
     @Inject(method = "handleSoundEffect", at = @At("HEAD"))
     private void ATHR$onSoundEffect(S29PacketSoundEffect packet, CallbackInfo ci) {
-        NetHandlerPlayClientHook.onSoundEffect(packet);
+        new PacketEvent.Receive(packet).post();
     }
 }

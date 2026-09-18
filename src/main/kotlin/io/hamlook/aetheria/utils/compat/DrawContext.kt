@@ -29,6 +29,10 @@ class DrawContext {
         MinecraftCompat.getMinecraft().renderItem.renderItemIntoGUI(item, x, y)
     }
 
+    fun drawItemInSlot(fr: FontRenderer, item: ItemStack, x: Int, y: Int) {
+        MinecraftCompat.getMinecraft().renderItem.renderItemOverlayIntoGUI(fr, item, x, y, null)
+    }
+
     fun fill(left: Int, top: Int, right: Int, bottom: Int, color: Int) {
         GuiScreen.drawRect(left, top, right, bottom, color)
     }
@@ -60,9 +64,13 @@ class DrawContext {
 //$$
 //$$     fun getStringWidth(fr: TextRenderer, text: String): Int = fr.getWidth(text)
 //$$
-//$$     fun drawItem(item: ItemStack, x: Int, y: Int) {
-//$$         vanilla.drawItem(item, x, y)
-//$$     }
+    //$$     fun drawItem(item: ItemStack, x: Int, y: Int) {
+    //$$         vanilla.drawItem(item, x, y)
+    //$$     }
+    //$$
+    //$$     fun drawItemInSlot(fr: TextRenderer, item: ItemStack, x: Int, y: Int) {
+    //$$         vanilla.drawItemInSlot(fr, item, x, y)
+    //$$     }
 //$$
 //$$     fun fill(left: Int, top: Int, right: Int, bottom: Int, color: Int) {
 //$$         vanilla.fill(left, top, right, bottom, color)

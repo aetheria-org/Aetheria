@@ -7,9 +7,9 @@ import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ModCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.IChatComponent;
-import net.minecraftforge.fml.common.Loader;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -116,7 +116,7 @@ public class IncompatModChecker {
 
         private boolean isLoaded() {
             for (String id : modIds) {
-                if (Loader.isModLoaded(id)) return true;
+                if (ModCompat.isModLoaded(id)) return true;
             }
             return false;
         }

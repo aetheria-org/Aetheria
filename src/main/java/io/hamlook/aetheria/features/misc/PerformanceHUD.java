@@ -6,14 +6,15 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.overlay.OverlayUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.play.client.C16PacketClientStatus;
 import net.minecraft.util.EnumChatFormatting;
+import io.hamlook.aetheria.utils.compat.PacketCompat;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
@@ -104,7 +105,15 @@ public class PerformanceHUD extends Overlay {
     protected boolean hideOnDebug()  { return ATHRConfig.feature.misc.performanceHudConfig.hideOnDebug; }
 
     @HandleEvent
-    public void onTimeUpdate(PacketReceiveTimeUpdateEvent event) {
+    public void onPacketReceive(PacketEvent.Receive event) {
+        if (PacketCompat.isTimeUpdate(event.packet)) {
+            onTimePacket();
+        } else if (PacketCompat.isStats(event.packet)) {
+            onStatsPacket();
+        }
+    }
+
+    private void onTimePacket() {
         long now = System.currentTimeMillis();
         if (tpsCount > 0) {
             int prev = (tpsHead - 1 + TPS_SAMPLES) % TPS_SAMPLES;
@@ -116,8 +125,7 @@ public class PerformanceHUD extends Overlay {
         if (tpsCount < TPS_SAMPLES) tpsCount++;
     }
 
-    @HandleEvent
-    public void onStats(PacketReceiveStatsEvent event) {
+    private void onStatsPacket() {
         if (pingSentAt < 0) return;
         pingMs = Math.abs(System.nanoTime() - pingSentAt) / 1_000_000.0;
         pingSentAt = -1L;
@@ -138,7 +146,7 @@ public class PerformanceHUD extends Overlay {
         if (++ticksSincePing < PING_INTERVAL_TICKS) return;
         ticksSincePing = 0;
         pingSentAt = System.nanoTime();
-        MinecraftCompat.getLocalPlayer().sendQueue.getNetworkManager().sendPacket(new C16PacketClientStatus(C16PacketClientStatus.EnumState.REQUEST_STATS));
+        PacketCompat.requestStats();
     }
 
     @HandleEvent
@@ -216,13 +224,13 @@ public class PerformanceHUD extends Overlay {
         if (vert) {
             int dy = 0;
             for (String line : lines) {
-                MinecraftCompat.getFontRenderer().drawStringWithShadow(line, 0, dy, 0xFFFFFF);
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line, 0, dy, 0xFFFFFF);
                 dy += LINE_HEIGHT;
             }
         } else {
             int cx = 0;
             for (String line : lines) {
-                MinecraftCompat.getFontRenderer().drawStringWithShadow(line, cx, 0, 0xFFFFFF);
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line, cx, 0, 0xFFFFFF);
                 cx += MinecraftCompat.getFontRenderer().getStringWidth(line) + 6;
             }
         }

@@ -85,11 +85,6 @@ public class CMMSelectorGUI extends GuiScreen {
         createElement.updatePositions(CREATE_ELEMENT_X,CREATE_ELEMENT_Y);
     }
 
-    @Override
-    protected void actionPerformed(GuiButton button) throws IOException {
-        super.actionPerformed(button);
-    }
-
     private void updateSearchBar() {
         GuiScreenUtils.setX(searchBar, ScreenHelper.getAnchoredX(ScreenHelper.Anchor.LEFT,ScreenHelper.getStaticWidth(10)));
         GuiScreenUtils.setY(searchBar, ScreenHelper.getAnchoredY(ScreenHelper.Anchor.TOP,-ScreenHelper.getStaticHeight(35)));

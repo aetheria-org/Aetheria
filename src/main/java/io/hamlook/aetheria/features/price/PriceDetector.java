@@ -13,6 +13,7 @@ import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.price.vars.AuctionEntry;
 import io.hamlook.aetheria.features.price.vars.BazaarEntry;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.features.price.vars.PriceData;
 import io.hamlook.aetheria.features.price.vars.PriceType;
 import io.hamlook.aetheria.features.profile.ProfileParser;
@@ -230,7 +231,7 @@ public class PriceDetector {
         if (!(event.gui instanceof GuiContainer)) return;
         ContainerChest chest = ContainerUtils.getOpenChest(event.gui);
         if (chest == null) return;
-        String title = chest.getLowerChestInventory().getName();
+        String title = TextCompat.getUnformattedText(chest.getLowerChestInventory().getName());
 
         if (title.contains("Auction Browser") && ATHRConfig.feature.misc.itemPriceConfig.auctionEnabled) {
             scanning = true;
@@ -283,7 +284,7 @@ public class PriceDetector {
 
     public static boolean parseBZMenus(ContainerChest chest) {
         List<BazaarEntry> entries = new ArrayList<>();
-        String title = chest.getLowerChestInventory().getName();
+        String title = TextCompat.getUnformattedText(chest.getLowerChestInventory().getName());
         long now = System.currentTimeMillis();
 
         if (title.contains("➜")) {

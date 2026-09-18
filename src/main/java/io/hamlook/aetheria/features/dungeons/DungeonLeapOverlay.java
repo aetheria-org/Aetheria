@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 @RegisterEvents
 public class DungeonLeapOverlay {
@@ -163,7 +164,7 @@ public class DungeonLeapOverlay {
 
             ResourceLocation skin = getPlayerSkin(player, mc);
             RenderUtils.renderPlayerHead(bounds.x + 3, bounds.y + 3, -1, 2f, skin, 0);
-            MinecraftCompat.getFontRenderer().drawStringWithShadow(player, bounds.x + 22, bounds.y + 6, 0xFFFFFFFF);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), player, bounds.x + 22, bounds.y + 6, 0xFFFFFFFF);
         }
     }
 
@@ -231,7 +232,7 @@ public class DungeonLeapOverlay {
             ItemStack stack = slot1.getStack();
             if (stack.getItem().getRegistryName().equals(ColoredBlockCompat.WHITE.createGlassPaneStack(1).getItem().getRegistryName())) continue;
 
-            String displayName = ColorUtils.stripColor(stack.getDisplayName());
+            String displayName = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName()));
 
             if (pattern.matcher(displayName).matches()) {
                 InventoryCompat.windowClick(leapChest.windowId, slot, 0, 0, MinecraftCompat.getLocalPlayer());

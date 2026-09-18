@@ -157,6 +157,7 @@ dependencies {
 
     compileOnly("org.projectlombok:lombok:1.18.46")
     annotationProcessor("org.projectlombok:lombok:1.18.46")
+    compileOnly("com.google.code.findbugs:jsr305:3.0.2")
 
     if (target == ProjectTarget.MAIN) {
         shadowImpl("com.mojang:brigadier:1.0.18") { isTransitive = false }

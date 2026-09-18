@@ -8,7 +8,11 @@ import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
+//#if MC < 1.21
 import net.minecraft.util.ChatAllowedCharacters;
+//#else
+//$$ import net.minecraft.util.StringHelper;
+//#endif
 
 import java.util.ArrayList;
 import java.util.List;
@@ -125,7 +129,11 @@ public class PVSearchBar {
             return false;
         }
 
+        //#if MC < 1.21
         if (text.length() < 16 && ChatAllowedCharacters.isAllowedCharacter(typedChar)) {
+        //#else
+        //$$ if (text.length() < 16 && StringHelper.isValidChar(typedChar)) {
+        //#endif
             text += typedChar;
             updateSuggestions();
         }

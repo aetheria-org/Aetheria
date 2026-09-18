@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.utils;
 
 import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
@@ -57,7 +58,7 @@ public final class RaycastUtils {
 
     public static BlockPos raycastBlock(net.minecraft.entity.player.EntityPlayer player,
                                         float partialTicks, double reach) {
-        Vec3 eyes = player.getPositionEyes(partialTicks);
+        Vec3 eyes = EntityCompat.getEyePosition(player, partialTicks);
         Vec3 look = player.getLookVec();
         return raycastBlock(eyes, look, reach);
     }

@@ -9,8 +9,6 @@ import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.common.MinecraftForge;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -83,7 +81,6 @@ public class AsmTestMessageCommand {
             ChatUtils.sendMessage(EnumChatFormatting.GREEN + "Testing message: " + EnumChatFormatting.GRAY + text);
         }
 
-        // type 0 = chat (matches a normal server chat message, not the action bar/system channel)
-        MinecraftForge.EVENT_BUS.post(new ClientChatReceivedEvent((byte) 0, component));
+        ChatUtils.simulateIncomingChat(component);
     }
 }

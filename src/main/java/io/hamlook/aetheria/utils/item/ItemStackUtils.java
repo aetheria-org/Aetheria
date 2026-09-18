@@ -23,7 +23,7 @@ public class ItemStackUtils {
         FontRenderer fr = MinecraftCompat.getFontRenderer();
         GlStateManagerCompat.disableDepth();
         GlStateManagerCompat.disableBlend();
-        fr.drawStringWithShadow(tip, x + 17 - DrawContextUtils.getStringWidth(fr, tip), y + 9, color);
+        DrawContextUtils.drawTextWithShadow(fr, tip, x + 17 - DrawContextUtils.getStringWidth(fr, tip), y + 9, color);
         GlStateManagerCompat.enableDepth();
     }
 }

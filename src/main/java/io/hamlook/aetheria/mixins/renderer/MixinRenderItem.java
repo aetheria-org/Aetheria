@@ -1,6 +1,5 @@
 package io.hamlook.aetheria.mixins.renderer;
 
-//#if MC < 1.21
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.RenderItemOverlayEvent;
 import io.hamlook.aetheria.utils.compat.DrawContext;
@@ -27,4 +26,3 @@ public class MixinRenderItem {
             new RenderItemOverlayEvent(new DrawContext(), stack, x, y).post();
     }
 }
-//#endif

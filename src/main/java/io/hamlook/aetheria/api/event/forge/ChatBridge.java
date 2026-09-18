@@ -16,7 +16,7 @@ public class ChatBridge {
     //#if FORGE
     @SubscribeEvent(receiveCanceled = true)
     public void onChatReceived(ClientChatReceivedEvent event) {
-        ASMChatEvent asmEvent = new ASMChatEvent(event.message, event.type);
+        ASMChatEvent asmEvent = new ASMChatEvent(event.message, ASMChatEvent.Type.fromId(event.type));
         asmEvent.post();
         if (asmEvent.isCancelled()) {
             event.setCanceled(true);
@@ -28,16 +28,16 @@ public class ChatBridge {
     //$$
     //$$ static {
     //$$     ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) ->
-    //$$         athr$intake(message, overlay ? (byte) 2 : (byte) 1));
+    //$$         athr$intake(message, overlay ? ASMChatEvent.Type.ACTION_BAR : ASMChatEvent.Type.SYSTEM));
     //$$     ClientReceiveMessageEvents.MODIFY_GAME.register((message, overlay) ->
     //$$         athr$apply(message));
     //$$     ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, profile, params, timestamp) ->
-    //$$         athr$intake(message, (byte) 0));
+    //$$         athr$intake(message, ASMChatEvent.Type.CHAT));
     //$$     ClientReceiveMessageEvents.CHAT.register((message, signedMessage, profile, params, timestamp) -> {
     //$$     });
     //$$ }
     //$$
-    //$$ private static boolean athr$intake(Text message, byte type) {
+    //$$ private static boolean athr$intake(Text message, ASMChatEvent.Type type) {
     //$$     ASMChatEvent asmEvent = new ASMChatEvent(message, type);
     //$$     asmEvent.post();
     //$$     if (asmEvent.isCancelled()) {

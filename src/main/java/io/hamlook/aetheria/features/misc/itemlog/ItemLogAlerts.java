@@ -9,6 +9,7 @@ import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.SoundUtils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -84,7 +85,7 @@ public class ItemLogAlerts {
         GlStateManagerCompat.scale(scale, scale, scale);
         int x = (int) ((screenWidth / scale - textWidth) / 2);
         int y = (int) ((screenHeight / scale / 2) - 15);
-        fr.drawStringWithShadow(displayText, x, y, 0xFF5555);
+        DrawContextUtils.drawTextWithShadow(fr, displayText, x, y, 0xFF5555);
         GlStateManagerCompat.popMatrix();
     }
 

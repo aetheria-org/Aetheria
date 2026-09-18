@@ -48,7 +48,7 @@ net.minecraft.client.gui.Gui net.minecraft.client.gui.GuiIngame
 net.minecraft.client.gui.Gui getChat() getChatGUI()
 
 net.minecraft.client.gui.components.ChatComponent net.minecraft.client.gui.GuiNewChat
-net.minecraft.client.gui.components.Widget net.minecraft.client.gui.GuiButton
+net.minecraft.client.gui.components.Button net.minecraft.client.gui.GuiButton
 
 net.minecraft.client.gui.components.ChatComponent allMessages chatLines
 net.minecraft.client.gui.components.ChatComponent chatScrollbarPos scrollPos
@@ -61,6 +61,11 @@ net.minecraft.client.gui.components.ChatComponent trimmedMessages drawnChatLines
 net.minecraft.client.gui.screens.ChatScreen net.minecraft.client.gui.GuiChat
 net.minecraft.client.gui.screens.PauseScreen net.minecraft.client.gui.GuiIngameMenu
 net.minecraft.client.gui.screens.Screen net.minecraft.client.gui.GuiScreen
+net.minecraft.client.gui.screens.TitleScreen net.minecraft.client.gui.GuiMainMenu
+net.minecraft.client.gui.components.PlayerTabOverlay net.minecraft.client.gui.GuiPlayerTabOverlay
+net.minecraft.client.MouseHandler net.minecraft.util.MouseHelper
+net.minecraft.client.model.Model net.minecraft.client.model.ModelBase
+net.minecraft.client.model.geom.ModelPart net.minecraft.client.model.ModelRenderer
 
 net.minecraft.client.gui.screens.Screen isPauseScreen() doesGuiPauseGame()
 
@@ -144,6 +149,13 @@ net.minecraft.entity.projectile.EntityArrow owner shootingEntity
 net.minecraft.nbt.CompoundTag net.minecraft.nbt.NBTTagCompound
 net.minecraft.nbt.ListTag net.minecraft.nbt.NBTTagList
 net.minecraft.nbt.StringTag net.minecraft.nbt.NBTTagString
+net.minecraft.nbt.Tag net.minecraft.nbt.NBTBase
+net.minecraft.nbt.ByteTag net.minecraft.nbt.NBTTagByte
+net.minecraft.nbt.DoubleTag net.minecraft.nbt.NBTTagDouble
+net.minecraft.nbt.FloatTag net.minecraft.nbt.NBTTagFloat
+net.minecraft.nbt.IntTag net.minecraft.nbt.NBTTagInt
+net.minecraft.nbt.LongTag net.minecraft.nbt.NBTTagLong
+net.minecraft.nbt.ShortTag net.minecraft.nbt.NBTTagShort
 
 net.minecraft.nbt.CompoundTag contains() hasKey()
 net.minecraft.nbt.CompoundTag get() getTag()
@@ -194,6 +206,7 @@ net.minecraft.network.protocol.game.ClientboundAnimatePacket net.minecraft.netwo
 net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket net.minecraft.network.play.server.S23PacketBlockChange
 net.minecraft.network.protocol.game.ClientboundChatPacket net.minecraft.network.play.server.S02PacketChat
 net.minecraft.network.protocol.game.ClientboundContainerAckPacket net.minecraft.network.play.server.S32PacketConfirmTransaction
+net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket net.minecraft.network.play.server.S30PacketWindowItems
 net.minecraft.network.protocol.game.ClientboundContainerClosePacket net.minecraft.network.play.server.S2EPacketCloseWindow
 net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket net.minecraft.network.play.server.S2FPacketSetSlot
 net.minecraft.network.protocol.game.ClientboundEntityEventPacket net.minecraft.network.play.server.S19PacketEntityStatus
@@ -225,12 +238,14 @@ net.minecraft.network.protocol.game.ClientboundSetScorePacket net.minecraft.netw
 net.minecraft.network.protocol.game.ClientboundSetTimePacket net.minecraft.network.play.server.S03PacketTimeUpdate
 net.minecraft.network.protocol.game.ClientboundSetTitlesPacket net.minecraft.network.play.server.S45PacketTitle
 net.minecraft.network.protocol.game.ClientboundSoundPacket net.minecraft.network.play.server.S29PacketSoundEffect
+net.minecraft.network.protocol.game.ClientboundAwardStatsPacket net.minecraft.network.play.server.S37PacketStatistics
 net.minecraft.network.protocol.game.ClientboundTabListPacket net.minecraft.network.play.server.S47PacketPlayerListHeaderFooter
 net.minecraft.network.protocol.game.ClientboundTakeItemEntityPacket net.minecraft.network.play.server.S0DPacketCollectItem
 net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket net.minecraft.network.play.server.S18PacketEntityTeleport
 net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket net.minecraft.network.play.server.S20PacketEntityProperties
 net.minecraft.network.protocol.game.ClientboundUpdateMobEffectPacket net.minecraft.network.play.server.S1DPacketEntityEffect
 net.minecraft.network.protocol.game.ServerboundChatPacket net.minecraft.network.play.client.C01PacketChatMessage
+net.minecraft.network.protocol.game.ServerboundClientCommandPacket net.minecraft.network.play.client.C16PacketClientStatus
 net.minecraft.network.protocol.game.ServerboundContainerAckPacket net.minecraft.network.play.client.C0FPacketConfirmTransaction
 net.minecraft.network.protocol.game.ServerboundContainerClickPacket net.minecraft.network.play.client.C0EPacketClickWindow
 net.minecraft.network.protocol.game.ServerboundInteractPacket net.minecraft.network.play.client.C02PacketUseEntity
@@ -890,6 +905,13 @@ net.minecraft.world.level.block.Blocks WOOL wool
 net.minecraft.world.level.block.entity.BeaconBlockEntity net.minecraft.tileentity.TileEntityBeacon
 net.minecraft.world.level.block.entity.SignBlockEntity net.minecraft.tileentity.TileEntitySign
 net.minecraft.world.level.block.entity.SkullBlockEntity net.minecraft.tileentity.TileEntitySkull
+net.minecraft.world.level.block.entity.BlockEntity net.minecraft.tileentity.TileEntity
+net.minecraft.world.level.block.entity.BrewingStandBlockEntity net.minecraft.tileentity.TileEntityBrewingStand
+net.minecraft.world.level.block.entity.ChestBlockEntity net.minecraft.tileentity.TileEntityChest
+net.minecraft.world.level.material.MaterialColor net.minecraft.block.material.MapColor
+net.minecraft.world.entity.item.PrimedTnt net.minecraft.entity.item.EntityTNTPrimed
+net.minecraft.world.entity.ambient.Bat net.minecraft.entity.passive.EntityBat
+net.minecraft.client.renderer.texture.TextureAtlas net.minecraft.client.renderer.texture.TextureMap
 
 net.minecraft.world.level.block.state.BlockState net.minecraft.block.state.IBlockState
 
@@ -909,6 +931,7 @@ net.minecraft.world.phys.AABB intersects() intersectsWith()
 net.minecraft.world.phys.HitResult getLocation() getBlockPos()
 net.minecraft.world.phys.HitResult type typeOfHit
 
+net.minecraft.world.phys.Vec3 add() addVector()
 net.minecraft.world.phys.Vec3 distanceToSqr() squareDistanceTo()
 net.minecraft.world.phys.Vec3 x xCoord
 net.minecraft.world.phys.Vec3 y yCoord

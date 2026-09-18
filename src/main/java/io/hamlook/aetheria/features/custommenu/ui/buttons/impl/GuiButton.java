@@ -28,6 +28,9 @@ public class GuiButton extends CMMButton {
     public void onClick(GuiScreen screen) {
         GuiScreen toOpen = GuiHelper.getMenu(this.screen,screen);
         if(toOpen == null){
+            // Null after a side-effect open (e.g. Create World on modern) means
+            // the screen already changed — only report when nothing happened.
+            if (MinecraftCompat.getCurrentScreen() != screen) return;
             this.displayString = "§cCould not Find GUI: " + this.screen;
             return;
         }

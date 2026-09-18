@@ -13,6 +13,7 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
@@ -70,7 +71,7 @@ public class ElectionUtils {
         if (s == null || !s.getHasStack()) return;
         ItemStack stack = s.getStack();
         if (stack == null) return;
-        String title = stack.getDisplayName();
+        String title = TextCompat.getFormattedText(stack.getDisplayName());
         String colorToCheck = title.substring(0, 2);
         List<String> lore = ProfileParser.getLoreColored(stack);
         List<String> perks = new ArrayList<>();

@@ -4,6 +4,7 @@ import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
@@ -62,7 +63,7 @@ public class GuiInterceptChest extends GuiContainer {
                 ItemStack s = lower.getStackInSlot(i);
                 if (s == null || s.getItem() == null) continue;
                 String id = ItemUtils.getEffectiveItemId(s);
-                DebugLogger.log("[GuiInterceptChest] [ALL] Slot " + i + ": " + s.getDisplayName() + " (id=" + id + ")");
+                DebugLogger.log("[GuiInterceptChest] [ALL] Slot " + i + ": " + TextCompat.getFormattedText(s.getDisplayName()) + " (id=" + id + ")");
             }
         }
 

@@ -6,6 +6,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.ColoredBlockCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.compat.ResourceCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
@@ -89,7 +90,7 @@ public final class BetterContainers {
         if (stack == null) return false;
         if (stack.getItem() != ColoredBlockCompat.WHITE.createGlassPaneStack().getItem()) return false;
         if (stack.getItemDamage() != 15) return false;
-        String name = stack.getDisplayName();
+        String name = TextCompat.getFormattedText(stack.getDisplayName());
         if (name == null) return true;
         return StringUtils.stripControlCodes(name).trim().isEmpty();
     }

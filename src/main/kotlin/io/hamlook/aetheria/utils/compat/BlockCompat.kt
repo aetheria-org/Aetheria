@@ -18,8 +18,52 @@ import net.minecraft.item.ItemStack
 //$$ import net.minecraft.world.item.ItemStack
 //$$ import net.minecraft.world.item.Items
 //#endif
+import net.minecraft.util.AxisAlignedBB
+import net.minecraft.util.BlockPos
+import net.minecraft.util.MovingObjectPosition
+//#if MC < 1.16
+//#else
+//$$ import net.minecraft.util.hit.BlockHitResult
+//#endif
 
 object BlockCompat {
+
+    @JvmStatic
+    fun getHitBlockPos(target: MovingObjectPosition): BlockPos =
+        //#if MC < 1.16
+        target.getBlockPos()
+        //#else
+        //$$ (target as BlockHitResult).getBlockPos()
+        //#endif
+
+    @JvmStatic
+    fun isBlockHit(target: MovingObjectPosition): Boolean =
+        //#if MC < 1.16
+        target.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK
+        //#else
+        //$$ target.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK
+        //#endif
+
+    @JvmStatic
+    fun getSelectionAABB(pos: BlockPos): AxisAlignedBB {
+        //#if MC < 1.16
+        val world = MinecraftCompat.getLocalWorld()
+        val x = pos.getX().toDouble()
+        val y = pos.getY().toDouble()
+        val z = pos.getZ().toDouble()
+        if (world == null) {
+            return AxisAlignedBB(x, y, z, x + 1, y + 1, z + 1)
+        }
+        val block = world.getBlockState(pos).getBlock()
+        val aabb = block.getSelectedBoundingBox(world, pos)
+        return aabb ?: AxisAlignedBB(x, y, z, x + 1, y + 1, z + 1)
+        //#else
+        //$$ val x = pos.getX().toDouble()
+        //$$ val y = pos.getY().toDouble()
+        //$$ val z = pos.getZ().toDouble()
+        //$$ return Box(x, y, z, x + 1, y + 1, z + 1)
+        //#endif
+    }
 
     @JvmStatic
     fun isAir(block: Block): Boolean =

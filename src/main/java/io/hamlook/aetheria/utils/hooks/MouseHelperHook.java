@@ -55,4 +55,32 @@ public class MouseHelperHook {
         delta[1] = Math.round(delta[1] * scale);
         return true;
     }
+
+    /**
+     * Double-precision variants for the modern look path
+     * ({@code Mouse.updateMouse}), which carries movement as doubles.
+     * Same guards and semantics as the int[] versions above.
+     */
+    public static void onLockMouseD(double[] delta) {
+        if (LockMouse.isLocked() && MinecraftCompat.getCurrentScreen() == null) {
+            delta[0] = 0;
+            delta[1] = 0;
+        }
+    }
+
+    public static boolean onReduceSensitivityD(double[] delta) {
+        if (MinecraftCompat.getCurrentScreen() != null) return false;
+        if (LockMouse.isLocked()) return false;
+        if (!SensitivityReducer.isActive()) return false;
+
+        float scale = SensitivityReducer.getSensitivityScale();
+        delta[0] = delta[0] * scale;
+        delta[1] = delta[1] * scale;
+        return true;
+    }
+
+    public static void applyLookModifiersD(double[] delta) {
+        onLockMouseD(delta);
+        onReduceSensitivityD(delta);
+    }
 }

@@ -52,7 +52,7 @@ public final class VisitorBazaarHighlight {
     private static boolean slotMatches(ItemStack stack, boolean searchChest) {
         String searched = FarmingApi.getSearchedItemName();
         if (searched.isEmpty()) return false;
-        String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+        String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
 
         if (searchChest && name.equals(searched)) return true;
 

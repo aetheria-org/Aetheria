@@ -72,7 +72,7 @@ public class MaxwellPowerSync implements StorageManager.Managed, StorageManager.
             if (item == null || !item.hasTagCompound()) continue;
 
             if (hasSelectedLine(item)) {
-                String name = ColorUtils.stripColor(item.getDisplayName()).trim();
+                String name = ColorUtils.stripColor(TextCompat.getUnformattedText(item.getDisplayName())).trim();
                 if (!name.isEmpty() && !name.equals(data.power)) {
                     data.power = name;
                     save();

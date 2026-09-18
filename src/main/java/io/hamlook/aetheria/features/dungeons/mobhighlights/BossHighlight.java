@@ -10,6 +10,9 @@ import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.data.SkyblockData;
+import io.hamlook.aetheria.utils.render.EntityHighlight;
+import io.hamlook.aetheria.utils.render.EntityOutlines;
+import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -51,7 +54,7 @@ public class BossHighlight {
 
         for (Entity entity : WorldCompat.getAllEntities(MinecraftCompat.getLocalWorld())) {
             if (!(entity instanceof EntityArmorStand)) continue;
-            String raw = entity.getName();
+            String raw = TextCompat.getUnformattedText(entity.getName());
             if (raw == null) continue;
             String name = StringUtils.stripControlCodes(raw).toLowerCase();
 
@@ -78,6 +81,9 @@ public class BossHighlight {
         }
 
         bossMobs = found;
+        for (Map.Entry<EntityLivingBase, BossType> entry : found.entrySet()) {
+            if (highlightModeFor(entry.getValue()) == 1) EntityOutlines.xray(entry.getKey(), colorFor(entry.getValue()));
+        }
     }
 
     @HandleEvent(priority = HandleEvent.HIGH)
@@ -87,7 +93,7 @@ public class BossHighlight {
         BossType type = bossMobs.get(entity);
         if (type == null || entity.isInvisible()) return;
         if (highlightModeFor(type) != 1) return;
-        renderCleanOutline(event, colorFor(type));
+        EntityHighlight.renderEntityOutline(event, colorFor(type));
     }
 
     @HandleEvent
@@ -105,9 +111,8 @@ public class BossHighlight {
         }
         if (byType.isEmpty()) return;
 
-        double vx = mc.getRenderManager().viewerPosX;
-        double vy = mc.getRenderManager().viewerPosY;
-        double vz = mc.getRenderManager().viewerPosZ;
+        double[] vp = WorldRenderUtils.viewerPos();
+        double vx = vp[0], vy = vp[1], vz = vp[2];
 
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
         GL11.glDisable(GL11.GL_TEXTURE_2D);
@@ -173,38 +178,6 @@ public class BossHighlight {
         }
         int argb = ChromaColour.specialToChromaRGB(raw);
         return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
-    }
-
-    private void renderCleanOutline(RenderEntityModelEvent event, Color color) {
-        EntityLivingBase entity = event.getEntity();
-        GlStateManagerCompat.pushMatrix();
-        GlStateManagerCompat.pushAttrib();
-        GlStateManagerCompat.disableLighting();
-        GlStateManagerCompat.disableTexture2D();
-        GlStateManagerCompat.disableDepth();
-        GlStateManagerCompat.enableBlend();
-        GlStateManagerCompat.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlStateManagerCompat.depthMask(false);
-
-        // Pass 1: faint fill
-        GlStateManagerCompat.color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 0.22f);
-        GlStateManagerCompat.scale(1.04f, 1.04f, 1.04f);
-        event.getModel().render(entity, event.getLimbSwing(), event.getLimbSwingAmount(), event.getAgeInTicks(), event.getHeadYaw(), event.getHeadPitch(), event.getScaleFactor());
-
-        // Pass 2: crisp edge
-        GlStateManagerCompat.color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 0.88f);
-        float shrink = 1.025f / 1.04f;
-        GlStateManagerCompat.scale(shrink, shrink, shrink);
-        event.getModel().render(entity, event.getLimbSwing(), event.getLimbSwingAmount(), event.getAgeInTicks(), event.getHeadYaw(), event.getHeadPitch(), event.getScaleFactor());
-
-        GlStateManagerCompat.depthMask(true);
-        GlStateManagerCompat.enableDepth();
-        GlStateManagerCompat.enableTexture2D();
-        GlStateManagerCompat.enableLighting();
-        GlStateManagerCompat.disableBlend();
-        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
-        GlStateManagerCompat.popAttrib();
-        GlStateManagerCompat.popMatrix();
     }
 
     private void drawBox(AxisAlignedBB bb, float r, float g, float b, float a) {

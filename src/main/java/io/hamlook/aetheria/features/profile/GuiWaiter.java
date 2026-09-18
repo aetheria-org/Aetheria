@@ -100,7 +100,7 @@ public class GuiWaiter {
         if (actualNextSlot >= 0) {
             ItemStack nextPageItem = container.getSlot(actualNextSlot).getStack();
             hasNextPage = nextPageItem != null
-                    && ColorUtils.stripColor(nextPageItem.getDisplayName()).contains(nextPageItemName);
+                    && ColorUtils.stripColor(TextCompat.getUnformattedText(nextPageItem.getDisplayName())).contains(nextPageItemName);
         }
 
         if (hasNextPage) {
@@ -164,7 +164,7 @@ public class GuiWaiter {
         if (actualNextSlot >= 0) {
             ItemStack nextPageItem = container.getSlot(actualNextSlot).getStack();
             hasNextPage = nextPageItem != null
-                    && ColorUtils.stripColor(nextPageItem.getDisplayName()).contains(nextPageItemName);
+                    && ColorUtils.stripColor(TextCompat.getUnformattedText(nextPageItem.getDisplayName())).contains(nextPageItemName);
         }
 
         if (hasNextPage) {
@@ -199,7 +199,7 @@ public class GuiWaiter {
 
     @HandleEvent
     public void onChatReceived(ASMChatEvent event) {
-        if (event.type == 2) return; // Ignore Action bar messages
+        if (event.type == ASMChatEvent.Type.ACTION_BAR) return; // Ignore Action bar messages
         if (queue.isEmpty()) return;
 
         PendingWait head = queue.peek();

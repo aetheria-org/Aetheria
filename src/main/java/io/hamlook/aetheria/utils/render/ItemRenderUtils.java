@@ -2,15 +2,16 @@ package io.hamlook.aetheria.utils.render;
 
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.RenderHelperCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 
 public class ItemRenderUtils {
@@ -21,7 +22,7 @@ public class ItemRenderUtils {
         boolean depthWasOn = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
         String label;
         try {
-            label = io.hamlook.aetheria.utils.ColorUtils.stripColor(stack.getDisplayName()).trim();
+            label = io.hamlook.aetheria.utils.ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
         } catch (Exception e) {
             label = String.valueOf(stack.getItem());
         }
@@ -32,7 +33,7 @@ public class ItemRenderUtils {
             GlStateManagerCompat.translate(x, y, 0);
             GlStateManagerCompat.scale(size / 16f, size / 16f, 1f);
             GlStateManagerCompat.enableDepth();
-            mc.getRenderItem().renderItemIntoGUI(stack, 0, 0);
+            DrawContextUtils.drawItem(stack, 0, 0);
         } catch (Exception e) {
             // A broken item model must not leak the pushed attrib/matrix.
             io.hamlook.aetheria.utils.debug.GLDebugProbe.warnThrottled(
@@ -88,16 +89,18 @@ public class ItemRenderUtils {
     public static void drawItemStack(ItemStack stack, int x, int y) {
         if (stack == null) return;
 
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        RenderItem ri = mc.getRenderItem();
         FontRenderer fr = MinecraftCompat.getFontRenderer();
 
         beginGuiItemRender();
         try {
-            ri.zLevel = -145;
-            ri.renderItemAndEffectIntoGUI(stack, x, y);
-            ri.renderItemOverlayIntoGUI(fr, stack, x, y, null);
-            ri.zLevel = 0;
+            //#if MC < 1.21
+            setRenderZLevel(-145);
+            //#endif
+            DrawContextUtils.drawItem(stack, x, y);
+            DrawContextUtils.drawItemInSlot(fr, stack, x, y);
+            //#if MC < 1.21
+            setRenderZLevel(0);
+            //#endif
         } finally {
             endGuiItemRender();
         }
@@ -124,10 +127,9 @@ public class ItemRenderUtils {
         GlStateManagerCompat.pushMatrix();
         try {
             GlStateManagerCompat.translate(0f, 0f, 300f);
-            RenderItem ri = MinecraftCompat.getMinecraft().getRenderItem();
-            ri.renderItemAndEffectIntoGUI(held, cursorX - 8, cursorY - 8);
-            ri.renderItemOverlayIntoGUI(
-                    MinecraftCompat.getFontRenderer(), held, cursorX - 8, cursorY - 8, null);
+            DrawContextUtils.drawItem(held, cursorX - 8, cursorY - 8);
+            DrawContextUtils.drawItemInSlot(
+                    MinecraftCompat.getFontRenderer(), held, cursorX - 8, cursorY - 8);
         } catch (Exception e) {
             io.hamlook.aetheria.utils.debug.GLDebugProbe.warnThrottled(
                     "itemrender.cursor", 5_000L,
@@ -142,9 +144,15 @@ public class ItemRenderUtils {
         beginGuiItemRender();
         try {
             GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-            mc.getRenderItem().renderItemAndEffectIntoGUI(stack, x, y);
+            DrawContextUtils.drawItem(stack, x, y);
         } finally {
             endGuiItemRender();
         }
     }
+
+    //#if MC < 1.21
+    private static void setRenderZLevel(float z) {
+        MinecraftCompat.getMinecraft().getRenderItem().zLevel = z;
+    }
+    //#endif
 }

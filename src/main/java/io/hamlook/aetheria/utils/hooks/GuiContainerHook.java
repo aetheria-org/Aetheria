@@ -118,7 +118,7 @@ public final class GuiContainerHook {
         if (theSlot == null || !theSlot.getHasStack()) return false;
         if (!title.equals(GUI_TITLE)) return false;
         ItemStack stack = theSlot.getStack();
-        String itemName = ColorUtils.stripColor(stack.getDisplayName()).trim();
+        String itemName = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
         if (!itemName.equals(ITEM_TITLE)) return false;
         ProfileParser.parseName(stack);
         return true;

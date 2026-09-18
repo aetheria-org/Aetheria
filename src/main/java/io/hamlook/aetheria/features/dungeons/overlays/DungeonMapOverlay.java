@@ -14,6 +14,7 @@ import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomDetector;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -162,7 +163,7 @@ public class DungeonMapOverlay extends Overlay {
         if (preview) {
             String txt = "Preview Map";
             int tw = MinecraftCompat.getFontRenderer().getStringWidth(txt);
-            MinecraftCompat.getFontRenderer().drawStringWithShadow(txt, cx - tw / 2f, cy - 4f, 0xFFFFFFFF);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), txt, cx - tw / 2f, cy - 4f, 0xFFFFFFFF);
         } else if (cachedGrid != null && cachedGrid.isValid()) {
             renderDungeonMap(cx, cy, scale, cfg.rooms.showVisitedRoomNames, cfg.rooms.mapColorText);
         }
@@ -172,7 +173,11 @@ public class DungeonMapOverlay extends Overlay {
         if (cachedGrid == null || !cachedGrid.isValid()) return;
         EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
         MapData info = player != null ? getDungeonMap(player) : null;
+        //#if MC < 1.21
         if (info != null) playerTracker.matchDecorations(info.mapDecorations);
+        //#else
+        //$$ if (info != null) playerTracker.matchDecorations(info.getDecorations());
+        //#endif
         DungeonMapRenderer.render(cachedGrid, centerX, centerY, scale, playerTracker.getPlayerNames(), playerTracker, DungeonRoomDetector.getVisitedRooms(), showRoomNames, colorRoomNames, mapCalibrated);
     }
 

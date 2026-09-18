@@ -2,6 +2,7 @@ package io.hamlook.aetheria.utils.data;
 
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.ScoreboardCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.scoreboard.Score;
 import net.minecraft.scoreboard.ScoreObjective;
@@ -28,7 +29,7 @@ public final class SkyblockData {
         if (sb == null) return "";
         ScoreObjective obj = ScoreboardCompat.getSidebarObjective(sb);
         if (obj == null) return "";
-        return net.minecraft.util.StringUtils.stripControlCodes(obj.getDisplayName());
+        return net.minecraft.util.StringUtils.stripControlCodes(TextCompat.getUnformattedText(obj.getDisplayName()));
     }
 
     public static String getScoreboardTitle() {
@@ -38,7 +39,7 @@ public final class SkyblockData {
         if (sb == null) return null;
         ScoreObjective obj = ScoreboardCompat.getSidebarObjective(sb);
         if (obj == null) return null;
-        return obj.getDisplayName();
+        return TextCompat.getFormattedText(obj.getDisplayName());
     }
 
     public static Location getCurrentLocation() {

@@ -35,7 +35,7 @@ public final class GuiChestHook {
         int y = 6;
         int baseColor = ChromaColour.specialToChromaRGB(ATHRConfig.feature.qol.betterContainers.watermarkColor);
         int color = ChromaColour.applyChromaShift(baseColor, x, y, ATHRConfig.feature.qol.betterContainers.watermarkChromaMode, ATHRConfig.feature.qol.betterContainers.watermarkChromaSize);
-        MinecraftCompat.getFontRenderer().drawStringWithShadow(label, x, y, color);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), label, x, y, color);
     }
 
     public static boolean shouldCancelDraw() {
