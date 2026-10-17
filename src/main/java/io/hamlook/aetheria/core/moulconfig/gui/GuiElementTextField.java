@@ -7,6 +7,7 @@ import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import lombok.Setter;
@@ -29,7 +30,7 @@ public class GuiElementTextField {
     public static final int MULTILINE = 0b00001;
     private static final int searchBarPadding = 2;
     private static final Pattern PATTERN_CONTROL_CODE = Pattern.compile("(?i)\\u00A7([^\\u00B6]|$)(?!\\u00B6)");
-    private final GuiTextField textField = new GuiTextField(0, MinecraftCompat.getFontRenderer(), 0, 0, 0, 0);
+    private final GuiTextField textField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), 0, 0, 0, 0);
     private int searchBarYSize;
     private int searchBarXSize;
     @Setter
@@ -49,8 +50,8 @@ public class GuiElementTextField {
 
     public GuiElementTextField(String initialText, int sizeX, int sizeY, int options) {
         textField.setFocused(true);
-        textField.setCanLoseFocus(false);
-        textField.setMaxStringLength(999);
+        GuiScreenUtils.setTextFieldCanLoseFocus(textField, false);
+        GuiScreenUtils.setTextFieldMaxLength(textField, 999);
         textField.setText(initialText);
         this.searchBarXSize = sizeX;
         this.searchBarYSize = sizeY;
@@ -58,7 +59,7 @@ public class GuiElementTextField {
     }
 
     public void setMaxStringLength(int len) {
-        textField.setMaxStringLength(len);
+        GuiScreenUtils.setTextFieldMaxLength(textField, len);
     }
 
     public boolean getFocus() {
@@ -67,7 +68,7 @@ public class GuiElementTextField {
 
     public void setFocus(boolean focus) {
         this.focus = focus;
-        if (!focus) textField.setCursorPosition(textField.getCursorPosition());
+        if (!focus) GuiScreenUtils.setTextFieldCursor(textField, GuiScreenUtils.getTextFieldCursor(textField));
     }
 
     public String getText() {
@@ -94,7 +95,7 @@ public class GuiElementTextField {
 
     public void unfocus() {
         focus = false;
-        textField.setSelectionPos(textField.getCursorPosition());
+        GuiScreenUtils.setTextFieldSelection(textField, GuiScreenUtils.getTextFieldCursor(textField));
     }
 
     public int getHeight() {
@@ -146,7 +147,7 @@ public class GuiElementTextField {
         int linePos = strLenNoColor(trimmed);
         if (linePos != strLenNoColor(line)) {
             char after = line.charAt(linePos);
-            if (MinecraftCompat.getFontRenderer().getStringWidth(trimmed) + MinecraftCompat.getFontRenderer().getCharWidth(after) / 2 < xComp - padding)
+            if (MinecraftCompat.getFontRenderer().getStringWidth(trimmed) + DrawContextUtils.getCharWidth(MinecraftCompat.getFontRenderer(), after) / 2 < xComp - padding)
                 linePos++;
         }
         cursorIndex += linePos;
@@ -156,24 +157,24 @@ public class GuiElementTextField {
 
     public void mouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (mouseButton == 1) textField.setText("");
-        else textField.setCursorPosition(getCursorPos(mouseX, mouseY));
+        else GuiScreenUtils.setTextFieldCursor(textField, getCursorPos(mouseX, mouseY));
         focus = true;
     }
 
     public void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
-        if (focus) textField.setSelectionPos(getCursorPos(mouseX, mouseY));
+        if (focus) GuiScreenUtils.setTextFieldSelection(textField, getCursorPos(mouseX, mouseY));
     }
 
     public void keyTyped(char typedChar, int keyCode) {
         if (!focus) return;
 
         if ((options & MULTILINE) != 0) {
-            if (keyCode == 28) {
-                String before = textField.getText().substring(0, textField.getCursorPosition());
-                String after = textField.getText().substring(textField.getCursorPosition());
-                int pos = textField.getCursorPosition();
+            if (KeybindHelper.isEnterKey(keyCode)) {
+                String before = textField.getText().substring(0, GuiScreenUtils.getTextFieldCursor(textField));
+                String after = textField.getText().substring(GuiScreenUtils.getTextFieldCursor(textField));
+                int pos = GuiScreenUtils.getTextFieldCursor(textField);
                 textField.setText(before + "\n" + after);
-                textField.setCursorPosition(pos + 1);
+                GuiScreenUtils.setTextFieldCursor(textField, pos + 1);
                 return;
             }
         }
@@ -184,24 +185,24 @@ public class GuiElementTextField {
         if (typedChar == '¶') typedChar = '§';
 
         textField.setFocused(true);
-        textField.textboxKeyTyped(typedChar, keyCode);
+        GuiScreenUtils.typeTextField(textField, typedChar, keyCode);
 
         if ((options & COLOUR) != 0) {
             if (typedChar == '&') {
-                int pos = textField.getCursorPosition() - 2;
+                int pos = GuiScreenUtils.getTextFieldCursor(textField) - 2;
                 if (pos >= 0 && pos < textField.getText().length() && textField.getText().charAt(pos) == '&') {
                     String b = textField.getText().substring(0, pos);
                     String a = pos + 2 < textField.getText().length() ? textField.getText().substring(pos + 2) : "";
                     textField.setText(b + "§" + a);
-                    textField.setCursorPosition(pos + 1);
+                    GuiScreenUtils.setTextFieldCursor(textField, pos + 1);
                 }
             } else if (typedChar == '*') {
-                int pos = textField.getCursorPosition() - 2;
+                int pos = GuiScreenUtils.getTextFieldCursor(textField) - 2;
                 if (pos >= 0 && pos < textField.getText().length() && textField.getText().charAt(pos) == '*') {
                     String b = textField.getText().substring(0, pos);
                     String a = pos + 2 < textField.getText().length() ? textField.getText().substring(pos + 2) : "";
                     textField.setText(b + "✪" + a);
-                    textField.setCursorPosition(pos + 1);
+                    GuiScreenUtils.setTextFieldCursor(textField, pos + 1);
                 }
             }
         }
@@ -257,19 +258,19 @@ public class GuiElementTextField {
             } else {
                 if ((options & SCISSOR_TEXT) != 0) {
                     GlScissorStack.push(x + 5, 0, x + sizeX, GuiScreenUtils.getScaledWindowHeight(), scaleFactor);
-                    MinecraftCompat.getFontRenderer().drawString(texts[i], x + 5, y + (sizeY - 8) / 2 + yOff, customTextColour);
+                    DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), texts[i], x + 5, y + (sizeY - 8) / 2 + yOff, customTextColour, false);
                     GlScissorStack.pop(scaleFactor);
                 } else {
                     String toRender = MinecraftCompat.getFontRenderer().trimStringToWidth(texts[i], sizeX - 10);
-                    MinecraftCompat.getFontRenderer().drawString(toRender, x + 5, y + (sizeY - 8) / 2 + yOff, customTextColour);
+                    DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), toRender, x + 5, y + (sizeY - 8) / 2 + yOff, customTextColour, false);
                 }
             }
         }
 
         if (focused && System.currentTimeMillis() % 1000 > 500) {
-            String tNC = textNoColor.substring(0, tf.getCursorPosition() + prependText.length());
+            String tNC = textNoColor.substring(0, GuiScreenUtils.getTextFieldCursor(tf) + prependText.length());
             int cc = org.apache.commons.lang3.StringUtils.countMatches(tNC, "¶");
-            String tBC = text.substring(0, tf.getCursorPosition() + prependText.length() + (((options & COLOUR) != 0) ? cc * 2 : 0));
+            String tBC = text.substring(0, GuiScreenUtils.getTextFieldCursor(tf) + prependText.length() + (((options & COLOUR) != 0) ? cc * 2 : 0));
             int numLinesBC = org.apache.commons.lang3.StringUtils.countMatches(tBC, "\n");
             int yOff = numLinesBC * extraSize;
             String[] split = tBC.split("\n");

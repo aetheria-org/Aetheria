@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.mixins.gui;
 
+//#if MC < 1.21
 import io.hamlook.aetheria.events.SignSubmitEvent;
 import io.hamlook.aetheria.features.farming.visitors.VisitorSignFill;
 import io.hamlook.aetheria.utils.compat.TextCompat;
@@ -36,3 +37,4 @@ public class MixinGuiEditSign {
         return result;
     }
 }
+//#endif

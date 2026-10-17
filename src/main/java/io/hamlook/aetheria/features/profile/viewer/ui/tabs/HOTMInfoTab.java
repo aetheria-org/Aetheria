@@ -5,6 +5,8 @@ import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -91,17 +93,17 @@ public class HOTMInfoTab extends Tab {
         GL11.glLineWidth(thickness);
         GlStateManagerCompat.color(red, green, blue, alpha);
 
-        GL11.glBegin(GL11.GL_LINE_STRIP);
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINE_STRIP, TessellatorCompat.POSITION_COLOR);
 
         int segments = 100;
         int maxSegments = (int)(segments * progress);
 
         for (int i = 0; i <= maxSegments; i++) {
             double angle = (Math.PI * 2 * i / segments) - (Math.PI / 2);
-            GL11.glVertex2d(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
+            vb.pos(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, 0).color(red, green, blue, alpha).endVertex();
         }
 
-        GL11.glEnd();
+        vb.draw();
 
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
         GlStateManagerCompat.enableTexture2D();

@@ -1,4 +1,6 @@
 package io.hamlook.aetheria.utils.compat
+
+import net.minecraft.client.gui.FontRenderer
 //#if MC < 1.21
 import net.minecraft.client.gui.GuiButton
 import net.minecraft.client.gui.GuiControls
@@ -155,6 +157,9 @@ object GuiScreenUtils {
     @JvmStatic fun addButton(screen: GuiScreen, btn: GuiButton) { screen.buttonList.add(btn) }
     @JvmStatic fun clearButtons(screen: GuiScreen) { screen.buttonList.clear() }
     @JvmStatic fun isButtonListEmpty(screen: GuiScreen) = screen.buttonList.isEmpty()
+    @JvmStatic fun getButtonMessage(btn: GuiButton): String = btn.displayString
+    @JvmStatic fun setButtonMessage(btn: GuiButton, text: String) { btn.displayString = text }
+    @JvmStatic fun getButtonVisible(btn: GuiButton) = btn.visible
     //#else
     //$$ @JvmStatic fun getX(field: TextFieldWidget) = field.getX()
     //$$ @JvmStatic fun setX(field: TextFieldWidget, v: Int) = field.setX(v)
@@ -180,10 +185,128 @@ object GuiScreenUtils {
     //$$ @JvmStatic fun setButtonY(b: ClickableWidget, v: Int) = b.setY(v)
     //$$ @JvmStatic fun setButtonW(b: ClickableWidget, v: Int) = b.setWidth(v)
     //$$ @JvmStatic fun setButtonH(b: ClickableWidget, v: Int) = b.setHeight(v)
-    //$$ @JvmStatic fun addButton(screen: Screen, btn: ClickableWidget) { screen.addDrawableChild(btn) }
+    //$$ @JvmStatic fun getButtonVisible(b: ClickableWidget) = b.visible
+    //$$ @JvmStatic fun addButton(screen: Screen, btn: ClickableWidget) {
+    //$$     screen.addDrawableChild(btn)
+    //$$ }
     //$$ @JvmStatic fun clearButtons(screen: Screen) = screen.clearChildren()
     //$$ @JvmStatic fun isButtonListEmpty(screen: Screen) = screen.children().isEmpty()
+    //$$ @JvmStatic fun getButtonMessage(btn: ClickableWidget): String = btn.message.string
+    //$$ @JvmStatic fun setButtonMessage(btn: ClickableWidget, text: String) { btn.message = Text.literal(text) }
     //#endif
+
+    @JvmStatic
+    fun createTextField(fr: FontRenderer, x: Int, y: Int, w: Int, h: Int): GuiTextField =
+        //#if MC < 1.16
+        GuiTextField(0, fr, x, y, w, h)
+        //#else
+        //$$ TextFieldWidget(fr, x, y, w, h, Text.empty())
+        //#endif
+
+    @JvmStatic
+    fun setTextFieldMaxLength(field: GuiTextField, n: Int) =
+        //#if MC < 1.16
+        field.setMaxStringLength(n)
+        //#else
+        //$$ field.setMaxLength(n)
+        //#endif
+
+    @JvmStatic
+    fun setTextFieldCanLoseFocus(field: GuiTextField, b: Boolean) =
+        //#if MC < 1.16
+        field.setCanLoseFocus(b)
+        //#else
+        //$$ field.setFocusUnlocked(b)
+        //#endif
+
+    /**
+     * Legacy widgets focus themselves on click; modern ones expect the
+     * screen to manage focus. Call this (then mouseClicked) so a click
+     * focuses the field on both versions. Returns whether the click hit.
+     */
+    @JvmStatic
+    fun focusTextFieldOnClick(field: GuiTextField, mouseX: Int, mouseY: Int): Boolean {
+        val inside = mouseX >= getX(field) && mouseX <= getX(field) + getW(field) &&
+                mouseY >= getY(field) && mouseY <= getY(field) + getH(field)
+        field.isFocused = inside
+        return inside
+    }
+
+    @JvmStatic
+    fun setTextFieldBackground(field: GuiTextField, b: Boolean) =
+        //#if MC < 1.16
+        field.setEnableBackgroundDrawing(b)
+        //#else
+        //$$ field.setDrawsBackground(b)
+        //#endif
+
+    @JvmStatic
+    fun drawsTextFieldBackground(field: GuiTextField): Boolean =
+        //#if MC < 1.16
+        field.getEnableBackgroundDrawing()
+        //#else
+        //$$ field.drawsBackground()
+        //#endif
+
+    @JvmStatic
+    fun typeTextField(field: GuiTextField, typedChar: Char, keyCode: Int): Boolean =
+        //#if MC < 1.16
+        field.textboxKeyTyped(typedChar, keyCode)
+        //#else
+        //$$ if (typedChar.code != 0) field.charTyped(typedChar, 0) else field.keyPressed(keyCode, 0, 0)
+        //#endif
+
+    @JvmStatic
+    fun tickTextField(field: GuiTextField) =
+        //#if MC < 1.16
+        field.updateCursorCounter()
+        //#else
+        //$$ Unit
+        //#endif
+
+    @JvmStatic
+    fun getTextFieldCursor(field: GuiTextField): Int =
+        //#if MC < 1.16
+        field.getCursorPosition()
+        //#else
+        //$$ field.getCursor()
+        //#endif
+
+    @JvmStatic
+    fun setTextFieldCursor(field: GuiTextField, i: Int) =
+        //#if MC < 1.16
+        field.setCursorPosition(i)
+        //#else
+        //$$ field.setCursor(i, false)
+        //#endif
+
+    @JvmStatic
+    fun cursorTextFieldToEnd(field: GuiTextField) =
+        //#if MC < 1.16
+        field.setCursorPositionEnd()
+        //#else
+        //$$ field.setCursorToEnd(false)
+        //#endif
+
+    @JvmStatic
+    fun setTextFieldSelection(field: GuiTextField, i: Int) =
+        //#if MC < 1.16
+        field.setSelectionPos(i)
+        //#else
+        //$$ field.setSelectionEnd(i)
+        //#endif
+
+    @JvmStatic
+    fun renderTextField(field: GuiTextField, mouseX: Int, mouseY: Int, delta: Float) =
+        //#if MC < 1.16
+        field.drawTextBox()
+        //#else
+        //$$ field.render(DrawContextUtils.drawContext, mouseX, mouseY, delta)
+        //#endif
+
+    @JvmStatic
+    fun renderTextField(field: GuiTextField, mouseX: Int, mouseY: Int) =
+        renderTextField(field, mouseX, mouseY, 0f)
 
     @JvmStatic
     fun createSingleplayerScreen(parent: GuiScreen): GuiScreen =

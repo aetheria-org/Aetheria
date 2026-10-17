@@ -74,7 +74,7 @@ public class RareDropTracker {
         if (config.titleAlert) {
             Minecraft mc = MinecraftCompat.getMinecraft();
             if (mc.ingameGUI != null) {
-                mc.ingameGUI.displayTitle("§d§lRARE DROP!", name, 5, 40, 10);
+                MinecraftCompat.showTitle("§d§lRARE DROP!", name, 5, 40, 10);
             }
         }
 

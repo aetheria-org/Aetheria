@@ -5,6 +5,7 @@
   "name": "Aetheria",
   "description": "Aetheria is a Minecraft mod for SkyBlock.",
   "environment": "client",
+  "icon": "assets/aetheria/logo.png",
   "accessWidener": "aetheria.accesswidener",
   "mixins": [
     "mixins.aetheria.json"

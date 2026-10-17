@@ -72,7 +72,8 @@ public class ItemLogAlerts {
 
     @HandleEvent
     public void onRenderOverlay(ASMRenderOverlayEvent event) {
-        if (event.type != 11) return;
+        // Forge maps RenderGameOverlayElement.CHAT to 11; the Fabric bridge posts 0.
+        if (event.type != 0 && event.type != 11) return;
         if (System.currentTimeMillis() > endTime) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
         FontRenderer fr = MinecraftCompat.getFontRenderer();

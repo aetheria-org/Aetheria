@@ -5,7 +5,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.RenderItemOverlayEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.item.ItemStackUtils;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 
 @RegisterEvents
@@ -20,7 +20,7 @@ public class DungeonPassFloorTip {
         String id = ItemUtils.getInternalName(event.stack);
         String tip = getDungeonFloor(id);
         if (tip == null) return;
-        ItemStackUtils.drawTip(tip, event.x, event.y);
+        RenderUtils.drawTip(tip, event.x, event.y);
     }
 
     private static String getDungeonFloor(String id) {

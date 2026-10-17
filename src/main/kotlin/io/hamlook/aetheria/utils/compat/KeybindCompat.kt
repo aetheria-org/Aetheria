@@ -19,6 +19,30 @@ object KeybindCompat {
     }
 
     @JvmStatic
+    fun wasPressed(keybinding: KeyBinding): Boolean =
+        //#if MC < 1.16
+        keybinding.isPressed
+        //#else
+        //$$ keybinding.wasPressed()
+        //#endif
+
+    @JvmStatic
+    fun isPlayerListKeyDown(): Boolean =
+        //#if MC < 1.16
+        KeyboardCompat.isKeyDown(MinecraftCompat.getMinecraft().gameSettings.keyBindPlayerList.keyCode)
+        //#else
+        //$$ MinecraftCompat.getMinecraft().options.playerListKey.isPressed()
+        //#endif
+
+    @JvmStatic
+    fun inventoryKeyMatches(keyCode: Int): Boolean =
+        //#if MC < 1.16
+        keyCode == MinecraftCompat.getMinecraft().gameSettings.keyBindInventory.keyCode
+        //#else
+        //$$ keyCode == InputUtil.fromTranslationKey(MinecraftCompat.getMinecraft().options.inventoryKey.boundKeyTranslationKey).code
+        //#endif
+
+    @JvmStatic
     fun createKeyBinding(description: String, code: Int, category: String): KeyBinding =
         //#if FORGE
         KeyBinding(description, code, category)

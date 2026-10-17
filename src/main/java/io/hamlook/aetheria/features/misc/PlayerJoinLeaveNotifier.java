@@ -52,12 +52,12 @@ public class PlayerJoinLeaveNotifier {
         Set<String> watch = watchList();
 
         Set<String> lobby = new HashSet<>();
-        for (NetworkPlayerInfo info : MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap()) {
+        for (NetworkPlayerInfo info : MinecraftCompat.getPlayerListEntries()) {
             String name = info.getGameProfile().getName().toLowerCase();
             if (!name.equals(selfName)) lobby.add(name);
         }
 
-        for (NetworkPlayerInfo info : MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap()) {
+        for (NetworkPlayerInfo info : MinecraftCompat.getPlayerListEntries()) {
             String lower = info.getGameProfile().getName().toLowerCase();
             if (watch.contains(lower) && lobby.contains(lower) && notified.add(lower)) {
                 String display = info.getGameProfile().getName();

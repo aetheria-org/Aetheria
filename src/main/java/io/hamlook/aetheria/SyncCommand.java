@@ -72,9 +72,9 @@ public class SyncCommand {
                 }
 
                 if (System.currentTimeMillis() - lastUse < 240000 && !SYNC_CODE.isEmpty()) {
-                    IChatComponent text = TextCompat.createText("§a[SkyAtlas] Your sync code is: §e§l" + SYNC_CODE);
-                    TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(text), SYNC_CODE);
-                    TextCompat.setHoverShowText(TextCompat.getChatStyle(text), "§aClick to show in chat");
+                    IChatComponent text = TextCompat.fromFormatted("§a[SkyAtlas] Your sync code is: §e§l" + SYNC_CODE);
+                    TextCompat.setChatStyle(text, TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(text), SYNC_CODE));
+                    TextCompat.setChatStyle(text, TextCompat.setHoverShowText(TextCompat.getChatStyle(text), "§aClick to show in chat"));
                     MinecraftCompat.getMinecraft().addScheduledTask(() -> {
                         ChatUtils.sendMessage(text);
                         ChatUtils.sendMessage(
@@ -122,9 +122,9 @@ public class SyncCommand {
                                 }
                             }
 
-                            IChatComponent text = TextCompat.createText("§a[SkyAtlas] Your sync code is: §e§l" + syncCode);
-                            TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(text), syncCode);
-                            TextCompat.setHoverShowText(TextCompat.getChatStyle(text), "§aClick to show in chat");
+                            IChatComponent text = TextCompat.fromFormatted("§a[SkyAtlas] Your sync code is: §e§l" + syncCode);
+                            TextCompat.setChatStyle(text, TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(text), syncCode));
+                            TextCompat.setChatStyle(text, TextCompat.setHoverShowText(TextCompat.getChatStyle(text), "§aClick to show in chat"));
                             MinecraftCompat.getMinecraft().addScheduledTask(() -> {
                                 ChatUtils.sendMessage(text);
                                 ChatUtils.sendMessage(

@@ -26,6 +26,8 @@ object ChatHook {
     @JvmStatic
     var renderVisible: Any? = null
     @JvmStatic
+    var hoveredVisible: Any? = null
+    @JvmStatic
     var animationStart: Long = 0L
 
     @JvmStatic
@@ -34,8 +36,15 @@ object ChatHook {
         if (!config.chat.animatedChat || animationStart == 0L) return
 
         val speed = 20.0
-        val lineHeight = 9.0f
-        var shift = (System.currentTimeMillis().toDouble() - lineHeight.toDouble() * speed - animationStart) / speed
+        //#if MC < 1.21
+        val lineHeight = 9.0 * MinecraftCompat.getMinecraft().gameSettings.chatScale
+        //#else
+        //$$ val options = MinecraftCompat.getMinecraft().options
+        //$$ val spacing = options.chatLineSpacing.value as? Double ?: 0.0
+        //$$ val chatScale = options.chatScale.value as? Double ?: 1.0
+        //$$ val lineHeight = 9.0 * (spacing + 1.0) * chatScale
+        //#endif
+        var shift = (System.currentTimeMillis().toDouble() - lineHeight * speed - animationStart) / speed
         if (shift > 0.0) shift = 0.0
         GlStateManagerCompat.translate(0.0, -shift, 0.0)
     }
@@ -45,6 +54,7 @@ object ChatHook {
         drawnChatLines: List<ChatLine>, scrollPos: Int, chatScale: Float, lineCount: Int, mouseX: Int, mouseY: Int
     ) {
         hoveredLine = null
+        renderLine = null
         val config = ATHRConfig.feature ?: return
         if (!config.chat.chatCopyEnabled) return
         if (MinecraftCompat.getCurrentScreen() !is GuiChat) return
@@ -98,19 +108,17 @@ object ChatHook {
         val alpha = (color shr 24) and 0xFF
         val headAlpha = if (alpha == 0) 1.0f else alpha / 255f
 
-        val mc = MinecraftCompat.getMinecraft()
         GlStateManagerCompat.enableBlend()
         GlStateManagerCompat.enableAlpha()
         GlStateManagerCompat.enableTexture2D()
-        mc.textureManager.bindTexture(info.locationSkin)
         GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0)
         GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, headAlpha)
 
         DrawContextUtils.drawScaledCustomSizeModalRect(
-            x.toInt(), (y - 1f).toInt(), 8f, 8f, 8, 8, 8f, 8f, 64f, 64f
+            info.locationSkin, x.toInt(), (y - 1f).toInt(), 8f, 8f, 8, 8, 8f, 8f, 64f, 64f
         )
         DrawContextUtils.drawScaledCustomSizeModalRect(
-            x.toInt(), (y - 1f).toInt(), 40f, 8f, 8, 8, 8f, 8f, 64f, 64f
+            info.locationSkin, x.toInt(), (y - 1f).toInt(), 40f, 8f, 8, 8, 8f, 8f, 64f, 64f
         )
 
         GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f)
@@ -125,13 +133,14 @@ object ChatHook {
     //$$     if (!config.chat.chatHeads) return x
     //$$     if (renderLine !is ChatLineHook) return x
     //$$
-    //$$     val info = renderLine.`athr$getPlayerInfo`() ?: run {
-    //$$         if (renderLine.`athr$isHeadHidden`() || config.chat.offsetNonPlayerMessages) {
+    //$$     val parent = renderLine.`athr$getParentLine`() as? ChatLineHook ?: return x
+    //$$     val info = parent.`athr$getPlayerInfo`() ?: run {
+    //$$         if (parent.`athr$isHeadHidden`() || config.chat.offsetNonPlayerMessages) {
     //$$             return x + 10f
     //$$         }
     //$$         return x
     //$$     }
-    //$$     if (renderLine.`athr$isHeadHidden`()) return x + 10f
+    //$$     if (parent.`athr$isHeadHidden`()) return x + 10f
     //$$
     //$$     val alpha = (color shr 24) and 0xFF
     //$$     val headAlpha = if (alpha == 0) 1.0f else alpha / 255f
@@ -153,8 +162,7 @@ object ChatHook {
     //$$     val newRight = if (config.chat.chatHeads) right + 10 else right
     //$$     var newColor = if (config.chat.transparentChat) 0x00000000 else color
     //$$
-    //$$     val renderParent = (renderVisible as? ChatLineHook)?.`athr$getParentLine`()
-    //$$     if (config.chat.chatCopyEnabled && chatOpen && hoveredLine != null && renderParent == hoveredLine) {
+    //$$     if (config.chat.chatCopyEnabled && chatOpen && hoveredVisible != null && renderVisible === hoveredVisible) {
     //$$         newColor = if (config.chat.transparentChat) 0x22AAAACC else 0x60AAAACC
     //$$     }
     //$$
@@ -174,16 +182,25 @@ object ChatHook {
         drawnChatLines: List<ChatLine>, scrollPos: Int, chatScale: Float, lineCount: Int, rawMouseX: Int, rawMouseY: Int
     ): ChatLine? {
         val scaleFactor = GuiScreenUtils.getScaleFactor()
+        val mouseX = rawMouseX / scaleFactor
+        //#if MC < 1.21
+        val chatWidthPx = TextCompat.floor(MinecraftCompat.getMinecraft().gameSettings.chatWidth * 280f + 40f)
+        //#else
+        //$$ val chatWidthSetting = MinecraftCompat.getMinecraft().options.chatWidth.value as? Double ?: 1.0
+        //$$ val chatWidthPx = Math.floor(chatWidthSetting * 280.0 + 40.0).toInt()
+        //#endif
+        val jx = TextCompat.floor((mouseX - 3) / chatScale)
+        if (jx < 0 || jx > TextCompat.floor(chatWidthPx / chatScale)) return null
         val mouseY = rawMouseY / scaleFactor
-        var y = (GuiScreenUtils.getScaledWindowHeight() - 27) - mouseY
+        var y = mouseY - 27
         y = TextCompat.floor(y.toFloat() / chatScale)
         if (y < 0) return null
 
         val visibleLines = Math.min(lineCount, drawnChatLines.size)
-        val lineHeight = MinecraftCompat.getFontRenderer().FONT_HEIGHT + 1
+        val fontH = MinecraftCompat.getFontRenderer().FONT_HEIGHT
 
-        if (y < MinecraftCompat.getFontRenderer().FONT_HEIGHT * visibleLines + visibleLines) {
-            val index = y / lineHeight + scrollPos
+        if (y < fontH * visibleLines + visibleLines) {
+            val index = y / fontH + scrollPos
             if (index in drawnChatLines.indices) {
                 return drawnChatLines[index]
             }
@@ -220,25 +237,34 @@ object ChatHook {
     //$$     visibles: List<Visible>, scrollPos: Int, chatScale: Float, lineCount: Int, mouseX: Int, mouseY: Int
     //$$ ) {
     //$$     hoveredLine = null
+    //$$     hoveredVisible = null
+    //$$     renderVisible = null
     //$$     val config = ATHRConfig.feature ?: return
     //$$     if (!config.chat.chatCopyEnabled) return
     //$$     if (MinecraftCompat.getCurrentScreen() !is ChatScreen) return
     //$$     val screen = MinecraftCompat.getCurrentScreen() as? GuiChatHook ?: return
     //$$     if (!screen.`athr$isTypingMode`()) return
-    //$$     var y = (GuiScreenUtils.getScaledWindowHeight() - 27) - mouseY
-    //$$     y = TextCompat.floor(y.toFloat() / chatScale)
-    //$$     if (y < 0) return
+    //$$     if (mouseX < -4 || mouseX > TextCompat.floor(chatWidthModern() / chatScale)) return
+    //$$     val lineHeight = chatLineHeightModern()
+    //$$     val y = ((GuiScreenUtils.getScaledWindowHeight() - mouseY) - 40.0) / (chatScale * lineHeight)
+    //$$     if (y < 0 || y >= Math.min(lineCount, visibles.size)) return
     //$$
-    //$$     val visibleLines = Math.min(lineCount, visibles.size)
-    //$$     val lineHeight = MinecraftCompat.getFontRenderer().fontHeight + 1
-    //$$
-    //$$     if (y < MinecraftCompat.getFontRenderer().fontHeight * visibleLines + visibleLines) {
-    //$$         val index = y / lineHeight + scrollPos
-    //$$         if (index in visibles.indices) {
-    //$$             val hook = visibles[index] as? ChatLineHook
-    //$$             if (hook != null) hoveredLine = hook.`athr$getParentLine`()
-    //$$         }
+    //$$     val index = TextCompat.floor(y.toFloat()) + scrollPos
+    //$$     if (index in visibles.indices) {
+    //$$         hoveredVisible = visibles[index]
+    //$$         val hook = visibles[index] as? ChatLineHook
+    //$$         if (hook != null) hoveredLine = hook.`athr$getParentLine`()
     //$$     }
+    //$$ }
+    //$$
+    //$$ private fun chatLineHeightModern(): Int {
+    //$$     val spacing = MinecraftCompat.getMinecraft().options.chatLineSpacing.value as? Double ?: 0.0
+    //$$     return (9.0 * (spacing + 1.0)).toInt()
+    //$$ }
+    //$$
+    //$$ private fun chatWidthModern(): Int {
+    //$$     val width = MinecraftCompat.getMinecraft().options.chatWidth.value as? Double ?: 1.0
+    //$$     return Math.floor(width * 280.0 + 40.0).toInt()
     //$$ }
     //#endif
 }

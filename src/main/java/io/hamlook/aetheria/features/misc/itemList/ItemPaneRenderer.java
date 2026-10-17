@@ -212,10 +212,10 @@ private boolean shouldntShow() {
         if (!globalSearch) {
             int sbY = paneH - 20 - PAD;
             if (searchField == null) {
-                searchField = new GuiTextField(2, MinecraftCompat.getFontRenderer(), paneX + PAD, sbY, paneW - PAD * 2, 20);
-                searchField.setCanLoseFocus(true);
-                searchField.setMaxStringLength(50);
-                searchField.setEnableBackgroundDrawing(false);
+                searchField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), paneX + PAD, sbY, paneW - PAD * 2, 20);
+                GuiScreenUtils.setTextFieldCanLoseFocus(searchField, true);
+                GuiScreenUtils.setTextFieldMaxLength(searchField, 50);
+                GuiScreenUtils.setTextFieldBackground(searchField, false);
                 searchField.setFocused(false);
                 searchField.setText(localSearchText[0]);
             } else {
@@ -332,7 +332,7 @@ private boolean shouldntShow() {
         }
 
         if (!globalSearch && searchField != null) {
-            searchField.updateCursorCounter();
+            GuiScreenUtils.tickTextField(searchField);
             SearchBar.drawStorageSearchBar(searchField, localSearchText);
         }
 
@@ -418,29 +418,31 @@ private boolean shouldntShow() {
         if (!(event.gui instanceof GuiContainer)) return;
         if (shouldntShow()) return;
 
-        int mouseX = KeybindHelper.getScaledEventX(event.gui.width);
-        int mouseY = KeybindHelper.getScaledEventY(event.gui.height);
-        handleMouseInput(event.gui.width, event.gui.height, mouseX, mouseY, event);
+        if (handleMouseInput(event.gui.width, event.gui.height, event.mouseX, event.mouseY,
+                event.button, event.buttonState, event.dWheel)) {
+            event.cancel();
+        }
     }
 
-    public void handleMouseInput(int screenW, int screenH, int mouseX, int mouseY, ASMMouseEvent event) {
-        if (shouldntShow()) return;
+    public boolean handleMouseInput(int screenW, int screenH, int mouseX, int mouseY,
+                                    int button, boolean buttonState, int dWheel) {
+        if (shouldntShow()) return false;
 
-        int dw = MouseCompat.getEventDWheel();
-        if (dw != 0) {
+        if (dWheel != 0) {
             computeGeometry(screenW, screenH);
             if (isInBounds(mouseX, mouseY, paneX, paneY, paneW, paneH)) {
-                currentPage = dw > 0 ? Math.max(0, currentPage - 1) : Math.min(cachedTotalPages - 1, currentPage + 1);
-                if (event != null) event.cancel();
+                currentPage = dWheel > 0 ? Math.max(0, currentPage - 1) : Math.min(cachedTotalPages - 1, currentPage + 1);
+                return true;
             }
-            return;
+            return false;
         }
 
-        if (!MouseCompat.getEventButtonState()) return;
-        if (MouseCompat.getEventButton() != 0 && MouseCompat.getEventButton() != 1) return;
+        if (!buttonState) return false;
+        if (button != 0 && button != 1) return false;
 
         computeGeometry(screenW, screenH);
-        handleClick(mouseX, mouseY, MouseCompat.getEventButton(), event);
+        handleClick(mouseX, mouseY, button, null);
+        return false;
     }
 
     public void handleClick(int mouseX, int mouseY, int btn, ASMMouseEvent event) {
@@ -523,6 +525,20 @@ private boolean shouldntShow() {
                 return;
             }
         }
+    }
+
+    public boolean isSearchFocused() {
+        return !isGlobalSearch() && searchField != null && searchField.isFocused();
+    }
+
+    public boolean handleCharTyped(char chr) {
+        if (shouldntShow()) return false;
+        if (!isSearchFocused()) return false;
+        if (SearchBar.handleStorageKeyTyped(searchField, chr, 0, localSearchText)) {
+            updateSearch(localSearchText[0]);
+            return true;
+        }
+        return false;
     }
 
     private boolean processKeyInput() {

@@ -44,7 +44,7 @@ public final class Resources {
     public static final ResourceLocation CASE_FADE_SIDE = TextCompat.createResourceLocation("aetheria", "textures/dungeons/caseopening/gui/fade_side.png");
     public static final ResourceLocation CASE_BLUR_SHADER = TextCompat.createResourceLocation("aetheria", "shaders/post/blur.json");
     public static final ResourceLocation PROTECT_ITEM_STAR = TextCompat.createResourceLocation("aetheria", "textures/gui/protect_star.png");
-    public static final ResourceLocation CAPES_UI = TextCompat.createResourceLocation("aetheria", "textures/gui/capesUI.png");
+    public static final ResourceLocation CAPES_UI = TextCompat.createResourceLocation("aetheria", "textures/gui/capesui.png");
     public static final ResourceLocation DVD_LOGO = TextCompat.createResourceLocation("aetheria", "textures/dvd.png");
     public static final ResourceLocation ASM_LOGO = TextCompat.createResourceLocation("aetheria", "logo.png");
     public static final ResourceLocation CMM_DEFAULT_BG = TextCompat.createResourceLocation("aetheria","cmm/default_bg.png");
@@ -52,15 +52,15 @@ public final class Resources {
     public static final ResourceLocation GHOSTTRACKER_SORROW = TextCompat.createResourceLocation("aetheria", "ghosttracker/sorrow.png");
     public static final ResourceLocation GHOSTTRACKER_VOLTA = TextCompat.createResourceLocation("aetheria", "ghosttracker/volta.png");
     public static final ResourceLocation GHOSTTRACKER_PLASMA = TextCompat.createResourceLocation("aetheria", "ghosttracker/plasma.png");
-    public static final ResourceLocation GHOSTTRACKER_BOOTS = TextCompat.createResourceLocation("aetheria", "ghosttracker/ghostly boots.png");
+    public static final ResourceLocation GHOSTTRACKER_BOOTS = TextCompat.createResourceLocation("aetheria", "ghosttracker/ghostly_boots.png");
     public static final ResourceLocation GHOSTTRACKER_COINS = TextCompat.createResourceLocation("aetheria", "ghosttracker/coin-drop.png");
-    public static final ResourceLocation GHOSTTRACKER_MAGIC_FIND = TextCompat.createResourceLocation("aetheria", "ghosttracker/magic find.png");
+    public static final ResourceLocation GHOSTTRACKER_MAGIC_FIND = TextCompat.createResourceLocation("aetheria", "ghosttracker/magic_find.png");
     public static final ResourceLocation GHOSTTRACKER_MONEY = TextCompat.createResourceLocation("aetheria", "ghosttracker/money.png");
     public static final ResourceLocation GHOSTTRACKER_TIME = TextCompat.createResourceLocation("aetheria", "ghosttracker/time.png");
 
     public static final ResourceLocation LOCK_CURSOR = TextCompat.createResourceLocation("aetheria:lock.png");
 
-    public static final ResourceLocation DEFAULT_MAP_ICONS = TextCompat.createResourceLocation("textures/map/map_icons.png");
+    public static final ResourceLocation DEFAULT_MAP_ICONS = TextCompat.createResourceLocation("aetheria", "textures/map/map_icons.png");
 
     public static final ResourceLocation DUNGEON_MAP_CHECK_GREEN = TextCompat.createResourceLocation("aetheria", "dungeons/map/default/green_check.png");
     public static final ResourceLocation DUNGEON_MAP_CHECK_WHITE = TextCompat.createResourceLocation("aetheria", "dungeons/map/default/white_check.png");

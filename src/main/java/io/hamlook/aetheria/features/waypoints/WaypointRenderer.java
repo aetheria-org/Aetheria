@@ -5,13 +5,13 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.util.StringUtils;
 import net.minecraft.util.Vec3;
-import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.List;
@@ -19,7 +19,8 @@ import java.util.List;
 @RegisterEvents
 public class WaypointRenderer {
 
-    private static final Minecraft mc = MinecraftCompat.getMinecraft();
+    private static int bracketOpenW = -1;
+    private static int bracketCloseW = -1;
 
     private Color argbToColor(int argb) {
         return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
@@ -46,39 +47,29 @@ public class WaypointRenderer {
         WaypointPoint target = state.getNext();
         if (target == null) return;
 
-        double vx = mc.getRenderManager().viewerPosX;
-        double vy = mc.getRenderManager().viewerPosY;
-        double vz = mc.getRenderManager().viewerPosZ;
-
         // ESP boxes
         WorldRenderUtils.beginWorldRender(2f);
-        GL11.glPushMatrix();
-        GL11.glTranslated(-vx, -vy, -vz);
         if (state.setupMode) {
             for (WaypointPoint wp : state.loadedGroup.waypoints)
-                WorldRenderUtils.drawEspBox(wp.x, wp.y, wp.z, boxColor());
+                WorldRenderUtils.drawEspBox(wp.x, wp.y, wp.z, boxColor(), true);
         } else {
-            WorldRenderUtils.drawEspBox(target.x, target.y, target.z, boxColor());
+            WorldRenderUtils.drawEspBox(target.x, target.y, target.z, boxColor(), true);
         }
-        GL11.glPopMatrix();
         WorldRenderUtils.endWorldRender();
 
         // Tracer
         WorldRenderUtils.drawTracer(new Vec3(target.x + 0.5, target.y + 0.5, target.z + 0.5), event.partialTicks, tracerColor());
 
-        // Labels
-        GL11.glPushMatrix();
-        GL11.glTranslated(-vx, -vy, -vz);
+        // Labels (each label opens its own viewer-relative billboard)
         if (state.setupMode) drawSetupLabels(state);
         else drawNormalLabels(state);
-        GL11.glPopMatrix();
     }
 
     private void tickAdvance(WaypointState state) {
         if (MinecraftCompat.getLocalPlayer() == null) return;
         WaypointPoint next = state.getNext();
         if (next == null) return;
-        double dist = next.distanceTo(MinecraftCompat.getLocalPlayer().posX, MinecraftCompat.getLocalPlayer().posY, MinecraftCompat.getLocalPlayer().posZ);
+        double dist = next.distanceTo(EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()), EntityCompat.getPosY(MinecraftCompat.getLocalPlayer()), EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()));
         if (dist <= state.advanceRange) {
             if (state.advanceTimerStart < 0) state.advanceTimerStart = System.currentTimeMillis();
             else if (System.currentTimeMillis() - state.advanceTimerStart >= state.advanceDelayMs) state.advance();
@@ -116,9 +107,9 @@ public class WaypointRenderer {
     public static void drawLabel(double wx, double wy, double wz, String text, int nameColor, int distColor, double scaleMultiplier) {
         if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getFontRenderer() == null) return;
 
-        double dx = wx - MinecraftCompat.getLocalPlayer().posX;
-        double dy = wy - MinecraftCompat.getLocalPlayer().posY;
-        double dz = wz - MinecraftCompat.getLocalPlayer().posZ;
+        double dx = wx - EntityCompat.getPosX(MinecraftCompat.getLocalPlayer());
+        double dy = wy - EntityCompat.getPosY(MinecraftCompat.getLocalPlayer());
+        double dz = wz - EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer());
         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
         float scale = Math.max(0.025f, (float) (Math.min(dist, 50.0) / 300.0));
@@ -127,32 +118,29 @@ public class WaypointRenderer {
         String nameStr = StringUtils.stripControlCodes(text);
         String distNum = String.valueOf((int) Math.round(dist));
 
-        int nameW = MinecraftCompat.getFontRenderer().getStringWidth(nameStr);
-        String bracketOpen = "[";
-        String bracketClose = "]";
-        int distNumW = MinecraftCompat.getFontRenderer().getStringWidth(distNum);
-        int bracketW = MinecraftCompat.getFontRenderer().getStringWidth(bracketOpen) + distNumW + MinecraftCompat.getFontRenderer().getStringWidth(bracketClose);
+        if (bracketOpenW < 0) {
+            bracketOpenW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), "[");
+            bracketCloseW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), "]");
+        }
+        int nameW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), nameStr);
+        int distNumW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), distNum);
+        int bracketW = bracketOpenW + distNumW + bracketCloseW;
 
-        GL11.glPushMatrix();
-        GL11.glTranslated(wx, wy, wz);
-        GL11.glRotatef(-mc.getRenderManager().playerViewY, 0f, 1f, 0f);
-        GL11.glRotatef(mc.getRenderManager().playerViewX, 1f, 0f, 0f);
-        GL11.glScalef(-scale, -scale, scale);
+        WorldRenderUtils.beginBillboard(wx, wy, wz, scale);
 
         GlStateManagerCompat.disableLighting();
         GlStateManagerCompat.disableDepth();
 
-        float sx = -nameW / 2f;
-        MinecraftCompat.getFontRenderer().drawString(nameStr, sx, 0f, nameColor, false);
+        WorldRenderUtils.drawBillboardText(nameStr, -nameW / 2f, 0f, nameColor, false);
 
         float bx = -bracketW / 2f;
-        float bw1 = MinecraftCompat.getFontRenderer().getStringWidth(bracketOpen);
-        MinecraftCompat.getFontRenderer().drawString(bracketOpen, bx, 10f, 0xAAAAAA, false);
-        MinecraftCompat.getFontRenderer().drawString(distNum, bx + bw1, 10f, nameColor, false);
-        MinecraftCompat.getFontRenderer().drawString(bracketClose, bx + bw1 + MinecraftCompat.getFontRenderer().getStringWidth(distNum), 10f, 0xAAAAAA, false);
+        WorldRenderUtils.drawBillboardText("[", bx, 10f, 0xAAAAAA, false);
+        WorldRenderUtils.drawBillboardText(distNum, bx + bracketOpenW, 10f, nameColor, false);
+        WorldRenderUtils.drawBillboardText("]", bx + bracketOpenW + distNumW, 10f, 0xAAAAAA, false);
 
         GlStateManagerCompat.enableDepth();
-        GL11.glPopMatrix();
+        GlStateManagerCompat.enableLighting();
+        WorldRenderUtils.endBillboard();
     }
 
     private String safeName(WaypointPoint wp, String fallback) {

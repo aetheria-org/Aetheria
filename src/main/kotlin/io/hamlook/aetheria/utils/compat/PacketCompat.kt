@@ -3,18 +3,22 @@ package io.hamlook.aetheria.utils.compat
 //#if MC < 1.16
 //#endif
 //#if MC < 1.21
+import net.minecraft.block.state.IBlockState
 import net.minecraft.item.ItemStack
 import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement
 import net.minecraft.network.play.client.C0EPacketClickWindow
 import net.minecraft.network.play.client.C16PacketClientStatus
 import net.minecraft.network.play.server.S29PacketSoundEffect
 import net.minecraft.network.play.server.S30PacketWindowItems
+import net.minecraft.network.play.server.S23PacketBlockChange
 import net.minecraft.util.EnumFacing
 
 //#else
+//$$ import net.minecraft.block.BlockState
 //$$ import net.minecraft.item.ItemStack
 //$$ import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket
 //$$ import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket
+//$$ import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket
 //$$ import net.minecraft.network.packet.s2c.play.InventoryS2CPacket
 //$$ import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket
 //$$ import net.minecraft.screen.slot.SlotActionType
@@ -70,6 +74,14 @@ object PacketCompat {
     //$$ @JvmStatic
     //$$ fun soundName(packet: PlaySoundS2CPacket): String =
     //$$     packet.sound.value().id.toString()
+    //#endif
+
+    //#if MC < 1.21
+    @JvmStatic
+    fun blockChangeState(packet: S23PacketBlockChange): IBlockState = packet.blockState
+    //#else
+    //$$ @JvmStatic
+    //$$ fun blockChangeState(packet: BlockUpdateS2CPacket): BlockState = packet.state
     //#endif
 
     //#if MC < 1.21

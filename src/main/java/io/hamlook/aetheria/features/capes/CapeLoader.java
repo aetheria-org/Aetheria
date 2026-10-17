@@ -12,7 +12,7 @@ import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
-import net.minecraft.client.renderer.texture.DynamicTexture;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import net.minecraft.util.ResourceLocation;
 
 import javax.imageio.ImageIO;
@@ -20,6 +20,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class CapeLoader {
@@ -151,6 +152,11 @@ public class CapeLoader {
         return new File(TEXTURE_DIR, id + ".png");
     }
 
+    public static String cachedTextureState(String id) {
+        File file = textureFile(id);
+        return file.isFile() ? file.length() + " bytes" : "missing";
+    }
+
     private static BufferedImage readCachedTexture(File file) {
         try {
             if (!file.isFile()) return null;
@@ -166,8 +172,8 @@ public class CapeLoader {
 
     private static void uploadTexture(Cape cape, BufferedImage image) {
         MinecraftCompat.getMinecraft().addScheduledTask(() -> {
-            ResourceLocation location = TextCompat.createResourceLocation("aetheria", "capes/" + cape.id);
-            MinecraftCompat.getMinecraft().getTextureManager().loadTexture(location, new DynamicTexture(image));
+            ResourceLocation location = TextCompat.createResourceLocation("aetheria", "capes/" + cape.id.toLowerCase(Locale.ROOT));
+            TextureCompat.uploadTexture(location, image);
             cape.resourceLocation = location;
         });
     }

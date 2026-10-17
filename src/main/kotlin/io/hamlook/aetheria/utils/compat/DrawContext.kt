@@ -58,6 +58,8 @@ class DrawContext {
 //$$
 //$$     val matrices get() = vanilla.matrices
 //$$
+//$$     val vertexConsumers get() = vanilla.vertexConsumers
+//$$
 //$$     fun drawText(fr: TextRenderer, text: String, x: Int, y: Int, color: Int, shadow: Boolean) {
 //$$         vanilla.drawText(fr, text, x, y, color, shadow)
 //$$     }

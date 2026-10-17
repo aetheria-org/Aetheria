@@ -8,14 +8,21 @@ import net.minecraft.client.gui.GuiScreen;
 //#else
 //$$ import net.minecraft.client.gui.screen.GameMenuScreen;
 //$$ import net.minecraft.client.gui.screen.Screen;
+//$$ import net.minecraft.text.Text;
 //#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+//#if MC < 1.21
 @Mixin(GuiIngameMenu.class)
 public abstract class MixinGuiIngameMenu extends GuiScreen {
+//#else
+//$$ @Mixin(GameMenuScreen.class)
+//$$ public abstract class MixinGuiIngameMenu extends Screen {
+//$$     public MixinGuiIngameMenu() { super(Text.empty()); }
+//#endif
 
     //#if MC < 1.21
     @Inject(method = "initGui", at = @At("TAIL"))

@@ -15,6 +15,7 @@ import net.minecraft.client.renderer.vertex.VertexFormat
 //$$ import net.minecraft.client.render.VertexFormat
 //$$ import net.minecraft.client.render.VertexFormat.DrawMode
 //$$ import net.minecraft.client.render.VertexFormats
+//$$ import org.joml.Matrix4f
 //#endif
 import org.lwjgl.opengl.GL11
 
@@ -23,6 +24,7 @@ object TessellatorCompat {
     @JvmField val QUADS: Int = GL11.GL_QUADS
     @JvmField val LINES: Int = GL11.GL_LINES
     @JvmField val TRIANGLES: Int = GL11.GL_TRIANGLES
+    @JvmField val TRIANGLE_FAN: Int = GL11.GL_TRIANGLE_FAN
     @JvmField val LINE_STRIP: Int = GL11.GL_LINE_STRIP
 
     @JvmField
@@ -80,6 +82,7 @@ object TessellatorCompat {
     //$$         GL11.GL_QUADS -> DrawMode.QUADS
     //$$         GL11.GL_LINES -> DrawMode.LINES
     //$$         GL11.GL_TRIANGLES -> DrawMode.TRIANGLES
+    //$$         GL11.GL_TRIANGLE_FAN -> DrawMode.TRIANGLE_FAN
     //$$         GL11.GL_LINE_STRIP -> DrawMode.LINE_STRIP
     //$$         else -> DrawMode.QUADS
     //$$     }
@@ -160,7 +163,17 @@ class VertexBuilder internal constructor(
 //$$     }
 //$$
 //$$     fun draw() {
-//$$         BufferRenderer.drawWithGlobalProgram(buffer.end())
+//$$         val context = DrawContextUtils.drawContextOrNull ?: return BufferRenderer.drawWithGlobalProgram(buffer.end())
+//$$         val stack = RenderSystem.getModelViewStack()
+//$$         val saved = Matrix4f(stack)
+//$$         stack.set(saved).mul(context.matrices.peek().positionMatrix)
+//$$         RenderSystem.applyModelViewMatrix()
+//$$         try {
+//$$             BufferRenderer.drawWithGlobalProgram(buffer.end())
+//$$         } finally {
+//$$             stack.set(saved)
+//$$             RenderSystem.applyModelViewMatrix()
+//$$         }
 //$$     }
 //$$ }
 //#endif

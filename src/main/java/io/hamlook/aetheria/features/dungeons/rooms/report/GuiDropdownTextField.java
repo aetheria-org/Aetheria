@@ -4,9 +4,14 @@ import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiTextField;
+//#if MC < 1.21
+//#else
+//$$ import net.minecraft.text.Text;
+//#endif
 
 import java.util.ArrayList;
 import java.util.List;
+import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class GuiDropdownTextField extends GuiTextField {
@@ -16,15 +21,25 @@ public class GuiDropdownTextField extends GuiTextField {
     private final int dropdownItemHeight = 12;
 
     public GuiDropdownTextField(int componentId, FontRenderer fontrendererObj, int x, int y, int width, int height, List<String> options) {
+        //#if MC < 1.21
         super(componentId, fontrendererObj, x, y, width, height);
+        //#else
+        //$$ super(fontrendererObj, x, y, width, height, Text.empty());
+        //#endif
         this.allOptions = options;
         this.filteredOptions = new ArrayList<>();
     }
 
+    //#if MC < 1.21
     @Override
+    //#endif
     public boolean textboxKeyTyped(char typedChar, int keyCode) {
+        //#if MC < 1.21
         boolean result = super.textboxKeyTyped(typedChar, keyCode);
-        if (result || keyCode == org.lwjgl.input.Keyboard.KEY_BACK) {
+        //#else
+        //$$ boolean result = GuiScreenUtils.typeTextField(this, typedChar, keyCode);
+        //#endif
+        if (result || KeybindHelper.isBackspaceKey(keyCode)) {
             updateSuggestions();
         }
         return result;

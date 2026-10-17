@@ -132,21 +132,20 @@ public class StorageListener {
         if (StorageManager.isTransitioning()) return;
 
         GuiChest guiChest = (GuiChest) event.gui;
-        int[] mouse = KeybindHelper.getMouseCoords(guiChest.width, guiChest.height);
-        int mouseX = mouse[0], mouseY = mouse[1];
-  
-         if (handleScrollInput()) {
+        int mouseX = event.mouseX, mouseY = event.mouseY;
+
+        if (handleScrollInput(event)) {
             event.cancel();
             return;
         }
 
-        if (handleClickInput(mouseX, mouseY, guiChest)) {
+        if (handleClickInput(event, mouseX, mouseY, guiChest)) {
             event.cancel();
         }
     }
 
-    private boolean handleScrollInput() {
-        int dWheel = MouseCompat.getEventDWheel();
+    private boolean handleScrollInput(ASMMouseEvent event) {
+        int dWheel = event.dWheel;
         if (dWheel != 0) {
             // Don't scroll overlay if shift is held (for item moving)
             if (KeyboardCompat.isKeyDown(org.lwjgl.input.Keyboard.KEY_LSHIFT) ||
@@ -155,27 +154,23 @@ public class StorageListener {
             }
 
             // Only scroll if mouse is over the storage overlay area
-            GuiChest guiChest = (GuiChest) MinecraftCompat.getCurrentScreen();
-            int[] mouse = KeybindHelper.getMouseCoords(guiChest.width, guiChest.height);
-            int mouseX = mouse[0], mouseY = mouse[1];
-
-            if (StorageManager.isMouseOverStorageArea(mouseX, mouseY)) {
-                StorageManager.handleMouseInput();
+            if (StorageManager.isMouseOverStorageArea(event.mouseX, event.mouseY)) {
+                StorageManager.handleMouseInput(event.mouseX, event.mouseY, event.button, event.buttonState, event.dWheel);
                 return true;
             }
         }
         return false;
     }
 
-    private boolean handleClickInput(int mouseX, int mouseY, GuiChest guiChest) {
-        int button = MouseCompat.getEventButton();
+    private boolean handleClickInput(ASMMouseEvent event, int mouseX, int mouseY, GuiChest guiChest) {
+        int button = event.button;
         if (button != 0 && button != 1) return false;
 
         if (isClickingPlayerInventory(mouseX, mouseY) || isClickingActiveContainerSlots(mouseX, mouseY, guiChest)) {
             return false;
         }
 
-        StorageManager.handleMouseInput();
+        StorageManager.handleMouseInput(mouseX, mouseY, button, event.buttonState, event.dWheel);
         return true;
     }
 
@@ -192,7 +187,7 @@ public class StorageListener {
         if (chest == null) return false;
         for (net.minecraft.inventory.Slot slot : chest.inventorySlots) {
             if (slot == null) continue;
-            if (slot.inventory == MinecraftCompat.getLocalPlayer().inventory) continue;
+            if (slot.inventory == InventoryCompat.getInventory(MinecraftCompat.getLocalPlayer())) continue;
             if (r.isMouseOverActiveContainerSlot(slot, mouseX, mouseY)) return true;
         }
         return false;
@@ -206,6 +201,10 @@ public class StorageListener {
         if (!StorageManager.isStorageChest()) return;
 
         int keyCode = KeyboardCompat.getEventKey();
+        if (KeybindCompat.inventoryKeyMatches(keyCode) && StorageManager.isSearchFocused()) {
+            event.cancel();
+            return;
+        }
         if (keyCode == org.lwjgl.input.Keyboard.KEY_ESCAPE) return;
         if (StorageManager.isTransitioning()) return;
         if (!KeyboardCompat.getEventKeyState()) return;

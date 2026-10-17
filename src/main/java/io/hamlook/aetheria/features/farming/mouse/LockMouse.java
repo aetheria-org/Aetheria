@@ -11,15 +11,14 @@ import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.overlay.SimpleOverlay;
-import net.minecraft.client.Minecraft;
 
 import net.minecraft.util.EnumChatFormatting;
 
 @RegisterEvents
 public class LockMouse extends SimpleOverlay {
 
-    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private static final String PREFIX = EnumChatFormatting.GREEN + "[ASM] " + EnumChatFormatting.RESET;
 
     private boolean keyWasDown = false;
@@ -59,8 +58,7 @@ public class LockMouse extends SimpleOverlay {
         float iconX = (w - iconSize) / 2f;
         float iconY = (h - iconSize) / 2f;
 
-        mc.getTextureManager().bindTexture(Resources.LOCK_CURSOR);
-        Utils.drawTexturedRect(iconX, iconY, iconSize, iconSize);
+        TextureCompat.drawBoundTextured(Resources.LOCK_CURSOR, iconX, iconY, iconSize, iconSize, 0, 0, 1, 1);
 
         if (ATHRConfig.feature.farming.lockMouseConfig.showUnlockHint) {
             String hint = "Use /lockyp to unlock mouse";

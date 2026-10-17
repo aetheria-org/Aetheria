@@ -89,12 +89,11 @@ public enum OreBlock {
 
     private static Predicate<IBlockState> gemstoneCheck(EnumDyeColor color) {
         return state -> {
-            Block block = state.getBlock();
-            if (block == Blocks.stained_glass) {
-                return ColoredBlockCompat.isStainedGlass(state, color);
+            if (ColoredBlockCompat.isStainedGlass(state, color)) {
+                return true;
             }
-            if (block == Blocks.stained_glass_pane) {
-                return ColoredBlockCompat.isStainedGlassPane(state, color);
+            if (ColoredBlockCompat.isStainedGlassPane(state, color)) {
+                return true;
             }
             return false;
         };
@@ -154,10 +153,11 @@ public enum OreBlock {
             return true;
         }
         if (BlockCompat.isStainedHardenedClay(block)) {
-            EnumDyeColor color = state.getValue(net.minecraft.block.BlockColored.COLOR);
+            ColoredBlockCompat color = ColoredBlockCompat.stainedClayColorOf(state);
+            if (color == null) return false;
             switch (color) {
                 case CYAN: case BROWN: case GRAY: case BLACK:
-                case LIME: case GREEN: case BLUE: case RED: case SILVER:
+                case LIME: case GREEN: case BLUE: case RED: case LIGHT_GRAY:
                     return true;
                 default:
                     return false;

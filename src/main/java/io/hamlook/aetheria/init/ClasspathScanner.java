@@ -46,7 +46,10 @@ public class ClasspathScanner {
         List<Class<?>> classes = new ArrayList<>();
         for (String name : classNames) {
             try {
-                classes.add(Class.forName(name, true, loader));
+                // Never initialize here: mod-init runs mid-MinecraftClient construction
+                // (no textRenderer yet), and eager GUI statics would die in <clinit>
+                // and stay dead for the session (JVM caches the failure).
+                classes.add(Class.forName(name, false, loader));
             } catch (Throwable ignored) {
             }
         }

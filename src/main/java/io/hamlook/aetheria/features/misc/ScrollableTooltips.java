@@ -6,6 +6,7 @@ import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.input.Keyboard;
@@ -29,7 +30,7 @@ public class ScrollableTooltips {
         ItemStack currentHovered = StorageManager.getRenderer().getHoveredItem();
 
         if (currentHovered != lastHoveredItem) {
-            if (currentHovered == null || lastHoveredItem == null || !ItemStack.areItemStacksEqual(currentHovered, lastHoveredItem)) {
+            if (currentHovered == null || lastHoveredItem == null || !ItemCompatKt.areStacksEqual(currentHovered, lastHoveredItem)) {
                 scrollOffset = 0;
             }
             lastHoveredItem = currentHovered;

@@ -1,11 +1,13 @@
 package io.hamlook.aetheria.network;
 
+import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
+import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import org.lwjgl.opengl.GL11;
 
 public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
@@ -26,8 +28,19 @@ public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
         py = (height - PANEL_H) / 2;
     }
 
+    //#if MC < 1.21
     @Override
     public void updateScreen() {
+        tickNotice();
+    }
+    //#else
+    //$$ @Override
+    //$$ public void tick() {
+    //$$     tickNotice();
+    //$$ }
+    //#endif
+
+    private void tickNotice() {
         if (animOffset != 0) {
             animOffset *= (1f - ANIM_SPEED * 3);
             if (Math.abs(animOffset) < 0.5f) animOffset = 0;
@@ -47,7 +60,11 @@ public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
 
     @Override
     public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
+        //#if MC < 1.21
         drawDefaultBackground();
+        //#else
+        //$$ // modern background handled via Screen.renderBackground
+        //#endif
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         drawPanelBackground();
@@ -57,7 +74,7 @@ public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
 
         int scale = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(px * scale, GuiScreenUtils.getDisplayHeight() - (py + PANEL_H) * scale, PANEL_W * scale, PANEL_H * scale);
+        GlStateManagerCompat.scissor(px * scale, GuiScreenUtils.getDisplayHeight() - (py + PANEL_H) * scale, PANEL_W * scale, PANEL_H * scale);
 
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.color(1f, 1f, 1f, alpha);
@@ -79,7 +96,7 @@ public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
 
     @Override
     protected void onKeyTyped(char typedChar, int keyCode) {
-        if (keyCode == 1) return;
+        if (KeybindHelper.isEscapeKey(keyCode)) return;
     }
 
     @Override
@@ -90,7 +107,7 @@ public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
     protected void drawNavBtn(int x, int y, String label, int color, boolean hovered) {
         RenderUtils.drawFloatingRectDark(x, y, NAV_W, NAV_H, false);
         if (hovered) DrawContextUtils.fill(x, y, x + NAV_W, y + NAV_H, 0x18FFFFFF);
-        drawCenteredString(MinecraftCompat.getFontRenderer(), label, x + NAV_W / 2, y + (NAV_H - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2, color);
+        TextRenderUtils.drawCenteredStringScaleAware(label, x + NAV_W / 2, y + (NAV_H - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2, color, 1f, false);
     }
 
     protected void drawWrapped(String text, int cx, int y, int color) {
@@ -99,7 +116,7 @@ public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
             for (String word : line.split(" ")) {
                 String test = seg.length() == 0 ? word : seg + " " + word;
                 if (DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), test) > 340) {
-                    drawCenteredString(MinecraftCompat.getFontRenderer(), seg.toString(), cx, y, color);
+                    TextRenderUtils.drawCenteredStringScaleAware(seg.toString(), cx, y, color, 1f, false);
                     y += MinecraftCompat.getFontRenderer().FONT_HEIGHT + 2;
                     seg = new StringBuilder(word);
                 } else {
@@ -107,7 +124,7 @@ public abstract class NetworkNoticeScreen extends AetheriaBaseScreen {
                 }
             }
             if (seg.length() > 0) {
-                drawCenteredString(MinecraftCompat.getFontRenderer(), seg.toString(), cx, y, color);
+                TextRenderUtils.drawCenteredStringScaleAware(seg.toString(), cx, y, color, 1f, false);
                 y += MinecraftCompat.getFontRenderer().FONT_HEIGHT + 2;
             }
         }

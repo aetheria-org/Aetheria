@@ -12,7 +12,7 @@ import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import io.hamlook.aetheria.utils.item.ItemStackUtils;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.HighlightUtils;
 import net.minecraft.client.gui.GuiScreen;
@@ -75,7 +75,7 @@ public class GardenPlotNumber {
         if (info.type == UNLOCKED) frameUnlockedPlots.add(info.number);
         String color = tipColor(config, info.type);
         if (color == null) return;
-        ItemStackUtils.drawTip(String.valueOf(info.number), event.x, event.y, color(color, event.x, event.y));
+        RenderUtils.drawTip(String.valueOf(info.number), event.x, event.y, color(color, event.x, event.y));
     }
 
     @HandleEvent

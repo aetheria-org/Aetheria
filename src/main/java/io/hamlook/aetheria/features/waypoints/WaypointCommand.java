@@ -7,6 +7,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.ClipboardCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.Minecraft;
@@ -204,7 +205,7 @@ public class WaypointCommand {
                             return;
                         }
                         String wpName = args.length >= 3 ? args[2] : String.valueOf(idx);
-                        double bx = Math.floor(MinecraftCompat.getLocalPlayer().posX), by = Math.floor(MinecraftCompat.getLocalPlayer().posY) - 1, bz = Math.floor(MinecraftCompat.getLocalPlayer().posZ);
+                        double bx = Math.floor(EntityCompat.getPosX(MinecraftCompat.getLocalPlayer())), by = Math.floor(EntityCompat.getPosY(MinecraftCompat.getLocalPlayer())) - 1, bz = Math.floor(EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()));
                         state.loadedGroup.waypoints.add(idx - 1, new WaypointPoint(bx, by, bz, wpName));
                         renumberNumericNames(state.loadedGroup, idx);
                         storage.markDirty();
@@ -390,24 +391,24 @@ public class WaypointCommand {
         for (WaypointGroup g : groups.values()) {
             IChatComponent root = TextCompat.createText("");
 
-            IChatComponent name = TextCompat.createText(EnumChatFormatting.AQUA + g.name + EnumChatFormatting.GRAY + " (" + g.waypoints.size() + " wps)");
+            IChatComponent name = TextCompat.fromFormatted(EnumChatFormatting.AQUA + g.name + EnumChatFormatting.GRAY + " (" + g.waypoints.size() + " wps)");
             if (g.description != null && !g.description.isEmpty())
-                name.appendText(EnumChatFormatting.DARK_GRAY + " – " + g.description);
+                TextCompat.appendSibling(name, TextCompat.fromFormatted(EnumChatFormatting.DARK_GRAY + " – " + g.description));
             TextCompat.appendSibling(root, name);
 
-            IChatComponent load = TextCompat.createText(" " + EnumChatFormatting.YELLOW + EnumChatFormatting.BOLD + "[LOAD]");
-            TextCompat.setClickRunCommand(TextCompat.getChatStyle(load), "/athrw load " + g.name);
-            TextCompat.setHoverShowText(TextCompat.getChatStyle(load), "Load " + g.name);
+            IChatComponent load = TextCompat.fromFormatted(" " + EnumChatFormatting.YELLOW + EnumChatFormatting.BOLD + "[LOAD]");
+            TextCompat.setChatStyle(load, TextCompat.setClickRunCommand(TextCompat.getChatStyle(load), "/athrw load " + g.name));
+            TextCompat.setChatStyle(load, TextCompat.setHoverShowText(TextCompat.getChatStyle(load), "Load " + g.name));
             TextCompat.appendSibling(root, load);
 
-            IChatComponent export = TextCompat.createText(" " + EnumChatFormatting.GOLD + EnumChatFormatting.BOLD + "[EXPORT]");
-            TextCompat.setClickRunCommand(TextCompat.getChatStyle(export), "/athrw export " + g.name);
-            TextCompat.setHoverShowText(TextCompat.getChatStyle(export), "Copy to clipboard");
+            IChatComponent export = TextCompat.fromFormatted(" " + EnumChatFormatting.GOLD + EnumChatFormatting.BOLD + "[EXPORT]");
+            TextCompat.setChatStyle(export, TextCompat.setClickRunCommand(TextCompat.getChatStyle(export), "/athrw export " + g.name));
+            TextCompat.setChatStyle(export, TextCompat.setHoverShowText(TextCompat.getChatStyle(export), "Copy to clipboard"));
             TextCompat.appendSibling(root, export);
 
-            IChatComponent del = TextCompat.createText(" " + EnumChatFormatting.RED + EnumChatFormatting.BOLD + "[DEL]");
-            TextCompat.setClickRunCommand(TextCompat.getChatStyle(del), "/athrw delete " + g.name);
-            TextCompat.setHoverShowText(TextCompat.getChatStyle(del), "Delete " + g.name);
+            IChatComponent del = TextCompat.fromFormatted(" " + EnumChatFormatting.RED + EnumChatFormatting.BOLD + "[DEL]");
+            TextCompat.setChatStyle(del, TextCompat.setClickRunCommand(TextCompat.getChatStyle(del), "/athrw delete " + g.name));
+            TextCompat.setChatStyle(del, TextCompat.setHoverShowText(TextCompat.getChatStyle(del), "Delete " + g.name));
             TextCompat.appendSibling(root, del);
 
             ChatUtils.sendMessage(root);
@@ -416,7 +417,7 @@ public class WaypointCommand {
     }
 
     private void addWaypoint(WaypointGroup group, String name) {
-        double bx = Math.floor(MinecraftCompat.getLocalPlayer().posX), by = Math.floor(MinecraftCompat.getLocalPlayer().posY) - 1, bz = Math.floor(MinecraftCompat.getLocalPlayer().posZ);
+        double bx = Math.floor(EntityCompat.getPosX(MinecraftCompat.getLocalPlayer())), by = Math.floor(EntityCompat.getPosY(MinecraftCompat.getLocalPlayer())) - 1, bz = Math.floor(EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()));
         addWaypointAt(group, bx, by, bz, name);
     }
 

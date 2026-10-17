@@ -12,6 +12,7 @@ import io.hamlook.aetheria.features.farming.visitors.VisitorBonus;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
@@ -85,8 +86,8 @@ public final class FarmingApi {
     private static int computePlayerPlotId() {
         Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc == null || MinecraftCompat.getLocalPlayer() == null) return -1;
-        double px = MinecraftCompat.getLocalPlayer().posX;
-        double pz = MinecraftCompat.getLocalPlayer().posZ;
+        double px = EntityCompat.getPosX(MinecraftCompat.getLocalPlayer());
+        double pz = EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer());
         for (int i = 0; i < GARDEN_PLOTS.length; i++) {
             AxisAlignedBB box = GARDEN_PLOTS[i];
             if (px >= box.minX && px <= box.maxX && pz >= box.minZ && pz <= box.maxZ) {
@@ -210,8 +211,8 @@ public final class FarmingApi {
     private static double plotDistanceSq(Minecraft mc, Integer plotId) {
         if (MinecraftCompat.getLocalPlayer() == null) return Double.MAX_VALUE;
         AxisAlignedBB box = GARDEN_PLOTS[plotId - 1];
-        double dx = MinecraftCompat.getLocalPlayer().posX - (box.minX + box.maxX) / 2.0;
-        double dz = MinecraftCompat.getLocalPlayer().posZ - (box.minZ + box.maxZ) / 2.0;
+        double dx = EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()) - (box.minX + box.maxX) / 2.0;
+        double dz = EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()) - (box.minZ + box.maxZ) / 2.0;
         return dx * dx + dz * dz;
     }
 

@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.dungeons.overlays.map;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.dungeons.DungeonMapConfig;
@@ -28,6 +29,8 @@ public class DungeonMapRenderer {
     };
 
     private static final DungeonMapGrid.RoomState[] ICON_STATES = {DungeonMapGrid.RoomState.GREEN, DungeonMapGrid.RoomState.CLEARED, DungeonMapGrid.RoomState.FAILED, DungeonMapGrid.RoomState.UNOPENED};
+
+    private static long lastRegionLogMs = 0;
 
     public static void render(DungeonMapGrid grid, float centerX, float centerY, float scale, List<String> playerNames, DungeonPlayerTracker tracker, Collection<DungeonRoom> visitedRooms, boolean showVisitedRoomNames, boolean colorText, boolean mapCalibrated) {
         if (!grid.isValid()) return;
@@ -71,8 +74,35 @@ public class DungeonMapRenderer {
             DrawContextUtils.fill(j.px, j.py, j.px + connSize, j.py + connSize, j.color | 0xFF000000);
         }
 
+        //#if MC < 1.16
+        //#else
+        //$$ DrawContextUtils.flushIfPresent();
+        //#endif
+
         int checkmarkStyle = cfg.rooms.mapCheckmark;
         int checkmarkSize = checkmarkStyle == 0 ? 8 : 10;
+
+        if (ATHRConfig.feature.debug.dungeonRoomDebug && System.currentTimeMillis() - lastRegionLogMs > 5000) {
+            lastRegionLogMs = System.currentTimeMillis();
+            Map<String, Integer> stateCounts = new HashMap<>();
+            int mismatched = 0;
+            for (DungeonMapGrid.RoomRegion region : grid.getRegions()) {
+                String key = region.state == null ? "null" : region.state.name();
+                stateCounts.merge(key, 1, Integer::sum);
+            }
+            if (visitedRooms != null) {
+                for (DungeonRoom room : visitedRooms) {
+                    DungeonMapGrid.RoomRegion region = findRoomRegion(grid, room);
+                    DungeonMapGrid.RoomState viaRegion = region != null ? region.state : null;
+                    DungeonMapGrid.RoomState viaWorld = grid.stateAtWorld(room.center.getX(), room.center.getZ());
+                    if (!Objects.equals(viaRegion, viaWorld)) mismatched++;
+                }
+            }
+            Aetheria.logger.info("[ATHR] Map regions: total=" + grid.getRegions().size()
+                + " states=" + stateCounts
+                + " mismatched=" + mismatched
+                + " split=" + cfg.rooms.splitRoomMarkers + " checkmark=" + cfg.rooms.mapCheckmark);
+        }
 
         for (DungeonMapGrid.RoomState state : ICON_STATES) {
             ResourceLocation icon = getCheckmark(state, checkmarkStyle);
@@ -132,40 +162,25 @@ public class DungeonMapRenderer {
             return;
         }
 
-        // Player Markers & Names
-        // Positions come from each player's map decoration (tracker.getPosition) so
-        // out-of-render-distancestill show. Self can optionally be
-        // overridden with the real entity position (accurateSelfPosition) for smoother
-        // movement; self stays anchored to its own decoration index.
+        // Player Markers & Names (positions resolved by tracker.getMarker).
         float invScale = 1f / Math.max(scale, 0.01f);
         DungeonMapConfig.Self selfCfg = cfg.players.self;
         DungeonMapConfig.Teammates teammatesCfg = cfg.players.teammates;
-        String selfName = MinecraftCompat.getLocalPlayer() != null ? MinecraftCompat.getLocalPlayer().getName() : null;
+        String selfName = MinecraftCompat.getLocalPlayer() != null ? EntityCompat.getName(MinecraftCompat.getLocalPlayer()) : null;
         int teammateOrdinal = 0;
 
         for (String name : playerNames) {
-            EntityPlayer entity = tracker.getEntity(name);
-            float[] pos = tracker.getPosition(name);
-            if (pos == null) {
+            DungeonPlayerTracker.MarkerState marker = tracker.getMarker(name, selfName, grid, mapCalibrated, cfg.players.accurateSelfPosition);
+            if (marker == null) {
                 continue;
             }
-            float px = pos[0];
-            float pz = pos[1];
-            float yaw = pos[2];
+            EntityPlayer entity = marker.entity;
+            float px = marker.px;
+            float pz = marker.pz;
+            float yaw = marker.yaw;
+            boolean isSelf = marker.isSelf;
 
             NetworkPlayerInfo info = tracker.getNetworkPlayerInfo(name, mc);
-
-            boolean isSelf = name.equalsIgnoreCase(selfName);
-            // Entity-based self tracking requires a calibrated map<->world frame:
-            // before the entrance latch the fallback origin would pin the marker
-            // to the entrance pixel, so uncalibrated runs draw self from its
-            // decoration (same as teammates) until calibration completes.
-            if (isSelf && mapCalibrated && cfg.players.accurateSelfPosition && entity != null && !EntityCompat.isDead(entity)) {
-                px = grid.worldToPixelX(entity.posX);
-                pz = grid.worldToPixelZ(entity.posZ);
-                // Same +180 convention as the decoration decode (vanilla parity).
-                yaw = entity.rotationYaw + 180f;
-            }
 
             int style = isSelf ? selfCfg.iconStyle : teammatesCfg.iconStyle;
             float groupScale = isSelf ? selfCfg.markerScale : teammatesCfg.markerScale;
@@ -208,8 +223,8 @@ public class DungeonMapRenderer {
         String namePart = displayName.substring(idx + 1).trim();
         if (namePart.startsWith("§")) return namePart;
         String color = "";
-        for (int i = idx - 1; i >= 1; i--) {
-            if (displayName.charAt(i) == '§') {
+        for (int i = idx - 1; i >= 0; i--) {
+            if (displayName.charAt(i) == '§' && i + 1 < displayName.length()) {
                 char c = Character.toLowerCase(displayName.charAt(i + 1));
                 if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
                     color = "§" + c;
@@ -222,10 +237,10 @@ public class DungeonMapRenderer {
 
     private static String getDisplayName(String name, NetworkPlayerInfo info, EntityPlayer entity) {
         if (info != null && info.getDisplayName() != null) {
-            return TextCompat.getFormattedText(info.getDisplayName());
+            return TextCompat.codedString(info.getDisplayName());
         }
         if (entity != null && entity.getDisplayName() != null) {
-            return TextCompat.getFormattedText(entity.getDisplayName());
+            return TextCompat.codedString(entity.getDisplayName());
         }
         return name;
     }

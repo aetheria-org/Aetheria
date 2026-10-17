@@ -6,6 +6,7 @@ import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
@@ -306,10 +307,7 @@ public class GuiWaiter {
         }
         Container container = InventoryCompat.getContainer((GuiContainer) MinecraftCompat.getCurrentScreen());
         if (!(container instanceof ContainerChest)) return "(non-chest container)";
-        return ColorUtils.stripColor(
-                TextCompat.getUnformattedText(((ContainerChest) container).getLowerChestInventory()
-                        .getDisplayName())
-        ).trim();
+        return ContainerUtils.getContainerName(MinecraftCompat.getCurrentScreen());
     }
 
     private static ContainerChest getOpenChest(String expectedTitle, int ignoreWindowId) {
@@ -320,13 +318,9 @@ public class GuiWaiter {
         if (container.windowId == ignoreWindowId) return null;
 
         if ("*".equals(expectedTitle)) return (ContainerChest) container;
-        // -------------------------------------------------------------------------
 
-        String title = ColorUtils.stripColor(
-                TextCompat.getUnformattedText(((ContainerChest) container).getLowerChestInventory()
-                        .getDisplayName())
-        ).trim();
-        return title.equals(expectedTitle) ? (ContainerChest) container : null;
+        String title = ContainerUtils.getContainerName(MinecraftCompat.getCurrentScreen());
+        return expectedTitle.equals(title) ? (ContainerChest) container : null;
     }
     // ── Internal state ────────────────────────────────────────────────────────
 

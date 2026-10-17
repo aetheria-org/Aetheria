@@ -2,7 +2,9 @@ package io.hamlook.aetheria.utils.render;
 
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.debug.GLDebugProbe;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.RenderHelperCompat;
@@ -36,7 +38,7 @@ public class ItemRenderUtils {
             DrawContextUtils.drawItem(stack, 0, 0);
         } catch (Exception e) {
             // A broken item model must not leak the pushed attrib/matrix.
-            io.hamlook.aetheria.utils.debug.GLDebugProbe.warnThrottled(
+            GLDebugProbe.warnThrottled(
                     "itemicon." + label, 5_000L,
                     "[ItemRenderUtils] icon render failed for " + label + ": " + e);
         } finally {
@@ -93,14 +95,12 @@ public class ItemRenderUtils {
 
         beginGuiItemRender();
         try {
-            //#if MC < 1.21
-            setRenderZLevel(-145);
-            //#endif
             DrawContextUtils.drawItem(stack, x, y);
             DrawContextUtils.drawItemInSlot(fr, stack, x, y);
-            //#if MC < 1.21
-            setRenderZLevel(0);
-            //#endif
+        } catch (Exception e) {
+            GLDebugProbe.warnThrottled(
+                    "itemstack." + stack.getItem(), 5_000L,
+                    "[ItemRenderUtils] item stack render failed: " + e);
         } finally {
             endGuiItemRender();
         }
@@ -117,7 +117,7 @@ public class ItemRenderUtils {
     }
 
     public static void renderHeldCursorItem() {
-        ItemStack held = MinecraftCompat.getLocalPlayer().inventory.getItemStack();
+        ItemStack held = InventoryCompat.getCursorStack(MinecraftCompat.getLocalPlayer());
         if (held == null) return;
 
         int[] cursor = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
@@ -131,7 +131,7 @@ public class ItemRenderUtils {
             DrawContextUtils.drawItemInSlot(
                     MinecraftCompat.getFontRenderer(), held, cursorX - 8, cursorY - 8);
         } catch (Exception e) {
-            io.hamlook.aetheria.utils.debug.GLDebugProbe.warnThrottled(
+            GLDebugProbe.warnThrottled(
                     "itemrender.cursor", 5_000L,
                     "[ItemRenderUtils] cursor item render failed: " + e);
         } finally {
@@ -150,9 +150,4 @@ public class ItemRenderUtils {
         }
     }
 
-    //#if MC < 1.21
-    private static void setRenderZLevel(float z) {
-        MinecraftCompat.getMinecraft().getRenderItem().zLevel = z;
-    }
-    //#endif
 }

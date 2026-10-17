@@ -83,11 +83,15 @@ public class GuiPositionEditor extends AetheriaBaseScreen {
 
         this.width = scaledW;
         this.height = scaledH;
+        //#if MC < 1.21
         int[] coords = KeybindHelper.getMouseCoords(this.width, this.height);
         mouseX = coords[0];
         mouseY = coords[1];
+        //#endif
 
+        //#if MC < 1.21
         drawDefaultBackground();
+        //#endif
 
         if (clicked) {
             grabbedX += position.moveX(mouseX - grabbedX, scaledW(), scaledW);
@@ -118,9 +122,11 @@ public class GuiPositionEditor extends AetheriaBaseScreen {
         if (mouseButton == 0) {
             int screenW = GuiScreenUtils.getScaledWindowWidth();
             int screenH = GuiScreenUtils.getScaledWindowHeight();
+            //#if MC < 1.21
             int[] coords = KeybindHelper.getMouseCoords(width, height);
             mouseX = coords[0];
             mouseY = coords[1];
+            //#endif
 
             int x = position.getAbsX(screenW, scaledW());
             int y = position.getAbsY(screenH, scaledH());
@@ -182,9 +188,11 @@ public class GuiPositionEditor extends AetheriaBaseScreen {
                 screenW = GuiScreenUtils.getScaledWindowWidth();
                 screenH = GuiScreenUtils.getScaledWindowHeight();
             }
+            //#if MC < 1.21
             int[] coords = KeybindHelper.getMouseCoords(width, height);
             mouseX = coords[0];
             mouseY = coords[1];
+            //#endif
 
             grabbedX += position.moveX(mouseX - grabbedX, scaledW(), screenW);
             grabbedY += position.moveY(mouseY - grabbedY, scaledH(), screenH);

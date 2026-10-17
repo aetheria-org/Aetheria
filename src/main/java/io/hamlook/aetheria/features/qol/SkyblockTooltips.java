@@ -135,8 +135,8 @@ public class SkyblockTooltips {
 
         try {
             Minecraft mc = MinecraftCompat.getMinecraft();
-            if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalPlayer().sendQueue == null) return;
-            Collection<NetworkPlayerInfo> infos = MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap();
+            if (MinecraftCompat.getLocalPlayer() == null) return;
+            Collection<NetworkPlayerInfo> infos = MinecraftCompat.getPlayerListEntries();
             if (infos == null) return;
             for (NetworkPlayerInfo info : infos) {
                 try {

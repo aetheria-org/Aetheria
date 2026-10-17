@@ -22,6 +22,6 @@ public class PlaySoundEvent extends AetheriaEvent {
     }
 
     public BlockPos getBlockPos() {
-        return new BlockPos(x, y, z);
+        return new BlockPos((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z));
     }
 }

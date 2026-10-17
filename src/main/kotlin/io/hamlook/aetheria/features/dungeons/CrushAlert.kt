@@ -8,13 +8,13 @@ import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.SoundUtils
 import io.hamlook.aetheria.utils.Utils
 import io.hamlook.aetheria.utils.compat.EntityCompat
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import io.hamlook.aetheria.utils.compat.TextCompat
 import io.hamlook.aetheria.utils.compat.WorldCompat
 import io.hamlook.aetheria.utils.overlay.SimpleOverlay
 
 import net.minecraft.entity.boss.EntityWither
-import org.lwjgl.opengl.GL11
 import kotlin.math.sqrt
 
 @RegisterEvents
@@ -59,8 +59,8 @@ class CrushAlert : SimpleOverlay() {
         val wasActive = alertActive
 
         activePillar = pillars.firstOrNull { pillar ->
-            val dx = storm.posX - pillar.x
-            val dz = storm.posZ - pillar.z
+            val dx = EntityCompat.getPosX(storm) - pillar.x
+            val dz = EntityCompat.getPosZ(storm) - pillar.z
             sqrt(dx * dx + dz * dz) <= range
         }
 
@@ -79,11 +79,11 @@ class CrushAlert : SimpleOverlay() {
         val pillarText = if (pillar != null) " ${pillar.color}${pillar.name}" else ""
         val text = "§c§lCRUSH STORM$pillarText"
 
-        GL11.glPushMatrix()
-        GL11.glScalef(2f, 2f, 1f)
+        GlStateManagerCompat.pushMatrix()
+        GlStateManagerCompat.scale(2f, 2f, 1f)
         Utils.drawStringCentered(
             text, fr, scaledWidth / 4f, (scaledHeight / 2f - 40f) / 2f, true, 0xFFFFFF
         )
-        GL11.glPopMatrix()
+        GlStateManagerCompat.popMatrix()
     }
 }

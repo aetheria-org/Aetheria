@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.profile.viewer.ui.tabs;
 
 import io.hamlook.aetheria.features.profile.data.ProfileData;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.features.profile.data.collection.CollectionBase;
 import io.hamlook.aetheria.features.profile.data.collection.CollectionData;
 import io.hamlook.aetheria.features.profile.data.collection.CollectionType;
@@ -8,6 +9,8 @@ import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.compat.*;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -17,8 +20,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -88,7 +89,7 @@ public class CollectionInfoTab extends Tab {
         int scissorH = (int) (gridH * scaleFactor);
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(scissorX, scissorY, scissorW, scissorH);
+        GlStateManagerCompat.scissor(scissorX, scissorY, scissorW, scissorH);
 
         GlStateManagerCompat.pushMatrix();
         GlStateManagerCompat.translate(0, -scrollY, 0);
@@ -183,28 +184,11 @@ public class CollectionInfoTab extends Tab {
         }
     }
 
-    private ItemStack getSkull(String base64) {
-        ItemStack skull = new ItemStack(Items.skull, 1, 3);
-        NBTTagCompound tag = new NBTTagCompound();
-        NBTTagCompound skullOwner = new NBTTagCompound();
-        skullOwner.setString("Id", java.util.UUID.randomUUID().toString());
-        NBTTagCompound properties = new NBTTagCompound();
-        NBTTagList textures = new NBTTagList();
-        NBTTagCompound texture = new NBTTagCompound();
-        texture.setString("Value", base64);
-        textures.appendTag(texture);
-        properties.setTag("textures", textures);
-        skullOwner.setTag("Properties", properties);
-        tag.setTag("SkullOwner", skullOwner);
-        skull.setTagCompound(tag);
-        return skull;
-    }
-
     private ItemStack getCollectionItem(CollectionType type) {
         switch (type.name()) {
             case "CACTUS": return new ItemStack(Blocks.cactus);
             case "CARROT": return new ItemStack(Items.carrot);
-            case "COCOA_BEANS": return new ItemStack(Items.dye, 1, 3);
+            case "COCOA_BEANS": return ItemCompatKt.createDyeStackCompat(3);
             case "FEATHER": return new ItemStack(Items.feather);
             case "LEATHER": return new ItemStack(Items.leather);
             case "MELON": return new ItemStack(Items.melon);
@@ -229,7 +213,7 @@ public class CollectionInfoTab extends Tab {
             case "GRAVEL": return new ItemStack(Blocks.gravel);
             case "ICE": return new ItemStack(Blocks.ice);
             case "IRON_INGOT": return new ItemStack(Items.iron_ingot);
-            case "LAPIS_LAZULI": return new ItemStack(Items.dye, 1, 4);
+            case "LAPIS_LAZULI": return ItemCompatKt.createDyeStackCompat(4);
             case "MITHRIL": return new ItemStack(Items.prismarine_crystals);
             case "NETHERRACK": return new ItemStack(Blocks.netherrack);
             case "OBSIDIAN": return new ItemStack(Blocks.obsidian);
@@ -253,23 +237,23 @@ public class CollectionInfoTab extends Tab {
             case "OAK_WOOD": return BlockCompat.getLog(0);
             case "SPRUCE_WOOD": return BlockCompat.getLog(1);
             case "CLAY": return new ItemStack(Items.clay_ball);
-            case "CLOWNFISH": return new ItemStack(Items.fish, 1, 2);
-            case "INK_SACK": return new ItemStack(Items.dye, 1, 0);
+            case "CLOWNFISH": return ItemCompatKt.createFishStack(2);
+            case "INK_SACK": return ItemCompatKt.createDyeStackCompat(0);
             case "LILY_PAD": return BlockCompat.getLilyPad();
             case "PRISMARINE_CRYSTALS": return new ItemStack(Items.prismarine_crystals);
             case "PRISMARINE_SHARD": return new ItemStack(Items.prismarine_shard);
-            case "PUFFERFISH": return new ItemStack(Items.fish, 1, 3);
-            case "RAW_FISH": return new ItemStack(Items.fish, 1, 0);
-            case "RAW_SALMON": return new ItemStack(Items.fish, 1, 1);
+        case "PUFFERFISH": return ItemCompatKt.createFishStack(3);
+        case "RAW_FISH": return ItemCompatKt.createFishStack(0);
+        case "RAW_SALMON": return ItemCompatKt.createFishStack(1);
             case "SPONGE": return new ItemStack(Blocks.sponge);
             case "MAGMAFISH": return new ItemStack(Items.magma_cream);
-            case "BONZO": return getSkull("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMzhhYjVmZjU1NDk4NWExNzc2MzhiZTY1MTFlOTU1YWJjYzVmMzg1NDUxMjNiYWY5NDNlZmRlZmE3ODNmMzVlZiJ9fX0=");
-            case "SCARF": return getSkull("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNGJmZjM2YTk1YThmMjQ2OGE5ZWVmZDA2OTY0NGZjODVkNzg0ODNlNGFhM2Y1MDhlODc3NTM5NDdmMzZmNmU4OCJ9fX0=");
-            case "PROFESSOR": return new ItemStack(Items.skull, 1, 3);
-            case "THORN": return new ItemStack(Items.skull, 1, 3);
-            case "LIVID": return new ItemStack(Items.skull, 1, 3);
-            case "SADAN": return new ItemStack(Items.skull, 1, 3);
-            case "NECRON": return new ItemStack(Items.skull, 1, 3);
+            case "BONZO": return ItemUtils.getCachedSkull("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMzhhYjVmZjU1NDk4NWExNzc2MzhiZTY1MTFlOTU1YWJjYzVmMzg1NDUxMjNiYWY5NDNlZmRlZmE3ODNmMzVlZiJ9fX0=");
+            case "SCARF": return ItemUtils.getCachedSkull("eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNGJmZjM2YTk1YThmMjQ2OGE5ZWVmZDA2OTY0NGZjODVkNzg0ODNlNGFhM2Y1MDhlODc3NTM5NDdmMzZmNmU4OCJ9fX0=");
+        case "PROFESSOR": return ItemCompatKt.createPlayerHeadStack();
+        case "THORN": return ItemCompatKt.createPlayerHeadStack();
+        case "LIVID": return ItemCompatKt.createPlayerHeadStack();
+        case "SADAN": return ItemCompatKt.createPlayerHeadStack();
+        case "NECRON": return ItemCompatKt.createPlayerHeadStack();
             default: return new ItemStack(Items.paper);
         }
     }
@@ -379,15 +363,15 @@ public class CollectionInfoTab extends Tab {
         GL11.glLineWidth(thickness);
         GlStateManagerCompat.color(red, green, blue, alpha);
 
-        GL11.glBegin(GL11.GL_LINE_STRIP);
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINE_STRIP, TessellatorCompat.POSITION_COLOR);
         int segments = 60;
         int maxSegments = (int)(segments * progress);
 
         for (int i = 0; i <= maxSegments; i++) {
             double angle = (Math.PI * 2 * i / segments) - (Math.PI / 2);
-            GL11.glVertex2d(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
+            vb.pos(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, 0).color(red, green, blue, alpha).endVertex();
         }
-        GL11.glEnd();
+        vb.draw();
 
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
         GlStateManagerCompat.enableTexture2D();

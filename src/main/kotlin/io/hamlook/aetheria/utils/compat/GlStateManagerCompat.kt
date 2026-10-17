@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.utils.compat
 
 import net.minecraft.client.renderer.GlStateManager
+import org.lwjgl.opengl.GL11
 
 object GlStateManagerCompat {
     // Matrix operations route through DrawContextUtils on every version: on
@@ -59,7 +60,7 @@ object GlStateManagerCompat {
         //#if MC < 1.21
         GlStateManager.color(r, g, b, a)
         //#else
-        //\$\$ GlStateManager.setShaderColor(r, g, b, a)
+        //$$ RenderSystem.setShaderColor(r.coerceIn(0f, 1f), g.coerceIn(0f, 1f), b.coerceIn(0f, 1f), a.coerceIn(0f, 1f))
         //#endif
     }
 
@@ -68,7 +69,7 @@ object GlStateManagerCompat {
         //#if MC < 1.21
         GlStateManager.color(r, g, b)
         //#else
-        //\$\$ GlStateManager.setShaderColor(r, g, b, 1f)
+        //$$ RenderSystem.setShaderColor(r.coerceIn(0f, 1f), g.coerceIn(0f, 1f), b.coerceIn(0f, 1f), 1f)
         //#endif
     }
 
@@ -77,8 +78,21 @@ object GlStateManagerCompat {
         //#if MC < 1.21
         GlStateManager.resetColor()
         //#else
-        //\$\$ GlStateManager.setShaderColor(1f, 1f, 1f, 1f)
+        //$$ RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
         //#endif
+    }
+
+    /**
+     * Negative widths/heights are a GL error (INVALID_VALUE storm, one per
+     * frame while the offending screen is open). Clamp to an empty clip —
+     * callers computing sizes from dynamic layout can go transiently
+     * negative and must not take the render loop down with them.
+     */
+    @JvmStatic
+    fun scissor(x: Int, y: Int, w: Int, h: Int) {
+        if (w < 0 || h < 0) {
+        }
+        GL11.glScissor(x, y, w.coerceAtLeast(0), h.coerceAtLeast(0))
     }
 
     // Depth
@@ -139,7 +153,7 @@ object GlStateManagerCompat {
         //#endif
     }
 
-    // Attrib stack does not exist on modern; sole caller is EntityHighlight.
+    // Attrib stack does not exist on modern; sole caller is EntityRenderUtils.renderOutline.
     @JvmStatic
     fun pushAttrib() {
         //#if MC < 1.21

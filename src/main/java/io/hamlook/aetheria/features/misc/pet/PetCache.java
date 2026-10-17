@@ -63,7 +63,11 @@ public class PetCache extends ProfileManagedStorage {
             if (pet.textureValue.isEmpty()) continue;
             GameProfile profile = new GameProfile(UUID.randomUUID(), "");
             profile.getProperties().put("textures", new Property("textures", pet.textureValue));
+            //#if MC < 1.16
             MinecraftCompat.getMinecraft().getSkinManager().loadProfileTextures(profile, null, false);
+            //#else
+            //$$ MinecraftCompat.getMinecraft().getSkinProvider().fetchSkinTextures(profile);
+            //#endif
         }
     }
 

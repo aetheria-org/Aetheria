@@ -95,11 +95,11 @@ public class ItemLogAlertsCommand {
                 ItemLogAlertsConfig.AlertEntry entry = e.getValue();
                 String text = entry.customText.isEmpty() ? "§o<display name>§r" : entry.customText.replace("§", "&");
                 IChatComponent root = TextCompat.createText("");
-                IChatComponent label = TextCompat.createText(" §7- §f" + id + " §8" + text);
+                IChatComponent label = TextCompat.fromFormatted(" §7- §f" + id + " §8" + text);
                 TextCompat.appendSibling(root, label);
-                IChatComponent del = TextCompat.createText(" §c§l[DEL]");
-                TextCompat.setClickRunCommand(TextCompat.getChatStyle(del), "/ila remove " + id);
-                TextCompat.setHoverShowText(TextCompat.getChatStyle(del), "§cRemove " + id);
+                IChatComponent del = TextCompat.fromFormatted(" §c§l[DEL]");
+                TextCompat.setChatStyle(del, TextCompat.setClickRunCommand(TextCompat.getChatStyle(del), "/ila remove " + id));
+                TextCompat.setChatStyle(del, TextCompat.setHoverShowText(TextCompat.getChatStyle(del), "§cRemove " + id));
                 TextCompat.appendSibling(root, del);
 
                 ChatUtils.sendMessage(root);
@@ -107,13 +107,13 @@ public class ItemLogAlertsCommand {
         }
 
         ChatUtils.sendMessage("");
-        IChatComponent addNew = TextCompat.createText("§a§l[ADD NEW]");
-        TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(addNew), "/ila add ");
-        TextCompat.setHoverShowText(TextCompat.getChatStyle(addNew), "§aAdd a new alert");
+        IChatComponent addNew = TextCompat.fromFormatted("§a§l[ADD NEW]");
+        TextCompat.setChatStyle(addNew, TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(addNew), "/ila add "));
+        TextCompat.setChatStyle(addNew, TextCompat.setHoverShowText(TextCompat.getChatStyle(addNew), "§aAdd a new alert"));
         ChatUtils.sendMessage(addNew);
-        IChatComponent clear = TextCompat.createText(" §c§l[CLEAR ALL]");
-        TextCompat.setClickRunCommand(TextCompat.getChatStyle(clear), "/ila clear");
-        TextCompat.setHoverShowText(TextCompat.getChatStyle(clear), "§cRemove all alerts");
+        IChatComponent clear = TextCompat.fromFormatted(" §c§l[CLEAR ALL]");
+        TextCompat.setChatStyle(clear, TextCompat.setClickRunCommand(TextCompat.getChatStyle(clear), "/ila clear"));
+        TextCompat.setChatStyle(clear, TextCompat.setHoverShowText(TextCompat.getChatStyle(clear), "§cRemove all alerts"));
         ChatUtils.sendMessage(clear);
         ChatUtils.sendMessage("");
     }

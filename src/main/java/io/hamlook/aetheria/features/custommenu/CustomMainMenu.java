@@ -25,8 +25,7 @@ public class CustomMainMenu extends AetheriaBaseScreen {
     }
 
     @Override
-    public void onResize(Minecraft mcIn, int w, int h) {
-        super.onResize(mcIn, w, h);
+    protected void onResizeScreen(int w, int h) {
         ScreenHelper.updateScreenDimensions(this.width, this.height);
         if (configuration != null) {
             for(CMMElement element : configuration.elements) {
@@ -74,13 +73,14 @@ public class CustomMainMenu extends AetheriaBaseScreen {
             return;
         }
         if (image.width <= 0 || image.height <= 0) {
+            //#if MC < 1.21
             drawDefaultBackground();
+            //#endif
             return;
         }
         GlStateManagerCompat.pushMatrix();
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(image.getTextureToRender(true));
         GlStateManagerCompat.color(1.0F, 1.0F, 1.0F, 1.0F);
-        GuiScreen.drawScaledCustomSizeModalRect(0,0,0,0,width,height,width,height,width,height);
+        DrawContextUtils.drawScaledCustomSizeModalRect(image.getTextureToRender(true), 0,0,0,0,width,height,width,height,width,height);
         GlStateManagerCompat.popMatrix();
     }
 }

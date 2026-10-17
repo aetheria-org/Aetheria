@@ -144,7 +144,11 @@ public class SPacketHandler {
         if (slot >= 9 && slot < 9 + container.slotCount) {
             int storageSlot = slot - 9;
 
+            //#if MC < 1.21
             if (stack == null) {
+            //#else
+            //$$ if (stack == null || stack.isEmpty()) {
+            //#endif
                 container.slots.remove(storageSlot);
             } else {
                 container.setStack(storageSlot, stack.copy());
@@ -171,7 +175,11 @@ public class SPacketHandler {
             if (packetSlot >= items.length) break;
 
             ItemStack stack = items[packetSlot];
+            //#if MC < 1.21
             if (stack != null) {
+            //#else
+            //$$ if (stack != null && !stack.isEmpty()) {
+            //#endif
                 container.setStack(i, stack.copy());
             }
         }

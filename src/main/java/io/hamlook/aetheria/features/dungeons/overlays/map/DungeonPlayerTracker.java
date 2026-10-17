@@ -1,6 +1,9 @@
 package io.hamlook.aetheria.features.dungeons.overlays.map;
 
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.WorldCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
@@ -11,6 +14,8 @@ import net.minecraft.util.ResourceLocation;
 //#if MC < 1.21
 import net.minecraft.util.Vec4b;
 //#else
+//$$ import net.minecraft.client.MinecraftClient;
+//$$ import net.minecraft.client.util.DefaultSkinHelper;
 //$$ import net.minecraft.item.map.MapDecoration;
 //$$ import net.minecraft.registry.Registries;
 //#endif
@@ -55,14 +60,14 @@ public class DungeonPlayerTracker {
 
         if (!isRunStarted()) return;
 
-        String selfName = MinecraftCompat.getLocalPlayer().getName();
+        String selfName = TextCompat.plainString(MinecraftCompat.getLocalPlayer().getName());
         playerNames.add(selfName);
         players.add(MinecraftCompat.getLocalPlayer());
 
         for (String username : getOrderedPartyUsernames()) {
             if (username.equalsIgnoreCase(selfName) || playerNames.contains(username)) continue;
             playerNames.add(username);
-            players.add(MinecraftCompat.getLocalWorld().getPlayerEntityByName(username));
+            players.add(WorldCompat.getPlayerByName(MinecraftCompat.getLocalWorld(), username));
         }
     }
 
@@ -86,7 +91,7 @@ public class DungeonPlayerTracker {
         Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.getNetHandler() == null) return members;
 
-        Collection<NetworkPlayerInfo> tabList = mc.getNetHandler().getPlayerInfoMap();
+        Collection<NetworkPlayerInfo> tabList = MinecraftCompat.getPlayerListEntries();
         List<String> scoreboardLines = SkyblockData.getCleanScoreboardLines();
 
         for (String line : scoreboardLines) {
@@ -177,7 +182,7 @@ public class DungeonPlayerTracker {
     //#if MC < 1.21
     //#else
     //$$ private void matchDecorationsModern(Iterable<MapDecoration> mapDecorations) {
-    //$$     Minecraft mc = MinecraftCompat.getMinecraft();
+    //$$     MinecraftClient mc = MinecraftCompat.getMinecraft();
     //$$     if (MinecraftCompat.getLocalPlayer() == null || playerNames.isEmpty()) return;
     //$$     if (mapDecorations == null) return;
     //$$
@@ -238,11 +243,51 @@ public class DungeonPlayerTracker {
         return null;
     }
 
+    /** Final map position per player; null when the player has no position. */
+    public static final class MarkerState {
+        public final float px;
+        public final float pz;
+        public final float yaw;
+        public final EntityPlayer entity;
+        public final boolean isSelf;
+
+        private MarkerState(float px, float pz, float yaw, EntityPlayer entity, boolean isSelf) {
+            this.px = px;
+            this.pz = pz;
+            this.yaw = yaw;
+            this.entity = entity;
+            this.isSelf = isSelf;
+        }
+    }
+
+    /** Decoration by default; live entity for self when calibrated and enabled. */
+    public MarkerState getMarker(String name, String selfName, DungeonMapGrid grid, boolean mapCalibrated, boolean accurateSelfPosition) {
+        EntityPlayer entity = getEntity(name);
+        float[] pos = getPosition(name);
+        if (pos == null) return null;
+        float px = pos[0];
+        float pz = pos[1];
+        float yaw = pos[2];
+        boolean isSelf = selfName != null && name.equalsIgnoreCase(selfName);
+        // Stored entity can be stale post-respawn; revalidate liveness live.
+        if (isSelf) {
+            EntityPlayer live = MinecraftCompat.getLocalPlayer();
+            if (live != null) entity = live;
+        }
+        // Uncalibrated runs draw self from its decoration until the latch completes.
+        if (isSelf && mapCalibrated && accurateSelfPosition && entity != null && !EntityCompat.isDead(entity)) {
+            px = grid.worldToPixelX(EntityCompat.getPosX(entity));
+            pz = grid.worldToPixelZ(EntityCompat.getPosZ(entity));
+            yaw = EntityCompat.getYaw(entity) + 180f;
+        }
+        return new MarkerState(px, pz, yaw, entity, isSelf);
+    }
+
     public NetworkPlayerInfo getNetworkPlayerInfo(String name, Minecraft mc) {
-        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalPlayer().sendQueue == null) return null;
+        if (MinecraftCompat.getLocalPlayer() == null) return null;
         Collection<NetworkPlayerInfo> infos;
         try {
-            infos = MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap();
+            infos = MinecraftCompat.getPlayerListEntries();
         } catch (Exception e) {
             return null;
         }
@@ -256,10 +301,21 @@ public class DungeonPlayerTracker {
 
     public ResourceLocation resolveSkin(String name, Minecraft mc) {
         EntityPlayer entity = getEntity(name);
-        NetworkPlayerInfo info = (entity != null) ? mc.getNetHandler().getPlayerInfo(entity.getUniqueID()) : null;
+        NetworkPlayerInfo info = null;
+        if (entity != null) {
+            //#if MC < 1.21
+            info = mc.getNetHandler().getPlayerInfo(entity.getUniqueID());
+            //#else
+            //$$ info = MinecraftCompat.getMinecraft().getNetworkHandler().getPlayerListEntry(EntityCompat.getUniqueId(entity));
+            //#endif
+        }
         if (info == null) {
             info = getNetworkPlayerInfo(name, mc);
         }
+        //#if MC < 1.21
         return (info != null && info.getLocationSkin() != null) ? info.getLocationSkin() : DefaultPlayerSkin.getDefaultSkinLegacy();
+        //#else
+        //$$ return (info != null && info.getSkinTextures().texture() != null) ? info.getSkinTextures().texture() : DefaultSkinHelper.getTexture();
+        //#endif
     }
 }

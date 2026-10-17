@@ -9,7 +9,7 @@ package io.hamlook.aetheria.mixins.accessors;
 //$$
 //$$ @Mixin(AbstractSignEditScreen.class)
 //$$ public interface SignEditScreenAccessor {
-//$$     @Accessor("blockEntity")
-//$$     SignBlockEntity ATHR$getBlockEntity();
+//$$   @Accessor("blockEntity") SignBlockEntity ATHR$getBlockEntity();
+//$$   @Accessor("messages") String[] ATHR$getMessages();
 //$$ }
 //#endif

@@ -9,7 +9,7 @@ public class DungeonOverlayConfig {
     @Expose
     @ConfigOption(name = "Enable", desc = "Shows run timers overlay and end-of-run stats in chat")
     @ConfigEditorBoolean
-    public boolean dungeonStats = false;
+    public boolean dungeonStats = true;
 
     @Expose
     @ConfigOption(name = "Show All Timers", desc = "Show all timers at once. When disabled, only shows the current active timer to reduce clutter")

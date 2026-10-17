@@ -10,6 +10,9 @@ import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
@@ -85,7 +88,9 @@ public class OptionsMenu extends AetheriaBaseScreen {
         splashBounce = (splashBounce + 0.02f) % (float) (Math.PI * 2);
         openProgress = Math.min(1f, openProgress + 0.045f);
 
+        //#if MC < 1.21
         drawDefaultBackground();
+        //#endif
         DrawContextUtils.fill(0, 0, width, height, 0x90000000);
 
         // Particles (additive blend)
@@ -99,8 +104,7 @@ public class OptionsMenu extends AetheriaBaseScreen {
             p.tick(width, height);
             Color col = Color.getHSBColor(p.hue, 0.70f, 1f);
             float alpha = p.alpha() * openProgress * 0.65f;
-            GL11.glColor4f(col.getRed() / 255f, col.getGreen() / 255f, col.getBlue() / 255f, alpha);
-            drawDot(p.x, p.y, p.currentSize());
+            drawDot(p.x, p.y, p.currentSize(), col.getRed() / 255f, col.getGreen() / 255f, col.getBlue() / 255f, alpha);
         }
         GlStateManagerCompat.enableTexture2D();
         GlStateManagerCompat.enableBlend();
@@ -170,8 +174,7 @@ public class OptionsMenu extends AetheriaBaseScreen {
             GlStateManagerCompat.enableBlend();
             GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
             GlStateManagerCompat.color(1f, 1f, 1f, hov ? 1f : 0.65f);
-            mc.getTextureManager().bindTexture(SOCIAL_ICONS[i]);
-            RenderUtils.drawTexturedRect(ix, iconY, ICON_SIZE, ICON_SIZE, GL11.GL_LINEAR);
+            TextureCompat.drawBoundTextured(SOCIAL_ICONS[i], ix, iconY, ICON_SIZE, ICON_SIZE, 0, 0, 1, 1);
         }
 
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
@@ -254,28 +257,27 @@ public class OptionsMenu extends AetheriaBaseScreen {
         GlStateManagerCompat.popMatrix();
     }
 
-    private void drawDot(float cx, float cy, float r) {
-        GL11.glBegin(GL11.GL_TRIANGLE_FAN);
-        GL11.glVertex2f(cx, cy);
+    private void drawDot(float cx, float cy, float r, float red, float green, float blue, float alpha) {
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.TRIANGLE_FAN, TessellatorCompat.POSITION_COLOR);
+        vb.pos(cx, cy, 0).color(red, green, blue, alpha).endVertex();
         int segs = Math.max(8, (int) (r * 4));
         for (int i = 0; i <= segs; i++) {
             double a = i * Math.PI * 2 / segs;
-            GL11.glVertex2f(cx + (float) (Math.cos(a) * r), cy + (float) (Math.sin(a) * r));
+            vb.pos(cx + (float) (Math.cos(a) * r), cy + (float) (Math.sin(a) * r), 0).color(red, green, blue, alpha).endVertex();
         }
-        GL11.glEnd();
+        vb.draw();
     }
 
     private void drawSoftBloom(float cx, float cy, float r) {
         Color inner = Color.getHSBColor((float) 0.56, 0.40f, 0.20f);
-        GL11.glBegin(GL11.GL_TRIANGLE_FAN);
-        GL11.glColor4f(inner.getRed() / 255f, inner.getGreen() / 255f, inner.getBlue() / 255f, (float) 0.04);
-        GL11.glVertex2f(cx, cy);
-        GL11.glColor4f(0f, 0f, 0f, 0f);
+        float ir = inner.getRed() / 255f, ig = inner.getGreen() / 255f, ib = inner.getBlue() / 255f;
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.TRIANGLE_FAN, TessellatorCompat.POSITION_COLOR);
+        vb.pos(cx, cy, 0).color(ir, ig, ib, 0.04f).endVertex();
         for (int i = 0; i <= 48; i++) {
             double a = i * Math.PI * 2 / 48;
-            GL11.glVertex2f(cx + (float) (Math.cos(a) * r), cy + (float) (Math.sin(a) * r));
+            vb.pos(cx + (float) (Math.cos(a) * r), cy + (float) (Math.sin(a) * r), 0).color(0f, 0f, 0f, 0f).endVertex();
         }
-        GL11.glEnd();
+        vb.draw();
     }
 
     private int blendColor(float alphaMul) {

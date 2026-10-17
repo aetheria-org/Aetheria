@@ -44,8 +44,8 @@ public class WorldBridge {
     //$$     ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
     //$$         new ASMServerDisconnectEvent().post());
     //$$     ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE.register((client, world) -> {
-    //$$         if (world == null) new ASMWorldUnloadEvent().post();
-    //$$         else new ASMWorldLoadEvent().post();
+    //$$         new ASMWorldUnloadEvent().post();
+    //$$         if (world != null) new ASMWorldLoadEvent().post();
     //$$     });
     //$$ }
     //#endif

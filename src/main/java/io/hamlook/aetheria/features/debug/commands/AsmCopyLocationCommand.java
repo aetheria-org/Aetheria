@@ -6,6 +6,7 @@ import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.ClipboardCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.EnumChatFormatting;
@@ -30,7 +31,7 @@ public class AsmCopyLocationCommand {
                 }
 
                 String text = String.format(Locale.ROOT, "%.2f, %.2f, %.2f (yaw=%.1f, pitch=%.1f)",
-                    player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch);
+                    EntityCompat.getPosX(player), EntityCompat.getPosY(player), EntityCompat.getPosZ(player), EntityCompat.getYaw(player), EntityCompat.getPitch(player));
 
                 ClipboardCompat.setClipboard(text);
                 ChatUtils.sendMessage(EnumChatFormatting.YELLOW + "Copied location to clipboard: " + EnumChatFormatting.GRAY + text);

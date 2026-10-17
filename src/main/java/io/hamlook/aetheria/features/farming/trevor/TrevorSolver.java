@@ -22,8 +22,6 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
-import org.lwjgl.opengl.GL11;
-
 import java.awt.*;
 import java.util.*;
 import java.util.List;
@@ -152,7 +150,7 @@ public class TrevorSolver {
      * clickable [YES]/[NO] component the server just sent, every time.
      */
     private static String findConfirmCommand(IChatComponent component, String optionText) {
-        String clean = StringUtils.stripControlCodes(component.getUnformattedTextForChat()).trim();
+        String clean = StringUtils.stripControlCodes(TextCompat.getUnformattedTextForChat(component)).trim();
         if (optionText.equalsIgnoreCase(clean)) {
             if (TextCompat.isClickAction(component.getChatStyle(), "RUN_COMMAND")) {
                 return TextCompat.getClickValue(component.getChatStyle());
@@ -234,11 +232,11 @@ public class TrevorSolver {
         double nearestDist = Double.MAX_VALUE;
         for (Entity entity : WorldCompat.getAllEntities(MinecraftCompat.getLocalWorld())) {
             if (!(entity instanceof EntityArmorStand) || EntityCompat.isDead(entity)) continue;
-            String raw = entity.getName();
+            String raw = TextCompat.plainString(entity.getName());
             if (raw == null) continue;
-            String name = StringUtils.stripControlCodes(raw).toLowerCase(Locale.ROOT);
+            String name = raw.toLowerCase(Locale.ROOT);
             if (!name.contains(questRarityLower) || !name.contains(questAnimalLower)) continue;
-            double dist = MinecraftCompat.getLocalPlayer().getDistanceSqToEntity(entity);
+            double dist = EntityCompat.getDistanceSqTo(MinecraftCompat.getLocalPlayer(), entity);
             if (dist < nearestDist) {
                 nearestDist = dist;
                 nearest = (EntityArmorStand) entity;
@@ -247,7 +245,7 @@ public class TrevorSolver {
         trackedAnimal = nearest;
 
         if (nearest != null && config.detectAlert && alertedIds.add(nearest.getEntityId())) {
-            if (mc.ingameGUI != null) mc.ingameGUI.displayTitle("§6§lANIMAL DETECTED", "§e" + questAnimal, 5, 40, 10);
+            if (mc.ingameGUI != null) MinecraftCompat.showTitle("§6§lANIMAL DETECTED", "§e" + questAnimal, 5, 40, 10);
             ChatUtils.sendMessage("§6[ASM] §eAnimal detected: §6" + questAnimal);
         }
     }
@@ -266,24 +264,18 @@ public class TrevorSolver {
             WorldRenderUtils.drawFilledBlocks(boxes, spotColor);
 
             if (config.spotLabels) {
-                double vx = mc.getRenderManager().viewerPosX;
-                double vy = mc.getRenderManager().viewerPosY;
-                double vz = mc.getRenderManager().viewerPosZ;
                 String label = questAnimal != null ? questAnimal : "Trevor Spot";
-                GL11.glPushMatrix();
-                GL11.glTranslated(-vx, -vy, -vz);
                 for (BlockPos pos : activeSpots) {
                     WaypointRenderer.drawLabel(pos.getX() + 0.5, pos.getY() + 2.0, pos.getZ() + 0.5, label, 0xFF55FFFF, 0xFF55FFFF);
                 }
-                GL11.glPopMatrix();
             }
         }
 
         EntityArmorStand animal = trackedAnimal;
         if (animal != null && config.animalBeacon && !EntityCompat.isDead(animal)) {
-            double x = animal.lastTickPosX + (animal.posX - animal.lastTickPosX) * event.partialTicks;
-            double y = animal.lastTickPosY + (animal.posY - animal.lastTickPosY) * event.partialTicks;
-            double z = animal.lastTickPosZ + (animal.posZ - animal.lastTickPosZ) * event.partialTicks;
+            double x = EntityCompat.getPrevX(animal) + (EntityCompat.getPosX(animal) - EntityCompat.getPrevX(animal)) * event.partialTicks;
+            double y = EntityCompat.getPrevY(animal) + (EntityCompat.getPosY(animal) - EntityCompat.getPrevY(animal)) * event.partialTicks;
+            double z = EntityCompat.getPrevZ(animal) + (EntityCompat.getPosZ(animal) - EntityCompat.getPrevZ(animal)) * event.partialTicks;
             Color beaconColor = argbToColor(config.beaconColor, 0xFFFFAA00);
             WorldRenderUtils.drawBeaconBeam(x - 0.5, y - 2.0, z - 0.5, beaconColor, event.partialTicks, 64);
         }

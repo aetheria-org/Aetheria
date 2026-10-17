@@ -12,6 +12,7 @@ import io.hamlook.aetheria.features.scoreboard.BankParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ElectionUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import lombok.Getter;
@@ -20,7 +21,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiPlayerTabOverlay;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.scoreboard.ScorePlayerTeam;
-import net.minecraft.world.WorldSettings;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -81,7 +81,7 @@ public class TablistParser {
      * alphabetical). Debug dumps must use this, not raw getPlayerInfoMap() order.
      */
     public static List<NetworkPlayerInfo> getParserOrderedInfos(Minecraft mc) {
-        return PLAYER_ORDERING.sortedCopy(MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap());
+        return PLAYER_ORDERING.sortedCopy(MinecraftCompat.getPlayerListEntries());
     }
 
     private static net.minecraft.util.IChatComponent getTabFooter() {
@@ -100,10 +100,11 @@ public class TablistParser {
         Minecraft mc = MinecraftCompat.getMinecraft();
         if (MinecraftCompat.getLocalPlayer() == null) return null;
         GuiPlayerTabOverlay tab = mc.ingameGUI.getTabList();
-        List<NetworkPlayerInfo> infos = PLAYER_ORDERING.sortedCopy(MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap());
+        List<NetworkPlayerInfo> infos =
+            PLAYER_ORDERING.sortedCopy(MinecraftCompat.getPlayerListEntries());
         boolean inServer = false;
         for (NetworkPlayerInfo info : infos) {
-            String raw = tab.getPlayerName(info);
+            String raw = TextCompat.codedString(tab.getPlayerName(info));
             if (raw == null || raw.isEmpty()) continue;
             String line = net.minecraft.util.StringUtils.stripControlCodes(raw).trim();
             if (line.isEmpty()) continue;
@@ -154,12 +155,12 @@ public class TablistParser {
         String pendingEvent = null;
 
         for (NetworkPlayerInfo info : infos) {
-            String raw = tab.getPlayerName(info);
+            String raw = TextCompat.codedString(tab.getPlayerName(info));
             if (raw == null || raw.isEmpty()) continue;
 
             String line = net.minecraft.util.StringUtils.stripControlCodes(raw).trim();
 
-            if (raw.contains("§3§l Server Info§r")) {
+            if (raw.contains("§3§l Server Info§r") || line.equals("Server Info")) {
                 inServerSection = true;
                 inAccountSection = false;
                 expectEventTime = false;
@@ -485,7 +486,7 @@ public class TablistParser {
         public int compare(NetworkPlayerInfo o1, NetworkPlayerInfo o2) {
             ScorePlayerTeam t1 = o1.getPlayerTeam();
             ScorePlayerTeam t2 = o2.getPlayerTeam();
-            return ComparisonChain.start().compareTrueFirst(o1.getGameType() != WorldSettings.GameType.SPECTATOR, o2.getGameType() != WorldSettings.GameType.SPECTATOR).compare(t1 != null ? t1.getRegisteredName() : "", t2 != null ? t2.getRegisteredName() : "").compare(o1.getGameProfile().getName(), o2.getGameProfile().getName()).result();
+            return ComparisonChain.start().compareTrueFirst(!EntityCompat.isSpectator(o1), !EntityCompat.isSpectator(o2)).compare(t1 != null ? t1.getRegisteredName() : "", t2 != null ? t2.getRegisteredName() : "").compare(o1.getGameProfile().getName(), o2.getGameProfile().getName()).result();
         }
     }
 }

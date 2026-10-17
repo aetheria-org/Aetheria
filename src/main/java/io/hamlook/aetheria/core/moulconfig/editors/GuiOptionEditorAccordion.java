@@ -60,7 +60,12 @@ public class GuiOptionEditorAccordion extends GuiOptionEditor {
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
-        if (MouseCompat.getEventButtonState() && mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + getHeight()) {
+        return mouseInput(x, y, width, mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
+        if (pressed && mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + getHeight()) {
             accordionToggled = !accordionToggled;
             return true;
         }

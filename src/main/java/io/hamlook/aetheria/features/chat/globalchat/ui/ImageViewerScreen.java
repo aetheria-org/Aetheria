@@ -4,10 +4,12 @@ import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.utils.MediaSaver;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
-import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
@@ -92,22 +94,21 @@ public class ImageViewerScreen extends AetheriaBaseScreen {
             int iy = topMargin + (availH - drawH) / 2;
             ResourceLocation tex = img.getTextureToRender(mouseX >= ix && mouseX <= ix + drawW && mouseY >= iy && mouseY <= iy + drawH);
             if (tex != null) {
-                mc.getTextureManager().bindTexture(tex);
                 GlStateManagerCompat.color(1f, 1f, 1f, 1f);
                 GlStateManagerCompat.enableBlend();
-                drawScaledCustomSizeModalRect(ix, iy, 0, 0, img.width, img.height, drawW, drawH, img.width, img.height);
+                DrawContextUtils.drawScaledCustomSizeModalRect(tex, ix, iy, 0, 0, img.width, img.height, drawW, drawH, img.width, img.height);
                 GlStateManagerCompat.disableBlend();
             }
         } else {
             String label = img != null && img.loadFailed ? "Could not load image" : "Loading...";
-            drawCenteredString(MinecraftCompat.getFontRenderer(), label, width / 2, height / 2 - 8, 0xFF949BA4);
+            DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), label, width / 2, height / 2 - 8, 0xFF949BA4);
         }
 
         ImageRef ref = images.get(current);
         String info = ref.name != null && !ref.name.isEmpty()
                 ? (current + 1) + " / " + images.size() + "  -  " + ref.name
                 : (current + 1) + " / " + images.size();
-        drawCenteredString(MinecraftCompat.getFontRenderer(), info, width / 2, 12, 0xFFB5BAC1);
+        DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), info, width / 2, 12, 0xFFB5BAC1);
 
         closeX = width - 36;
         closeY = 8;
@@ -134,7 +135,7 @@ public class ImageViewerScreen extends AetheriaBaseScreen {
         if (downloadMsg != null && System.currentTimeMillis() < downloadMsgUntil) {
             int toastY = height - 44;
             DrawContextUtils.fill(20, toastY, width - 20, toastY + 20, 0xE62B2D31);
-            drawCenteredString(MinecraftCompat.getFontRenderer(), downloadMsg, width / 2, toastY + 6, 0xFFDCDDDE);
+            DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), downloadMsg, width / 2, toastY + 6, 0xFFDCDDDE);
         }
     }
 
@@ -183,10 +184,9 @@ public class ImageViewerScreen extends AetheriaBaseScreen {
                     int srcW, srcH, srcX = 0, srcY = 0;
                     if (ratio > 1f) { srcW = srcH = img.height; srcX = (img.width - srcW) / 2; }
                     else { srcW = srcH = img.width; srcY = (img.height - srcH) / 2; }
-                    mc.getTextureManager().bindTexture(tex);
                     GlStateManagerCompat.color(1f, 1f, 1f, 1f);
                     GlStateManagerCompat.enableBlend();
-                    drawScaledCustomSizeModalRect(tx, ty, srcX, srcY, srcW, srcH, thumb, thumb, img.width, img.height);
+                    DrawContextUtils.drawScaledCustomSizeModalRect(tex, tx, ty, srcX, srcY, srcW, srcH, thumb, thumb, img.width, img.height);
                     GlStateManagerCompat.disableBlend();
                 }
             } else {
@@ -210,12 +210,11 @@ public class ImageViewerScreen extends AetheriaBaseScreen {
         float b = (color & 0xFF) / 255f;
         GlStateManagerCompat.disableTexture2D();
         GlStateManagerCompat.enableBlend();
-        GL11.glColor4f(r, g, b, a);
-        GL11.glBegin(GL11.GL_TRIANGLES);
-        GL11.glVertex2i(x1, y1);
-        GL11.glVertex2i(x2, y2);
-        GL11.glVertex2i(x3, y3);
-        GL11.glEnd();
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.TRIANGLES, TessellatorCompat.POSITION_COLOR);
+        vb.pos(x1, y1, 0).color(r, g, b, a).endVertex();
+        vb.pos(x2, y2, 0).color(r, g, b, a).endVertex();
+        vb.pos(x3, y3, 0).color(r, g, b, a).endVertex();
+        vb.draw();
         GlStateManagerCompat.enableTexture2D();
     }
 

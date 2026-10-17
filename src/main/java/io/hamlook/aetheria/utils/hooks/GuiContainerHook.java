@@ -16,8 +16,9 @@ import io.hamlook.aetheria.utils.modcompat.NefSlotClickCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.NBTFormatter;
-import io.hamlook.aetheria.utils.render.HighlightUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.render.HighlightUtils;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 //#if MC < 1.21
@@ -43,19 +44,40 @@ public final class GuiContainerHook {
     private GuiContainerHook() {
     }
 
+    //#if MC < 1.21
     public static void afterDrawForeground(DrawContext context, GuiContainer gui, int mouseX, int mouseY) {
         new GuiContainerRenderBeforeTooltipEvent(context, gui, mouseX, mouseY).post();
     }
+    //#else
+    //$$ public static void afterDrawForeground(DrawContext context, HandledScreen<?> gui, int mouseX, int mouseY) {
+    //$$     new GuiContainerRenderBeforeTooltipEvent(context, gui, mouseX, mouseY).post();
+    //$$ }
+    //#endif
 
+    //#if MC < 1.21
     public static void onGuiClosed(GuiContainer gui) {
         if (ContainerUtils.isChestOpen(gui)) {
             BetterContainers.getInstance().reset();
         }
     }
+    //#else
+    //$$ public static void onGuiClosed(HandledScreen<?> gui) {
+    //$$     if (ContainerUtils.isChestOpen(gui)) {
+    //$$         BetterContainers.getInstance().reset();
+    //$$     }
+    //$$ }
+    //#endif
 
     public static boolean cancelBlankPaneRender(Slot slot) {
         ItemStack stack = slot.getStack();
         return BetterContainers.isEnabled() && BetterContainers.getInstance().isLoaded() && !BetterContainers.shouldRenderStack(slot.slotNumber, stack);
+    }
+
+    public static boolean suppressBlankPaneHover(Slot slot) {
+        if (slot == null) return false;
+        if (ATHRConfig.feature == null) return false;
+        if (!ATHRConfig.feature.qol.betterContainers.hideEmptyPaneHover) return false;
+        return cancelBlankPaneRender(slot);
     }
 
     public static boolean nbtCopy(Slot theSlot, int keyCode) {
@@ -83,9 +105,8 @@ public final class GuiContainerHook {
     }
     //#else
     //$$ public static void profileInitGui(HandledScreen<?> gui, List<ClickableWidget> buttonList) {
-    //$$     ContainerChest chest = ContainerUtils.getOpenChest((GuiContainer)(Object)gui);
-    //$$     if (chest != null && chest.getLowerChestInventory().getName().equals("View Profile") && !SkyblockData.getEnvironment().isTest()) {
-    //$$         buttonList.add(ButtonWidget.builder(Text.literal("Parse Profile"), b -> ProfileParser.parse("Diyansh", gui.getScreenHandler())).dimensions(gui.x - 200, gui.y, 80, 20).build());
+    //$$     if ("View Profile".equals(ContainerUtils.getContainerName(gui)) && !SkyblockData.getEnvironment().isTest()) {
+    //$$         buttonList.add(ButtonWidget.builder(Text.literal("Parse Profile"), b -> ProfileParser.parse("Diyansh", gui.getScreenHandler())).dimensions(InventoryCompat.getGuiLeft(gui) - 200, InventoryCompat.getGuiTop(gui), 80, 20).build());
     //$$     }
     //$$ }
     //#endif
@@ -110,6 +131,7 @@ public final class GuiContainerHook {
     //$$ }
     //#endif
 
+    //#if MC < 1.21
     public static boolean profileMouseClicked(GuiContainer gui, Slot theSlot, int mouseButton) {
         if (mouseButton != 0) return false;
         ContainerChest chest = ContainerUtils.getOpenChest(gui);
@@ -131,6 +153,27 @@ public final class GuiContainerHook {
         NefSlotClickCompat.recordGuiPosted(slotId, clickedButton, clickType);
         return false;
     }
+    //#else
+    //$$ public static boolean profileMouseClicked(HandledScreen<?> gui, Slot theSlot, int mouseButton) {
+    //$$     if (mouseButton != 0) return false;
+    //$$     String title = ContainerUtils.getContainerName(gui);
+    //$$     if (title == null || !title.equals(GUI_TITLE)) return false;
+    //$$     if (theSlot == null || !theSlot.hasStack()) return false;
+    //$$     ItemStack stack = theSlot.getStack();
+    //$$     String itemName = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getName())).trim();
+    //$$     if (!itemName.equals(ITEM_TITLE)) return false;
+    //$$     ProfileParser.parseName(stack);
+    //$$     return true;
+    //$$ }
+    //$$
+    //$$ public static boolean protectItemClick(HandledScreen<?> gui, Slot slot, int slotId, int clickedButton, int clickType) {
+    //$$     SlotClickEvent event = new SlotClickEvent(gui, slot, slotId, clickedButton, SlotClickEvent.ClickType.fromId(clickType));
+    //$$     event.post();
+    //$$     if (event.isCancelled()) return true;
+    //$$     NefSlotClickCompat.recordGuiPosted(slotId, clickedButton, clickType);
+    //$$     return false;
+    //$$ }
+    //#endif
 
     public static boolean protectItemKey(Slot theSlot, int keyCode) {
         Config config = ATHRConfig.feature;
@@ -143,9 +186,17 @@ public final class GuiContainerHook {
         return true;
     }
 
+    //#if MC < 1.21
     public static void searchHighlight(GuiContainer gui, Slot slot) {
         if (slot != null) {
             HighlightUtils.renderAllHighlights(gui, slot);
         }
     }
+    //#else
+    //$$ public static void searchHighlight(HandledScreen<?> gui, Slot slot) {
+    //$$     if (slot != null) {
+    //$$         HighlightUtils.renderAllHandledHighlights(gui, slot);
+    //$$     }
+    //$$ }
+    //#endif
 }

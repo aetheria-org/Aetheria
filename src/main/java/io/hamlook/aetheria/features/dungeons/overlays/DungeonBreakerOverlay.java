@@ -6,6 +6,7 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
@@ -45,7 +46,7 @@ public class DungeonBreakerOverlay extends Overlay {
     private static ItemStack findBreakerInHotbar() {
         Minecraft mc = MinecraftCompat.getMinecraft();
         if (MinecraftCompat.getLocalPlayer() == null) return null;
-        ItemStack[] hotbar = ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getLocalPlayer().inventory.mainInventory);
+        ItemStack[] hotbar = InventoryCompat.getMainInventory(MinecraftCompat.getLocalPlayer());
         for (int i = 0; i < 9; i++) {
             ItemStack stack = hotbar[i];
             if (stack != null && ITEM_ID.equals(ItemUtils.getInternalName(stack))) return stack;

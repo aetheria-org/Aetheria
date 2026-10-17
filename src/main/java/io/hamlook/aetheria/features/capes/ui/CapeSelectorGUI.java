@@ -1,9 +1,11 @@
 package io.hamlook.aetheria.features.capes.ui;
 
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.features.capes.Cape;
 import io.hamlook.aetheria.features.capes.CapeManager;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
@@ -57,7 +59,7 @@ public class CapeSelectorGUI extends AetheriaBaseScreen {
         String equippedId = equipped != null ? equipped.id : null;
         int scaleFactor = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(boxX * scaleFactor, (GuiScreenUtils.getScaledWindowHeight() - (boxY + boxH)) * scaleFactor, boxW * scaleFactor, boxH * scaleFactor);
+        GlStateManagerCompat.scissor(boxX * scaleFactor, (GuiScreenUtils.getScaledWindowHeight() - (boxY + boxH)) * scaleFactor, boxW * scaleFactor, boxH * scaleFactor);
 
         for (CapeDisplay card : capes) {
             if (cardX + card.width < boxX || cardX > boxX + boxW) {
@@ -73,7 +75,7 @@ public class CapeSelectorGUI extends AetheriaBaseScreen {
 
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
         String title = "Select Cape";
-        MinecraftCompat.getFontRenderer().drawString(title, (int) (this.width / 2f - MinecraftCompat.getFontRenderer().getStringWidth(title) / 2f), boxY - 14, new Color(255, 255, 255, 255).getRGB());
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), title, (int) (this.width / 2f - MinecraftCompat.getFontRenderer().getStringWidth(title) / 2f), boxY - 14, new Color(255, 255, 255, 255).getRGB(), false);
     }
 
     @Override

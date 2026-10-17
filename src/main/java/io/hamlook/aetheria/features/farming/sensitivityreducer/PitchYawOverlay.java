@@ -7,6 +7,7 @@ import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
@@ -73,8 +74,8 @@ public class PitchYawOverlay extends Overlay {
 
         if (MinecraftCompat.getLocalPlayer() == null) return lines;
 
-        lines.add(String.format("Pitch: %.4f", wrapDegrees(MinecraftCompat.getLocalPlayer().rotationPitch)));
-        lines.add(String.format("Yaw: %.4f", wrapDegrees(MinecraftCompat.getLocalPlayer().rotationYaw)));
+        lines.add(String.format("Pitch: %.4f", wrapDegrees(EntityCompat.getPitch(MinecraftCompat.getLocalPlayer()))));
+        lines.add(String.format("Yaw: %.4f", wrapDegrees(EntityCompat.getYaw(MinecraftCompat.getLocalPlayer()))));
         return lines;
     }
 

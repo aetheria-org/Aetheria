@@ -7,6 +7,7 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.TablistParser;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiPlayerTabOverlay;
@@ -62,7 +63,7 @@ public class AsmCopyTablistCommand {
                 sb.append("=== TABLIST (").append(infos.size()).append(" entries) ===\n");
 
                 for (NetworkPlayerInfo info : infos) {
-                    String raw = tab.getPlayerName(info);
+                    String raw = TextCompat.codedString(tab.getPlayerName(info));
                     String stripped = StringUtils.stripControlCodes(raw != null ? raw : "").trim();
 
                     sb.append(noColor ? stripped : (raw != null ? raw : "(null)")).append("\n");

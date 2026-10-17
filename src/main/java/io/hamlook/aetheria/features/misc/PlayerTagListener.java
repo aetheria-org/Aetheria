@@ -35,7 +35,8 @@ public class PlayerTagListener {
 
         // Inject into the existing component tree — preserves all ClickEvents
         event.message = ChatUtils.ensureSiblings(event.message);
-        injectAfterIgn(event.message, ign, tagComp);
+        int tagBefore = TextCompat.getSiblings(event.message).size();
+        boolean injected = injectAfterIgn(event.message, ign, tagComp);
     }
 
     /**
@@ -47,7 +48,11 @@ public class PlayerTagListener {
         List<IChatComponent> siblings = TextCompat.getSiblings(root);
         for (int i = 0; i < siblings.size(); i++) {
             IChatComponent sib = siblings.get(i);
-            String sibText = sib.getUnformattedTextForChat();
+            if (!TextCompat.getSiblings(sib).isEmpty()) {
+                if (injectAfterIgn(sib, ign, tagComp)) return true;
+                continue;
+            }
+            String sibText = TextCompat.getUnformattedTextForChat(sib);
 
             int idx = ignEndIndex(sibText, ign);
             if (idx != -1) {
@@ -55,10 +60,10 @@ public class PlayerTagListener {
                 String after = sibText.substring(idx);
 
                 IChatComponent beforeComp = TextCompat.createText(before);
-                beforeComp.setChatStyle(TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
+                TextCompat.setChatStyle(beforeComp, TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
 
                 IChatComponent afterComp = TextCompat.createText(after);
-                afterComp.setChatStyle(TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
+                TextCompat.setChatStyle(afterComp, TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
 
                 // Re-attach sib's own children to afterComp
                 for (IChatComponent child : TextCompat.getSiblings(sib)) {
@@ -93,11 +98,11 @@ public class PlayerTagListener {
         char sym = entry.resolveSymbol();
         if (sym == 0) return null;
 
-        IChatComponent tagComp = TextCompat.createText(" §r" + entry.resolveUnicodeColor() + sym + "§r");
+        IChatComponent tagComp = TextCompat.fromFormatted(" §r" + entry.resolveUnicodeColor() + sym + "§r");
 
         String hoverText = entry.text != null ? entry.text : "";
         if (!hoverText.isEmpty()) {
-            TextCompat.setHoverShowText(TextCompat.getChatStyle(tagComp), hoverText);
+            TextCompat.setChatStyle(tagComp, TextCompat.setHoverShowText(TextCompat.getChatStyle(tagComp), hoverText));
         }
 
         return tagComp;

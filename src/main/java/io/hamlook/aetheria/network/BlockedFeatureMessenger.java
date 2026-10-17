@@ -45,16 +45,16 @@ public final class BlockedFeatureMessenger {
         if (last != null && now - last < COOLDOWN_MS) return;
         lastSentAt.put(feature, now);
 
-        IChatComponent rootComp = TextCompat.createText("§c" + feature + " §7is disabled because §c" + NetworkStatusInfo.whyText(root) + " ");
+        IChatComponent rootComp = TextCompat.fromFormatted("§c" + feature + " §7is disabled because §c" + NetworkStatusInfo.whyText(root) + " ");
 
-        IChatComponent enable = TextCompat.createText("§a[Enable " + NetworkStatusInfo.enableLabel(root) + "§r]");
-        TextCompat.setClickRunCommand(TextCompat.getChatStyle(enable), "/athrnet enable " + NetworkStatusInfo.gateId(root));
-        TextCompat.setHoverShowText(TextCompat.getChatStyle(enable), "§7Turn on " + NetworkStatusInfo.enableLabel(root) + " to use " + feature);
+        IChatComponent enable = TextCompat.fromFormatted("§a[Enable " + NetworkStatusInfo.enableLabel(root) + "§r]");
+        TextCompat.setChatStyle(enable, TextCompat.setClickRunCommand(TextCompat.getChatStyle(enable), "/athrnet enable " + NetworkStatusInfo.gateId(root)));
+        TextCompat.setChatStyle(enable, TextCompat.setHoverShowText(TextCompat.getChatStyle(enable), "§7Turn on " + NetworkStatusInfo.enableLabel(root) + " to use " + feature));
         TextCompat.appendSibling(rootComp, enable);
 
-        IChatComponent hide = TextCompat.createText(" §7[§8Hide§7]");
-        TextCompat.setClickRunCommand(TextCompat.getChatStyle(hide), "/athrnet hide " + tokenFor(feature));
-        TextCompat.setHoverShowText(TextCompat.getChatStyle(hide), "§7Never show this message again");
+        IChatComponent hide = TextCompat.fromFormatted(" §7[§8Hide§7]");
+        TextCompat.setChatStyle(hide, TextCompat.setClickRunCommand(TextCompat.getChatStyle(hide), "/athrnet hide " + tokenFor(feature)));
+        TextCompat.setChatStyle(hide, TextCompat.setHoverShowText(TextCompat.getChatStyle(hide), "§7Never show this message again"));
         TextCompat.appendSibling(rootComp, hide);
 
         TextCompat.addChatMessage(rootComp);

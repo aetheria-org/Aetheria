@@ -6,6 +6,7 @@ import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.ClipboardCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.compat.WorldCompat;
@@ -55,7 +56,7 @@ public class AsmCopyNearbyEntitiesCommand {
                 int count = 0;
 
                 for (Entity entity : loaded) {
-                    double distance = entity.getDistanceToEntity(MinecraftCompat.getLocalPlayer());
+                    double distance = EntityCompat.getDistanceTo(entity, MinecraftCompat.getLocalPlayer());
                     if (distance > radius) continue;
                     if (entity == MinecraftCompat.getLocalPlayer()) continue;
                     count++;
@@ -66,8 +67,8 @@ public class AsmCopyNearbyEntitiesCommand {
                     result.add("entityId: " + entity.getEntityId());
                     result.add("uuid: " + entity.getUniqueID());
                     result.add("type: " + classify(entity));
-                    result.add(String.format(Locale.ROOT, "position: %.2f, %.2f, %.2f (distance %.2f)", entity.posX, entity.posY, entity.posZ, distance));
-                    result.add(String.format(Locale.ROOT, "rotation: yaw=%.1f pitch=%.1f", entity.rotationYaw, entity.rotationPitch));
+                    result.add(String.format(Locale.ROOT, "position: %.2f, %.2f, %.2f (distance %.2f)", EntityCompat.getPosX(entity), EntityCompat.getPosY(entity), EntityCompat.getPosZ(entity), distance));
+                    result.add(String.format(Locale.ROOT, "rotation: yaw=%.1f pitch=%.1f", EntityCompat.getYaw(entity), EntityCompat.getPitch(entity)));
                     if (entity instanceof EntityLivingBase) {
                         EntityLivingBase living = (EntityLivingBase) entity;
                         result.add("health: " + living.getHealth() + "/" + living.getMaxHealth());
@@ -100,7 +101,7 @@ public class AsmCopyNearbyEntitiesCommand {
     }
 
     private static String nameOf(Entity entity) {
-        if (entity instanceof EntityLivingBase) return ((EntityLivingBase) entity).getName();
+        if (entity instanceof EntityLivingBase) return EntityCompat.getName(entity);
         return entity.toString();
     }
 

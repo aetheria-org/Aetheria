@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.utils.compat
 
 import io.hamlook.aetheria.utils.ColorUtils
+import io.hamlook.aetheria.utils.render.ChromaTextRenderer
 import net.minecraft.client.gui.ChatLine
 //#if MC < 1.16
 import net.minecraft.event.ClickEvent
@@ -19,10 +20,13 @@ import net.minecraft.util.MathHelper
 //$$ import net.minecraft.text.ClickEvent
 //$$ import net.minecraft.text.HoverEvent
 //$$ import net.minecraft.text.MutableText
+//$$ import net.minecraft.text.PlainTextContent
 //$$ import net.minecraft.text.Style
 //$$ import net.minecraft.text.Text
+//$$ import net.minecraft.text.TextColor
 //$$ import net.minecraft.util.Formatting
 //$$ import net.minecraft.util.Identifier
+//$$ import java.util.Optional
 //#endif
 //#if FORGE
 import net.minecraftforge.client.ClientCommandHandler
@@ -49,8 +53,13 @@ object TextCompat {
     //#if MC < 1.16
     //#else
     //$$ private fun parseFormattingCodes(text: String): MutableText {
-    //$$     var out = Text.empty()
-    //$$     var style = Style.EMPTY
+    //$$     val out = Text.empty()
+    //$$     parseInto(out, text, Style.EMPTY)
+    //$$     return out
+    //$$ }
+    //$$
+    //$$ private fun parseInto(out: MutableText, text: String, base: Style) {
+    //$$     var style = base
     //$$     val cur = StringBuilder()
     //$$     fun flush() {
     //$$         if (cur.isNotEmpty()) {
@@ -63,22 +72,76 @@ object TextCompat {
     //$$         val c = text[i]
     //$$         if (c == '§' && i + 1 < text.length) {
     //$$             flush()
-    //$$             val fmt = Formatting.byCode(text[i + 1].lowercaseChar())
-    //$$             if (fmt == null) {
-    //$$                 cur.append(c)
+    //$$             val code = text[i + 1].lowercaseChar()
+    //$$             var step = 2
+    //$$             val fmt = Formatting.byCode(code)
+    //$$             if (code == 'z') {
+    //$$                 var tier = 0
+    //$$                 if (i + 2 < text.length && text[i + 2] in '0'..'4') {
+    //$$                     tier = text[i + 2] - '0'
+    //$$                     step = 3
+    //$$                 }
+    //$$                 style = style.withColor(ChromaTextRenderer.tierSentinelRgb(tier))
+    //$$             } else if (fmt == null) {
+    //$$                 cur.append(c).append(text[i + 1])
     //$$             } else if (fmt == Formatting.RESET) {
     //$$                 style = Style.EMPTY
+    //$$             } else if ("0123456789abcdef".indexOf(code) != -1) {
+    //$$                 style = Style.EMPTY.withColor(fmt).withClickEvent(style.clickEvent).withHoverEvent(style.hoverEvent)
     //$$             } else {
     //$$                 style = style.withFormatting(fmt)
     //$$             }
-    //$$             i += 2
+    //$$             i += step
     //$$         } else {
     //$$             cur.append(c)
     //$$             i++
     //$$         }
     //$$     }
     //$$     flush()
+    //$$ }
+    //$$
+    //$$ /**
+    //$$  * Converts legacy § codes inside literal nodes to real styles, in
+    //$$  * place on a private deep copy. Servers bridging legacy plugins send
+    //$$  * §-coded strings inside literal Texts, which modern renders
+    //$$  * verbatim. Structure, node styles and child order are preserved;
+    //$$  * children re-attach to the last run of their rebuilt parent.
+    //$$  * Unknown codes pass through untouched; the §z chroma marker is consumed
+//$$  * into a per-tier sentinel colour that the renderer swaps for the animated
+//$$  * one.
+    //$$  * Idempotent: parsed trees contain no literal § runs to convert.
+    //$$  */
+    //$$ @JvmStatic
+    //$$ fun parseLegacyLiterals(text: Text): Text {
+    //$$     if (!containsLegacyCode(text)) return text
+    //$$     val copy = deepMutableCopy(text) as MutableText
+    //$$     val rebuilt = parsedReplacement(copy)
+    //$$     val out = Text.empty()
+    //$$     for (n in rebuilt) out.append(n)
     //$$     return out
+    //$$ }
+    //$$
+    //$$ private fun containsLegacyCode(node: Text): Boolean {
+    //$$     val raw = (node.content as? PlainTextContent)?.string()
+    //$$     if (raw != null && raw.contains('§')) return true
+    //$$     for (s in node.siblings) if (containsLegacyCode(s)) return true
+    //$$     return false
+    //$$ }
+    //$$
+    //$$ private fun parsedReplacement(node: MutableText): List<Text> {
+    //$$     val kids = node.siblings.flatMap { parsedReplacement(it as MutableText) }
+    //$$     val raw = (node.content as? PlainTextContent)?.string()
+    //$$     if (raw == null || !raw.contains('§')) {
+    //$$         node.siblings.clear()
+    //$$         for (k in kids) node.append(k)
+    //$$         return listOf(node)
+    //$$     }
+    //$$     val tmp = Text.empty()
+    //$$     parseInto(tmp, raw, node.style)
+    //$$     val runs = tmp.siblings.toList()
+    //$$     if (runs.isEmpty()) return kids
+    //$$     for (k in kids) (runs.last() as MutableText).append(k)
+    //$$     return runs
     //$$ }
     //#endif
 
@@ -105,7 +168,7 @@ object TextCompat {
         //#if MC < 1.16
         component.formattedText
         //#else
-        //$$ component.string
+        //$$ component.toLegacyCodes()
         //#endif
 
     @JvmStatic
@@ -123,6 +186,194 @@ object TextCompat {
     fun getFormattedText(text: String): String = text
 
     @JvmStatic
+    fun codedString(text: String): String = text
+
+    @JvmStatic
+    fun codedString(component: IChatComponent): String =
+        //#if MC < 1.16
+        getFormattedText(component)
+        //#else
+        //$$ (component as Text).toLegacyCodes()
+        //#endif
+
+    @JvmStatic
+    fun plainString(text: String): String = getUnformattedText(text)
+
+    @JvmStatic
+    fun plainString(component: IChatComponent): String = getUnformattedText(component)
+
+    @JvmStatic
+    fun matchesCoded(haystack: String, needle: String): Boolean {
+        if (needle.indexOf('§') < 0) return haystack.contains(needle)
+        return normalizeRuns(haystack).contains(normalizeRuns(needle))
+    }
+
+    @JvmStatic
+    fun matchesCoded(haystack: IChatComponent, needle: String): Boolean =
+        //#if MC < 1.16
+        matchesCoded(getFormattedText(haystack), needle)
+        //#else
+        //$$ matchesCoded((haystack as Text).toLegacyCodes(), needle)
+        //#endif
+
+    private fun normalizeRuns(s: String): String {
+        if (s.indexOf('§') < 0) return s
+        val sb = StringBuilder(s.length)
+        var i = 0
+        while (i < s.length) {
+            val c = s[i]
+            if (c == '§' && i + 1 < s.length && s[i + 1] != 'r' && s[i + 1] != 'R') {
+                val run = StringBuilder()
+                while (i < s.length && s[i] == '§' && i + 1 < s.length) {
+                    val code = Character.toLowerCase(s[i + 1])
+                    if (code == 'r') break
+                    run.append(code)
+                    i += 2
+                }
+                val chars = run.toString().toCharArray()
+                chars.sort()
+                for (ch in chars) sb.append('§').append(ch)
+            } else if (c == '§' && i + 1 < s.length) {
+                sb.append("§r")
+                i += 2
+            } else {
+                sb.append(c)
+                i++
+            }
+        }
+        return sb.toString()
+    }
+
+    //#if MC < 1.16
+    //#else
+    //$$ private val codeLut: Map<Int, Char> by lazy {
+    //$$     Formatting.values().mapNotNull { f -> f.colorValue?.let { it to f.code } }.toMap()
+    //$$ }
+    //$$
+    //$$ private val legacyColors = intArrayOf(
+    //$$     0x000000, 0x0000AA, 0x00AA00, 0x00AAAA,
+    //$$     0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
+    //$$     0x555555, 0x5555FF, 0x55FF55, 0x55FFFF,
+    //$$     0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF
+    //$$ )
+    //$$ private val legacyCodes = charArrayOf(
+    //$$     '0', '1', '2', '3', '4', '5', '6', '7',
+    //$$     '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+    //$$ )
+    //$$
+    //$$ private fun nearestLegacy(rgb: Int): Char {
+    //$$     var best = 'f'
+    //$$     var bestDist = Int.MAX_VALUE
+    //$$     for (i in legacyColors.indices) {
+    //$$         val c = legacyColors[i]
+    //$$         val dr = ((rgb shr 16) and 255) - ((c shr 16) and 255)
+    //$$         val dg = ((rgb shr 8) and 255) - ((c shr 8) and 255)
+    //$$         val db = (rgb and 255) - (c and 255)
+    //$$         val dist = dr * dr + dg * dg + db * db
+    //$$         if (dist < bestDist) {
+    //$$             bestDist = dist
+    //$$             best = legacyCodes[i]
+    //$$         }
+    //$$     }
+    //$$     return best
+    //$$ }
+    //$$
+    //$$ private fun codesFor(style: Style): String {
+    //$$     if (style.isEmpty) return ""
+    //$$     return buildString {
+    //$$     val rgb = style.color?.rgb
+    //$$     val exact = if (rgb == null) null else codeLut[rgb]
+    //$$     append('§').append(exact ?: if (rgb == null) 'r' else nearestLegacy(rgb))
+    //$$     if (style.isBold) append("§l")
+    //$$     if (style.isItalic) append("§o")
+    //$$     if (style.isUnderlined) append("§n")
+    //$$     if (style.isStrikethrough) append("§m")
+    //$$     if (style.isObfuscated) append("§k")
+    //$$     }
+    //$$ }
+    //$$
+    //$$ private fun Text.toLegacyCodes(): String {
+    //$$     val sb = StringBuilder()
+    //$$     var lastCodes: String? = null
+    //$$     visit({ style, str ->
+    //$$         if (str.isNotEmpty()) {
+    //$$             val codes = codesFor(style)
+    //$$             if (codes != lastCodes) {
+    //$$                 sb.append(codes)
+    //$$                 lastCodes = codes
+    //$$             }
+    //$$             sb.append(str)
+    //$$         }
+    //$$         Optional.empty<String>()
+    //$$     }, Style.EMPTY)
+    //$$     return sb.toString()
+    //$$ }
+    //$$
+    //$$ class StyledText internal constructor(
+    //$$     val plain: String,
+    //$$     private val starts: IntArray,
+    //$$     private val styles: Array<Style>,
+    //$$ ) {
+//$$     fun colorRgbAt(offset: Int): Int {
+//$$         val run = runIndexAt(offset)
+//$$         return if (run >= 0) styles[run].color?.rgb ?: -1 else -1
+//$$     }
+//$$
+//$$     private fun runIndexAt(offset: Int): Int {
+//$$         var candidate = -1
+//$$         for (i in starts.indices) {
+//$$             if (starts[i] <= offset) candidate = i else break
+//$$         }
+//$$         return candidate
+//$$     }
+//$$ }
+    //$$
+    //$$ /**
+    //$$  * Flattens a component into code-free text plus per-run styles.
+    //$$  *
+    //$$  * Plain text and style offsets come from the same walk, so offsets always
+    //$$  * line up. Unlike [toLegacyCodes] this performs no code deduplication and no
+    //$$  * colour quantisation, so it is lossless.
+    //$$  */
+    //$$ @JvmStatic
+    //$$ fun flattenStyled(component: Text): StyledText {
+    //$$     val starts = ArrayList<Int>()
+    //$$     val styles = ArrayList<Style>()
+    //$$     val sb = StringBuilder()
+    //$$     component.visit({ style, str ->
+    //$$         if (str.isNotEmpty()) {
+    //$$             starts.add(sb.length)
+    //$$             styles.add(style)
+    //$$             sb.append(str)
+    //$$         }
+    //$$         Optional.empty<String>()
+    //$$     }, Style.EMPTY)
+    //$$     return StyledText(
+    //$$         sb.toString(),
+    //$$         starts.toIntArray(),
+    //$$         styles.toTypedArray(),
+    //$$     )
+    //$$ }
+    //$$
+//$$ @JvmStatic
+//$$ fun styledColorRgb(styled: StyledText, offset: Int): Int = styled.colorRgbAt(offset)
+//$$
+//$$ @JvmStatic
+    //$$ fun appendStyledText(base: Text, text: String, rgb: Int): Text {
+    //$$     val part = Text.literal(text)
+    //$$     if (rgb >= 0) (part as MutableText).setStyle(Style.EMPTY.withColor(TextColor.fromRgb(rgb)))
+    //$$     (base as MutableText).append(part)
+    //$$     return base
+    //$$ }
+    //$$
+    //$$ @JvmStatic
+    //$$ fun appendPlainText(base: Text, text: String): Text {
+    //$$     (base as MutableText).append(Text.literal(text))
+    //$$     return base
+    //$$ }
+    //#endif
+
+    @JvmStatic
     fun getUnformattedTextForChat(component: IChatComponent): String =
         //#if MC < 1.16
         component.unformattedTextForChat
@@ -137,7 +388,7 @@ object TextCompat {
         //#if MC < 1.16
         base.appendText(text)
         //#else
-        //$$ (base as MutableText).append(text)
+        //$$ mutableAppend(base, createText(text))
         //#endif
 
     @JvmStatic
@@ -145,8 +396,34 @@ object TextCompat {
         //#if MC < 1.16
         base.appendSibling(sibling)
         //#else
-        //$$ (base as MutableText).append(sibling)
+        //$$ mutableAppend(base, sibling)
         //#endif
+
+    /**
+     * Deep-mutable copy: fresh root with a fresh siblings list at EVERY level.
+     * Packet-deserialized texts can carry immutable lists at any depth
+     * (vanilla codec output), so a top-level copy is not sufficient.
+     * Built with of()+append (never copy(), which the toolchain remaps).
+     */
+    @JvmStatic
+    fun deepMutableCopy(base: IChatComponent): IChatComponent =
+        //#if MC < 1.16
+        base
+        //#else
+        //$$ deepCopy(base)
+        //#endif
+
+    //$$ private fun deepCopy(text: Text): MutableText {
+    //$$     val out = MutableText.of(text.content).setStyle(text.style)
+    //$$     for (s in text.siblings) out.append(deepCopy(s))
+    //$$     return out
+    //$$ }
+    //$$
+    //$$ private fun mutableAppend(base: Text, sibling: Text): Text {
+    //$$     val target = (base as? MutableText)?.takeIf { it.siblings is ArrayList<*> } ?: deepCopy(base)
+    //$$     target.append(sibling)
+    //$$     return target
+    //$$ }
 
     @JvmStatic
     fun getChatStyle(component: IChatComponent): ChatStyle =
@@ -333,7 +610,7 @@ object TextCompat {
         //#if MC < 1.16
         style.setChatHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, ChatComponentText(text)))
         //#else
-        //$$ style.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(text)))
+        //$$ style.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, parseFormattingCodes(text)))
         //#endif
 
     @JvmStatic
@@ -390,7 +667,7 @@ object TextCompat {
         //#if MC < 1.16
         component.chatStyle.setChatHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, ChatComponentText(text)))
         //#else
-        //$$ (component as MutableText).setStyle(component.style.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(text))))
+        //$$ (component as MutableText).setStyle(component.style.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, parseFormattingCodes(text))))
         //#endif
         return component
     }

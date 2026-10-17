@@ -1,10 +1,15 @@
 package io.hamlook.aetheria.mixins.chat;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.features.chat.ChatCompactHandler;
+import io.hamlook.aetheria.features.chat.ChatLineHook;
 import io.hamlook.aetheria.features.chat.ChatUtilsState;
 import io.hamlook.aetheria.features.chat.GuiNewChatHook;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.hooks.ChatHook;
+import io.hamlook.aetheria.utils.hooks.ChatLineInitHook;
 //#if MC < 1.16
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ChatLine;
@@ -13,8 +18,10 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiNewChat;
 import net.minecraft.util.IChatComponent;
 //#else
+//$$ import com.llamalad7.mixinextras.sugar.Local;
 //$$ import net.minecraft.client.MinecraftClient;
 //$$ import net.minecraft.client.gui.hud.ChatHudLine;
+//$$ import net.minecraft.client.gui.hud.ChatHudLine.Visible;
 //$$ import net.minecraft.client.font.TextRenderer;
 //$$ import net.minecraft.client.gui.DrawContext;
 //$$ import net.minecraft.client.gui.hud.ChatHud;
@@ -31,6 +38,7 @@ import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
+import java.util.logging.Level;
 
 //#if MC < 1.16
 @Mixin(GuiNewChat.class)
@@ -54,7 +62,12 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
     private void athr$beforeSetChatLine(IChatComponent component, int chatLineId,
                                          int updateCounter, boolean refresh, CallbackInfo ci) {
         ChatUtilsState.currentFullMessage = component;
-        ChatCompactHandler.handleChatMessage(component, refresh, this.chatLines, this.drawnChatLines);
+        try {
+            ChatCompactHandler.handleChatMessage(component, refresh, this.chatLines, this.drawnChatLines);
+        } catch (Exception e) {
+            // A handler failure must not stop vanilla from adding the chat line.
+            Aetheria.logger.log(Level.WARNING, "[ATHR] chat compact handler failed", e);
+        }
     }
 
     @Inject(method = "setChatLine", at = @At("TAIL"))
@@ -94,8 +107,14 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
     }
 
     @Inject(method = "drawChat", at = @At("HEAD"))
-    private void athr$applyAnimation(int updateCounter, CallbackInfo ci) {
+    private void athr$pushChatAnimation(int updateCounter, CallbackInfo ci) {
+        GlStateManagerCompat.pushMatrix();
         ChatHook.applyAnimation(updateCounter);
+    }
+
+    @Inject(method = "drawChat", at = @At("TAIL"))
+    private void athr$popChatAnimation(int updateCounter, CallbackInfo ci) {
+        GlStateManagerCompat.popMatrix();
     }
 
     @Inject(method = "drawChat", at = @At("HEAD"))
@@ -166,10 +185,27 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 //$$
 //$$     @Inject(
 //$$             method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
-//$$             at = @At("HEAD"))
+//$$             at = @At("HEAD"), cancellable = true)
 //$$     private void athr$beforeAddMessage(Text component, MessageSignatureData signature, MessageIndicator indicator, CallbackInfo ci) {
+//$$         if (ChatCompactHandler.reentering) return;
 //$$         ChatUtilsState.currentFullMessage = component;
-//$$         ChatCompactHandler.handleChatMessage(component, false, this.messages, this.visibleMessages);
+//$$         try {
+//$$             ChatCompactHandler.handleChatMessage(component, false, this.messages, this.visibleMessages);
+//$$         } catch (Exception e) {
+//$$             // A handler failure must not stop vanilla from adding the chat line.
+//$$             Aetheria.logger.log(Level.WARNING, "[ATHR] chat compact handler failed", e);
+//$$         }
+//$$         Text replacement = ChatCompactHandler.takeReplacement();
+//$$         if (replacement != null) {
+//$$             ChatCompactHandler.reentering = true;
+//$$             try {
+//$$                 ((ChatHud)(Object)this).addMessage(replacement, signature, indicator);
+//$$             } finally {
+//$$                 ChatCompactHandler.reentering = false;
+//$$             }
+//$$             ci.cancel();
+//$$             return;
+//$$         }
 //$$         ChatHook.shouldResetAnimation(false);
 //$$     }
 //$$
@@ -184,8 +220,18 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 //$$     @Inject(
 //$$             method = "addMessage(Lnet/minecraft/client/gui/hud/ChatHudLine;)V",
 //$$             at = @At("TAIL"))
-//$$     private void athr$trackChatLine(ChatHudLine line) {
+//$$     private void athr$trackChatLine(ChatHudLine line, CallbackInfo ci) {
 //$$         ChatCompactHandler.trackChatLine(line);
+//$$         ChatLineInitHook.tagHead(line);
+//$$     }
+//$$
+//$$     @Redirect(
+//$$             method = "addVisibleMessage",
+//$$             at = @At(value = "INVOKE", target = "Ljava/util/List;add(ILjava/lang/Object;)V"))
+//$$     private void athr$linkParent(List<Object> list, int index, Object element,
+//$$             @Local(argsOnly = true) ChatHudLine parent) {
+//$$         ((ChatLineHook) element).athr$setParentLine(parent);
+//$$         list.add(index, element);
 //$$     }
 //$$
 //$$     @ModifyConstant(
@@ -204,14 +250,36 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 //$$         ci.cancel();
 //$$     }
 //$$
-//$$     @Inject(method = "render", at = @At("HEAD"))
-//$$     private void athr$applyAnimation(DrawContext context, int currentTick, int mouseX, int mouseY, boolean focused, CallbackInfo ci) {
-//$$         ChatHook.applyAnimation(currentTick);
-//$$     }
-//$$
+    //$$     @Inject(method = "render", at = @At("HEAD"))
+    //$$     private void athr$pushChatAnimation(DrawContext context, int currentTick, int mouseX, int mouseY, boolean focused, CallbackInfo ci) {
+    //$$         DrawContextUtils.setContext(context);
+    //$$         try {
+    //$$             DrawContextUtils.pushMatrix();
+    //$$             ChatHook.applyAnimation(currentTick);
+    //$$         } finally {
+    //$$             DrawContextUtils.clearContext();
+    //$$         }
+    //$$     }
+    //$$
+    //$$     @Inject(method = "render", at = @At("TAIL"))
+    //$$     private void athr$popChatAnimation(DrawContext context, int currentTick, int mouseX, int mouseY, boolean focused, CallbackInfo ci) {
+    //$$         DrawContextUtils.setContext(context);
+    //$$         try {
+    //$$             DrawContextUtils.popMatrix();
+    //$$         } finally {
+    //$$             DrawContextUtils.clearContext();
+    //$$         }
+    //$$     }
+    //$$
 //$$     @Inject(method = "render", at = @At("HEAD"))
 //$$     private void athr$computeHoveredLine(DrawContext context, int currentTick, int mouseX, int mouseY, boolean focused, CallbackInfo ci) {
 //$$         ChatHook.computeHoveredVisible(this.visibleMessages, this.scrolledLines, (float) getChatScale(), getVisibleLineCount(), mouseX, mouseY);
+//$$     }
+//$$
+//$$     @ModifyVariable(method = "render", at = @At("STORE"))
+//$$     private Visible athr$captureRenderLine(Visible visible) {
+//$$         ChatHook.setRenderVisible(visible);
+//$$         return visible;
 //$$     }
 //$$
 //$$     @Redirect(

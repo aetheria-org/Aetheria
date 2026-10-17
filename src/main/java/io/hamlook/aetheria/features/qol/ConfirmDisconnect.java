@@ -6,6 +6,7 @@ import io.hamlook.aetheria.events.ASMActionPerformedEvent;
 import io.hamlook.aetheria.events.ASMGuiDrawEvent;
 import io.hamlook.aetheria.events.ASMGuiInitEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiIngameMenu;
 
@@ -26,7 +27,7 @@ public class ConfirmDisconnect {
 
         for (Object obj : event.buttonList) {
             GuiButton btn = (GuiButton) obj;
-            if (btn.id == 1) {
+            if ("Disconnect".equals(GuiScreenUtils.getButtonMessage(btn))) {
                 disconnectButton = btn;
                 break;
             }
@@ -39,7 +40,7 @@ public class ConfirmDisconnect {
 
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.confirmDisconnect) return;
 
-        if (event.button.id != 1) return;
+        if (event.button != disconnectButton) return;
 
         if (System.currentTimeMillis() - lastClick > 3000L) {
             confirm = false;
@@ -51,7 +52,7 @@ public class ConfirmDisconnect {
             confirm = true;
             lastClick = System.currentTimeMillis();
 
-            event.button.displayString = "§cPress again to confirm";
+            GuiScreenUtils.setButtonMessage(event.button, "§cPress again to confirm");
         } else {
             confirm = false;
         }
@@ -65,7 +66,7 @@ public class ConfirmDisconnect {
             confirm = false;
 
             if (disconnectButton != null) {
-                disconnectButton.displayString = "Disconnect";
+                GuiScreenUtils.setButtonMessage(disconnectButton, "Disconnect");
             }
         }
     }

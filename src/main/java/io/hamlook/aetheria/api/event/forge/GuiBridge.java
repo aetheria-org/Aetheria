@@ -1,8 +1,11 @@
 package io.hamlook.aetheria.api.event.forge;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.DrawContext;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 //#if FORGE
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
@@ -23,6 +26,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 //$$ import net.fabricmc.fabric.api.event.player.UseItemCallback;
 //$$ import net.minecraft.client.gui.Element;
 //$$ import net.minecraft.client.gui.screen.Screen;
+//$$ import net.minecraft.client.gui.widget.ButtonWidget;
 //$$ import net.minecraft.client.gui.widget.ClickableWidget;
 //$$ import net.minecraft.client.gui.widget.Widget;
 //$$ import net.minecraft.entity.Entity.RemovalReason;
@@ -36,10 +40,23 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 //$$ import java.util.IdentityHashMap;
 //$$ import java.util.List;
 //$$ import java.util.Map;
+//$$ import java.util.logging.Level;
 //#endif
 
 @RegisterEvents
 public class GuiBridge {
+
+    //$$ private static long lastGuiErrorMs = 0;
+    //$$ private static int suppressedGuiErrors = 0;
+    //$$
+    //$$ private static void logGuiError(Throwable t) {
+    //$$     long now = System.currentTimeMillis();
+    //$$     suppressedGuiErrors++;
+    //$$     if (now - lastGuiErrorMs < 5000) return;
+    //$$     Aetheria.logger.log(Level.SEVERE, "[ATHR] GUI render dispatch failed x" + suppressedGuiErrors, t);
+    //$$     lastGuiErrorMs = now;
+    //$$     suppressedGuiErrors = 0;
+    //$$ }
 
     //#if FORGE
     @SubscribeEvent
@@ -133,7 +150,7 @@ public class GuiBridge {
         new ASMLivingDeathEvent(event.entity).post();
     }
     //#else
-    //$$ private static final Map<Screen, List<Widget>> athr$lastButtons = new IdentityHashMap<>();
+    //$$ private static final Map<Screen, List<ButtonWidget>> athr$lastButtons = new IdentityHashMap<>();
     //$$
     //$$ static {
     //$$     ScreenEvents.BEFORE_INIT.register((client, screen, width, height) ->
@@ -163,39 +180,49 @@ public class GuiBridge {
     //$$         return ActionResult.PASS;
     //$$     });
     //$$     ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
-    //$$         List<String> plain = new ArrayList<>(lines.size());
-    //$$         for (int i = 0; i < lines.size(); i++) plain.add(lines.get(i).getString());
+    //$$         List<String> coded = new ArrayList<>(lines.size());
+    //$$         for (int i = 0; i < lines.size(); i++) coded.add(TextCompat.getFormattedText(lines.get(i)));
+    //$$         List<String> plain = new ArrayList<>(coded);
     //$$         new ASMTooltipEvent(stack, plain).post();
+    //$$         for (int i = 0; i < lines.size() && i < plain.size(); i++) {
+    //$$             if (plain.get(i).equals(coded.get(i))) continue;
+    //$$             lines.set(i, TextCompat.fromFormatted(plain.get(i)));
+    //$$         }
+    //$$         for (int i = plain.size(); i < lines.size();) lines.remove(plain.size());
+    //$$         for (int i = lines.size(); i < plain.size(); i++) lines.add(TextCompat.fromFormatted(plain.get(i)));
     //$$     });
     //$$ }
     //$$
-    //$$ private static List<Widget> athr$takeButtons(Screen screen) {
-    //$$     List<Widget> known = athr$lastButtons.get(screen);
+    //$$ private static List<ButtonWidget> athr$takeButtons(Screen screen) {
+    //$$     List<ButtonWidget> known = athr$lastButtons.get(screen);
     //$$     return known != null ? known : new ArrayList<>();
     //$$ }
     //$$
     //$$ private static void athr$wireScreen(Screen screen) {
-    //$$     List<Element> children = screen.children();
-    //$$     List<Widget> buttons = new ArrayList<>();
-    //$$     for (int i = 0; i < children.size(); i++) {
-    //$$         Element child = children.get(i);
-    //$$         if (child instanceof ClickableWidget) buttons.add((Widget) child);
+    //$$     List<ButtonWidget> buttons = new ArrayList<>();
+    //$$     for (Element child : screen.children()) {
+    //$$         if (child instanceof ButtonWidget) buttons.add((ButtonWidget) child);
     //$$     }
     //$$     athr$lastButtons.put(screen, buttons);
     //$$     new ASMGuiInitEvent(screen, buttons).post();
     //$$     ScreenMouseEvents.allowMouseClick(screen).register((s, mouseX, mouseY, button) -> {
-    //$$         ASMMouseEvent mouseEvent = new ASMMouseEvent(s);
+    //$$         ASMMouseEvent mouseEvent = new ASMMouseEvent(s, button, true, 0, (int) mouseX, (int) mouseY);
+    //$$         mouseEvent.post();
+    //$$         return !mouseEvent.isCancelled();
+    //$$     });
+    //$$     ScreenMouseEvents.allowMouseScroll(screen).register((s, mouseX, mouseY, horizontalAmount, verticalAmount) -> {
+    //$$         ASMMouseEvent mouseEvent = new ASMMouseEvent(s, -1, false, (int) (verticalAmount * 120), (int) mouseX, (int) mouseY);
     //$$         mouseEvent.post();
     //$$         return !mouseEvent.isCancelled();
     //$$     });
     //$$     ScreenMouseEvents.allowMouseClick(screen).register((s, mouseX, mouseY, button) -> {
     //$$         if (button != 0) return true;
-    //$$         Widget target = null;
-    //$$         List<Element> kids = s.children();
+    //$$         ButtonWidget target = null;
+    //$$         List<? extends Element> kids = s.children();
     //$$         for (int i = kids.size() - 1; i >= 0; i--) {
     //$$             Element child = kids.get(i);
-    //$$             if (child instanceof ClickableWidget) {
-    //$$                 ClickableWidget widget = (ClickableWidget) child;
+    //$$             if (child instanceof ButtonWidget) {
+    //$$                 ButtonWidget widget = (ButtonWidget) child;
     //$$                 if (widget.isMouseOver(mouseX, mouseY)) {
     //$$                     target = widget;
     //$$                     break;
@@ -210,6 +237,8 @@ public class GuiBridge {
     //$$     ScreenMouseEvents.afterMouseClick(screen).register((s, mouseX, mouseY, button) ->
     //$$         new ASMGuiMousePostEvent().post());
     //$$     ScreenKeyboardEvents.allowKeyPress(screen).register((s, key, scancode, modifiers) -> {
+    //$$         while (KeyboardCompat.next()) {
+    //$$         }
     //$$         ASMKeyEvent keyEvent = new ASMKeyEvent(s);
     //$$         keyEvent.post();
     //$$         return !keyEvent.isCancelled();
@@ -220,14 +249,32 @@ public class GuiBridge {
     //$$         new ASMGuiDrawPreEvent(new DrawContext(), s, mouseX, mouseY).post();
     //#else
     //$$         new ASMGuiBackgroundDrawEvent(context, s).post();
-    //$$         new ASMGuiDrawPreEvent(context, s, mouseX, mouseY).post();
+    //$$         context.draw(() -> {
+    //$$             try {
+    //$$                 new ASMGuiDrawPreEvent(context, s, mouseX, mouseY).post();
+    //$$             } catch (Throwable t) {
+    //$$                 logGuiError(t);
+    //$$             }
+    //$$         });
     //#endif
     //$$     });
     //$$     ScreenEvents.afterRender(screen).register((s, context, mouseX, mouseY, tickDelta) ->
     //#if MC < 1.21
     //$$         new ASMGuiDrawEvent(new DrawContext(), s, mouseX, mouseY).post());
     //#else
-    //$$         new ASMGuiDrawEvent(context, s, mouseX, mouseY).post());
+    //$$         context.draw(() -> {
+    //$$             try {
+    //$$         context.draw(() -> {
+    //$$             try {
+    //$$                 new ASMGuiDrawEvent(context, s, mouseX, mouseY).post();
+    //$$             } catch (Throwable t) {
+    //$$                 logGuiError(t);
+    //$$             }
+    //$$         });
+    //$$             } catch (Throwable t) {
+    //$$                 logGuiError(t);
+    //$$             }
+    //$$         }));
     //#endif
     //$$ }
     //#endif

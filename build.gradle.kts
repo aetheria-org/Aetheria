@@ -144,6 +144,8 @@ dependencies {
         target.fabricLoaderVersion?.let { modImplementation(it) }
         target.fabricApiVersion?.let { modImplementation(it) }
         modImplementation("net.fabricmc:fabric-language-kotlin:1.12.0+kotlin.2.0.10")
+        modImplementation("io.github.llamalad7:mixinextras-fabric:0.4.1")
+        annotationProcessor("io.github.llamalad7:mixinextras-fabric:0.4.1")
     }
 
     shadowImpl("org.java-websocket:Java-WebSocket:1.6.0") { isTransitive = false }

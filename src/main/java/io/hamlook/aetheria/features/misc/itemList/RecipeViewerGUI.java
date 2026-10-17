@@ -6,6 +6,7 @@ import io.hamlook.aetheria.features.misc.itemList.recipe.RecipeFactory;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.KeybindCompat;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
@@ -48,7 +49,7 @@ public class RecipeViewerGUI extends AetheriaBaseScreen {
     @Override public void guiClosed() { KeyboardCompat.enableRepeatEvents(false); }
     @Override public boolean doesGuiPauseGame() { return false; }
 
-    private void close() {
+    private void closeToParent() {
         mc.displayGuiScreen(parentScreen);
     }
 
@@ -83,8 +84,11 @@ public class RecipeViewerGUI extends AetheriaBaseScreen {
     @Override
     protected void onKeyTyped(char c, int key) {
         if (ItemPaneRenderer.INSTANCE != null) ItemPaneRenderer.INSTANCE.handleKeyInput();
-        if (key == Keyboard.KEY_ESCAPE || key == mc.gameSettings.keyBindInventory.getKeyCode())
-            close();
+        if (KeybindCompat.inventoryKeyMatches(key)
+                && ItemPaneRenderer.INSTANCE != null && ItemPaneRenderer.INSTANCE.isSearchFocused())
+            return;
+        if (key == Keyboard.KEY_ESCAPE || KeybindCompat.inventoryKeyMatches(key))
+            closeToParent();
     }
 
     @Override
@@ -130,7 +134,7 @@ public class RecipeViewerGUI extends AetheriaBaseScreen {
                 Minecraft mc = MinecraftCompat.getMinecraft();
                 int mx = KeybindHelper.getScaledEventX(width);
                 int my = KeybindHelper.getScaledEventY(height);
-                ItemPaneRenderer.INSTANCE.handleMouseInput(width, height, mx, my, null);
+                ItemPaneRenderer.INSTANCE.handleMouseInput(width, height, mx, my, -1, false, dw);
             }
             scrollY += dw > 0 ? -20 : 20;
             if (scrollY < 0) scrollY = 0;
@@ -164,7 +168,7 @@ public class RecipeViewerGUI extends AetheriaBaseScreen {
                 int ly = boxY + 32;
                 for (String line : item.baseLore) {
                     if (ly + 10 > boxY + boxH - NAV_H) break;
-                    drawCenteredString(MinecraftCompat.getFontRenderer(), line, cx, ly, 0xFFFFFF);
+                    DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), line, cx, ly, 0xFFFFFF);
                     ly += 10;
                 }
             }
@@ -199,9 +203,9 @@ public class RecipeViewerGUI extends AetheriaBaseScreen {
 
             if (recipes.size() > 1) {
                 int arrowY = boxY + boxH - NAV_H + 4;
-                drawCenteredString(MinecraftCompat.getFontRenderer(), "<", boxX + 20, arrowY, 0xFFFFFF);
-                drawCenteredString(MinecraftCompat.getFontRenderer(), ">", boxX + boxW - 20, arrowY, 0xFFFFFF);
-                drawCenteredString(MinecraftCompat.getFontRenderer(), "§7" + (recipeIndex + 1) + " / " + recipes.size(), cx, arrowY, 0xFFFFFF);
+                    DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), "<", boxX + 20, arrowY, 0xFFFFFF);
+                    DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), ">", boxX + boxW - 20, arrowY, 0xFFFFFF);
+                DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), "§7" + (recipeIndex + 1) + " / " + recipes.size(), cx, arrowY, 0xFFFFFF);
             }
 
             List<String> tip = current.getTooltip(mx, my, contentX, contentY, boxW, contentH, scrollY);

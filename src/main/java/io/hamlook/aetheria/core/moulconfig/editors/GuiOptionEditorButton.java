@@ -6,6 +6,7 @@ package io.hamlook.aetheria.core.moulconfig.editors;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -36,8 +37,7 @@ public class GuiOptionEditorButton extends GuiOptionEditor {
         int height = getHeight();
 
         GlStateManagerCompat.color(1, 1, 1, 1);
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(button_tex);
-        RenderUtils.drawTexturedRect(x + width / 6 - 24, y + height - 7 - 14, 48, 16);
+        TextureCompat.drawBoundTextured(button_tex, x + width / 6 - 24, y + height - 7 - 14, 48, 16, 0, 0, 1, 1);
 
         if (buttonText != null) {
             TextRenderUtils.drawStringCenteredScaledMaxWidth(buttonText, MinecraftCompat.getFontRenderer(), x + width / 6, y + height - 7 - 6, false, 44, 0xFF303030);
@@ -46,7 +46,12 @@ public class GuiOptionEditorButton extends GuiOptionEditor {
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
-        if (MouseCompat.getEventButtonState()) {
+        return mouseInput(x, y, width, mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
+        if (pressed) {
             int height = getHeight();
             if (mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24 && mouseY > y + height - 7 - 14 && mouseY < y + height - 7 + 2) {
                 invokeRunnable(runnableId);

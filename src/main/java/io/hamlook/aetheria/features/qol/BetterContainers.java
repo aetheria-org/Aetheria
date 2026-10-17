@@ -6,15 +6,22 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.ColoredBlockCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.compat.ResourceCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
+//#if MC < 1.21
+//#else
+//$$ import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
+//$$ import net.minecraft.inventory.Inventory;
+//$$ import net.minecraft.screen.GenericContainerScreenHandler;
+//$$ import net.minecraft.screen.ScreenHandler;
+//#endif
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StringUtils;
@@ -30,7 +37,6 @@ public final class BetterContainers {
 
     private static final BetterContainers INSTANCE = new BetterContainers();
 
-    private DynamicTexture dynamicTexture = null;
     @Getter
     private boolean loaded = false;
     private int lastInvIdentity = -1;
@@ -69,27 +75,46 @@ public final class BetterContainers {
             regenerate(lower);
         }
 
-        if (!loaded || dynamicTexture == null) {
+        if (!loaded) {
             return false;
         }
 
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        mc.getTextureManager().loadTexture(Resources.BETTER_CONTAINERS_DYNAMIC, dynamicTexture);
-        mc.getTextureManager().bindTexture(Resources.BETTER_CONTAINERS_DYNAMIC);
+        TextureCompat.bindTexture(Resources.BETTER_CONTAINERS_DYNAMIC);
         return true;
     }
 
     public void reset() {
         loaded          = false;
         lastInvIdentity = -1;
-        dynamicTexture  = null;
     }
+
+    //#if MC < 1.21
+    //#else
+    //$$ public boolean tryPrepareDynamic(GenericContainerScreen screen) {
+    //$$     if (!isEnabled() || !ContainerUtils.isChestOpen()) return false;
+    //$$     ScreenHandler handler = screen.getScreenHandler();
+    //$$     if (!(handler instanceof GenericContainerScreenHandler)) return false;
+    //$$     Inventory lower = ((GenericContainerScreenHandler) handler).getInventory();
+    //$$     if (lower == null) return false;
+    //$$     int identity = System.identityHashCode(lower);
+    //$$     int style = currentStyle();
+    //$$     if (!loaded || identity != lastInvIdentity || style != lastLoadedStyle) {
+    //$$         lastInvIdentity = identity;
+    //$$         regenerate(lower);
+    //$$     }
+    //$$     return loaded;
+    //$$ }
+    //#endif
 
 
     public static boolean isBlankPane(ItemStack stack) {
         if (stack == null) return false;
+        //#if MC < 1.16
         if (stack.getItem() != ColoredBlockCompat.WHITE.createGlassPaneStack().getItem()) return false;
         if (stack.getItemDamage() != 15) return false;
+        //#else
+        //$$ if (stack.getItem() != ColoredBlockCompat.BLACK.createGlassPaneStack().getItem()) return false;
+        //#endif
         String name = TextCompat.getFormattedText(stack.getDisplayName());
         if (name == null) return true;
         return StringUtils.stripControlCodes(name).trim().isEmpty();
@@ -175,12 +200,7 @@ public final class BetterContainers {
                 out.setRGB(dstX, dstY, 18 * hMult, 18 * vMult, pixels, 0, 18 * hMult);
             }
 
-            if (dynamicTexture != null) {
-                out.getRGB(0, 0, w, h, dynamicTexture.getTextureData(), 0, w);
-                dynamicTexture.updateDynamicTexture();
-            } else {
-                dynamicTexture = new DynamicTexture(out);
-            }
+            TextureCompat.uploadTexture(Resources.BETTER_CONTAINERS_DYNAMIC, out);
             loaded = true;
 
         } catch (Exception e) {

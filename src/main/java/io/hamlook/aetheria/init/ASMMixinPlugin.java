@@ -6,6 +6,7 @@
 
 package io.hamlook.aetheria.init;
 
+import io.hamlook.aetheria.core.LogBridge;
 //#if MC < 1.16
 import org.spongepowered.asm.lib.tree.ClassNode;
 //#else
@@ -23,8 +24,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ASMMixinPlugin implements IMixinConfigPlugin {
+
+    private static final Logger LOG = Logger.getLogger("[ATHR] ");
 
     private String mixinPackage;
     private List<String> mixins;
@@ -32,6 +37,7 @@ public class ASMMixinPlugin implements IMixinConfigPlugin {
     @Override
     public void onLoad(String mixinPackage) {
         this.mixinPackage = mixinPackage;
+        LogBridge.install(LOG);
     }
 
     @Override
@@ -40,10 +46,10 @@ public class ASMMixinPlugin implements IMixinConfigPlugin {
         mixins = new ArrayList<>();
         try {
             URL location = getClass().getProtectionDomain().getCodeSource().getLocation();
-            System.out.println("[ASMMixinPlugin] Raw location: " + location);
+            LOG.info("[ASMMixinPlugin] Raw location: " + location);
 
             Path root = resolveRoot(location);
-            System.out.println("[ASMMixinPlugin] Resolved root: " + root);
+            LOG.info("[ASMMixinPlugin] Resolved root: " + root);
 
             String basePath = mixinPackage.replace('.', '/');
             Predicate<String> filter = fqn -> fqn.startsWith(mixinPackage + ".") && !fqn.contains("$");
@@ -57,10 +63,9 @@ public class ASMMixinPlugin implements IMixinConfigPlugin {
             for (String fqn : fqns) {
                 mixins.add(fqn.substring(mixinPackage.length() + 1));
             }
-            System.out.println("[ASMMixinPlugin] Found mixins: " + mixins);
+            LOG.info("[ASMMixinPlugin] Found mixins: " + mixins);
         } catch (Exception e) {
-            System.out.println("[ASMMixinPlugin] FAILED: " + e);
-            e.printStackTrace(System.out);
+            LOG.log(Level.SEVERE, "[ASMMixinPlugin] FAILED", e);
         }
         return mixins;
     }

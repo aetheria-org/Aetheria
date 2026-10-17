@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.misc.itemList.recipe;
 
 import com.google.gson.JsonArray;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
@@ -58,7 +59,7 @@ public class DropsRecipe extends Recipe {
 
         int sf = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x * sf, (MinecraftCompat.getMinecraft().displayHeight - (y + height) * sf), width * sf, height * sf);
+        GlStateManagerCompat.scissor(x * sf, (MinecraftCompat.getDisplayHeight() - (y + height) * sf), width * sf, height * sf);
 
         for (int i = 0; i < drops.size(); i++) {
             int sy = listY + i * ROW_H - scrollY;

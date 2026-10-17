@@ -12,7 +12,13 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.DungeonUtils;
+import net.minecraft.client.gui.GuiScreen;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import net.minecraft.client.gui.inventory.GuiChest;
+//#if MC < 1.21
+//#else
+//$$ import net.minecraft.client.gui.screen.ingame.HandledScreen;
+//#endif
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
@@ -24,7 +30,7 @@ import java.util.Map;
 public class ChestListener {
 
     private static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII"};
-    public static GuiChest originalGui;
+    public static GuiScreen originalGui;
     private static WorldClient lastWorld = null;
     private final Map<Integer, Boolean> crOpenedChestOb = new HashMap<>();
     private final Map<Integer, Boolean> crOpenedChestBr = new HashMap<>();
@@ -134,7 +140,17 @@ public class ChestListener {
         }
 
         DebugLogger.log("[ChestListener] Intercepting chest → floor=" + curFloor + ", material=" + curMaterial);
+        //#if MC < 1.21
         event.gui = new GuiInterceptChest(container, curFloor, curMaterial);
+        //#else
+        //$$ if (event.gui instanceof HandledScreen) {
+        //$$     HandledScreen<?> screen = (HandledScreen<?>) event.gui;
+        //$$     event.gui = new GuiInterceptChest(screen.getScreenHandler(), MinecraftCompat.getLocalPlayer().getInventory(), screen.getTitle(), curFloor, curMaterial);
+        //$$ } else {
+        //$$     DebugLogger.log("[ChestListener] Not a container screen, skipping intercept");
+        //$$     return;
+        //$$ }
+        //#endif
     }
 
     @HandleEvent
@@ -143,7 +159,7 @@ public class ChestListener {
         if (!isCatacombsChestList) return;
 
         GuiChest chest = (GuiChest) MinecraftCompat.getCurrentScreen();
-        Slot hovered = chest.getSlotUnderMouse();
+        Slot hovered = InventoryCompat.getSlotUnderMouse(chest);
         if (hovered == null || !hovered.getHasStack()) return;
 
         String name = TextCompat.getUnformattedText(hovered.getStack().getDisplayName());
@@ -170,8 +186,8 @@ public class ChestListener {
     @HandleEvent
     public void onMouseClick(ASMMouseEvent event) {
         if (!ContainerUtils.isChestOpen(event.gui)) return;
-        Slot slot = ((GuiChest) event.gui).getSlotUnderMouse();
-        if (slot != null && MouseCompat.getEventButtonState() && isCroesus && !isCatacombsChestList) {
+        Slot slot = InventoryCompat.getSlotUnderMouse((GuiChest) event.gui);
+        if (slot != null && event.buttonState && isCroesus && !isCatacombsChestList) {
             chestID = slot.slotNumber;
             DebugLogger.log("[ChestListener] Croesus slot clicked: chestID=" + chestID);
         }

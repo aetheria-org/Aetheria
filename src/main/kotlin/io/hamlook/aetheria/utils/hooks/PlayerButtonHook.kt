@@ -15,6 +15,10 @@ import net.minecraft.client.gui.FontRenderer
 import net.minecraft.client.gui.GuiTextField
 import net.minecraft.util.IChatComponent
 import org.lwjgl.input.Keyboard
+//#if MC < 1.21
+//#else
+//$$ import org.lwjgl.glfw.GLFW as Glfw
+//#endif
 import kotlin.math.max
 import kotlin.math.min
 
@@ -132,7 +136,11 @@ object PlayerButtonHook {
 
     @JvmStatic
     fun handleKeyTyped(keyCode: Int): Boolean {
+        //#if MC < 1.21
         if (menuPlayer != null && keyCode == Keyboard.KEY_ESCAPE) {
+        //#else
+        //$$ if (menuPlayer != null && keyCode == Glfw.GLFW_KEY_ESCAPE) {
+        //#endif
             menuPlayer = null
             return true
         }

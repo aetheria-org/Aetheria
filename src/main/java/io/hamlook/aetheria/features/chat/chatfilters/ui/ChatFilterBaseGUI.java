@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.chat.chatfilters.ui;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
@@ -18,6 +19,18 @@ abstract class ChatFilterBaseGUI extends AetheriaBaseScreen {
         return ATHRConfig.feature.chat.chatFilterConfig.uiScale;
     }
 
+    /**
+     * Re-runs this screen's layout pass. Legacy calls vanilla initGui;
+     * modern has no such method, so the layout hook runs directly.
+     */
+    protected void refreshGui() {
+        //#if MC < 1.21
+        initGui();
+        //#else
+        //$$ onInitGui();
+        //#endif
+    }
+
     protected int getScaledX(double entry) {
         return (int) (ResolutionUtils.getXStatic(1) * entry * 2.0 * configScale());
     }
@@ -30,7 +43,7 @@ abstract class ChatFilterBaseGUI extends AetheriaBaseScreen {
         int scale = GuiScreenUtils.getScaleFactor();
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + height) * scale, width * scale, height * scale);
+        GlStateManagerCompat.scissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + height) * scale, width * scale, height * scale);
     }
 
     protected void stopScissor() {

@@ -26,11 +26,6 @@ public class EnchantParserConfig {
     public boolean enchantChroma = true;
 
     @Expose
-    @ConfigOption(name = "Chroma Speed", desc = "Speed of the rainbow animation. Lower values animate faster.")
-    @ConfigEditorSliderAnnotation(minValue = 10f, maxValue = 5000f, minStep = 10f)
-    public int enchantChromaSpeed = 1000;
-
-    @Expose
     @ConfigOption(name = "Chroma Mode", desc = "All Same: one color. Fade: color shifts across the text.")
     @ConfigEditorDropdown(values = {"All Same", "Fade"})
     public int enchantChromaMode = 1;
@@ -53,15 +48,15 @@ public class EnchantParserConfig {
     @Expose
     @ConfigOption(name = "Great Color", desc = "Color for enchants one level below max.")
     @ConfigEditorColour
-    public String enchantGreatColor = "0:255:85:85:255";
+    public String enchantGreatColor = "224:255:85:85:255";
 
     @Expose
     @ConfigOption(name = "Perfect Color", desc = "Color for enchants at max level.")
     @ConfigEditorColour
-    public String enchantPerfectColor = "0:255:255:85:255";
+    public String enchantPerfectColor = "222:255:255:0:15";
 
     @Expose
     @ConfigOption(name = "Ultimate Color", desc = "Color for ultimate enchants.")
     @ConfigEditorColour
-    public String enchantUltimateColor = "0:255:255:85:255";
+    public String enchantUltimateColor = "0:255:250:0:255";
 }

@@ -1,36 +1,44 @@
 package io.hamlook.aetheria.features.chat;
 
 import io.hamlook.aetheria.utils.compat.TextCompat;
-import net.minecraft.util.ChatStyle;
 import net.minecraft.util.IChatComponent;
 
-import java.util.Collections;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.WeakHashMap;
 
 /**
- * A wrapper component that marks timestamp-prefixed chat lines so
- * {@link ChatCompactHandler} can skip them during hash computation.
- * <p>
- * On 1.21+, {@code LiteralText} was removed so we can no longer extend
- * {@code ChatComponentText}. Instead this class implements {@link IChatComponent}
- * by delegation and tracks all instances in a static {@link WeakHashMap}-backed set.
+ * Marks timestamp-prefixed chat lines so {@link ChatCompactHandler} can skip them
+ * during hash computation. Tracked by identity: 1.8.9 {@code ChatStyle.hashCode()}
+ * throws on unset fields, and a 1.21 {@code Style} would match equal components.
  */
 public class ChatComponentIgnored {
 
-    private static final Set<IChatComponent> TRACKED =
-            Collections.newSetFromMap(new WeakHashMap<>());
+    private static final List<WeakReference<IChatComponent>> TRACKED = new ArrayList<>();
 
     private final IChatComponent wrapped;
 
     public ChatComponentIgnored(String msg) {
-        this.wrapped = TextCompat.createText(msg);
-        TRACKED.add(this.wrapped);
+        this.wrapped = TextCompat.fromFormatted(msg);
+        synchronized (TRACKED) {
+            TRACKED.add(new WeakReference<>(this.wrapped));
+        }
     }
 
     public static boolean isIgnored(IChatComponent component) {
-        return TRACKED.contains(component);
+        if (component == null) return false;
+        synchronized (TRACKED) {
+            for (Iterator<WeakReference<IChatComponent>> it = TRACKED.iterator(); it.hasNext(); ) {
+                IChatComponent tracked = it.next().get();
+                if (tracked == null) {
+                    it.remove();
+                } else if (tracked == component) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public IChatComponent getWrapped() {

@@ -8,7 +8,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.ResourceCompat;
-import net.minecraft.client.renderer.texture.DynamicTexture;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
@@ -185,8 +185,24 @@ public class GCImage {
         ImageManager.images.put(gcImage.id, gcImage);
 
         ThreadUtils.run("GCImage-ResourceLoader-" + gcImage.id, () -> {
+            byte[] data = null;
+            for (int attempt = 0; attempt < 5 && data == null; attempt++) {
+                if (attempt > 0) {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+                try {
+                    data = ResourceCompat.openResource(loc);
+                } catch (Exception e) {
+                    handleFailure(gcImage, e);
+                    return;
+                }
+            }
             try {
-                byte[] data = ResourceCompat.openResource(loc);
                 if (data == null) {
                     handleFailure(gcImage, new IOException("Missing resource " + loc));
                     return;
@@ -295,12 +311,8 @@ public class GCImage {
                 if (gcImage.circularMask) {
                     bimg = applyCircularMask(bimg);
                 }
-                DynamicTexture dynamicTexture = new DynamicTexture(bimg);
-                ResourceLocation resLoc = MinecraftCompat.getMinecraft().getTextureManager()
-                        .getDynamicTextureLocation("gcimage_" + gcImage.id + "_" + i, dynamicTexture);
-                MinecraftCompat.getMinecraft().getTextureManager().bindTexture(resLoc);
-                GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
-                GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+                ResourceLocation resLoc = TextureCompat.dynamicLocation("gcimage_" + gcImage.id + "_" + i);
+                TextureCompat.uploadTexture(resLoc, bimg, true);
                 gcImage.frames.add(resLoc);
             }
             gcImage.images.clear();

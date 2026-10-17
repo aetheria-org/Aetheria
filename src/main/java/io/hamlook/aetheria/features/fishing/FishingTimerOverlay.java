@@ -8,11 +8,12 @@ import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.SoundUtils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.entity.projectile.EntityFishHook;
+import io.hamlook.aetheria.utils.render.WorldRenderUtils;
+import net.minecraft.entity.Entity;
 
 @RegisterEvents
 public class FishingTimerOverlay {
@@ -28,10 +29,9 @@ public class FishingTimerOverlay {
         if (event.phase != TickPhase.END) return;
         if (!isEnabled()) return;
 
-        Minecraft mc = MinecraftCompat.getMinecraft();
         if (MinecraftCompat.getLocalPlayer() == null) return;
 
-        EntityFishHook hook = MinecraftCompat.getLocalPlayer().fishEntity;
+        Entity hook = EntityCompat.getFishHook(MinecraftCompat.getLocalPlayer());
         if (hook == null) {
             alertPlayed = false;
             return;
@@ -56,65 +56,42 @@ public class FishingTimerOverlay {
     public void onRenderWorldLast(ASMRenderWorldEvent event) {
         if (!isEnabled()) return;
 
-        Minecraft mc = MinecraftCompat.getMinecraft();
         if (MinecraftCompat.getLocalPlayer() == null) return;
 
-        EntityFishHook hook = MinecraftCompat.getLocalPlayer().fishEntity;
+        Entity hook = EntityCompat.getFishHook(MinecraftCompat.getLocalPlayer());
         if (hook == null) return;
 
-        double x = hook.lastTickPosX + (hook.posX - hook.lastTickPosX) * event.partialTicks;
-        double y = hook.lastTickPosY + (hook.posY - hook.lastTickPosY) * event.partialTicks + 0.5;
-        double z = hook.lastTickPosZ + (hook.posZ - hook.lastTickPosZ) * event.partialTicks;
+        double x = EntityCompat.getPrevX(hook) + (EntityCompat.getPosX(hook) - EntityCompat.getPrevX(hook)) * event.partialTicks;
+        double y = EntityCompat.getPrevY(hook) + (EntityCompat.getPosY(hook) - EntityCompat.getPrevY(hook)) * event.partialTicks + 0.5;
+        double z = EntityCompat.getPrevZ(hook) + (EntityCompat.getPosZ(hook) - EntityCompat.getPrevZ(hook)) * event.partialTicks;
 
-        renderText(x, y, z, getTimerText(), getCurrentColor());
+        float seconds = hook.ticksExisted / 20f;
+        renderText(x, y, z, formatTimerText(seconds), colorForSeconds(seconds));
     }
 
-    private String getTimerText() {
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalPlayer().fishEntity == null) return "";
-
-        float seconds = MinecraftCompat.getLocalPlayer().fishEntity.ticksExisted / 20f;
+    private String formatTimerText(float seconds) {
         return String.format("%.2fs", seconds);
     }
 
-    private int getCurrentColor() {
+    private int colorForSeconds(float seconds) {
         if (ATHRConfig.feature == null) return 0xFFFFFFFF;
-
-        Minecraft mc = MinecraftCompat.getMinecraft();
-        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalPlayer().fishEntity == null) return 0xFFFFFFFF;
-
-        float seconds = MinecraftCompat.getLocalPlayer().fishEntity.ticksExisted / 20f;
         boolean alerted = seconds >= ATHRConfig.feature.fishing.fishingTimerConfig.fishingTimerAlertTime;
-
         return ChromaColour.specialToChromaRGB(alerted ? ATHRConfig.feature.fishing.fishingTimerConfig.fishingTimerAlertColor : ATHRConfig.feature.fishing.fishingTimerConfig.fishingTimerNormalColor);
     }
 
     private void renderText(double x, double y, double z, String text, int color) {
-        Minecraft mc = MinecraftCompat.getMinecraft();
-
-        double viewerX = mc.getRenderManager().viewerPosX;
-        double viewerY = mc.getRenderManager().viewerPosY;
-        double viewerZ = mc.getRenderManager().viewerPosZ;
-
-        GlStateManagerCompat.pushMatrix();
-        GlStateManagerCompat.translate(x - viewerX, y - viewerY, z - viewerZ);
-
-        GlStateManagerCompat.rotate(-mc.getRenderManager().playerViewY, 0, 1, 0);
-        GlStateManagerCompat.rotate(mc.getRenderManager().playerViewX, 1, 0, 0);
-
         float scale = 0.025f;
-        GlStateManagerCompat.scale(-scale, -scale, scale);
+        int width = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), text) / 2;
+
+        WorldRenderUtils.beginBillboard(x, y, z, scale);
 
         GlStateManagerCompat.disableLighting();
         GlStateManagerCompat.disableDepth();
 
-        FontRenderer fr = MinecraftCompat.getFontRenderer();
-        int width = fr.getStringWidth(text) / 2;
-
-        fr.drawString(text, -width, 0, color, true);
+        WorldRenderUtils.drawBillboardText(text, -width, 0, color, true);
 
         GlStateManagerCompat.enableDepth();
         GlStateManagerCompat.enableLighting();
-        GlStateManagerCompat.popMatrix();
+        WorldRenderUtils.endBillboard();
     }
 }

@@ -9,6 +9,7 @@ import io.hamlook.aetheria.events.SlotClickEvent.ClickType;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
@@ -109,7 +110,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
 
     private void scanContainer(ContainerChest container) {
         for (Slot slot : container.inventorySlots) {
-            if (slot.inventory == MinecraftCompat.getLocalPlayer().inventory) continue;
+            if (slot.inventory == InventoryCompat.getInventory(MinecraftCompat.getLocalPlayer())) continue;
 
             if (slot.slotNumber == CONVERT_SLOT_INDEX) {
                 ItemStack s = slot.getStack();
@@ -164,7 +165,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
             return;
         }
 
-        if (event.getSlot().inventory == MinecraftCompat.getLocalPlayer().inventory) {
+        if (event.getSlot().inventory == InventoryCompat.getInventory(MinecraftCompat.getLocalPlayer())) {
             return;
         }
 

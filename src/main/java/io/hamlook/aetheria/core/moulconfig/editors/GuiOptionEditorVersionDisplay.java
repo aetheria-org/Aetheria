@@ -5,6 +5,7 @@ package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
@@ -41,7 +42,7 @@ public class GuiOptionEditorVersionDisplay extends GuiOptionEditor {
 
         int textWidth = MinecraftCompat.getFontRenderer().getStringWidth(versionText);
 
-        MinecraftCompat.getFontRenderer().drawString(
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(),
                 versionText,
                 -textWidth / 2,
                 0,

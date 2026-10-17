@@ -8,6 +8,7 @@ import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.RaycastUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
@@ -61,8 +62,8 @@ public class PickobulusPreview {
     }
 
     private BlockPos raycast(EntityPlayer player) {
-        double eyeY = player.posY + PICKOBULUS_EYE_OFFSET + (player.isSneaking() ? 1.54 : 1.62);
-        Vec3 eyes = new Vec3(player.posX, eyeY, player.posZ);
+        double eyeY = EntityCompat.getPosY(player) + PICKOBULUS_EYE_OFFSET + (player.isSneaking() ? 1.54 : 1.62);
+        Vec3 eyes = new Vec3(EntityCompat.getPosX(player), eyeY, EntityCompat.getPosZ(player));
         Vec3 look = player.getLookVec();
         return RaycastUtils.raycastBlock(eyes, look, REACH);
     }

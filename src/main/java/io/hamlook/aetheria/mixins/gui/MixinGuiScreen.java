@@ -11,15 +11,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinGuiScreen {
 
     @Inject(method = "renderToolTip", at = @At("HEAD"), cancellable = true)
-    public void ATHR$storageTooltip(ItemStack stack, int x, int y, CallbackInfo ci) {
-        if (GuiScreenHook.shouldCancelStorageTooltip()) {
-            ci.cancel();
-        }
-    }
-
-    @Inject(method = "renderToolTip", at = @At("HEAD"), cancellable = true)
-    public void ATHR$visitorTooltip(ItemStack stack, int x, int y, CallbackInfo ci) {
-        if (GuiScreenHook.visitorTooltip(stack, x, y)) {
+    public void ATHR$tooltip(ItemStack stack, int x, int y, CallbackInfo ci) {
+        if (GuiScreenHook.handleTooltip(stack, x, y)) {
             ci.cancel();
         }
     }

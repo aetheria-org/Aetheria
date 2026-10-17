@@ -9,6 +9,8 @@ import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
@@ -51,21 +53,25 @@ public abstract class Overlay {
 
     private static void drawRoundedRectRaw(int x, int y, int w, int h, int r, int color) {
         r = Math.min(r, Math.min(w - x, h - y) / 2);
-        if (r <= 0) {
-            DrawContextUtils.fill(x, y, w, h, color);
-            return;
-        }
+        beginMesh();
+        try {
+            if (r <= 0) {
+                emitQuad(x, y, w, h, color);
+            } else {
+                emitQuad(x + r, y, w - r, h, color);
+                emitQuad(x, y + r, x + r, h - r, color);
+                emitQuad(w - r, y + r, w, h - r, color);
 
-        DrawContextUtils.fill(x + r, y, w - r, h, color);
-        DrawContextUtils.fill(x, y + r, x + r, h - r, color);
-        DrawContextUtils.fill(w - r, y + r, w, h - r, color);
-
-        for (int i = 0; i < r; i++) {
-            int cut = cornerCut(r, i);
-            DrawContextUtils.fill(x + i, y + cut, x + i + 1, y + r, color);
-            DrawContextUtils.fill(w - i - 1, y + cut, w - i, y + r, color);
-            DrawContextUtils.fill(x + i, h - r, x + i + 1, h - cut, color);
-            DrawContextUtils.fill(w - i - 1, h - r, w - i, h - cut, color);
+                for (int i = 0; i < r; i++) {
+                    int cut = cornerCut(r, i);
+                    emitQuad(x + i, y + cut, x + i + 1, y + r, color);
+                    emitQuad(w - i - 1, y + cut, w - i, y + r, color);
+                    emitQuad(x + i, h - r, x + i + 1, h - cut, color);
+                    emitQuad(w - i - 1, h - r, w - i, h - cut, color);
+                }
+            }
+        } finally {
+            endMesh();
         }
     }
 
@@ -84,32 +90,37 @@ public abstract class Overlay {
         int width = w - x;
         int height = h - y;
 
-        if (width - 2 * r > 0) {
-            DrawContextUtils.fill(x + r, y, w - r, y + t, color);
-            DrawContextUtils.fill(x + r, h - t, w - r, h, color);
-        }
-        if (height - 2 * r > 0) {
-            DrawContextUtils.fill(x, y + r, x + t, h - r, color);
-            DrawContextUtils.fill(w - t, y + r, w, h - r, color);
-        }
-        if (r <= 0) return;
-
-        int ri = Math.max(r - t, 0);
-        int innerW = width - 2 * t;
-        for (int i = 0; i < r; i++) {
-            int co = cornerCut(r, i);
-            int cl = x + i;
-            int cr = x + width - 1 - i;
-            if (i >= t && innerW > 0) {
-                int ci = cornerCut(ri, i - t);
-                DrawContextUtils.fill(cl, y + co, cl + 1, y + t + ci, color);
-                DrawContextUtils.fill(cl, h - t - ci, cl + 1, h - co, color);
-                DrawContextUtils.fill(cr, y + co, cr + 1, y + t + ci, color);
-                DrawContextUtils.fill(cr, h - t - ci, cr + 1, h - co, color);
-            } else {
-                DrawContextUtils.fill(cl, y + co, cl + 1, h - co, color);
-                DrawContextUtils.fill(cr, y + co, cr + 1, h - co, color);
+        beginMesh();
+        try {
+            if (width - 2 * r > 0) {
+                emitQuad(x + r, y, w - r, y + t, color);
+                emitQuad(x + r, h - t, w - r, h, color);
             }
+            if (height - 2 * r > 0) {
+                emitQuad(x, y + r, x + t, h - r, color);
+                emitQuad(w - t, y + r, w, h - r, color);
+            }
+            if (r > 0) {
+                int ri = Math.max(r - t, 0);
+                int innerW = width - 2 * t;
+                for (int i = 0; i < r; i++) {
+                    int co = cornerCut(r, i);
+                    int cl = x + i;
+                    int cr = x + width - 1 - i;
+                    if (i >= t && innerW > 0) {
+                        int ci = cornerCut(ri, i - t);
+                        emitQuad(cl, y + co, cl + 1, y + t + ci, color);
+                        emitQuad(cl, h - t - ci, cl + 1, h - co, color);
+                        emitQuad(cr, y + co, cr + 1, y + t + ci, color);
+                        emitQuad(cr, h - t - ci, cr + 1, h - co, color);
+                    } else {
+                        emitQuad(cl, y + co, cl + 1, h - co, color);
+                        emitQuad(cr, y + co, cr + 1, h - co, color);
+                    }
+                }
+            }
+        } finally {
+            endMesh();
         }
     }
 
@@ -139,12 +150,17 @@ public abstract class Overlay {
             int sx = x * ss, sy = y * ss, sw = w * ss, sh = h * ss;
             int sr = Math.min(r * ss, Math.min(sw - sx, sh - sy) / 2);
             int width = sw - sx;
-            for (int i = 0; i < width; i++) {
-                int top = sy + Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
-                int bot = sh - Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
-                if (top < bot) {
-                    DrawContextUtils.fill(sx + i, top, sx + i + 1, bot, ChromaColour.applyChromaShift(base, (sx + i) / (float) ss, 0, mode, size));
+            beginMesh();
+            try {
+                for (int i = 0; i < width; i++) {
+                    int top = sy + Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
+                    int bot = sh - Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
+                    if (top < bot) {
+                        emitQuad(sx + i, top, sx + i + 1, bot, ChromaColour.applyChromaShift(base, (sx + i) / (float) ss, 0, mode, size));
+                    }
                 }
+            } finally {
+                endMesh();
             }
         });
     }
@@ -159,59 +175,106 @@ public abstract class Overlay {
             GlStateManagerCompat.enableBlend();
             GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
         }
-        GL11.glPushMatrix();
+        GlStateManagerCompat.pushMatrix();
         float inv = 1f / supersample;
-        GL11.glScalef(inv, inv, 1f);
-        draw.run();
-        GL11.glPopMatrix();
-        if (!blendWasEnabled) GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.scale(inv, inv, 1f);
+        try {
+            draw.run();
+        } finally {
+            GlStateManagerCompat.popMatrix();
+            if (!blendWasEnabled) GlStateManagerCompat.disableBlend();
+        }
     }
 
     private static void drawRoundedRing(int x, int y, int w, int h, int r, int t, IntUnaryOperator colorForColumn) {
         if (t <= 0) return;
         r = Math.min(r, Math.min(w - x, h - y) / 2);
         int width = w - x;
-        if (r <= 0) {
-            for (int i = 0; i < width; i++) {
-                int color = colorForColumn.applyAsInt(x + i);
-                if (i < t || i >= width - t) {
-                    DrawContextUtils.fill(x + i, y, x + i + 1, h, color);
+        beginMesh();
+        try {
+            if (r <= 0) {
+                for (int i = 0; i < width; i++) {
+                    int color = colorForColumn.applyAsInt(x + i);
+                    if (i < t || i >= width - t) {
+                        emitQuad(x + i, y, x + i + 1, h, color);
+                    } else {
+                        emitQuad(x + i, y, x + i + 1, y + t, color);
+                        emitQuad(x + i, h - t, x + i + 1, h, color);
+                    }
+                }
+                return;
+            }
+            int ri = Math.max(r - t, 0);
+            int innerW = width - 2 * t;
+            for (int i = 0; i < r; i++) {
+                int co = cornerCut(r, i);
+                int cl = x + i;
+                int cr = x + width - 1 - i;
+                int colorL = colorForColumn.applyAsInt(cl);
+                int colorR = colorForColumn.applyAsInt(cr);
+                if (i >= t && innerW > 0) {
+                    int ci = cornerCut(ri, i - t);
+                    emitQuad(cl, y + co, cl + 1, y + t + ci, colorL);
+                    emitQuad(cl, h - t - ci, cl + 1, h - co, colorL);
+                    emitQuad(cr, y + co, cr + 1, y + t + ci, colorR);
+                    emitQuad(cr, h - t - ci, cr + 1, h - co, colorR);
                 } else {
-                    DrawContextUtils.fill(x + i, y, x + i + 1, y + t, color);
-                    DrawContextUtils.fill(x + i, h - t, x + i + 1, h, color);
+                    emitQuad(cl, y + co, cl + 1, h - co, colorL);
+                    emitQuad(cr, y + co, cr + 1, h - co, colorR);
                 }
             }
-            return;
-        }
-        int ri = Math.max(r - t, 0);
-        int innerW = width - 2 * t;
-        for (int i = 0; i < r; i++) {
-            int co = cornerCut(r, i);
-            int cl = x + i;
-            int cr = x + width - 1 - i;
-            int colorL = colorForColumn.applyAsInt(cl);
-            int colorR = colorForColumn.applyAsInt(cr);
-            if (i >= t && innerW > 0) {
-                int ci = cornerCut(ri, i - t);
-                DrawContextUtils.fill(cl, y + co, cl + 1, y + t + ci, colorL);
-                DrawContextUtils.fill(cl, h - t - ci, cl + 1, h - co, colorL);
-                DrawContextUtils.fill(cr, y + co, cr + 1, y + t + ci, colorR);
-                DrawContextUtils.fill(cr, h - t - ci, cr + 1, h - co, colorR);
-            } else {
-                DrawContextUtils.fill(cl, y + co, cl + 1, h - co, colorL);
-                DrawContextUtils.fill(cr, y + co, cr + 1, h - co, colorR);
+            for (int i = r; i < width - r; i++) {
+                int color = colorForColumn.applyAsInt(x + i);
+                emitQuad(x + i, y, x + i + 1, y + t, color);
+                emitQuad(x + i, h - t, x + i + 1, h, color);
             }
-        }
-        for (int i = r; i < width - r; i++) {
-            int color = colorForColumn.applyAsInt(x + i);
-            DrawContextUtils.fill(x + i, y, x + i + 1, y + t, color);
-            DrawContextUtils.fill(x + i, h - t, x + i + 1, h, color);
+        } finally {
+            endMesh();
         }
     }
 
     private static int cornerCut(int r, int d) {
         if (r <= 0 || d >= r) return 0;
         return (int) Math.round(r - Math.sqrt(Math.max(0.0, (double) r * r - (double) (r - d - 1) * (r - d - 1))));
+    }
+
+    private static VertexBuilder meshBuilder;
+    private static boolean blendWasEnabled;
+    private static int meshQuads;
+
+    private static void beginMesh() {
+        //#if MC < 1.16
+        //#else
+        //$$ DrawContextUtils.flushIfPresent();
+        meshBuilder = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_COLOR);
+        meshQuads = 0;
+        blendWasEnabled = GL11.glIsEnabled(GL11.GL_BLEND);
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
+        //#endif
+    }
+
+    private static void endMesh() {
+        //#if MC < 1.16
+        //#else
+        if (meshQuads > 0) meshBuilder.draw();
+        meshBuilder = null;
+        if (!blendWasEnabled) GlStateManagerCompat.disableBlend();
+        //#endif
+    }
+
+    private static void emitQuad(int x1, int y1, int x2, int y2, int color) {
+        //#if MC < 1.16
+        DrawContextUtils.fill(x1, y1, x2, y2, color);
+        //#else
+        if (x2 <= x1 || y2 <= y1) return;
+        int a = (color >>> 24) & 0xFF, r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+        meshBuilder.pos(x1, y1, 0).color(r, g, b, a).endVertex();
+        meshBuilder.pos(x1, y2, 0).color(r, g, b, a).endVertex();
+        meshBuilder.pos(x2, y2, 0).color(r, g, b, a).endVertex();
+        meshBuilder.pos(x2, y1, 0).color(r, g, b, a).endVertex();
+        meshQuads++;
+        //#endif
     }
 
     public int getOverlayWidth() {
@@ -327,9 +390,9 @@ public abstract class Overlay {
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 
-        GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0);
-        GL11.glScalef(scale, scale, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(x, y, 0);
+        GlStateManagerCompat.scale(scale, scale, 1f);
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0) drawRoundedRect(-PADDING, -PADDING, w, h - PADDING, getCornerRadius(), bgColor);
@@ -346,7 +409,7 @@ public abstract class Overlay {
             dy += LINE_HEIGHT;
         }
 
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     protected int getBaseWidth() {

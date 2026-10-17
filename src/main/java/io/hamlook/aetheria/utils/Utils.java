@@ -27,7 +27,7 @@ public class Utils {
         Minecraft mc = MinecraftCompat.getMinecraft();
         for (boolean aBoolean : booleans) if (!aBoolean) return false;
         if (hideOnf3) {
-            if (mc.gameSettings.showDebugInfo || (mc.gameSettings.keyBindPlayerList.isKeyDown() && (!mc.isIntegratedServerRunning() || MinecraftCompat.getLocalPlayer().sendQueue.getPlayerInfoMap().size() > 1))) {
+            if (MinecraftCompat.getShowDebugHud() || (KeybindCompat.isPlayerListKeyDown() && (!mc.isIntegratedServerRunning() || MinecraftCompat.getPlayerListEntries().size() > 1))) {
                 return false;
             }
         }
@@ -44,7 +44,7 @@ public class Utils {
 
     public static void drawStringScaled(String str, FontRenderer fr, float x, float y, boolean shadow, int colour, float factor) {
         GlStateManagerCompat.scale(factor, factor, 1);
-        fr.drawString(str, x / factor, y / factor, colour, shadow);
+        DrawContextUtils.drawText(fr, str, x / factor, y / factor, colour, shadow);
         GlStateManagerCompat.scale(1 / factor, 1 / factor, 1);
     }
 
@@ -91,6 +91,7 @@ public class Utils {
      * Pass a negative value to restore the previous scale.
      */
     public static int[] pushGuiScale(int scale) {
+        //#if MC < 1.16
         if (guiScales.isEmpty()) {
             if (ModCompat.isModLoaded("labymod")) {
                 GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projectionMatrixOld);
@@ -144,17 +145,16 @@ public class Utils {
         }
 
         return new int[]{w, h};
+        //#else
+        //$$ int w = GuiScreenUtils.getScaledWindowWidth();
+        //$$ int h = GuiScreenUtils.getScaledWindowHeight();
+        //$$ return new int[]{w, h};
+        //#endif
     }
 
     public static void drawStringCentered(String str, FontRenderer fr, float x, float y, boolean shadow, int colour) {
         int strLen = DrawContextUtils.getStringWidth(fr, str);
-
-        float x2 = x - strLen / 2f;
-        float y2 = y - fr.FONT_HEIGHT / 2f;
-
-        GL11.glTranslatef(x2, y2, 0);
-        fr.drawString(str, 0, 0, colour, shadow);
-        GL11.glTranslatef(-x2, -y2, 0);
+        DrawContextUtils.drawText(fr, str, x - strLen / 2f, y - DrawContextUtils.getFontHeight(fr) / 2f, colour, shadow);
     }
 
     public static void copyToClipboard(String str) {

@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.core;
 
 import com.google.gson.annotations.Expose;
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.features.about.About;
 import io.hamlook.aetheria.core.features.chat.ChatConfig;
 import io.hamlook.aetheria.core.features.chat.PlayerButtonsConfig;
@@ -20,11 +21,12 @@ import io.hamlook.aetheria.core.features.storage.Storage;
 import io.hamlook.aetheria.core.features.waypoints.Waypoints;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
 import io.hamlook.aetheria.features.capes.CapeManager;
-
-import java.awt.*;
-import java.net.URI;
+import io.hamlook.aetheria.utils.UrlOpener;
 
 public class Config {
+
+    @Expose
+    public int keybindMigrationVersion = 0;
 
     @Expose
     @Category(name = "About", desc = "Links, credits & used software")
@@ -91,7 +93,8 @@ public class Config {
     public final Debug debug = new Debug();
 
     private static void openUrl(String url) {
-        try { Desktop.getDesktop().browse(new URI(url)); } catch (Exception ignored) {}
+        if (UrlOpener.open(url)) return;
+        Aetheria.logger.warning("Config: could not open URL " + url);
     }
 
     public void executeRunnable(String runnableId) {

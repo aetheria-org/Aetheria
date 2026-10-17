@@ -8,6 +8,8 @@ import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.repo.TimerRepo;
 import io.hamlook.aetheria.repo.data.TimerData;
+import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemStackFinder;
 import io.hamlook.aetheria.utils.time.TimerManager;
@@ -38,7 +40,7 @@ public class ItemCooldowns {
         if (data.chatTriggers != null) {
             for (TimerData.TriggerEntry entry : data.chatTriggers) {
                 if (entry.pattern != null && entry.itemIds != null && !entry.itemIds.isEmpty()) {
-                    newChat.add(new ChatTrigger(Pattern.compile(entry.pattern), entry.itemIds.toArray(new String[0])));
+                    newChat.add(new ChatTrigger(Pattern.compile(normalize(entry.pattern)), entry.itemIds.toArray(new String[0])));
                 }
             }
         }
@@ -48,7 +50,7 @@ public class ItemCooldowns {
         if (data.actionBarTriggers != null) {
             for (TimerData.TriggerEntry entry : data.actionBarTriggers) {
                 if (entry.pattern != null && entry.itemIds != null && !entry.itemIds.isEmpty()) {
-                    newActionBar.add(new ChatTrigger(Pattern.compile(entry.pattern), entry.itemIds.toArray(new String[0])));
+                    newActionBar.add(new ChatTrigger(Pattern.compile(normalize(entry.pattern)), entry.itemIds.toArray(new String[0])));
                 }
             }
         }
@@ -82,7 +84,8 @@ public class ItemCooldowns {
     @HandleEvent
     public void onChat(ASMChatEvent event) {
         if (event.type == ASMChatEvent.Type.ACTION_BAR) return;
-        String msg = TextCompat.getFormattedText(event.message);
+        String msg = normalize(TextCompat.getFormattedText(event.message));
+        if (ChatUtils.isPlayerChat(msg) || ChatUtils.getGuildSender(msg) != null) return;
         for (ChatTrigger t : chatTriggers) {
             if (t.pattern.matcher(msg).find()) {
                 for (String id : t.itemIds) {
@@ -95,7 +98,7 @@ public class ItemCooldowns {
 
     @HandleEvent
     public void onActionBar(ActionBarUpdateEvent event) {
-        String msg = event.getText();
+        String msg = normalize(event.getText());
         for (ChatTrigger t : actionBarTriggers) {
             if (t.pattern.matcher(msg).find()) {
                 for (String id : t.itemIds) {
@@ -104,6 +107,10 @@ public class ItemCooldowns {
                 }
             }
         }
+    }
+
+    private static String normalize(String text) {
+        return text == null ? "" : ColorUtils.stripColor(text).trim();
     }
 
     private static class ChatTrigger {

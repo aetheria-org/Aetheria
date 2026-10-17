@@ -1,12 +1,14 @@
 package io.hamlook.aetheria.features.diana.party.ui;
 
 import com.google.gson.JsonElement;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.WebSocketClient;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.diana.party.DianaPartyConnector;
+import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
@@ -74,7 +76,7 @@ public class DPartyGUI extends AetheriaBaseScreen {
     @Override
     protected void onInitGui() {
         KeyboardCompat.enableRepeatEvents(true);
-        passwordField = new GuiTextField(0, MinecraftCompat.getFontRenderer(), 0, 0, 180, 16);
+        passwordField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), 0, 0, 180, 16);
 
         boxW = getScaledX(525);
         boxH = getScaledY(390);
@@ -116,10 +118,12 @@ public class DPartyGUI extends AetheriaBaseScreen {
         return false;
     }
 
+    //#if MC < 1.21
     @Override
     public void updateScreen() {
-        passwordField.updateCursorCounter();
+        GuiScreenUtils.tickTextField(passwordField);
     }
+    //#endif
 
     private int getScaledX(double entry) {
         return (int) (ResolutionUtils.getXStatic(1) * entry * 2.0);
@@ -315,10 +319,10 @@ public class DPartyGUI extends AetheriaBaseScreen {
     @Override
     protected void onKeyTyped(char typedChar, int keyCode) {
         if (passwordPromptParty != null) {
-            if (passwordField.textboxKeyTyped(typedChar, keyCode)) return;
-            if (keyCode == Keyboard.KEY_RETURN || keyCode == Keyboard.KEY_NUMPADENTER) {
+            if (GuiScreenUtils.typeTextField(passwordField, typedChar, keyCode)) return;
+            if (KeybindHelper.isEnterKey(keyCode)) {
                 joinParty(passwordPromptParty, passwordField.getText().trim());
-            } else if (keyCode == Keyboard.KEY_ESCAPE) {
+            } else if (KeybindHelper.isEscapeKey(keyCode)) {
                 passwordPromptParty = null;
             }
             return;
@@ -462,7 +466,11 @@ public class DPartyGUI extends AetheriaBaseScreen {
 
     @Override
     protected void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
+        //#if MC < 1.21
         drawDefaultBackground();
+        //#else
+        //$$ // modern background handled via Screen.renderBackground
+        //#endif
         GlStateManagerCompat.color(0.18f, 0.18f, 0.18f, 1f);
         NineSliceUtils.draw(bcNineSlice(), boxX, boxY, boxW, boxH, 6, 18);
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
@@ -604,22 +612,22 @@ public class DPartyGUI extends AetheriaBaseScreen {
         DrawContextUtils.fill(box[0], box[1], box[0] + box[2], box[1] + box[3], 0xFF313338);
         DrawContextUtils.fill(box[0], box[1], box[0] + box[2], box[1] + 2, 0xFFF2C94C);
 
-        drawCenteredString(MinecraftCompat.getFontRenderer(), "Password required", box[0] + box[2] / 2, box[1] + 16, 0xFFFFFFFF);
-        drawCenteredString(MinecraftCompat.getFontRenderer(), MinecraftCompat.getFontRenderer().trimStringToWidth(passwordPromptParty.name, box[2] - 24),
-                box[0] + box[2] / 2, box[1] + 28, 0xFF949BA4);
+        TextRenderUtils.drawCenteredStringScaleAware("Password required", box[0] + box[2] / 2, box[1] + 16, 0xFFFFFFFF, 1f, false);
+        TextRenderUtils.drawCenteredStringScaleAware(MinecraftCompat.getFontRenderer().trimStringToWidth(passwordPromptParty.name, box[2] - 24),
+                box[0] + box[2] / 2, box[1] + 28, 0xFF949BA4, 1f, false);
 
         GuiScreenUtils.setX(passwordField, box[0] + (box[2] - 180) / 2);
         GuiScreenUtils.setY(passwordField, box[1] + 44);
-        passwordField.drawTextBox();
+        GuiScreenUtils.renderTextField(passwordField, mouseX, mouseY);
 
         int joinX = box[0] + box[2] / 2 - 78, joinY = box[1] + box[3] - 30;
         boolean joinHover = mouseX >= joinX && mouseX <= joinX + 74 && mouseY >= joinY && mouseY <= joinY + 20;
         DrawContextUtils.fill(joinX, joinY, joinX + 74, joinY + 20, joinHover ? 0xFF5865F2 : 0xFF404249);
-        drawCenteredString(MinecraftCompat.getFontRenderer(), busy ? "..." : "Join", joinX + 37, joinY + 6, 0xFFFFFFFF);
+        TextRenderUtils.drawCenteredStringScaleAware(busy ? "..." : "Join", joinX + 37, joinY + 6, 0xFFFFFFFF, 1f, false);
 
         boolean cancelHover = mouseX >= joinX + 82 && mouseX <= joinX + 156 && mouseY >= joinY && mouseY <= joinY + 20;
         DrawContextUtils.fill(joinX + 82, joinY, joinX + 156, joinY + 20, cancelHover ? 0xFF35373C : 0xFF2B2D31);
-        drawCenteredString(MinecraftCompat.getFontRenderer(), "Cancel", joinX + 119, joinY + 6, 0xFFFFFFFF);
+        TextRenderUtils.drawCenteredStringScaleAware("Cancel", joinX + 119, joinY + 6, 0xFFFFFFFF, 1f, false);
     }
 
     // ------------------------------------------------------------ scrollbar
@@ -628,7 +636,7 @@ public class DPartyGUI extends AetheriaBaseScreen {
         int scale = GuiScreenUtils.getScaleFactor();
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + height) * scale, width * scale, height * scale);
+        GlStateManagerCompat.scissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + height) * scale, width * scale, height * scale);
     }
 
     private void stopScissor() {

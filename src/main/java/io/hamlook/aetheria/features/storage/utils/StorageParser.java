@@ -72,8 +72,8 @@ public class StorageParser {
 
             // Skip empty backpack placeholder slots (stained glass pane named "§cEmpty Backpack Slot N")
             if (Block.getBlockFromItem(stack.getItem()) instanceof BlockStainedGlassPane) {
-                String rawName = stack.getDisplayName();
-                if (ColorUtils.stripColor(rawName).startsWith("Empty Backpack Slot")) continue;
+                String rawName = TextCompat.plainString(stack.getDisplayName());
+                if (rawName.startsWith("Empty Backpack Slot")) continue;
             }
 
             int renderH = extractBackpackRenderHeight(stack);

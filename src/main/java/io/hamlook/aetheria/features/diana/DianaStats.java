@@ -10,6 +10,8 @@ import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -54,8 +56,8 @@ public class DianaStats extends ProfileManagedStorage implements StorageManager.
     public static boolean hasSpadeInHotbar() {
         if (MinecraftCompat.getLocalPlayer() == null) return false;
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getLocalPlayer().inventory.mainInventory)[i];
-            if (stack != null && stack.hasDisplayName() && StringUtils.stripControlCodes(TextCompat.getUnformattedText(stack.getDisplayName())).contains("Ancestral Spade")) {
+            ItemStack stack = InventoryCompat.getMainInventory(MinecraftCompat.getLocalPlayer())[i];
+            if (stack != null && ItemCompatKt.hasDisplayNameCompat(stack) && StringUtils.stripControlCodes(TextCompat.getUnformattedText(ItemCompatKt.getDisplayNameCompat(stack))).contains("Ancestral Spade")) {
                 return true;
             }
         }

@@ -17,6 +17,7 @@ import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
@@ -99,24 +100,24 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
 
     @Override
     protected void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
+        //#if MC < 1.21
         drawDefaultBackground();
+        //#endif
 
         guiLeft = width / 2 - xSize / 2;
         guiTop = height / 2 - ySize / 2;
 
         GlStateManagerCompat.enableDepth();
 
-        mc.getTextureManager().bindTexture(INVENTORY_TEX);
         GlStateManagerCompat.color(1, 1, 1, 1);
-        Utils.drawTexturedRect(guiLeft, guiTop, xSize, ySize, 0, xSize / 256f, 0, ySize / 256f, GL11.GL_NEAREST);
+        TextureCompat.drawBoundTextured(INVENTORY_TEX, guiLeft, guiTop, xSize, ySize, 0, 0, xSize / 256f, ySize / 256f);
 
         for (InventoryButton btn : InventoryButtonStorage.getInstance().getButtons()) {
             int bx = guiLeft + btn.x + (btn.anchorRight ? xSize : 0);
             int by = guiTop + btn.y + (btn.anchorBottom ? ySize : 0);
 
             GlStateManagerCompat.color(1, 1, 1, btn.isActive() ? 1f : 0.5f);
-            mc.getTextureManager().bindTexture(EDITOR_TEX);
-            Utils.drawTexturedRect(bx, by, 18, 18, btn.backgroundIndex * 18 / 256f, (btn.backgroundIndex * 18 + 18) / 256f, 18 / 256f, 36 / 256f, GL11.GL_NEAREST);
+            TextureCompat.drawBoundTextured(EDITOR_TEX, bx, by, 18, 18, btn.backgroundIndex * 18 / 256f, 18 / 256f, (btn.backgroundIndex * 18 + 18) / 256f, 36 / 256f);
             GlStateManagerCompat.color(1, 1, 1, 1);
             if (btn.isActive()) {
                 if (btn.icon != null && !btn.icon.trim().isEmpty()) {
@@ -151,9 +152,7 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
     private void drawPresetsPanel() {
         if (presetNames == null || presetNames.isEmpty()) return;
         int px = guiLeft + xSize + 22, py = guiTop;
-        mc.getTextureManager().bindTexture(EDITOR_TEX);
-        GlStateManagerCompat.color(1, 1, 1, 1);
-        Utils.drawTexturedRect(px, py, 80, ySize, editorXSize / 256f, (editorXSize + 80) / 256f, 41 / 256f, (41 + ySize) / 256f, GL11.GL_NEAREST);
+        TextureCompat.drawBoundTextured(EDITOR_TEX, px, py, 80, ySize, editorXSize / 256f, 41 / 256f, (editorXSize + 80) / 256f, (41 + ySize) / 256f);
         DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "§nPresets", px + 8, py + 6, 0xffa0a0a0, false);
         for (int i = 0; i < presetNames.size(); i++)
             DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), presetNames.get(i), px + 8, py + 20 + i * 10, 0xff909090, false);
@@ -181,12 +180,11 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
 
         GlStateManagerCompat.translate(0, 0, 300);
 
-        mc.getTextureManager().bindTexture(EDITOR_TEX);
         GlStateManagerCompat.color(1, 1, 1, 1f);
-        Utils.drawTexturedRect(editorLeft, editorTop, editorXSize, editorYSize, 0, editorXSize / 256f, 41 / 256f, (41 + editorYSize) / 256f, GL11.GL_NEAREST);
+        TextureCompat.drawBoundTextured(EDITOR_TEX, editorLeft, editorTop, editorXSize, editorYSize, 0, 41 / 256f, editorXSize / 256f, (41 + editorYSize) / 256f);
 
         if (showArrow)
-            Utils.drawTexturedRect(bx + 8 - 3, by + 18, 10, 5, 0, 6 / 256f, 36 / 256f, 41 / 256f, GL11.GL_NEAREST);
+            TextureCompat.drawBoundTextured(EDITOR_TEX, bx + 8 - 3, by + 18, 10, 5, 0, 36 / 256f, 6 / 256f, 41 / 256f);
 
         DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "Command", editorLeft + 7, editorTop + 7, 0xffa0a0a0, false);
         commandTextField.setSize(editorXSize - 14, 16);
@@ -198,9 +196,8 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
         for (int i = 0; i < BACKGROUND_TYPES; i++) {
             if (i == editingButton.backgroundIndex)
                 DrawContextUtils.fill(editorLeft + 7 + 20 * i - 1, editorTop + 50 - 1, editorLeft + 7 + 20 * i + 19, editorTop + 50 + 19, 0xff0000ff);
-            mc.getTextureManager().bindTexture(EDITOR_TEX);
             GlStateManagerCompat.color(1, 1, 1, 1);
-            Utils.drawTexturedRect(editorLeft + 7 + 20 * i, editorTop + 50, 18, 18, i * 18 / 256f, (i * 18 + 18) / 256f, 0, 18 / 256f, GL11.GL_NEAREST);
+            TextureCompat.drawBoundTextured(EDITOR_TEX, editorLeft + 7 + 20 * i, editorTop + 50, 18, 18, i * 18 / 256f, 0, (i * 18 + 18) / 256f, 18 / 256f);
         }
 
         DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "Icon Type", editorLeft + 7, editorTop + 74, 0xffa0a0a0, false);
@@ -233,9 +230,8 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
             for (int i = startIndex; i < endIndex; i++) {
                 int ix = editorLeft + 12 + ((i - startIndex) % 6) * 20;
                 int iy = editorTop + 137 + ((i - startIndex) / 6) * 20 - (itemScrollPx % 20);
-                mc.getTextureManager().bindTexture(EDITOR_TEX);
                 GlStateManagerCompat.color(1, 1, 1, 1);
-                Utils.drawTexturedRect(ix, iy, 18, 18, 18 / 256f, 36 / 256f, 0, 18 / 256f, GL11.GL_NEAREST);
+                TextureCompat.drawBoundTextured(EDITOR_TEX, ix, iy, 18, 18, 18 / 256f, 0, 36 / 256f, 18 / 256f);
                 InvButtonIconRenderer.renderIcon(searchedIcons.get(i), ix + 1, iy + 1);
             }
         }
@@ -378,6 +374,23 @@ public class GuiInvButtonEditor extends AetheriaBaseScreen {
             if (!before.equals(iconTextField.getText())) search();
         }
     }
+
+    //#if MC < 1.21
+    //#else
+    //$$ @Override
+    //$$ protected void onCharTyped(char c, int modifiers) {
+    //$$     if (editingButton == null) return;
+    //$$     if (commandTextField.getFocus()) {
+    //$$         commandTextField.keyTyped(c, 0);
+    //$$         editingButton.command = commandTextField.getText();
+    //$$         InventoryButtonStorage.getInstance().save();
+    //$$     } else if (iconTextField.getFocus()) {
+    //$$         String before = iconTextField.getText();
+    //$$         iconTextField.keyTyped(c, 0);
+    //$$         if (!before.equals(iconTextField.getText())) search();
+    //$$     }
+    //$$ }
+    //#endif
 
     @Override
     protected void guiClosed() {

@@ -22,10 +22,14 @@ import org.lwjgl.input.Keyboard;
 import java.awt.*;
 import java.io.IOException;
 import java.util.HashMap;
+import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 
-public class CMMSelectorGUI extends GuiScreen {
+public class CMMSelectorGUI extends AetheriaBaseScreen {
 
     public HashMap<CustomMMConfig, Position> cmmList = new HashMap<>();
     public CustomMMConfig active;
@@ -42,10 +46,10 @@ public class CMMSelectorGUI extends GuiScreen {
 
 
     @Override
-    public void initGui() {
+    protected void onInitGui() {
         ScreenHelper.updateScreenDimensions(this.width, this.height);
-        Keyboard.enableRepeatEvents(true);
-        searchBar = new GuiTextField(0,MinecraftCompat.getFontRenderer(), 0,0,0,0);
+        KeyboardCompat.enableRepeatEvents(true);
+        searchBar = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), 0,0,0,0);
         addButton = new CMMButton( 0, 0, 0, 0, "Add") {
             @Override
             public void onClick(GuiScreen screen) {
@@ -72,8 +76,7 @@ public class CMMSelectorGUI extends GuiScreen {
     }
 
     @Override
-    public void onResize(Minecraft mcIn, int w, int h) {
-        super.onResize(mcIn, w, h);
+    protected void onResizeScreen(int w, int h) {
         ScreenHelper.updateScreenDimensions(this.width, this.height);
         updateCMMList();
         updateSearchBar();
@@ -109,7 +112,7 @@ public class CMMSelectorGUI extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    protected void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         drawBG();
         drawSearchBar();
         if(cmmList.isEmpty()){
@@ -118,7 +121,6 @@ public class CMMSelectorGUI extends GuiScreen {
         createElement.render(CREATE_ELEMENT_X,CREATE_ELEMENT_Y,mouseX,mouseY);
         addButton.draw(mouseX,mouseY,partialTicks);
         drawCMMList(mouseX,mouseY);
-        super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
     private void drawCMMList(int mouseX,int mouseY) {
@@ -146,8 +148,8 @@ public class CMMSelectorGUI extends GuiScreen {
     }
 
     public void drawSearchBar() {
-        if(searchBar.getEnableBackgroundDrawing()){
-            searchBar.setEnableBackgroundDrawing(false);
+        if(GuiScreenUtils.drawsTextFieldBackground(searchBar)){
+            GuiScreenUtils.setTextFieldBackground(searchBar, false);
         }
         DrawContextUtils.fill(GuiScreenUtils.getX(searchBar),GuiScreenUtils.getY(searchBar),
                 GuiScreenUtils.getX(searchBar)+GuiScreenUtils.getW(searchBar),
@@ -155,35 +157,44 @@ public class CMMSelectorGUI extends GuiScreen {
         DrawContextUtils.fill(GuiScreenUtils.getX(searchBar)+1,GuiScreenUtils.getY(searchBar)+1,GuiScreenUtils.getX(searchBar)+GuiScreenUtils.getW(searchBar)-1,
                 GuiScreenUtils.getY(searchBar)+GuiScreenUtils.getH(searchBar)-1,new Color(28, 28, 28).getRGB());
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(GuiScreenUtils.getX(searchBar), GuiScreenUtils.getY(searchBar)+ScreenHelper.getStaticHeight(5), 0);
-        GlStateManager.scale(2*ScreenHelper.getScaleFactor(), 2*ScreenHelper.getScaleFactor(), 1.0f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(GuiScreenUtils.getX(searchBar), GuiScreenUtils.getY(searchBar)+ScreenHelper.getStaticHeight(5), 0);
+        GlStateManagerCompat.scale(2*ScreenHelper.getScaleFactor(), 2*ScreenHelper.getScaleFactor(), 1.0f);
 
         int originalX = GuiScreenUtils.getX(searchBar);
         int originalY = GuiScreenUtils.getY(searchBar);
         GuiScreenUtils.setX(searchBar, 0);
         GuiScreenUtils.setY(searchBar, 0);
 
-        searchBar.drawTextBox();
+        int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
+        GuiScreenUtils.renderTextField(searchBar, mouse[0], mouse[1]);
         GuiScreenUtils.setX(searchBar, originalX);
         GuiScreenUtils.setY(searchBar, originalY);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     @Override
-    public void onGuiClosed() {
-        Keyboard.enableRepeatEvents(false);
+    protected void guiClosed() {
+        KeyboardCompat.enableRepeatEvents(false);
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        if(searchBar.textboxKeyTyped(typedChar,keyCode)) return;
+    protected void onKeyTyped(char typedChar, int keyCode) {
+        if(GuiScreenUtils.typeTextField(searchBar, typedChar,keyCode)) return;
         createElement.keyboardInput(typedChar,keyCode);
-        super.keyTyped(typedChar, keyCode);
     }
 
+    //#if MC < 1.21
+    //#else
+    //$$ @Override
+    //$$ protected void onCharTyped(char typedChar, int modifiers) {
+    //$$     if(GuiScreenUtils.typeTextField(searchBar, typedChar,0)) return;
+    //$$     createElement.keyboardInput(typedChar,0);
+    //$$ }
+    //#endif
+
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         searchBar.mouseClicked(mouseX, mouseY, mouseButton);
         if (createElement.mouseInput(mouseX, mouseY, mouseButton)) {
             return;
@@ -204,7 +215,6 @@ public class CMMSelectorGUI extends GuiScreen {
                 }
             }
         }
-        super.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     private boolean isHovering(Position position, int mouseX, int mouseY) {

@@ -158,13 +158,13 @@ public class RareDropTrackerCommand {
         } else {
             List<SkyblockItem> shown = matches.size() > MAX_RESULTS ? matches.subList(0, MAX_RESULTS) : matches;
             for (SkyblockItem item : shown) {
-                IChatComponent root = TextCompat.createText(" §7- §f" + item.displayName + " §8(" + item.skyblockID + ")");
+                IChatComponent root = TextCompat.fromFormatted(" §7- §f" + item.displayName + " §8(" + item.skyblockID + ")");
                 if (addMode) {
-                    TextCompat.setClickRunCommand(TextCompat.getChatStyle(root), "/rdt add " + item.skyblockID);
-                    TextCompat.setHoverShowText(TextCompat.getChatStyle(root), "§aClick to track this item");
+                    TextCompat.setChatStyle(root, TextCompat.setClickRunCommand(TextCompat.getChatStyle(root), "/rdt add " + item.skyblockID));
+                    TextCompat.setChatStyle(root, TextCompat.setHoverShowText(TextCompat.getChatStyle(root), "§aClick to track this item"));
                 } else {
-                    TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(root), "/rdt add " + item.skyblockID);
-                    TextCompat.setHoverShowText(TextCompat.getChatStyle(root), "§eClick to fill in the add command");
+                    TextCompat.setChatStyle(root, TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(root), "/rdt add " + item.skyblockID));
+                    TextCompat.setChatStyle(root, TextCompat.setHoverShowText(TextCompat.getChatStyle(root), "§eClick to fill in the add command"));
                 }
                 ChatUtils.sendMessage(root);
             }
@@ -185,23 +185,23 @@ public class RareDropTrackerCommand {
             for (Map.Entry<String, RareDropTrackerConfig.TrackedItem> e : config.trackedItems.entrySet()) {
                 RareDropTrackerConfig.TrackedItem tracked = e.getValue();
                 String progress = tracked.goal > 0 ? " §7(" + tracked.count + "/" + tracked.goal + ")" : (tracked.count > 0 ? " §7(" + tracked.count + ")" : "");
-                IChatComponent root = TextCompat.createText(" §7- §f" + tracked.displayName + progress);
-                IChatComponent del = TextCompat.createText(" §c§l[DEL]");
-                TextCompat.setClickRunCommand(TextCompat.getChatStyle(del), "/rdt remove " + e.getKey());
-                TextCompat.setHoverShowText(TextCompat.getChatStyle(del), "§cStop tracking " + tracked.displayName);
+                IChatComponent root = TextCompat.fromFormatted(" §7- §f" + tracked.displayName + progress);
+                IChatComponent del = TextCompat.fromFormatted(" §c§l[DEL]");
+                TextCompat.setChatStyle(del, TextCompat.setClickRunCommand(TextCompat.getChatStyle(del), "/rdt remove " + e.getKey()));
+                TextCompat.setChatStyle(del, TextCompat.setHoverShowText(TextCompat.getChatStyle(del), "§cStop tracking " + tracked.displayName));
                 TextCompat.appendSibling(root, del);
                 ChatUtils.sendMessage(root);
             }
         }
 
         ChatUtils.sendMessage("");
-        IChatComponent addNew = TextCompat.createText("§a§l[ADD NEW]");
-        TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(addNew), "/rdt add ");
-        TextCompat.setHoverShowText(TextCompat.getChatStyle(addNew), "§aSearch for an item to track");
+        IChatComponent addNew = TextCompat.fromFormatted("§a§l[ADD NEW]");
+        TextCompat.setChatStyle(addNew, TextCompat.setClickSuggestCommand(TextCompat.getChatStyle(addNew), "/rdt add "));
+        TextCompat.setChatStyle(addNew, TextCompat.setHoverShowText(TextCompat.getChatStyle(addNew), "§aSearch for an item to track"));
         ChatUtils.sendMessage(addNew);
-        IChatComponent clear = TextCompat.createText(" §c§l[CLEAR ALL]");
-        TextCompat.setClickRunCommand(TextCompat.getChatStyle(clear), "/rdt clear");
-        TextCompat.setHoverShowText(TextCompat.getChatStyle(clear), "§cRemove all tracked items");
+        IChatComponent clear = TextCompat.fromFormatted(" §c§l[CLEAR ALL]");
+        TextCompat.setChatStyle(clear, TextCompat.setClickRunCommand(TextCompat.getChatStyle(clear), "/rdt clear"));
+        TextCompat.setChatStyle(clear, TextCompat.setHoverShowText(TextCompat.getChatStyle(clear), "§cRemove all tracked items"));
         ChatUtils.sendMessage(clear);
         ChatUtils.sendMessage("");
     }

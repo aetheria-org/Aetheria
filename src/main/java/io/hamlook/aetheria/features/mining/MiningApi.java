@@ -7,6 +7,7 @@ import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.features.misc.PerformanceHUD;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
@@ -147,7 +148,7 @@ public class MiningApi {
 
         EntityPlayer player = MinecraftCompat.getLocalPlayer();
         if (player == null) return;
-        double dist = player.getDistance(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+        double dist = EntityCompat.getDistanceToPos(player, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
         if (dist > MAX_BREAK_DISTANCE) { debugLogRateLimited("s22:far:" + pos, "S22: too far (" + String.format("%.1f", dist) + ") at " + pos); return; }
 
         if (System.currentTimeMillis() - lastInitSound > getBlockChangeWindow()) { debugLogRateLimited("s22:win:" + pos, "S22: outside window at " + pos); return; }
@@ -288,7 +289,7 @@ public class MiningApi {
         BlockPos bp = event.getBlockPos();
         EntityPlayer player = MinecraftCompat.getLocalPlayer();
         double dist = player != null
-            ? player.getDistance(bp.getX() + 0.5, bp.getY() + 0.5, bp.getZ() + 0.5)
+            ? EntityCompat.getDistanceToPos(player, bp.getX() + 0.5, bp.getY() + 0.5, bp.getZ() + 0.5)
             : -1;
         return "[MiningApi/Sound] " + event.soundName
             + " pitch=" + event.pitch

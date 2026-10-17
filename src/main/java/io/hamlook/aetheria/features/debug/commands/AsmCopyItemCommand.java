@@ -6,6 +6,7 @@ import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.ClipboardCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
@@ -39,8 +40,8 @@ public class AsmCopyItemCommand {
                 result.add("internal name: " + ItemUtils.getInternalName(item));
                 result.add("effective id: " + ItemUtils.getEffectiveItemId(item));
                 result.add("display name: '" + TextCompat.getFormattedText(item.getDisplayName()) + "'");
-                result.add("minecraft id: '" + item.getItem().getUnlocalizedName() + "'");
-                result.add("stack size: " + item.stackSize);
+                result.add("minecraft id: '" + ItemCompatKt.getIdentifierString(item.getItem()) + "'");
+                result.add("stack size: " + ItemCompatKt.getCountCompat(item));
                 result.add("");
                 result.add("lore:");
                 for (String line : ItemUtils.getLoreLines(item)) {

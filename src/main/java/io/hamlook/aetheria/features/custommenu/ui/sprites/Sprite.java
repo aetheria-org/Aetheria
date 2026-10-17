@@ -5,6 +5,7 @@ import io.hamlook.aetheria.features.custommenu.Position;
 import io.hamlook.aetheria.features.custommenu.ui.CMMElement;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.util.ResourceLocation;
 
@@ -50,9 +51,8 @@ public class Sprite extends CMMElement {
         if (resource == null) return;
         
         GlStateManagerCompat.pushMatrix();
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(resource);
         GlStateManagerCompat.color(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderUtils.drawTexturedRect(xPos, yPos, width, height);
+        TextureCompat.drawBoundTextured(resource, xPos, yPos, width, height, 0, 0, 1, 1);
         GlStateManagerCompat.popMatrix();
     }
 }

@@ -2,6 +2,7 @@ package io.hamlook.aetheria.api.event.forge;
 
 import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 //#if FORGE
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -38,8 +39,8 @@ public class ChatBridge {
     //$$ }
     //$$
     //$$ private static boolean athr$intake(Text message, ASMChatEvent.Type type) {
-    //$$     ASMChatEvent asmEvent = new ASMChatEvent(message, type);
-    //$$     asmEvent.post();
+//$$     ASMChatEvent asmEvent = new ASMChatEvent(message, type);
+//$$     asmEvent.post();
     //$$     if (asmEvent.isCancelled()) {
     //$$         athr$pending = null;
     //$$         return false;
@@ -51,8 +52,10 @@ public class ChatBridge {
     //$$ private static Text athr$apply(Text message) {
     //$$     ASMChatEvent pending = athr$pending;
     //$$     athr$pending = null;
-    //$$     if (pending != null) return pending.message;
-    //$$     return message;
+    //$$     if (pending != null) {
+    //$$         return TextCompat.parseLegacyLiterals(pending.message);
+    //$$     }
+    //$$     return TextCompat.parseLegacyLiterals(message);
     //$$ }
     //#endif
 }

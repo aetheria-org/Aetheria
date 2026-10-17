@@ -12,6 +12,10 @@ import net.minecraft.item.ItemStack
 //$$ import net.minecraft.world.inventory.Slot
 //$$ import net.minecraft.world.item.ItemStack
 //#endif
+import net.minecraft.entity.player.InventoryPlayer
+import net.minecraft.client.gui.GuiScreen
+import net.minecraft.inventory.ContainerChest
+import net.minecraft.util.IChatComponent
 
 
 object InventoryCompat {
@@ -29,7 +33,15 @@ object InventoryCompat {
         //#if MC < 1.16
         container.windowId
         //#else
-        //$$ container.containerId
+        //$$ container.syncId
+        //#endif
+
+    @JvmStatic
+    fun getContainerTitle(gui: GuiScreen?): IChatComponent? =
+        //#if MC < 1.16
+        (if (gui is GuiContainer) getContainer(gui) as? ContainerChest else null)?.lowerChestInventory?.displayName
+        //#else
+        //$$ (gui as? HandledScreen<*>)?.title
         //#endif
 
     @JvmStatic
@@ -63,11 +75,43 @@ object InventoryCompat {
     //#endif
 
     @JvmStatic
+    fun getCurrentItem(player: EntityPlayer): ItemStack? =
+        //#if MC < 1.16
+        player.inventory.getCurrentItem()
+        //#else
+        //$$ player.getInventory().getMainHandStack()
+        //#endif
+
+    @JvmStatic
     fun getCursorStack(player: EntityPlayer): ItemStack? =
         //#if MC < 1.21
         player.inventory.itemStack
         //#else
         //$$ player.currentScreenHandler?.cursorStack?.takeIf { !it.isEmpty }
+        //#endif
+
+    @JvmStatic
+    fun getInventory(player: EntityPlayer): InventoryPlayer =
+        //#if MC < 1.16
+        player.inventory
+        //#else
+        //$$ player.getInventory()
+        //#endif
+
+    @JvmStatic
+    fun getMainInventory(player: EntityPlayer): Array<ItemStack?> =
+        //#if MC < 1.16
+        player.inventory.mainInventory
+        //#else
+        //$$ player.getInventory().main.normalizeItemStackArray()
+        //#endif
+
+    @JvmStatic
+    fun getArmorInventory(player: EntityPlayer): Array<ItemStack?> =
+        //#if MC < 1.16
+        player.inventory.armorInventory
+        //#else
+        //$$ player.getInventory().armor.normalizeItemStackArray()
         //#endif
 
     @JvmStatic
@@ -104,6 +148,22 @@ object InventoryCompat {
     //#else
     //$$ @JvmStatic
     //$$ fun getGuiTop(gui: HandledScreen<*>): Int = gui.y
+    //#endif
+
+    //#if MC < 1.16
+    @JvmStatic
+    fun getXSize(gui: GuiContainer): Int = gui.xSize
+    //#else
+    //$$ @JvmStatic
+    //$$ fun getXSize(gui: HandledScreen<*>): Int = gui.backgroundWidth
+    //#endif
+
+    //#if MC < 1.16
+    @JvmStatic
+    fun getYSize(gui: GuiContainer): Int = gui.ySize
+    //#else
+    //$$ @JvmStatic
+    //$$ fun getYSize(gui: HandledScreen<*>): Int = gui.backgroundHeight
     //#endif
 }
 

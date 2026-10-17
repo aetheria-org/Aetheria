@@ -5,6 +5,7 @@ import io.hamlook.aetheria.features.chat.chatfilters.ChatFilter;
 import io.hamlook.aetheria.features.chat.chatfilters.ChatFilterManager;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterCase;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterMode;
+import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
@@ -56,9 +57,9 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
 
         int fieldH = getScaledY(BTN_H);
 
-        searchField = new GuiTextField(0, MinecraftCompat.getFontRenderer(), boxX + getScaledX(20), boxY + getScaledY(24), boxW - getScaledX(160), fieldH);
+        searchField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), boxX + getScaledX(20), boxY + getScaledY(24), boxW - getScaledX(160), fieldH);
 
-        searchField.setMaxStringLength(100);
+        GuiScreenUtils.setTextFieldMaxLength(searchField, 100);
         searchField.setText(prevSearch);
         searchField.setFocused(true);
         GuiScreenUtils.clearButtons(this);
@@ -69,12 +70,12 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
         int th = getScaledY(TOGGLE_H);
         int tw = getScaledX(TOGGLE_W);
 
-        GuiScreenUtils.addButton(this, CFButton.create(1, boxX + getScaledX(20), ty, tw, th, "STARTS", true, showStarts, () -> { showStarts = !showStarts; initGui(); }));
-        GuiScreenUtils.addButton(this, CFButton.create(2, boxX + getScaledX(100), ty, tw, th, "ENDS", true, showEnds, () -> { showEnds = !showEnds; initGui(); }));
-        GuiScreenUtils.addButton(this, CFButton.create(3, boxX + getScaledX(180), ty, getScaledX(TOGGLE_W + 10), th, "CONTAINS", true, showContains, () -> { showContains = !showContains; initGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(1, boxX + getScaledX(20), ty, tw, th, "STARTS", true, showStarts, () -> { showStarts = !showStarts; refreshGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(2, boxX + getScaledX(100), ty, tw, th, "ENDS", true, showEnds, () -> { showEnds = !showEnds; refreshGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(3, boxX + getScaledX(180), ty, getScaledX(TOGGLE_W + 10), th, "CONTAINS", true, showContains, () -> { showContains = !showContains; refreshGui(); }));
 
-        GuiScreenUtils.addButton(this, CFButton.create(4, boxX + getScaledX(275), ty, getScaledX(TOGGLE_W + 10), th, "SENSITIVE", true, showSensitive, () -> { showSensitive = !showSensitive; initGui(); }));
-        GuiScreenUtils.addButton(this, CFButton.create(5, boxX + getScaledX(370), ty, getScaledX(TOGGLE_W + 20), th, "INSENSITIVE", true, showInsensitive, () -> { showInsensitive = !showInsensitive; initGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(4, boxX + getScaledX(275), ty, getScaledX(TOGGLE_W + 10), th, "SENSITIVE", true, showSensitive, () -> { showSensitive = !showSensitive; refreshGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(5, boxX + getScaledX(370), ty, getScaledX(TOGGLE_W + 20), th, "INSENSITIVE", true, showInsensitive, () -> { showInsensitive = !showInsensitive; refreshGui(); }));
     }
 
     //#if MC < 1.21
@@ -111,20 +112,22 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
         ChatFilterManager.saveToFile();
     }
 
+    //#if MC < 1.21
     @Override
     public void updateScreen() {
-        searchField.updateCursorCounter();
+        GuiScreenUtils.tickTextField(searchField);
     }
+    //#endif
 
     @Override
     protected void onKeyTyped(char typedChar, int keyCode) {
-        if (keyCode == 1 && searchField.isFocused()) {
+        if (KeybindHelper.isEscapeKey(keyCode) && searchField.isFocused()) {
             searchField.setFocused(false);
             return;
         }
 
         if (searchField.isFocused()) {
-            searchField.textboxKeyTyped(typedChar, keyCode);
+            GuiScreenUtils.typeTextField(searchField, typedChar, keyCode);
         }
     }
 
@@ -171,7 +174,11 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
 
     @Override
     protected void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
+        //#if MC < 1.21
         drawDefaultBackground();
+        //#else
+        //$$ // modern background handled via Screen.renderBackground
+        //#endif
         GlStateManagerCompat.color(0.18f, 0.18f, 0.18f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), boxX, boxY, boxW, boxH, 6, 18);
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);

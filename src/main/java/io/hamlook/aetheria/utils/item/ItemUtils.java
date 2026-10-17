@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.utils.item;
 
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -12,7 +13,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 public class ItemUtils {
@@ -35,7 +38,7 @@ public class ItemUtils {
     public static @Nullable NBTTagCompound getEnchantments(@Nullable ItemStack item) {
         NBTTagCompound extra = getExtraAttributes(item);
         if (extra == null || !NbtCompat.hasKey(extra, "enchantments", NbtCompat.TAG_COMPOUND)) return null;
-        return extra.getCompoundTag("enchantments");
+        return NbtCompat.getCompound(extra, "enchantments");
     }
 
 
@@ -44,8 +47,8 @@ public class ItemUtils {
         NBTTagCompound display = getDisplayCompound(item);
         if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return Collections.emptyList();
         NBTTagList lore = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
-        List<String> lines = new ArrayList<>(lore.tagCount());
-        for (int i = 0; i < lore.tagCount(); i++) lines.add(lore.getStringTagAt(i));
+        List<String> lines = new ArrayList<>(NbtCompat.tagCount(lore));
+        for (int i = 0; i < NbtCompat.tagCount(lore); i++) lines.add(NbtCompat.getStringAt(lore, i));
         return lines;
     }
 
@@ -53,8 +56,8 @@ public class ItemUtils {
         NBTTagCompound display = getDisplayCompound(item);
         if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return Collections.emptyList();
         NBTTagList lore = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
-        List<String> lines = new ArrayList<>(lore.tagCount());
-        for (int i = 0; i < lore.tagCount(); i++) lines.add(ColorUtils.stripColor(lore.getStringTagAt(i)));
+        List<String> lines = new ArrayList<>(NbtCompat.tagCount(lore));
+        for (int i = 0; i < NbtCompat.tagCount(lore); i++) lines.add(ColorUtils.stripColor(NbtCompat.getStringAt(lore, i)));
         return lines;
     }
 
@@ -85,30 +88,36 @@ public class ItemUtils {
     public static String getSkullTexture(@Nullable ItemStack item) {
         NBTTagCompound tag = NbtCompat.getTagCompound(item);
         if (tag == null) return "";
-        if (!tag.hasKey("SkullOwner")) return "";
-        NBTTagCompound skullOwner = tag.getCompoundTag("SkullOwner");
-        if (!skullOwner.hasKey("Properties")) return "";
-        NBTTagList textures = skullOwner.getCompoundTag("Properties").getTagList("textures", NbtCompat.TAG_COMPOUND);
-        if (textures.tagCount() == 0) return "";
-        NBTTagCompound entry = textures.getCompoundTagAt(0);
-        return entry.hasKey("Value") ? entry.getString("Value") : "";
+        if (!NbtCompat.hasKey(tag, "SkullOwner")) return "";
+        NBTTagCompound skullOwner = NbtCompat.getCompound(tag, "SkullOwner");
+        if (!NbtCompat.hasKey(skullOwner, "Properties")) return "";
+        NBTTagList textures = NbtCompat.getTagList(NbtCompat.getCompound(skullOwner, "Properties"), "textures", NbtCompat.TAG_COMPOUND);
+        if (NbtCompat.tagCount(textures) == 0) return "";
+        NBTTagCompound entry = NbtCompat.getCompoundAt(textures, 0);
+        return NbtCompat.hasKey(entry, "Value") ? NbtCompat.getString(entry, "Value") : "";
     }
 
     public static ItemStack createSkullWithTexture(String textureValue) {
-        ItemStack skull = new ItemStack(Items.skull, 1, 3);
-        NBTTagCompound tag = new NBTTagCompound();
-        NBTTagCompound skullOwner = new NBTTagCompound();
-        skullOwner.setString("Id", UUID.randomUUID().toString());
-        NBTTagCompound properties = new NBTTagCompound();
-        NBTTagList textures = new NBTTagList();
-        NBTTagCompound textureTag = new NBTTagCompound();
-        textureTag.setString("Value", textureValue);
-        textures.appendTag(textureTag);
-        properties.setTag("textures", textures);
-        skullOwner.setTag("Properties", properties);
-        tag.setTag("SkullOwner", skullOwner);
-        skull.setTagCompound(tag);
+        ItemStack skull = ItemCompatKt.createPlayerHeadStack();
+        NBTTagCompound tag = NbtCompat.createCompound();
+        NBTTagCompound skullOwner = NbtCompat.createCompound();
+        NbtCompat.setString(skullOwner, "Id", UUID.randomUUID().toString());
+        NBTTagCompound properties = NbtCompat.createCompound();
+        NBTTagList textures = NbtCompat.createList();
+        NBTTagCompound textureTag = NbtCompat.createCompound();
+        NbtCompat.setString(textureTag, "Value", textureValue);
+        NbtCompat.appendTag(textures, textureTag);
+        NbtCompat.setTagList(properties, "textures", textures);
+        NbtCompat.setTag(skullOwner, "Properties", properties);
+        NbtCompat.setTag(tag, "SkullOwner", skullOwner);
+        NbtCompat.setTagCompound(skull, tag);
         return skull;
+    }
+
+    private static final Map<String, ItemStack> SKULL_CACHE = new ConcurrentHashMap<>();
+
+    public static ItemStack getCachedSkull(String textureValue) {
+        return SKULL_CACHE.computeIfAbsent(textureValue, ItemUtils::createSkullWithTexture);
     }
 
 
@@ -127,24 +136,24 @@ public class ItemUtils {
         }
         if (!"ENCHANTED_BOOK".equals(baseId)){
             if(!"POTION".equals(baseId)) return baseId;
-            NBTTagList potionEffects = extra.getTagList("effects", NbtCompat.TAG_COMPOUND);
+            NBTTagList potionEffects = NbtCompat.getTagList(extra, "effects", NbtCompat.TAG_COMPOUND);
 
             StringBuilder id = new StringBuilder("POTION");
-            for (int i = 0; i < potionEffects.tagCount(); i++) {
-                NBTTagCompound effectCompound = potionEffects.getCompoundTagAt(i);
-                if (effectCompound.hasKey("effect")) {
-                    String effectName = effectCompound.getString("effect");
-                    int effectLvL = effectCompound.getInteger("lvl");
+            for (int i = 0; i < NbtCompat.tagCount(potionEffects); i++) {
+                NBTTagCompound effectCompound = NbtCompat.getCompoundAt(potionEffects, i);
+                if (NbtCompat.hasKey(effectCompound, "effect")) {
+                    String effectName = NbtCompat.getString(effectCompound, "effect");
+                    int effectLvL = NbtCompat.getInt(effectCompound, "lvl");
                     if(effectLvL == 0 || effectName == null || effectName.isEmpty()) continue;
                     id.append("_").append(effectName.toUpperCase()).append(";").append(effectLvL);
                 }
             }
             return id.toString();
         }
-        if (!extra.hasKey("enchantments")) return baseId;
-        NBTTagCompound enchants = extra.getCompoundTag("enchantments");
-        for (String key : enchants.getKeySet()) {
-            int level = enchants.getInteger(key);
+        if (!NbtCompat.hasKey(extra, "enchantments")) return baseId;
+        NBTTagCompound enchants = NbtCompat.getCompound(extra, "enchantments");
+        for (String key : NbtCompat.keySet(enchants)) {
+            int level = NbtCompat.getInt(enchants, key);
             return key + "_" + level;
         }
         return baseId;
@@ -167,10 +176,16 @@ public class ItemUtils {
         return extra != null && extra.hasKey("id");
     }
 
+    /**
+     * Returns the stack's tag for mutation. Legacy returns the live compound;
+     * on modern the returned compound is detached — callers must write it back
+     * with {@link NbtCompat#setTagCompound} after mutating (see SkyblockItem).
+     */
     public static @NotNull NBTTagCompound getOrCreateTag(@NotNull ItemStack item) {
-        if (item.hasTagCompound()) return item.getTagCompound();
-        NBTTagCompound tag = new NBTTagCompound();
-        item.setTagCompound(tag);
+        NBTTagCompound existing = NbtCompat.getTagCompound(item);
+        if (existing != null) return existing;
+        NBTTagCompound tag = NbtCompat.createCompound();
+        NbtCompat.setTagCompound(item, tag);
         return tag;
     }
 

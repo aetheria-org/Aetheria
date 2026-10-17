@@ -7,6 +7,7 @@ import io.hamlook.aetheria.core.moulconfig.gui.GuiElementColour;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 
@@ -40,8 +41,8 @@ public class GuiOptionEditorColour extends GuiOptionEditor {
         int g = (argb >> 8) & 0xFF;
         int b = argb & 0xFF;
         GlStateManagerCompat.color(r / 255f, g / 255f, b / 255f, 1);
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(button_white);
-        RenderUtils.drawTexturedRect(x + width / 6 - 24, y + height - 7 - 14, 48, 16);
+        TextureCompat.drawBoundTextured(button_white, x + width / 6 - 24, y + height - 7 - 14, 48, 16, 0, 0, 1, 1);
+        GlStateManagerCompat.resetColor();
     }
 
     @Override
@@ -53,14 +54,23 @@ public class GuiOptionEditorColour extends GuiOptionEditor {
 
     @Override
     public boolean mouseInputOverlay(int x, int y, int width, int mouseX, int mouseY) {
-        return colourElement != null && colourElement.mouseInput(mouseX, mouseY);
+        return colourElement != null && colourElement.mouseInput(mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    public boolean mouseInputOverlay(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
+        return colourElement != null && colourElement.mouseInput(mouseX, mouseY, button, pressed);
     }
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
+        return mouseInput(x, y, width, mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
         int height = getHeight();
 
-        if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0 && mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24 && mouseY > y + height - 7 - 14 && mouseY < y + height - 7 + 2) {
+        if (pressed && button == 0 && mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24 && mouseY > y + height - 7 - 14 && mouseY < y + height - 7 + 2) {
             colourElement = new GuiElementColour(mouseX, mouseY, chromaColour, val -> {
                 setter.accept(val);
                 chromaColour = val;
@@ -73,5 +83,10 @@ public class GuiOptionEditorColour extends GuiOptionEditor {
     @Override
     public boolean keyboardInput() {
         return colourElement != null && colourElement.keyboardInput();
+    }
+
+    @Override
+    public boolean keyboardInput(char typedChar, int keyCode) {
+        return colourElement != null && colourElement.keyboardInput(typedChar, keyCode);
     }
 }

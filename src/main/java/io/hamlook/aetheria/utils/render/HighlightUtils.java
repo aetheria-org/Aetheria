@@ -10,6 +10,10 @@ import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.inventory.GuiContainer;
+//#if MC < 1.21
+//#else
+//$$ import net.minecraft.client.gui.screen.ingame.HandledScreen;
+//#endif
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -36,14 +40,21 @@ public class HighlightUtils {
         });
     }
 
+    //#if MC < 1.21
     public static void registerHighlighter(BiPredicate<GuiContainer, Slot> shouldHighlight, int color) {
         HIGHLIGHTERS.add(new SlotHighlighter(shouldHighlight, color));
     }
+    //#else
+    //$$ public static void registerHighlighter(BiPredicate<HandledScreen<?>, Slot> shouldHighlight, int color) {
+    //$$     HIGHLIGHTERS.add(new SlotHighlighter(shouldHighlight, color));
+    //$$ }
+    //#endif
 
     public static void registerHighlighter(SlotHighlightFunction highlighter) {
         HIGHLIGHTERS.add(new SlotHighlighter(highlighter));
     }
 
+    //#if MC < 1.21
     public static void renderAllHighlights(GuiContainer gui, Slot slot) {
         for (SlotHighlighter highlighter : HIGHLIGHTERS) {
             Integer color = highlighter.getColor(gui, slot);
@@ -52,6 +63,16 @@ public class HighlightUtils {
             }
         }
     }
+    //#else
+    //$$ public static void renderAllHandledHighlights(HandledScreen<?> gui, Slot slot) {
+    //$$     for (SlotHighlighter highlighter : HIGHLIGHTERS) {
+    //$$         Integer color = highlighter.getColor(gui, slot);
+    //$$         if (color != null) {
+    //$$             renderSlotHighlight(slot.x, slot.y, color);
+    //$$         }
+    //$$     }
+    //$$ }
+    //#endif
 
     public static void renderSlotHighlight(int x, int y, int color) {
         GlStateManagerCompat.disableLighting();
@@ -99,7 +120,11 @@ public class HighlightUtils {
 
     @FunctionalInterface
     public interface SlotHighlightFunction {
+        //#if MC < 1.21
         Integer getColor(GuiContainer gui, Slot slot);
+        //#else
+        //$$ Integer getColor(HandledScreen<?> gui, Slot slot);
+        //#endif
     }
 
     private static class SlotHighlighter {
@@ -109,6 +134,7 @@ public class HighlightUtils {
             this.function = function;
         }
 
+        //#if MC < 1.21
         SlotHighlighter(BiPredicate<GuiContainer, Slot> predicate, int color) {
             this.function = (gui, slot) -> predicate.test(gui, slot) ? color : null;
         }
@@ -116,5 +142,14 @@ public class HighlightUtils {
         Integer getColor(GuiContainer gui, Slot slot) {
             return function.getColor(gui, slot);
         }
+        //#else
+        //$$ SlotHighlighter(BiPredicate<HandledScreen<?>, Slot> predicate, int color) {
+        //$$     this.function = (gui, slot) -> predicate.test(gui, slot) ? color : null;
+        //$$ }
+        //$$
+        //$$ Integer getColor(HandledScreen<?> gui, Slot slot) {
+        //$$     return function.getColor(gui, slot);
+        //$$ }
+        //#endif
     }
 }

@@ -18,7 +18,7 @@ public class BlockData {
         if (event.packet instanceof S23PacketBlockChange) {
             S23PacketBlockChange pkt = (S23PacketBlockChange) event.packet;
             net.minecraft.util.BlockPos pos = pkt.getBlockPosition();
-            net.minecraft.block.state.IBlockState state = pkt.getBlockState();
+            net.minecraft.block.state.IBlockState state = PacketCompat.blockChangeState(pkt);
             if (pos != null && state != null) {
                 new ServerBlockChangeEvent(pos, state).post();
             }

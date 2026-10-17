@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.storage.render;
 
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.misc.SearchBar;
 import io.hamlook.aetheria.features.storage.StorageManager;
@@ -13,7 +14,6 @@ import io.hamlook.aetheria.utils.render.ResolutionUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import lombok.Getter;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
@@ -22,8 +22,10 @@ import org.lwjgl.opengl.GL11;
 import java.awt.*;
 import java.util.LinkedHashMap;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 
-public class StorageRenderer extends Gui {
+public class StorageRenderer {
 
     private static final int PADDING = 5;
     private static final int ROW_SPACING = 16;
@@ -105,7 +107,7 @@ public class StorageRenderer extends Gui {
         GlStateManagerCompat.disableFog();
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
-        drawGradientRect(0, 0, width, height, -1072689136, -804253680);
+        RenderUtils.drawGradientRect(0, 0, 0, width, height, -1072689136, -804253680);
         GlStateManagerCompat.disableBlend();
     }
 
@@ -317,7 +319,7 @@ public class StorageRenderer extends Gui {
         }
 
         if (searchField != null) {
-            searchField.updateCursorCounter();
+            GuiScreenUtils.tickTextField(searchField);
         }
 
         int maxScroll = getMaxScroll();
@@ -340,7 +342,7 @@ public class StorageRenderer extends Gui {
         int scissorScreenTop = boxY + inset;
         int scissorScreenBottom = boxY + storageAreaH - inset;
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor((boxX + inset) * scaleFactor, (GuiScreenUtils.getDisplayHeight() - scissorScreenBottom * scaleFactor), (boxW - inset * 2) * scaleFactor, (scissorScreenBottom - scissorScreenTop) * scaleFactor);
+        GlStateManagerCompat.scissor((boxX + inset) * scaleFactor, (GuiScreenUtils.getDisplayHeight() - scissorScreenBottom * scaleFactor), (boxW - inset * 2) * scaleFactor, (scissorScreenBottom - scissorScreenTop) * scaleFactor);
 
         String activeId = StorageManager.getActiveContainerId();
         boolean dimMode = ATHRConfig.feature.storage.activeContainerStyle == 0 && activeId != null;
@@ -366,9 +368,13 @@ public class StorageRenderer extends Gui {
     }
 
     private void drawSlotBackground(int x, int y, float color) {
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(getSlotTexture());
         GlStateManagerCompat.color(color, 1f, 1f, 1f);
-        drawModalRectWithCustomSizedTexture(x, y, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+        //#if MC < 1.21
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(getSlotTexture());
+        DrawContextUtils.drawModalRectWithCustomSizedTexture(x, y, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+        //#else
+        //$$ DrawContextUtils.drawModalRectWithCustomSizedTexture(getSlotTexture(), x, y, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+        //#endif
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
     }
 
@@ -398,7 +404,7 @@ public class StorageRenderer extends Gui {
     }
 
     private void renderPlayerInventory(int mouseX, int mouseY) {
-        ItemStack[] playerItems = ArrayNormalizationKt.normalizeAsArray(MinecraftCompat.getLocalPlayer().inventory.mainInventory);
+        ItemStack[] playerItems = InventoryCompat.getMainInventory(MinecraftCompat.getLocalPlayer());
 
         drawInventoryBackground();
         renderInventorySlots(playerItems, mouseX, mouseY);
@@ -533,6 +539,10 @@ public class StorageRenderer extends Gui {
         targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
 
         scrollTarget = targetScroll;
+    }
+
+    public boolean isSearchFocused() {
+        return searchField != null && searchField.isFocused();
     }
 
     public void requestScrollToActive() {
@@ -707,7 +717,7 @@ public class StorageRenderer extends Gui {
 
     private void drawContainerTitle(SContainer container, ContainerLayout info, FontRenderer fr, boolean isActive, boolean dimMode) {
         String title = buildContainerTitle(container, isActive, dimMode);
-        drawCenteredString(fr, title, info.x + info.width / 2, info.y + 4, Color.WHITE.getRGB());
+        TextRenderUtils.drawCenteredStringScaleAware(title, info.x + info.width / 2, info.y + 4, Color.WHITE.getRGB(), 1f, false);
     }
 
     private String buildContainerTitle(SContainer container, boolean isActive, boolean dimMode) {

@@ -10,6 +10,7 @@ import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.time.TimeFormatter;
@@ -156,9 +157,9 @@ public class GhostOverlay extends Overlay {
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 
-        GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0);
-        GL11.glScalef(scale, scale, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(x, y, 0);
+        GlStateManagerCompat.scale(scale, scale, 1f);
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0) drawRoundedRect(-3, -3, w, h - 3, getCornerRadius(), bgColor);
@@ -170,8 +171,7 @@ public class GhostOverlay extends Overlay {
 
         int dy = 3 + LINE_HEIGHT;
         for (HudEntry e : entries) {
-            mc.getTextureManager().bindTexture(e.icon);
-            Utils.drawTexturedRect(ICON_PAD, dy + 1, ICON_SIZE, ICON_SIZE);
+            TextureCompat.drawBoundTextured(e.icon, ICON_PAD, dy + 1, ICON_SIZE, ICON_SIZE, 0, 0, 1, 1);
             int textX = ICON_SIZE + ICON_PAD * 2;
             DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), e.label, textX, dy, 0xFFFFFF);
             String[] parts = e.value.split(" §7\\(");
@@ -185,7 +185,7 @@ public class GhostOverlay extends Overlay {
             dy += LINE_HEIGHT;
         }
 
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     private static class HudEntry {

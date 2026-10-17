@@ -32,7 +32,7 @@ public class ChatPingListener {
         Minecraft mc = MinecraftCompat.getMinecraft();
         if (MinecraftCompat.getLocalPlayer() == null) return;
 
-        String name = MinecraftCompat.getLocalPlayer().getName().toLowerCase();
+        String name = TextCompat.getUnformattedText(MinecraftCompat.getLocalPlayer().getName()).toLowerCase();
         String stripped = StringUtils.stripControlCodes(TextCompat.getFormattedText(event.message));
 
         int colonIdx = stripped.indexOf(':');
@@ -68,6 +68,7 @@ public class ChatPingListener {
         EnumChatFormatting color = COLORS[cfg.chatPingColor];
         if (color != null) {
             event.message = ChatUtils.ensureSiblings(event.message);
+            int before = TextCompat.getSiblings(event.message).size();
             highlightName(event.message, name, color);
         }
     }
@@ -90,7 +91,12 @@ public class ChatPingListener {
         int nameLen = name.length();
         for (int i = 0; i < siblings.size(); i++) {
             IChatComponent sib = siblings.get(i);
-            String text = sib.getUnformattedTextForChat();
+            if (!TextCompat.getSiblings(sib).isEmpty()) {
+                if (TextCompat.getUnformattedTextForChat(sib).indexOf(':') != -1) pastColon[0] = true;
+                highlightName(sib, name, color, pastColon);
+                continue;
+            }
+            String text = TextCompat.getUnformattedTextForChat(sib);
             String lower = text.toLowerCase();
 
             int colonPos = lower.indexOf(':');
@@ -129,14 +135,14 @@ public class ChatPingListener {
             String after = text.substring(namePos + nameLen);
 
             if (!before.isEmpty()) {
-                IChatComponent beforeComp = TextCompat.createText(before);
-                beforeComp.setChatStyle(TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
+                IChatComponent beforeComp = TextCompat.fromFormatted(before);
+                TextCompat.setChatStyle(beforeComp, TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
                 siblings.set(i, beforeComp);
                 i++;
             }
 
-            IChatComponent nameComp = TextCompat.createText(match);
-            TextCompat.setColor(TextCompat.getChatStyle(nameComp), color);
+            IChatComponent nameComp = TextCompat.fromFormatted(match);
+            TextCompat.setChatStyle(nameComp, TextCompat.setColor(TextCompat.getChatStyle(nameComp), color));
             if (before.isEmpty()) {
                 siblings.set(i, nameComp);
             } else {
@@ -148,8 +154,8 @@ public class ChatPingListener {
                 if (!after.startsWith("§")) {
                     after = getLastFormatCode(before) + after;
                 }
-                IChatComponent afterComp = TextCompat.createText(after);
-                afterComp.setChatStyle(TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
+                IChatComponent afterComp = TextCompat.fromFormatted(after);
+                TextCompat.setChatStyle(afterComp, TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
                 for (IChatComponent child : TextCompat.getSiblings(sib)) {
                     TextCompat.appendSibling(afterComp, child);
                 }

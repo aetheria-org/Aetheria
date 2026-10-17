@@ -74,8 +74,8 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
 
     @Override
     protected void drawPageContent(int mouseX, int mouseY, int slide) {
-        drawCenteredString(MinecraftCompat.getFontRenderer(), "§lAetheria — Network Status", px + PANEL_W / 2, py + 10, 0xFFFFFF);
-        drawCenteredString(MinecraftCompat.getFontRenderer(), "§7Some features are disabled by your network settings.", px + PANEL_W / 2, py + 22, 0x888888);
+        DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), "§lAetheria — Network Status", px + PANEL_W / 2, py + 10, 0xFFFFFF);
+        DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), "§7Some features are disabled by your network settings.", px + PANEL_W / 2, py + 22, 0x888888);
         DrawContextUtils.fill(px + 20, py + 34, px + PANEL_W - 20, py + 35, 0x33FFFFFF);
 
         for (int i = 0; i < sections.size(); i++) {
@@ -127,7 +127,7 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
     private void drawButton(int x, int y, int w, int h, String label, int color, boolean hovered) {
         RenderUtils.drawFloatingRectDark(x, y, w, h, false);
         if (hovered) DrawContextUtils.fill(x, y, x + w, y + h, 0x18FFFFFF);
-        drawCenteredString(MinecraftCompat.getFontRenderer(), label, x + w / 2, y + (h - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2, color);
+        DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), label, x + w / 2, y + (h - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2, color);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class NetworkStatusScreen extends NetworkNoticeScreen {
         int doneX = px + PANEL_W - NAV_PAD - DONE_W;
         if (!allRead()) {
             drawButton(doneX, ny, DONE_W, NAV_H, "§7Done", 0x666666, false);
-            drawCenteredString(MinecraftCompat.getFontRenderer(), "§7Hover every section to enable.", px + PANEL_W / 2, ny + NAV_H + 4, 0x555555);
+            DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), "§7Hover every section to enable.", px + PANEL_W / 2, ny + NAV_H + 4, 0x555555);
         } else {
             boolean doneHover = inBox(mouseX, mouseY, doneX, ny, DONE_W, NAV_H);
             drawButton(doneX, ny, DONE_W, NAV_H, "§aDone §8— Don't show again", doneHover ? 0x55FF55 : 0xAAAAAA, doneHover);

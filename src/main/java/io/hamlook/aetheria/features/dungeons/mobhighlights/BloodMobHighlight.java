@@ -6,23 +6,23 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.events.ASMRenderWorldEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
+import io.hamlook.aetheria.events.RenderEntityOutlineEvent;
 import io.hamlook.aetheria.events.TickPhase;
+import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import io.hamlook.aetheria.utils.render.EntityHighlight;
-import io.hamlook.aetheria.utils.render.EntityOutlines;
-import io.hamlook.aetheria.utils.render.WorldRenderUtils;
+import io.hamlook.aetheria.utils.render.EntityRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityArmorStand;
-import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.IChatComponent;
-import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -41,12 +41,15 @@ public class BloodMobHighlight {
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickPhase.END) return;
-        if (ATHRConfig.feature == null || ATHRConfig.feature.dungeons.bloodMobHighlight == 2) return;
+        if (ATHRConfig.feature == null || ATHRConfig.feature.dungeons.bloodMobHighlight == 2) {
+            bloodMobs = new HashSet<>();
+            return;
+        }
 
         if (++tickCounter < 4) return;
         tickCounter = 0;
 
-        if (!SkyblockData.isInDungeon() || MinecraftCompat.getLocalWorld() == null) {
+        if (!SkyblockData.isInDungeon() || MinecraftCompat.getLocalWorld() == null || !DungeonStats.isBloodActive()) {
             bloodMobs = new HashSet<>();
             return;
         }
@@ -57,57 +60,38 @@ public class BloodMobHighlight {
             String name = TextCompat.getUnformattedText(entity.getName());
             if (name == null || !MOB_NAME.matcher(name).matches()) continue;
 
-            EntityLivingBase mob = MinecraftCompat.getLocalWorld().getEntitiesWithinAABB(EntityLivingBase.class, entity.getEntityBoundingBox().expand(0.5, 3.0, 0.5), e -> e != null && !(e instanceof EntityArmorStand) && e != MinecraftCompat.getLocalPlayer()).stream().findFirst().orElse(null);
+            EntityLivingBase mob = EntityCompat.findMobNearStand(MinecraftCompat.getLocalWorld(), entity, 0.5, 3.0, 0.5);
 
             if (mob != null && !isDying(mob)) found.add(mob);
         }
         bloodMobs = found;
-        if (ATHRConfig.feature.dungeons.bloodMobHighlight == 1) {
-            Color color = getColor();
-            for (EntityLivingBase mob : found) EntityOutlines.xray(mob, color);
-        }
     }
 
     @HandleEvent(priority = HandleEvent.HIGH)
     public void onRenderEntityModel(RenderEntityModelEvent event) {
         if (ATHRConfig.feature == null || ATHRConfig.feature.dungeons.bloodMobHighlight != 1) return;
         EntityLivingBase entity = event.getEntity();
-        if (!bloodMobs.contains(entity) || isDying(entity) || entity.isInvisible()) return;
-        EntityHighlight.renderEntityOutline(event, getColor());
+        if (!bloodMobs.contains(entity) || isDying(entity)) return;
+        EntityRenderUtils.renderOutline(event, getColor());
+    }
+
+    @HandleEvent
+    public void onRenderOutline(RenderEntityOutlineEvent event) {
+        if (ATHRConfig.feature == null || ATHRConfig.feature.dungeons.bloodMobHighlight != 1) return;
+        int argb = getColor().getRGB();
+        for (EntityLivingBase mob : bloodMobs) {
+            if (EntityCompat.isDead(mob) || isDying(mob)) continue;
+            event.queue(mob, argb);
+        }
     }
 
     @HandleEvent
     public void onRenderWorldLast(ASMRenderWorldEvent event) {
         if (ATHRConfig.feature == null || ATHRConfig.feature.dungeons.bloodMobHighlight != 0) return;
-        Set<EntityLivingBase> snapshot = bloodMobs;
-        if (snapshot.isEmpty() || MinecraftCompat.getLocalPlayer() == null) return;
-
-        Color c = getColor();
-        float r = c.getRed() / 255f, g = c.getGreen() / 255f, b = c.getBlue() / 255f, a = c.getAlpha() / 255f;
-
-        double[] vp = WorldRenderUtils.viewerPos();
-        double vx = vp[0], vy = vp[1], vz = vp[2];
-
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthMask(false);
-        GL11.glLineWidth(2.5f);
-        GL11.glDisable(GL11.GL_CULL_FACE);
-        GL11.glPushMatrix();
-        GL11.glTranslated(-vx, -vy, -vz);
-
-        for (EntityLivingBase mob : snapshot) {
-            if (EntityCompat.isDead(mob) || mob.getHealth() <= 0) continue;
-            drawBox(mob.getEntityBoundingBox().expand(0.1, 0.05, 0.1), r, g, b, a);
-        }
-
-        GL11.glPopMatrix();
-        GL11.glPopAttrib();
-        GL11.glColor4f(1f, 1f, 1f, 1f);
+        Map<EntityLivingBase, Color> mobs = new HashMap<>();
+        Color color = getColor();
+        for (EntityLivingBase mob : bloodMobs) mobs.put(mob, color);
+        EntityRenderUtils.renderBoxes(mobs);
     }
 
     private Color getColor() {
@@ -119,18 +103,7 @@ public class BloodMobHighlight {
         if (entity == null || EntityCompat.isDead(entity) || entity.getHealth() <= 0.1f) return true;
         IChatComponent name = entity.getDisplayName();
         if (name == null) return false;
-        String text = TextCompat.getUnformattedText(name);
+        String text = TextCompat.getFormattedText(name);
         return DYING1.matcher(text).matches() || DYING2.matcher(text).matches();
-    }
-
-    private void drawBox(AxisAlignedBB bb, float r, float g, float b, float a) {
-        double[][] edges = {{bb.minX, bb.minY, bb.minZ, bb.maxX, bb.minY, bb.minZ}, {bb.minX, bb.minY, bb.maxZ, bb.maxX, bb.minY, bb.maxZ}, {bb.minX, bb.minY, bb.minZ, bb.minX, bb.minY, bb.maxZ}, {bb.maxX, bb.minY, bb.minZ, bb.maxX, bb.minY, bb.maxZ}, {bb.minX, bb.maxY, bb.minZ, bb.maxX, bb.maxY, bb.minZ}, {bb.minX, bb.maxY, bb.maxZ, bb.maxX, bb.maxY, bb.maxZ}, {bb.minX, bb.maxY, bb.minZ, bb.minX, bb.maxY, bb.maxZ}, {bb.maxX, bb.maxY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ}, {bb.minX, bb.minY, bb.minZ, bb.minX, bb.maxY, bb.minZ}, {bb.maxX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.minZ}, {bb.minX, bb.minY, bb.maxZ, bb.minX, bb.maxY, bb.maxZ}, {bb.maxX, bb.minY, bb.maxZ, bb.maxX, bb.maxY, bb.maxZ},};
-        int ri = (int) (r * 255), gi = (int) (g * 255), bi = (int) (b * 255), ai = (int) (a * 255);
-        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINES, TessellatorCompat.POSITION_COLOR);
-        for (double[] e : edges) {
-            vb.pos(e[0], e[1], e[2]).color(ri, gi, bi, ai).endVertex();
-            vb.pos(e[3], e[4], e[5]).color(ri, gi, bi, ai).endVertex();
-        }
-        vb.draw();
     }
 }

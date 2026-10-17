@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.waypoints;
 
 import com.google.gson.Gson;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import io.hamlook.aetheria.Resources;
@@ -164,6 +165,7 @@ public class WaypointGroupGui extends GuiElement {
         Minecraft mc = MinecraftCompat.getMinecraft();
         FontRenderer fr = MinecraftCompat.getFontRenderer();
         updatePanel();
+        int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
 
         DrawContextUtils.fill(0, 0, GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight(), 0xaa050508);
 
@@ -204,7 +206,7 @@ public class WaypointGroupGui extends GuiElement {
         GuiScreenUtils.setW(searchField, sfW);
         GuiScreenUtils.setH(searchField, SF_H);
         drawInputBg(px + PAD, curY, sfW);
-        searchField.drawTextBox();
+        GuiScreenUtils.renderTextField(searchField, mouse[0], mouse[1]);
         if (searchField.getText().isEmpty() && !searchField.isFocused())
             DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.DARK_GRAY + "Search...", px + PAD + 3, curY + 4, -1);
 
@@ -222,7 +224,7 @@ public class WaypointGroupGui extends GuiElement {
             GuiScreenUtils.setW(importField, ifW);
             GuiScreenUtils.setH(importField, SF_H);
             drawInputBg(px + PAD, curY, ifW);
-            importField.drawTextBox();
+            GuiScreenUtils.renderTextField(importField, mouse[0], mouse[1]);
             if (importField.getText().isEmpty())
                 DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.DARK_GRAY + "Group name for import...", px + PAD + 3, curY + 4, -1);
             int goBtnX = px + pw - BTN_W - PAD;
@@ -238,7 +240,7 @@ public class WaypointGroupGui extends GuiElement {
             GuiScreenUtils.setW(createField, cfW);
             GuiScreenUtils.setH(createField, SF_H);
             drawInputBg(px + PAD, curY, cfW);
-            createField.drawTextBox();
+            GuiScreenUtils.renderTextField(createField, mouse[0], mouse[1]);
             if (createField.getText().isEmpty())
                 DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.DARK_GRAY + "New group name...", px + PAD + 3, curY + 4, -1);
             int createBtnX = px + pw - BTN_W - PAD;
@@ -259,7 +261,7 @@ public class WaypointGroupGui extends GuiElement {
         int scale = GuiScreenUtils.getScaleFactor();
         GlStateManagerCompat.pushMatrix();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(px * scale, GuiScreenUtils.getDisplayHeight() - listBottomY * scale, pw * scale, visibleH * scale);
+        GlStateManagerCompat.scissor(px * scale, GuiScreenUtils.getDisplayHeight() - listBottomY * scale, pw * scale, visibleH * scale);
 
         for (RowItem item : rows) {
             if (item.y + item.h() <= listTopY || item.y >= listBottomY) continue;
@@ -345,12 +347,19 @@ public class WaypointGroupGui extends GuiElement {
 
     @Override
     public boolean mouseInput(int mouseX, int mouseY) {
-        int dWheel = MouseCompat.getEventDWheel();
-        if (dWheel != 0) {
-            scrollOffset = Math.max(0, scrollOffset - (dWheel > 0 ? 20 : -20));
+        return mouseInput(mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int mouseX, int mouseY, int button, boolean pressed) {
+        if (button == -1) {
+            int dWheel = MouseCompat.getEventDWheel();
+            if (dWheel != 0) {
+                scrollOffset = Math.max(0, scrollOffset - (dWheel > 0 ? 20 : -20));
+            }
             return false;
         }
-        if (!MouseCompat.getEventButtonState() || MouseCompat.getEventButton() != 0) return false;
+        if (!pressed || button != 0) return false;
 
         Minecraft mc = MinecraftCompat.getMinecraft();
         updatePanel();
@@ -366,7 +375,10 @@ public class WaypointGroupGui extends GuiElement {
         }
         curY += ROW_H + ROW_PAD;
 
-        if (searchField != null) searchField.mouseClicked(mouseX, mouseY, 0);
+        if (searchField != null) {
+            GuiScreenUtils.focusTextFieldOnClick(searchField, mouseX, mouseY);
+            searchField.mouseClicked(mouseX, mouseY, button);
+        }
 
         int impTogX = px + pw - BTN_W * 2 - 10;
         int newTogX = px + pw - BTN_W - PAD;
@@ -383,7 +395,10 @@ public class WaypointGroupGui extends GuiElement {
         curY += SF_H + ROW_PAD;
 
         if (importOpen) {
-            if (importField != null) importField.mouseClicked(mouseX, mouseY, 0);
+            if (importField != null) {
+                GuiScreenUtils.focusTextFieldOnClick(importField, mouseX, mouseY);
+                importField.mouseClicked(mouseX, mouseY, button);
+            }
             if (inBounds(mouseX, mouseY, px + pw - BTN_W - PAD, curY, BTN_W, SF_H)) {
                 doImport(storage);
                 return true;
@@ -391,7 +406,10 @@ public class WaypointGroupGui extends GuiElement {
             curY += SF_H + ROW_PAD;
         }
         if (createOpen) {
-            if (createField != null) createField.mouseClicked(mouseX, mouseY, 0);
+            if (createField != null) {
+                GuiScreenUtils.focusTextFieldOnClick(createField, mouseX, mouseY);
+                createField.mouseClicked(mouseX, mouseY, button);
+            }
             if (inBounds(mouseX, mouseY, px + pw - BTN_W - PAD, curY, BTN_W, SF_H)) {
                 doCreate(storage);
                 return true;
@@ -470,9 +488,9 @@ public class WaypointGroupGui extends GuiElement {
                 AddRow ar = (AddRow) item;
                 int rx = px + PAD + INDENT, rw = pw - PAD - INDENT - PAD;
                 if (inBounds(mouseX, mouseY, rx, ar.y, rw, WP_H)) {
-                    double bx = Math.floor(MinecraftCompat.getLocalPlayer().posX);
-                    double by = Math.floor(MinecraftCompat.getLocalPlayer().posY) - 1;
-                    double bz = Math.floor(MinecraftCompat.getLocalPlayer().posZ);
+                    double bx = Math.floor(EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()));
+                    double by = Math.floor(EntityCompat.getPosY(MinecraftCompat.getLocalPlayer())) - 1;
+                    double bz = Math.floor(EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()));
                     ar.g.waypoints.add(new WaypointPoint(bx, by, bz, String.valueOf(ar.g.waypoints.size() + 1)));
                     storage.markDirty();
                     storage.saveIfDirty();
@@ -486,8 +504,11 @@ public class WaypointGroupGui extends GuiElement {
     @Override
     public boolean keyboardInput() {
         if (!KeyboardCompat.getEventKeyState()) return false;
-        int key = KeyboardCompat.getEventKey();
-        char c = KeyboardCompat.getEventCharacter();
+        return keyboardInput(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
+    }
+
+    @Override
+    public boolean keyboardInput(char c, int key) {
 
         boolean sf = searchField != null && searchField.isFocused();
         boolean imf = importField != null && importField.isFocused();
@@ -512,15 +533,15 @@ public class WaypointGroupGui extends GuiElement {
             return true;
         }
         if (sf) {
-            searchField.textboxKeyTyped(c, key);
+            GuiScreenUtils.typeTextField(searchField, c, key);
             return true;
         }
         if (imf) {
-            importField.textboxKeyTyped(c, key);
+            GuiScreenUtils.typeTextField(importField, c, key);
             return true;
         }
         if (crf) {
-            createField.textboxKeyTyped(c, key);
+            GuiScreenUtils.typeTextField(createField, c, key);
             return true;
         }
         return false;
@@ -582,20 +603,20 @@ public class WaypointGroupGui extends GuiElement {
 
     private void ensureSearchField(int x, int y, int w, FontRenderer fr) {
         if (searchField == null) {
-            searchField = new GuiTextField(0, fr, x, y, w, WaypointGroupGui.SF_H);
-            searchField.setMaxStringLength(64);
-            searchField.setEnableBackgroundDrawing(false);
-            searchField.setCanLoseFocus(true);
+            searchField = GuiScreenUtils.createTextField(fr, x, y, w, WaypointGroupGui.SF_H);
+            GuiScreenUtils.setTextFieldMaxLength(searchField, 64);
+            GuiScreenUtils.setTextFieldBackground(searchField, false);
+            GuiScreenUtils.setTextFieldCanLoseFocus(searchField, true);
             searchField.setFocused(false);
         }
     }
 
     private GuiTextField ensureGenericField(GuiTextField existing, int id, int x, int y, int w, FontRenderer fr) {
         if (existing != null) return existing;
-        GuiTextField f = new GuiTextField(id, fr, x, y, w, WaypointGroupGui.SF_H);
-        f.setMaxStringLength(64);
-        f.setEnableBackgroundDrawing(false);
-        f.setCanLoseFocus(true);
+        GuiTextField f = GuiScreenUtils.createTextField(fr, x, y, w, WaypointGroupGui.SF_H);
+        GuiScreenUtils.setTextFieldMaxLength(f, 64);
+        GuiScreenUtils.setTextFieldBackground(f, false);
+        GuiScreenUtils.setTextFieldCanLoseFocus(f, true);
         f.setFocused(true);
         return f;
     }

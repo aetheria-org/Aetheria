@@ -8,12 +8,14 @@ import org.lwjgl.input.Mouse
 
 object MouseCompat {
     @JvmStatic
-    fun isButtonDown(button: Int): Boolean =
+    fun isButtonDown(button: Int): Boolean {
         //#if MC < 1.16
-        Mouse.isButtonDown(button)
+        return Mouse.isButtonDown(button)
         //#else
-        //$$ GLFW.glfwGetMouseButton(MinecraftCompat.getMinecraft().window.handle, button) == GLFW.GLFW_PRESS
+        //$$ if (button < 0 || button > GLFW.GLFW_MOUSE_BUTTON_LAST) return false
+        //$$ return GLFW.glfwGetMouseButton(MinecraftCompat.getMinecraft().window.handle, button) == GLFW.GLFW_PRESS
         //#endif
+    }
 
     @JvmStatic
     fun getX(): Int =

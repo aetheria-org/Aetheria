@@ -2,12 +2,17 @@ package io.hamlook.aetheria.utils.hooks
 
 import io.hamlook.aetheria.Aetheria
 import io.hamlook.aetheria.core.ATHRConfig
+import io.hamlook.aetheria.features.chat.ChatLineHook
 import io.hamlook.aetheria.features.chat.ChatUtilsState
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import io.hamlook.aetheria.utils.compat.TextCompat
 import net.minecraft.client.network.NetHandlerPlayClient
 import net.minecraft.client.network.NetworkPlayerInfo
 import net.minecraft.util.IChatComponent
+//#if MC < 1.16
+//#else
+//$$ import net.minecraft.client.gui.hud.ChatHudLine
+//#endif
 import org.apache.commons.lang3.StringUtils
 import java.util.logging.Level
 import java.util.regex.Pattern
@@ -132,6 +137,22 @@ object ChatLineInitHook {
     //$$         info.getProfile()?.id == last.getProfile()?.id
     //$$     ChatUtilsState.lastDetectedPlayer = info
     //$$     return hidden
+    //$$ }
+    //#endif
+
+    //#if MC < 1.16
+    //#else
+    //$$ @JvmStatic
+    //$$ fun tagHead(line: ChatHudLine) {
+    //$$     val result = detectPlayer(line.content(), null, ChatUtilsState.lastFullMessage)
+    //$$     ChatUtilsState.lastFullMessage = result.currentFullMessage
+    //$$     val hook = line as? ChatLineHook ?: return
+    //$$     if (!result.detected) {
+    //$$         return
+    //$$     }
+    //$$     val info = result.playerInfo
+    //$$     hook.`athr$setPlayerInfo`(info)
+    //$$     hook.`athr$setHeadHidden`(isConsecutiveHidden(info))
     //$$ }
     //#endif
 }

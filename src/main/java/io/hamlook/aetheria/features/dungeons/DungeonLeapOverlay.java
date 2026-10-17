@@ -63,7 +63,9 @@ public class DungeonLeapOverlay {
 
     @HandleEvent
     public void onClose(ASMGuiOpenEvent e){
-        if(e.gui == null) isLeapGUI = false;
+        // Reset on every screen change, not just close: onGui re-detects each frame,
+        // so a stale true would blank the next container's first frame.
+        isLeapGUI = false;
     }
 
     @HandleEvent
@@ -172,10 +174,10 @@ public class DungeonLeapOverlay {
     @HandleEvent
     public void onMouseInput(ASMMouseEvent event) {
         if (!isLeapGUI || tracker == null) return;
-        if (MouseCompat.getEventButton() == 0 && MouseCompat.getEventButtonState()) {
+        if (event.button == 0 && event.buttonState) {
 
-            int mouseX = MouseCompat.getEventX() * event.gui.width / GuiScreenUtils.getDisplayWidth();
-            int mouseY = event.gui.height - MouseCompat.getEventY() * event.gui.height / GuiScreenUtils.getDisplayHeight() - 1;
+            int mouseX = event.mouseX;
+            int mouseY = event.mouseY;
 
             List<String> players = getFilteredPartyMembers();
 
@@ -230,7 +232,7 @@ public class DungeonLeapOverlay {
             if (slot1 == null || !slot1.getHasStack()) continue;
 
             ItemStack stack = slot1.getStack();
-            if (stack.getItem().getRegistryName().equals(ColoredBlockCompat.WHITE.createGlassPaneStack(1).getItem().getRegistryName())) continue;
+            if (ItemCompatKt.getIdentifierString(stack.getItem()).equals(ItemCompatKt.getIdentifierString(ColoredBlockCompat.WHITE.createGlassPaneStack(1).getItem()))) continue;
 
             String displayName = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName()));
 
@@ -286,18 +288,7 @@ public class DungeonLeapOverlay {
     }
 
     private ResourceLocation getPlayerSkin(String player, Minecraft mc) {
-        EntityPlayer entity = tracker.getEntity(player);
-        NetworkPlayerInfo info = (entity != null)
-                ? mc.getNetHandler().getPlayerInfo(entity.getUniqueID())
-                : null;
-
-        if (info == null) {
-            info = tracker.getNetworkPlayerInfo(player, mc);
-        }
-
-        return (info != null && info.getLocationSkin() != null)
-                ? info.getLocationSkin()
-                : DefaultPlayerSkin.getDefaultSkinLegacy();
+        return tracker.resolveSkin(player, mc);
     }
 
     public static boolean isLeapGUI(String title){

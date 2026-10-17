@@ -105,6 +105,7 @@ public class CitManager {
         }
 
         if (texturePath.startsWith(ASSETS_PREFIX)) texturePath = texturePath.substring(ASSETS_PREFIX.length());
+        texturePath = texturePath.toLowerCase(Locale.ROOT);
 
         ResourceLocation rl = TextCompat.createResourceLocation(MC_DOMAIN, texturePath + ".png");
         citCache.put(nbtId, new TextureData(rl, getFrameTime(MC_DOMAIN, texturePath + ".png"), getFrameCount(MC_DOMAIN, texturePath + ".png")));

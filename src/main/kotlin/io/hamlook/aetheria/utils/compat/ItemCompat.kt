@@ -21,6 +21,22 @@ import net.minecraft.item.ItemStack
 //$$ import net.minecraft.text.Text
 //#endif
 
+fun ItemStack.getCountCompat(): Int =
+    //#if MC < 1.16
+    this.stackSize
+    //#else
+    //$$ this.getCount()
+    //#endif
+
+fun areStacksEqual(a: ItemStack?, b: ItemStack?): Boolean {
+    if (a == null || b == null) return a === b
+    //#if MC < 1.16
+    return ItemStack.areItemStacksEqual(a, b)
+    //#else
+    //$$ return ItemStack.areItemsAndComponentsEqual(a, b)
+    //#endif
+}
+
 fun ItemStack.getTooltipCompat(player: EntityPlayer?, advanced: Boolean): MutableList<String> {
     //#if MC < 1.16
     return this.getTooltip(player, advanced)
@@ -80,6 +96,25 @@ fun ItemStack.getDisplayNameCompat(): String =
 //$$     return this
 //$$ }
 //#endif
+
+@JvmOverloads
+fun createPlayerHeadStack(size: Int = 1): ItemStack =
+    //#if MC < 1.16
+    ItemStack(Items.skull, size, 3)
+    //#else
+    //$$ ItemStack(Items.PLAYER_HEAD, size)
+    //#endif
+
+@JvmOverloads
+fun createFishStack(metadata: Int, size: Int = 1): ItemStack =
+    //#if MC < 1.16
+    ItemStack(Items.fish, size, metadata)
+    //#else
+    //$$ ItemStack(when (metadata) { 1 -> Items.SALMON; 2 -> Items.TROPICAL_FISH; 3 -> Items.PUFFERFISH; else -> Items.COD }, size)
+    //#endif
+
+@JvmOverloads
+fun createDyeStackCompat(dyeColor: Int, size: Int = 1): ItemStack = DyeCompat.createDyeStack(dyeColor, size)
 
 fun String.getVanillaItem(): Item? {
     //#if MC < 1.16

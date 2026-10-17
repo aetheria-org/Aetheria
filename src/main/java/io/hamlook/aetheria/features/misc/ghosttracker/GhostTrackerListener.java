@@ -7,6 +7,7 @@ import io.hamlook.aetheria.events.ActionBarUpdateEvent;
 import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -44,7 +45,7 @@ public class GhostTrackerListener {
         boolean inDwarven = SkyblockData.getCurrentLocation() == SkyblockData.Location.DWARVEN;
         boolean inMist = SkyblockData.isInMist();
         Minecraft mc = MinecraftCompat.getMinecraft();
-        boolean posYValid = MinecraftCompat.getLocalPlayer() != null && MinecraftCompat.getLocalPlayer().posY <= 100;
+        boolean posYValid = MinecraftCompat.getLocalPlayer() != null && EntityCompat.getPosY(MinecraftCompat.getLocalPlayer()) <= 100;
 
         return onSkyblock && inDwarven && inMist && posYValid;
     }

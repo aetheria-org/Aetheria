@@ -9,7 +9,6 @@ import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 
@@ -26,7 +25,7 @@ import io.hamlook.aetheria.utils.compat.DrawContextUtils;
  * clipboard shortcuts and internal vertical scrolling. Replaces the vanilla
  * single-line GuiTextField used by the global chat UI.
  */
-public class ChatInputField extends Gui {
+public class ChatInputField {
 
     public static final int PAD_X = 4;
     public static final int LINE_PAD = 2;
@@ -59,7 +58,7 @@ public class ChatInputField extends Gui {
     }
 
     public int lineHeight() {
-        return fr.FONT_HEIGHT + LINE_PAD;
+        return DrawContextUtils.getFontHeight(fr) + LINE_PAD;
     }
 
     public String getText() {
@@ -278,13 +277,13 @@ public class ChatInputField extends Gui {
                 if (selEnd > selStart) {
                     int sx = x + PAD_X + stringWidth(line, selStart - ls, ls);
                     int ex = x + PAD_X + stringWidth(line, selEnd - ls, ls);
-                    DrawContextUtils.fill(sx, ly, ex, ly + fr.FONT_HEIGHT, 0x50FFFFFF);
+                    DrawContextUtils.fill(sx, ly, ex, ly + DrawContextUtils.getFontHeight(fr), 0x50FFFFFF);
                 }
             }
 
             if (i == ci && (System.currentTimeMillis() / 500) % 2 == 0) {
                 int cx = x + PAD_X + stringWidth(line, caret - ls, ls);
-                DrawContextUtils.fill(cx, ly, cx + 1, ly + fr.FONT_HEIGHT, 0xFFE0E0E0);
+                DrawContextUtils.fill(cx, ly, cx + 1, ly + DrawContextUtils.getFontHeight(fr), 0xFFE0E0E0);
             }
 
             drawLineWithEmoji(line, x + PAD_X, ly, ls);
@@ -547,7 +546,7 @@ public class ChatInputField extends Gui {
                 x += DiscordMarkdown.EMOJI_SIZE;
             } else {
                 String text = (String) seg[1];
-                fr.drawString(text, x, y, 0xFFE0E0E0);
+                DrawContextUtils.drawText(fr, text, x, y, 0xFFE0E0E0, false);
                 x += DrawContextUtils.getStringWidth(fr, text);
             }
         }
@@ -570,10 +569,9 @@ public class ChatInputField extends Gui {
         }
         ResourceLocation tex = img.getTextureToRender(false);
         if (tex == null) return;
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(tex);
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         GlStateManagerCompat.enableBlend();
-        drawScaledCustomSizeModalRect(x, y, 0, 0, img.width, img.height,
+        DrawContextUtils.drawScaledCustomSizeModalRect(tex, x, y, 0, 0, img.width, img.height,
                 DiscordMarkdown.EMOJI_SIZE, DiscordMarkdown.EMOJI_SIZE, img.width, img.height);
         GlStateManagerCompat.disableBlend();
     }

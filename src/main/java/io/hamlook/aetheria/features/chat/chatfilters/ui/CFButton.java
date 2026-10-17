@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.chat.chatfilters.ui;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
@@ -161,8 +162,6 @@ public class CFButton extends GuiButton {
     //$$     int w = GuiScreenUtils.getW(this);
     //$$     int h = GuiScreenUtils.getH(this);
     //$$     GlStateManagerCompat.color(rgb[0], rgb[1], rgb[2], 1.0f);
-    //$$     NineSliceUtils.draw(Resources.storageBackground(1), x, y, w, h, 6, 18);
-    //$$     GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f);
     //$$     String label = getMessage().getString();
     //$$     if (isToggleButton) {
     //$$         String base = ColorUtils.stripColor(label);
@@ -175,9 +174,16 @@ public class CFButton extends GuiButton {
     //$$         athrLastLabel = label;
     //$$         athrOrdered = ordered;
     //$$     }
-    //$$     TextRenderer fr = MinecraftCompat.getFontRenderer();
     //$$     int color = this.active ? 0xFFFFFFFF : 0xFFA0A0A0;
-    //$$     context.drawText(fr, ordered, x + (w - fr.getWidth(ordered)) / 2, y + (h - 8) / 2, color, false);
+    //$$     DrawContextUtils.setContext(context);
+    //$$     try {
+    //$$         NineSliceUtils.draw(Resources.storageBackground(1), x, y, w, h, 6, 18);
+    //$$         GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f);
+    //$$         DrawContextUtils.drawCenteredTextScaled(MinecraftCompat.getFontRenderer(), ordered,
+    //$$                 x + w / 2f, y + h / 2f, ResolutionUtils.getXStatic(1) * 1.2f, color);
+    //$$     } finally {
+    //$$         DrawContextUtils.clearContext();
+    //$$     }
     //$$ }
     //#endif
 }

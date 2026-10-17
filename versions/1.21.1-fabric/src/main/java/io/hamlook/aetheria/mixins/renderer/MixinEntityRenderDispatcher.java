@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(EntityRenderDispatcher.class)
-public class MixinRender {
+public class MixinEntityRenderDispatcher {
 
     @Inject(method = "renderFire", at = @At("HEAD"), cancellable = true)
     private void ATHR$disableEntityFire(CallbackInfo ci) {

@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.farming.visitors;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
@@ -38,7 +39,8 @@ public final class VisitorBazaarHighlight {
 
         // Relevance gate: only chests that belong to the ordering flow
         // ("Search: <item>", product "<item>", "<item> ➜ Instant Buy").
-        String title = ColorUtils.stripColor(TextCompat.getUnformattedText(lower.getDisplayName())).trim();
+        String title = ContainerUtils.getContainerName(gui);
+        if (title == null) return false;
         if (!title.startsWith("Search:") && !VisitorShoppingList.nameMatchesFlow(title)) {
             return false;
         }

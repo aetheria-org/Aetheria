@@ -23,12 +23,20 @@ public class NetHandlerPlayClientHook {
     public void onReceive(PacketEvent.Receive event) {
         if (event.packet instanceof S2DPacketOpenWindow) {
             S2DPacketOpenWindow packet = (S2DPacketOpenWindow) event.packet;
+            //#if MC < 1.21
             STORAGE_HANDLER.handleOpenWindow(TextCompat.getUnformattedText(packet.getWindowTitle()));
+            //#else
+            //$$ STORAGE_HANDLER.handleOpenWindow(TextCompat.getUnformattedText(packet.getName()));
+            //#endif
         } else if (event.packet instanceof S2EPacketCloseWindow) {
             STORAGE_HANDLER.handleCloseWindow();
         } else if (event.packet instanceof S2FPacketSetSlot) {
             S2FPacketSetSlot packet = (S2FPacketSetSlot) event.packet;
+            //#if MC < 1.21
             STORAGE_HANDLER.handleSetSlot(packet.func_149175_c(), packet.func_149173_d(), packet.func_149174_e());
+            //#else
+            //$$ STORAGE_HANDLER.handleSetSlot(packet.getSyncId(), packet.getSlot(), packet.getStack());
+            //#endif
         } else if (event.packet instanceof S30PacketWindowItems) {
             S30PacketWindowItems packet = (S30PacketWindowItems) event.packet;
             STORAGE_HANDLER.handleWindowItems(PacketCompat.windowItemsId(packet), PacketCompat.windowItemsStacks(packet));

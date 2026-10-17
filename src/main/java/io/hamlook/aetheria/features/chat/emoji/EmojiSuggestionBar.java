@@ -4,6 +4,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.chat.EmojiConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
@@ -13,6 +14,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiTextField;
 import org.lwjgl.input.Keyboard;
+//#if MC < 1.21
+//#else
+//$$ import static org.lwjgl.glfw.GLFW.GLFW_KEY_TAB;
+//$$ import static org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER;
+//$$ import static org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER;
+//$$ import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
+//#endif
 import org.lwjgl.opengl.GL11;
 
 import java.util.Collections;
@@ -128,7 +136,11 @@ public class EmojiSuggestionBar {
     }
 
     public static boolean handleKeyTypedPre(int keyCode, GuiTextField inputField) {
+        //#if MC < 1.21
         if (keyCode == Keyboard.KEY_TAB && hasSuggestion()) {
+        //#else
+        //$$ if (keyCode == GLFW_KEY_TAB && hasSuggestion()) {
+        //#endif
             complete(inputField);
             return true;
         }
@@ -136,11 +148,16 @@ public class EmojiSuggestionBar {
     }
 
     public static void handleKeyTypedPost(int keyCode, GuiTextField inputField) {
+        //#if MC < 1.21
         if (keyCode == Keyboard.KEY_RETURN || keyCode == Keyboard.KEY_ESCAPE) {
+        //#else
+        //$$ if (keyCode == GLFW_KEY_ENTER || keyCode == GLFW_KEY_KP_ENTER
+        //$$         || keyCode == GLFW_KEY_ESCAPE) {
+        //#endif
             clear();
             return;
         }
-        update(inputField.getText(), inputField.getCursorPosition());
+        update(inputField.getText(), GuiScreenUtils.getTextFieldCursor(inputField));
     }
 
     public static boolean handleMouseClick(int mouseX, int mouseY, int mouseButton, GuiTextField inputField) {
@@ -167,7 +184,7 @@ public class EmojiSuggestionBar {
         if (index < 0 || index >= matches.size() || tokenStart < 0) return;
 
         String text = inputField.getText();
-        int cursor = inputField.getCursorPosition();
+        int cursor = GuiScreenUtils.getTextFieldCursor(inputField);
         if (cursor > text.length() || tokenStart > cursor) {
             clear();
             return;
@@ -176,7 +193,7 @@ public class EmojiSuggestionBar {
         String replacement = ":" + matches.get(index) + ": ";
         String newText = text.substring(0, tokenStart) + replacement + text.substring(cursor);
         inputField.setText(newText);
-        inputField.setCursorPosition(tokenStart + replacement.length());
+        GuiScreenUtils.setTextFieldCursor(inputField, tokenStart + replacement.length());
         clear();
     }
 
@@ -320,7 +337,7 @@ public class EmojiSuggestionBar {
 
     public static void render(GuiTextField inputField, int mouseX, int mouseY) {
         if (inputField == null) return;
-        update(inputField.getText(), inputField.getCursorPosition());
+        update(inputField.getText(), GuiScreenUtils.getTextFieldCursor(inputField));
         if (matches.isEmpty() && pendingMatches.isEmpty()) return;
         applyPendingIfReady();
         if (matches.isEmpty()) return;
@@ -365,10 +382,10 @@ public class EmojiSuggestionBar {
         float cx = boxX + boxW / 2f;
         float cy = boxY + boxH / 2f;
 
-        GL11.glPushMatrix();
-        GL11.glTranslatef(cx, cy, 0);
-        GL11.glScalef(scale, scale, 1f);
-        GL11.glTranslatef(-cx, -cy, 0);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(cx, cy, 0);
+        GlStateManagerCompat.scale(scale, scale, 1f);
+        GlStateManagerCompat.translate(-cx, -cy, 0);
 
         Overlay.drawRoundedRect(boxX, boxY, boxX + boxW, boxY + boxH, CORNER_RADIUS, bgColor);
 
@@ -388,7 +405,7 @@ public class EmojiSuggestionBar {
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         int factor = GuiScreenUtils.getScaleFactor();
-        GL11.glScissor(sGridLeft * factor, GuiScreenUtils.getDisplayHeight() - sGridBot * factor, (sGridRight - sGridLeft) * factor, (sGridBot - sGridTop) * factor);
+        GlStateManagerCompat.scissor(sGridLeft * factor, GuiScreenUtils.getDisplayHeight() - sGridBot * factor, (sGridRight - sGridLeft) * factor, (sGridBot - sGridTop) * factor);
 
         int firstRow = (int) scrollOffset;
         int lastIdx = Math.min(matches.size(), (firstRow + displayRows) * GRID_COLUMNS);
@@ -418,7 +435,7 @@ public class EmojiSuggestionBar {
             renderScrollbar(txMouseX(mouseX), txMouseY(mouseY));
         }
 
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
 
         if (hovered >= 0) {
             String emojiShortcode = matches.get(hovered);
@@ -430,7 +447,7 @@ public class EmojiSuggestionBar {
             if (ty < 2) ty = Math.round(cy + halfH) + 2;
             ty = Math.max(2, Math.min(ty, snapH - 10));
             DrawContextUtils.fill(tx - 2, ty - 1, tx + tw + 2, ty + 9, 0xCC222222);
-            fr.drawString(tooltip, tx, ty, 0xCCCCCC, false);
+            DrawContextUtils.drawText(fr, tooltip, tx, ty, 0xCCCCCC, false);
         }
     }
 

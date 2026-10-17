@@ -31,9 +31,9 @@ public class LinkConfirmScreen extends AetheriaBaseScreen {
         DrawContextUtils.fill(bx, by, bx + bw, by + bh, 0xFF313338);
         DrawContextUtils.fill(bx, by, bx + bw, by + 2, 0xFF5865F2);
 
-        drawCenteredString(MinecraftCompat.getFontRenderer(), "Open this link?", bx + bw / 2, by + 18, 0xFFFFFFFF);
-        drawCenteredString(MinecraftCompat.getFontRenderer(), MinecraftCompat.getFontRenderer().trimStringToWidth(url, bw - 24), bx + bw / 2, by + 38, 0xFF949BA4);
-        drawCenteredString(MinecraftCompat.getFontRenderer(), "(it will open in your browser)", bx + bw / 2, by + 50, 0xFF6D6F78);
+        DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), "Open this link?", bx + bw / 2, by + 18, 0xFFFFFFFF);
+        DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), MinecraftCompat.getFontRenderer().trimStringToWidth(url, bw - 24), bx + bw / 2, by + 38, 0xFF949BA4);
+        DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), "(it will open in your browser)", bx + bw / 2, by + 50, 0xFF6D6F78);
 
         int yw = 90, yh = 20;
         int yesX = bx + bw / 2 - yw - 4, noX = bx + bw / 2 + 4, byy = by + bh - 32;
@@ -42,8 +42,8 @@ public class LinkConfirmScreen extends AetheriaBaseScreen {
 
         DrawContextUtils.fill(yesX, byy, yesX + yw, byy + yh, yesH ? 0xFF5865F2 : 0xFF404249);
         DrawContextUtils.fill(noX, byy, noX + yw, byy + yh, noH ? 0xFF35373C : 0xFF2B2D31);
-        drawCenteredString(MinecraftCompat.getFontRenderer(), "Yes", yesX + yw / 2, byy + 6, 0xFFFFFFFF);
-        drawCenteredString(MinecraftCompat.getFontRenderer(), "No", noX + yw / 2, byy + 6, 0xFFFFFFFF);
+        DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), "Yes", yesX + yw / 2, byy + 6, 0xFFFFFFFF);
+        DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), "No", noX + yw / 2, byy + 6, 0xFFFFFFFF);
     }
 
     @Override

@@ -50,13 +50,17 @@ public class GuiDianaOverlayEditor extends AetheriaBaseScreen {
     public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         int screenW = GuiScreenUtils.getScaledWindowWidth();
         int screenH = GuiScreenUtils.getScaledWindowHeight();
+        //#if MC < 1.21
         int[] m = KeybindHelper.getMouseCoords(screenW, screenH);
         mouseX = m[0];
         mouseY = m[1];
+        //#endif
         this.width = screenW;
         this.height = screenH;
 
+        //#if MC < 1.21
         drawDefaultBackground();
+        //#endif
 
         if (draggedIndex >= 0) {
             OverlayEntry e = overlays[draggedIndex];
@@ -84,9 +88,11 @@ public class GuiDianaOverlayEditor extends AetheriaBaseScreen {
 
         int screenW = GuiScreenUtils.getScaledWindowWidth();
         int screenH = GuiScreenUtils.getScaledWindowHeight();
+        //#if MC < 1.21
         int[] m = KeybindHelper.getMouseCoords(width, height);
         mouseX = m[0];
         mouseY = m[1];
+        //#endif
 
         for (int i = 0; i < overlays.length; i++) {
             OverlayEntry e = overlays[i];
@@ -117,9 +123,11 @@ public class GuiDianaOverlayEditor extends AetheriaBaseScreen {
 
         int screenW = GuiScreenUtils.getScaledWindowWidth();
         int screenH = GuiScreenUtils.getScaledWindowHeight();
+        //#if MC < 1.21
         int[] m = KeybindHelper.getMouseCoords(width, height);
         mouseX = m[0];
         mouseY = m[1];
+        //#endif
 
         OverlayEntry e = overlays[draggedIndex];
         grabbedX += e.position.moveX(mouseX - grabbedX, e.scaledW(), screenW);

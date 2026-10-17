@@ -6,6 +6,7 @@ import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.Minecraft;
 
 import java.util.LinkedHashSet;
@@ -120,7 +121,7 @@ public class PartyMemberTracker {
 
     private static String ownName() {
         Minecraft mc = MinecraftCompat.getMinecraft();
-        return MinecraftCompat.getLocalPlayer() != null ? MinecraftCompat.getLocalPlayer().getName() : "";
+        return MinecraftCompat.getLocalPlayer() != null ? TextCompat.getUnformattedText(MinecraftCompat.getLocalPlayer().getName()) : "";
     }
 
     private static void partyLeft() {

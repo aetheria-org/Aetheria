@@ -7,6 +7,7 @@ import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
@@ -54,38 +55,37 @@ public class GuiElementSlider extends GuiElement {
 
         GlStateManagerCompat.color(1, 1, 1, 1);
 
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.slider_on_cap);
-        Utils.drawTexturedRect(x, y, 4, HEIGHT, GL11.GL_NEAREST);
-
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.slider_off_cap);
-        Utils.drawTexturedRect(x + width - 4, y, 4, HEIGHT, GL11.GL_NEAREST);
+        TextureCompat.drawBoundTextured(Resources.slider_on_cap, x, y, 4, HEIGHT, 0, 0, 1, 1);
+        TextureCompat.drawBoundTextured(Resources.slider_off_cap, x + width - 4, y, 4, HEIGHT, 0, 0, 1, 1);
 
         if (sliderAmtI > 5) {
-            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.slider_on_segment);
-            Utils.drawTexturedRect(x + 4, y, sliderAmtI - 4, HEIGHT, GL11.GL_NEAREST);
+            TextureCompat.drawBoundTextured(Resources.slider_on_segment, x + 4, y, sliderAmtI - 4, HEIGHT, 0, 0, 1, 1);
         }
         if (sliderAmtI < width - 5) {
-            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.slider_off_segment);
-            Utils.drawTexturedRect(x + sliderAmtI, y, width - 4 - sliderAmtI, HEIGHT, GL11.GL_NEAREST);
+            TextureCompat.drawBoundTextured(Resources.slider_off_segment, x + sliderAmtI, y, width - 4 - sliderAmtI, HEIGHT, 0, 0, 1, 1);
         }
 
         for (int i = 1; i < 4; i++) {
             int notchX = x + width * i / 4 - 1;
-            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(
-                    notchX > x + sliderAmtI ? Resources.slider_off_notch : Resources.slider_on_notch);
-            Utils.drawTexturedRect(notchX, y + (HEIGHT - 4f) / 2, 2, 4, GL11.GL_NEAREST);
+            TextureCompat.drawBoundTextured(
+                    notchX > x + sliderAmtI ? Resources.slider_off_notch : Resources.slider_on_notch,
+                    notchX, y + (HEIGHT - 4f) / 2, 2, 4, 0, 0, 1, 1);
         }
 
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.slider_button_new);
-        Utils.drawTexturedRect(x + sliderAmtI - 4, y, 8, HEIGHT, GL11.GL_NEAREST);
+        TextureCompat.drawBoundTextured(Resources.slider_button_new, x + sliderAmtI - 4, y, 8, HEIGHT, 0, 0, 1, 1);
     }
 
     @Override
     public boolean mouseInput(int mouseX, int mouseY) {
+        return mouseInput(mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int mouseX, int mouseY, int button, boolean pressed) {
         if (!MouseCompat.isButtonDown(0)) clicked = false;
 
-        if (MouseCompat.getEventButton() == 0) {
-            clicked = MouseCompat.getEventButtonState()
+        if (button == 0) {
+            clicked = pressed
                     && mouseX > x && mouseX < x + width
                     && mouseY > y && mouseY < y + HEIGHT;
             if (clicked) {
@@ -95,7 +95,7 @@ public class GuiElementSlider extends GuiElement {
             }
         }
 
-        if (!MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == -1 && clicked) {
+        if (!pressed && (button == -1 || button == 0) && clicked) {
             value = snap((mouseX - x) * (maxValue - minValue) / width + minValue);
             setCallback.accept(value);
             return true;

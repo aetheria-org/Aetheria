@@ -4,13 +4,12 @@ import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.events.ASMRenderWorldEvent;
-import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.compat.WorldCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import io.hamlook.aetheria.utils.render.EntityOutlines;
+import io.hamlook.aetheria.utils.render.EntityOutlineQueue;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
@@ -29,7 +28,6 @@ import java.util.List;
  * the box exactly like it hides the player model itself. It only ever shows
  * on a party member you could already see normally.
  */
-@RegisterEvents
 public class PartyMemberOutline {
 
     private static final Minecraft mc = MinecraftCompat.getMinecraft();
@@ -44,7 +42,7 @@ public class PartyMemberOutline {
         for (EntityPlayer player : collectMembers()) {
             WorldRenderUtils.drawSelectionBox(
                     player.getEntityBoundingBox().expand(0.1, 0.05, 0.1), color, 2.5f);
-            EntityOutlines.boxed(player, color);
+            EntityOutlineQueue.boxed(player, color);
         }
     }
 

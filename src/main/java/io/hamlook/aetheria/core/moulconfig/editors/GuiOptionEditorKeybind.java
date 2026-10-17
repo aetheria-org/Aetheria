@@ -9,6 +9,7 @@ import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -25,6 +26,7 @@ public class GuiOptionEditorKeybind extends GuiOptionEditor {
     private int keyCode;
     private final int defaultKeyCode;
     private boolean editingKeycode;
+    private long editStartMs = 0L;
 
     public GuiOptionEditorKeybind(ConfigProcessor.ProcessedOption option, int keyCode, int defaultKeyCode) {
         super(option);
@@ -39,31 +41,47 @@ public class GuiOptionEditorKeybind extends GuiOptionEditor {
         int height = getHeight();
 
         GlStateManagerCompat.color(1, 1, 1, 1);
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(button_tex);
-        RenderUtils.drawTexturedRect(x + width / 6 - 24, y + height - 7 - 14, 48, 16);
+        TextureCompat.drawBoundTextured(button_tex, x + width / 6 - 24, y + height - 7 - 14, 48, 16, 0, 0, 1, 1);
 
         String keyName = KeybindHelper.getKeyName(keyCode);
         String text = editingKeycode ? "> " + keyName + " <" : keyName;
         TextRenderUtils.drawStringCenteredScaledMaxWidth(text, MinecraftCompat.getFontRenderer(), x + width / 6, y + height - 7 - 6, false, 40, 0xFF303030);
 
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(RESET);
         GlStateManagerCompat.color(1, 1, 1, 1);
-        RenderUtils.drawTexturedRect(x + width / 6 - 24 + 48 + 3, y + height - 7 - 14 + 3, 10, 11, GL11.GL_NEAREST);
+        TextureCompat.drawBoundTextured(RESET, x + width / 6 - 24 + 48 + 3, y + height - 7 - 14 + 3, 10, 11, 0, 0, 1, 1);
     }
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
-        if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() != -1 && editingKeycode) {
-            editingKeycode = false;
-            keyCode = MouseCompat.getEventButton() - 100;
-            option.set(keyCode);
-            return true;
+        return mouseInput(x, y, width, mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    private boolean isOverButton(int x, int y, int width, int mouseX, int mouseY) {
+        int height = getHeight();
+        return mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24
+                && mouseY > y + height - 7 - 14 && mouseY < y + height - 7 + 2;
+    }
+
+    @Override
+    public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
+        if (editingKeycode) {
+            if (pressed && isOverButton(x, y, width, mouseX, mouseY)) {
+                return true;
+            }
+            if (pressed && button != -1 && System.currentTimeMillis() - editStartMs > 200L) {
+                editingKeycode = false;
+                keyCode = button - 100;
+                option.set(keyCode);
+                return true;
+            }
+            return pressed;
         }
 
-        if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0) {
+        if (pressed && button == 0) {
             int height = getHeight();
             if (mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24 && mouseY > y + height - 7 - 14 && mouseY < y + height - 7 + 2) {
                 editingKeycode = true;
+                editStartMs = System.currentTimeMillis();
                 return true;
             }
             if (mouseX > x + width / 6 - 24 + 48 + 3 && mouseX < x + width / 6 - 24 + 48 + 13 && mouseY > y + height - 7 - 14 + 3 && mouseY < y + height - 7 - 14 + 3 + 11) {
@@ -78,14 +96,22 @@ public class GuiOptionEditorKeybind extends GuiOptionEditor {
 
     @Override
     public boolean keyboardInput() {
+        return keyboardInput(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
+    }
+
+    @Override
+    public boolean keyboardInput(char typedChar, int keyCode) {
         if (editingKeycode) {
+            if (keyCode == -1) return false;
             editingKeycode = false;
-            if (KeyboardCompat.getEventKey() == Keyboard.KEY_ESCAPE) {
-                keyCode = 0;
+            if (keyCode == Keyboard.KEY_ESCAPE) {
+                this.keyCode = Keyboard.KEY_NONE;
+            } else if (keyCode == 0) {
+                this.keyCode = typedChar + 256;
             } else {
-                keyCode = KeyboardCompat.getEventKey() == 0 ? KeyboardCompat.getEventCharacter() + 256 : KeyboardCompat.getEventKey();
+                this.keyCode = keyCode;
             }
-            option.set(keyCode);
+            option.set(this.keyCode);
             return true;
         }
         return false;

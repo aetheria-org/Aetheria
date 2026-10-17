@@ -4,8 +4,7 @@ import net.minecraft.client.gui.inventory.GuiEditSign
 import net.minecraft.util.IChatComponent
 //#if MC < 1.16
 import io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor
-//#endif
-//#if MC > 1.21
+//#else
 //$$ import io.hamlook.aetheria.mixins.accessors.SignEditScreenAccessor
 //#endif
 
@@ -23,5 +22,12 @@ fun GuiEditSignCompat.getSignLineCompat(index: Int): String =
 //$$ fun GuiEditSignCompat.getSignLineCompat(index: Int): String {
 //$$     val accessor = this as SignEditScreenAccessor
 //$$     return TextCompat.getUnformattedText(accessor.`ATHR$getBlockEntity`().getFrontText().getMessage(index, false))
+//$$ }
+//$$
+//$$ fun GuiEditSignCompat.getSignMessagesCompat(): Array<String> =
+//$$     (this as SignEditScreenAccessor).`ATHR$getMessages`().copyOf()
+//$$
+//$$ fun GuiEditSignCompat.setSignLineCompat(index: Int, text: String) {
+//$$     (this as SignEditScreenAccessor).`ATHR$getMessages`()[index] = text
 //$$ }
 //#endif

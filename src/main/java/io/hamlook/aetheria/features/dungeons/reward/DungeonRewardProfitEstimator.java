@@ -14,6 +14,7 @@ import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.compat.ColoredBlockCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
@@ -64,7 +65,7 @@ public class DungeonRewardProfitEstimator {
             if(slot == null || !slot.getHasStack()) continue;
 
             ItemStack stack = slot.getStack();
-            if(stack == null || Objects.equals(stack.getItem().getRegistryName(), ColoredBlockCompat.WHITE.createGlassPaneStack(1).getItem().getRegistryName())) continue;
+            if(stack == null || Objects.equals(ItemCompatKt.getIdentifierString(stack.getItem()), ItemCompatKt.getIdentifierString(ColoredBlockCompat.WHITE.createGlassPaneStack(1).getItem()))) continue;
 
             if(ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim().
             startsWith("Open Reward Chest")){
@@ -106,11 +107,11 @@ public class DungeonRewardProfitEstimator {
         ResourceLocation texture = Resources.betterContainerNineSlice(
                 ATHRConfig.feature.qol.betterContainers.style
         );
-        int xPos = chest.guiLeft + chest.xSize;
+        int xPos = InventoryCompat.getGuiLeft(chest) + InventoryCompat.getXSize(chest);
         if(ATHRConfig.feature.misc.invButtons.enableInvButtons){
             xPos += 24;
         }
-        int yPos = chest.guiTop;
+        int yPos = InventoryCompat.getGuiTop(chest);
         int width = 100;
         int height = 40;
 

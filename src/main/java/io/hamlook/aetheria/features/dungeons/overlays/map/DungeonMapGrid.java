@@ -66,7 +66,13 @@ public class DungeonMapGrid {
                 int checkerAlpha = (i + i / 128 & 1) * 8 + 16;
                 colors[x][y] = new Color(0, 0, 0, checkerAlpha);
             } else {
+                //#if MC < 1.21
                 int rgb = MapColor.mapColorArray[b / 4].getMapColor(b & 3);
+                //#else
+                //$$ int rgb = MapColor.getRenderColor(b);
+                //$$ // 1.21 packs 0xFFBBGGRR; legacy getMapColor packs 0xFFRRGGBB.
+                //$$ rgb = (rgb & 0xFF000000) | ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF);
+                //#endif
                 colors[x][y] = new Color(rgb, true);
             }
         }

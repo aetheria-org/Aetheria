@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.profile.viewer.ui.modules;
 
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
@@ -51,6 +52,15 @@ public class PVButton extends GuiButton {
         return new PVButton(buttonId, x, y, widthIn, heightIn, buttonText, action);
     }
 
+    public void athr$drawManual(Minecraft mc, int mouseX, int mouseY, float partialTicks) {
+        if (!this.visible) return;
+        //#if MC < 1.21
+        drawButton(mc, mouseX, mouseY);
+        //#else
+        //$$ renderWidget(DrawContextUtils.getDrawContext(), mouseX, mouseY, partialTicks);
+        //#endif
+    }
+
     //#if MC < 1.21
     @Override
     public void drawButton(Minecraft mc, int mouseX, int mouseY) {
@@ -78,7 +88,6 @@ public class PVButton extends GuiButton {
     //$$     int w = GuiScreenUtils.getW(this);
     //$$     int h = GuiScreenUtils.getH(this);
     //$$     GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f);
-    //$$     NineSliceUtils.draw(ProfileViewerGUI.CONTAINER_BG, x, y, w, h, 6, 18);
     //$$     String label = this.displayString;
     //$$     OrderedText ordered = athrOrdered;
     //$$     if (ordered == null || !label.equals(athrLastLabel)) {
@@ -87,9 +96,14 @@ public class PVButton extends GuiButton {
     //$$         athrLastLabel = label;
     //$$         athrOrdered = ordered;
     //$$     }
-    //$$     TextRenderer fr = MinecraftCompat.getFontRenderer();
-    //$$     OrderedText ordered = getMessage().asOrderedText();
-    //$$     context.drawText(fr, ordered, x + (w - fr.getWidth(ordered)) / 2, y + (h - 8) / 2, 0xFFFFFFFF, false);
+    //$$     DrawContextUtils.setContext(context);
+    //$$     try {
+    //$$         NineSliceUtils.draw(ProfileViewerGUI.CONTAINER_BG, x, y, w, h, 6, 18);
+    //$$         DrawContextUtils.drawCenteredTextScaled(MinecraftCompat.getFontRenderer(), ordered,
+    //$$                 x + w / 2f, y + h / 2f, ProfileViewerGUI.uiScale * 2f, 0xFFFFFFFF);
+    //$$     } finally {
+    //$$         DrawContextUtils.clearContext();
+    //$$     }
     //$$ }
     //#endif
 }

@@ -34,6 +34,11 @@ public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> exte
 
     @Inject(method = "canRenderName(Lnet/minecraft/entity/EntityLivingBase;)Z", at = @At("HEAD"), cancellable = true)
     private void ATHR$showOwnNametag(T entity, CallbackInfoReturnable<Boolean> cir) {
+        Boolean hidden = RendererLivingEntityHook.shouldHideNametag(entity);
+        if (hidden != null) {
+            cir.setReturnValue(hidden);
+            return;
+        }
         Boolean result = RendererLivingEntityHook.shouldShowOwnNametag(entity);
         if (result != null) cir.setReturnValue(result);
     }

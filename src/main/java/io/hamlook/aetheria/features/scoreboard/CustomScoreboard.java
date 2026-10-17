@@ -452,9 +452,9 @@ public class CustomScoreboard extends Overlay {
         if (pos.isCenterX()) x -= (int) (boxW * scale / 2);
         if (pos.isCenterY()) y -= (int) (boxH * scale / 2);
 
-        GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0);
-        GL11.glScalef(scale, scale, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(x, y, 0);
+        GlStateManagerCompat.scale(scale, scale, 1f);
 
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
@@ -489,6 +489,6 @@ public class CustomScoreboard extends Overlay {
         }
 
         GlStateManagerCompat.disableBlend();
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 }

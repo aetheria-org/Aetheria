@@ -34,7 +34,7 @@ public class TesterWhitelist {
     }
 
     private static void checkWhitelist() {
-        String playerName = MinecraftCompat.getMinecraft().getSession().getProfile().getName().toLowerCase();
+        String playerName = MinecraftCompat.getMinecraft().getSession().getUsername().toLowerCase();
 
         ThreadUtils.run(() -> {
             try {

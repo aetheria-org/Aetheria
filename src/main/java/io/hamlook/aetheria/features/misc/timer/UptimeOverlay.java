@@ -8,6 +8,7 @@ import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
@@ -134,15 +135,15 @@ public class UptimeOverlay extends Overlay {
         String line2 = "§eCountdown has ended.";
 
         GL11.glPushMatrix();
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glTranslatef(GuiScreenUtils.getScaledWindowWidth() / 2f, GuiScreenUtils.getScaledWindowHeight() / 3f, 0f);
-        GL11.glScalef(2f, 2f, 1f);
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
+        GlStateManagerCompat.translate(GuiScreenUtils.getScaledWindowWidth() / 2f, GuiScreenUtils.getScaledWindowHeight() / 3f, 0f);
+        GlStateManagerCompat.scale(2f, 2f, 1f);
 
         int white = (a << 24) | 0x00FFFFFF;
         DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line1, -MinecraftCompat.getFontRenderer().getStringWidth(line1) / 2f, -12f, white);
         DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line2, -MinecraftCompat.getFontRenderer().getStringWidth(line2) / 2f, 2f, white);
 
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 }

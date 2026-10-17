@@ -11,6 +11,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 //$$ import net.minecraft.client.gui.screen.Screen;
 //$$ import net.minecraft.client.gui.screen.ingame.HandledScreen;
 //$$ import net.minecraft.client.gui.widget.ClickableWidget;
+//$$ import net.minecraft.text.Text;
 //#endif
 import net.minecraft.inventory.Slot;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,6 +19,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -27,21 +29,26 @@ public abstract class MixinGuiContainer extends GuiScreen {
 //#else
 //$$ @Mixin(HandledScreen.class)
 //$$ public abstract class MixinGuiContainer extends Screen {
+//$$     public MixinGuiContainer() { super(Text.empty()); }
 //#endif
 
+    //#if MC < 1.21
     @Shadow
     public int guiLeft;
     @Shadow
     public int guiTop;
-    //#if MC < 1.21
+    //#endif
+    //#if MC < 1.16
     @Unique
     public GuiButton aetheria$button;
     //#else
     //$$ @Unique
     //$$ public ClickableWidget aetheria$button;
     //#endif
+    //#if MC < 1.21
     @Shadow
     private Slot theSlot;
+    //#endif
 
     //#if MC < 1.21
     @Inject(method = "drawScreen", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/inventory/GuiContainer;drawGuiContainerForegroundLayer(II)V", shift = At.Shift.AFTER))
@@ -50,6 +57,7 @@ public abstract class MixinGuiContainer extends GuiScreen {
     }
     //#endif
 
+    //#if MC < 1.21
     @Inject(method = "onGuiClosed", at = @At("HEAD"))
     private void ATHR$onGuiClosed(CallbackInfo ci) {
         GuiContainerHook.onGuiClosed((GuiContainer) (Object) this);
@@ -62,10 +70,17 @@ public abstract class MixinGuiContainer extends GuiScreen {
         }
     }
 
+    @Redirect(method = "drawScreen", at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/Slot;canBeHovered()Z"))
+    public boolean ATHR$blankPaneHover(Slot slot) {
+        if (GuiContainerHook.suppressBlankPaneHover(slot)) return false;
+        return slot.canBeHovered();
+    }
+
     @Inject(method = "keyTyped", at = @At("HEAD"))
     private void ATHR$nbtCopy(char typedChar, int keyCode, CallbackInfo ci) {
         GuiContainerHook.nbtCopy(this.theSlot, keyCode);
     }
+    //#endif
 
     //#if MC < 1.21
     @Inject(method = "initGui", at = @At("RETURN"))
@@ -85,12 +100,13 @@ public abstract class MixinGuiContainer extends GuiScreen {
         GuiContainerHook.profileMouseReleased((GuiContainer) (Object) this, mouseX, mouseY, this.aetheria$button);
     }
     //#else
-    //$$ @Inject(method = "mouseReleased", at = @At("HEAD"))
-    //$$ public void ATHR$profileMouseReleased(int mouseX, int mouseY, int state, CallbackInfo ci) {
-    //$$     GuiContainerHook.profileMouseReleased((HandledScreen)(Object)this, mouseX, mouseY, (ClickableWidget)this.aetheria$button);
+    //$$ @Inject(method = "mouseReleased(DDI)Z", at = @At("HEAD"))
+    //$$ public void ATHR$profileMouseReleased(double mouseX, double mouseY, int state, CallbackInfoReturnable<Boolean> cir) {
+    //$$     GuiContainerHook.profileMouseReleased((HandledScreen)(Object)this, (int) mouseX, (int) mouseY, (ClickableWidget)this.aetheria$button);
     //$$ }
     //#endif
 
+    //#if MC < 1.21
     @Inject(method = "mouseClicked", at = @At("HEAD"))
     public void ATHR$profileMouseClicked(int mouseX, int mouseY, int mouseButton, CallbackInfo ci) {
         GuiContainerHook.profileMouseClicked((GuiContainer) (Object) this, this.theSlot, mouseButton);
@@ -126,4 +142,5 @@ public abstract class MixinGuiContainer extends GuiScreen {
             ci.cancel();
         }
     }
+    //#endif
 }

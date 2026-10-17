@@ -10,13 +10,13 @@ import io.hamlook.aetheria.features.waypoints.WaypointRenderer;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import io.netty.util.internal.ConcurrentSet;
 import net.minecraft.block.Block;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.item.EntityTNTPrimed;
 import net.minecraft.entity.passive.EntityBat;
 import net.minecraft.init.Blocks;
@@ -36,8 +36,6 @@ import java.util.regex.Pattern;
 
 @RegisterEvents
 public class SecretRenderUtils {
-
-    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static final ConcurrentSet<SecretWaypoint> currentSecrets = new ConcurrentSet<>();
     private static int periodicTickCounter = 0;
@@ -131,16 +129,10 @@ public class SecretRenderUtils {
         boolean throughWalls = ATHRConfig.feature.dungeons.dungeonSecretFinder.toggles.showThroughWalls;
         double labelScale = ATHRConfig.feature.dungeons.dungeonSecretFinder.other.labelScale;
 
-        double vx = mc.getRenderManager().viewerPosX;
-        double vy = mc.getRenderManager().viewerPosY;
-        double vz = mc.getRenderManager().viewerPosZ;
-
         SecretWaypoint nearest = findNearestSecret();
 
         if (showLabels) {
             resetGLState();
-            GL11.glPushMatrix();
-            GL11.glTranslated(-vx, -vy, -vz);
             for (SecretWaypoint sw : currentSecrets) {
                 if (sw.collected) continue;
                 int bx = (int) Math.floor(sw.aabb.minX);
@@ -148,13 +140,10 @@ public class SecretRenderUtils {
                 int bz = (int) Math.floor(sw.aabb.minZ);
                 WaypointRenderer.drawLabel(bx + 0.5, by + 2.0, bz + 0.5, formatSecretName(sw.secretName), labelColor.getRGB(), tracerColor.getRGB(), labelScale);
             }
-            GL11.glPopMatrix();
         }
 
         if (showBorderBox) {
             resetGLState();
-            GL11.glPushMatrix();
-            GL11.glTranslated(-vx, -vy, -vz);
             setDepth(!throughWalls);
             GlStateManagerCompat.disableTexture2D();
             GL11.glLineWidth(3f);
@@ -163,7 +152,6 @@ public class SecretRenderUtils {
                 WorldRenderUtils.drawEspBox((int) Math.floor(sw.aabb.minX), (int) Math.floor(sw.aabb.minY), (int) Math.floor(sw.aabb.minZ), boxColor);
             }
             GL11.glLineWidth(1f);
-            GL11.glPopMatrix();
         }
 
         if (showWaypoints) {
@@ -238,7 +226,7 @@ public class SecretRenderUtils {
         double nearestDist = Double.MAX_VALUE;
         for (SecretWaypoint sw : currentSecrets) {
             if (sw.collected) continue;
-            double dist = MinecraftCompat.getLocalPlayer().getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
+            double dist = EntityCompat.getDistanceToPos(MinecraftCompat.getLocalPlayer(), sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
             if (dist < nearestDist) {
                 nearestDist = dist;
                 nearest = sw;
@@ -280,8 +268,8 @@ public class SecretRenderUtils {
 
             if (!"entrance".equals(sw.category)) continue;
 
-            double dx = MinecraftCompat.getLocalPlayer().posX - (sw.pos.getX() + 0.5);
-            double dz = MinecraftCompat.getLocalPlayer().posZ - (sw.pos.getZ() + 0.5);
+            double dx = EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()) - (sw.pos.getX() + 0.5);
+            double dz = EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()) - (sw.pos.getZ() + 0.5);
             double horizDist = Math.sqrt(dx * dx + dz * dz);
 
             double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.entranceRemovalRange;
@@ -309,10 +297,12 @@ public class SecretRenderUtils {
                     }
                     TileEntity tile = MinecraftCompat.getLocalWorld().getTileEntity(sw.pos);
                     if(!(tile instanceof TileEntityChest)) continue;
+                    //#if MC < 1.21
                     TileEntityChest teChest = (TileEntityChest)tile;
                     if(teChest.numPlayersUsing > 0){
                         sw.collected = true;
                     }
+                    //#endif
 
                 }
                 if ("wither".equals(sw.category) || sw.secretName.contains("Essence")) {
@@ -320,7 +310,7 @@ public class SecretRenderUtils {
                         sw.collected = true;
                     }
                 } else if ("item".equals(sw.category)) {
-                    double dist = MinecraftCompat.getLocalPlayer().getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
+                    double dist = EntityCompat.getDistanceToPos(MinecraftCompat.getLocalPlayer(), sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
                     if (dist <= itemRange) {
                         sw.collected = true;
                     }
@@ -350,7 +340,7 @@ public class SecretRenderUtils {
                 double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.itemRemovalRange;
                 for (SecretWaypoint sw : currentSecrets) {
                     if (sw.collected || !"item".equals(sw.category)) continue;
-                    double dist = MinecraftCompat.getLocalPlayer().getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
+                    double dist = EntityCompat.getDistanceToPos(MinecraftCompat.getLocalPlayer(), sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
                     if (dist <= range) {
                         sw.collected = true;
                     }
@@ -387,7 +377,7 @@ public class SecretRenderUtils {
         for (SecretWaypoint sw : currentSecrets) {
             if (sw.collected) continue;
 
-            double dist = Math.sqrt(clickedPos.distanceSq(sw.pos));
+            double dist = Math.sqrt(BlockCompat.distanceSq(clickedPos, sw.pos));
             if (dist > range) continue;
 
             if ("chest".equals(sw.category)) {
@@ -427,7 +417,7 @@ public class SecretRenderUtils {
             if (sw.collected || !"superboom".equals(sw.category)) continue;
 
             double range = ATHRConfig.feature.dungeons.dungeonSecretFinder.range.superboomRemovalRange;
-            double dist = tnt.getDistance(sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
+            double dist = EntityCompat.getDistanceToPos(tnt, sw.pos.getX() + 0.5, sw.pos.getY() + 0.5, sw.pos.getZ() + 0.5);
             if (dist <= range) {
                 sw.collected = true;
             }
@@ -440,8 +430,8 @@ public class SecretRenderUtils {
         if (!(event.entity instanceof EntityBat)) return;
         if (!DungeonRoomDetector.roomBoundsValid) return;
 
-        double ex = event.entity.posX;
-        double ez = event.entity.posZ;
+        double ex = EntityCompat.getPosX(event.entity);
+        double ez = EntityCompat.getPosZ(event.entity);
 
         if (ex >= DungeonRoomDetector.roomMinX && ex <= DungeonRoomDetector.roomMaxX
             && ez >= DungeonRoomDetector.roomMinZ && ez <= DungeonRoomDetector.roomMaxZ) {

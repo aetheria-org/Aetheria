@@ -5,6 +5,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TessellatorCompat;
@@ -154,9 +155,9 @@ public class BrewingStandHelper {
         if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null) return;
 
         float pt = event.partialTicks;
-        double vx = MinecraftCompat.getLocalPlayer().lastTickPosX + (MinecraftCompat.getLocalPlayer().posX - MinecraftCompat.getLocalPlayer().lastTickPosX) * pt;
-        double vy = MinecraftCompat.getLocalPlayer().lastTickPosY + (MinecraftCompat.getLocalPlayer().posY - MinecraftCompat.getLocalPlayer().lastTickPosY) * pt;
-        double vz = MinecraftCompat.getLocalPlayer().lastTickPosZ + (MinecraftCompat.getLocalPlayer().posZ - MinecraftCompat.getLocalPlayer().lastTickPosZ) * pt;
+        double vx = EntityCompat.getPrevX(MinecraftCompat.getLocalPlayer()) + (EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()) - EntityCompat.getPrevX(MinecraftCompat.getLocalPlayer())) * pt;
+        double vy = EntityCompat.getPrevY(MinecraftCompat.getLocalPlayer()) + (EntityCompat.getPosY(MinecraftCompat.getLocalPlayer()) - EntityCompat.getPrevY(MinecraftCompat.getLocalPlayer())) * pt;
+        double vz = EntityCompat.getPrevZ(MinecraftCompat.getLocalPlayer()) + (EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()) - EntityCompat.getPrevZ(MinecraftCompat.getLocalPlayer())) * pt;
 
         long now = System.currentTimeMillis();
 

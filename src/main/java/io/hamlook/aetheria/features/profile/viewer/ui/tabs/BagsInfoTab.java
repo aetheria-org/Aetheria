@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.profile.viewer.ui.tabs;
 
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.features.profile.data.ItemData;
@@ -13,6 +14,7 @@ import io.hamlook.aetheria.features.profile.data.bags.vars.Bait;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.*;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
@@ -135,7 +137,7 @@ public class BagsInfoTab extends Tab {
                     if (sbItem != null && sbItem.itemStack != null) {
                         ItemRenderUtils.renderItemIcon(mc, sbItem.itemStack, (int)x, (int)curY, (int)iconSize);
                     } else {
-                        ItemRenderUtils.renderItemIcon(mc, new ItemStack(Items.dye, 1, 0), (int)x, (int)curY, (int)iconSize);
+                        ItemRenderUtils.renderItemIcon(mc, ItemCompatKt.createDyeStackCompat(0), (int)x, (int)curY, (int)iconSize);
                     }
                     TextRenderUtils.drawStringScaleAware("§f" + entry.getValue() + "x §7" + entry.getKey().itemName, x + iconSize + pad, curY + (iconSize / 2f) - ProfileViewerGUI.getScaledF(4), ProfileViewerGUI.getScaleText() * 0.8f, false);
                     curY += iconSize + ProfileViewerGUI.getScaledF(4);
@@ -169,8 +171,7 @@ public class BagsInfoTab extends Tab {
 
     private void drawSlot(Minecraft mc, ItemStack icon, boolean active, int rarityScore, float x, float y, float size) {
         GlStateManagerCompat.color(1, 1, 1, 1);
-        mc.getTextureManager().bindTexture(Resources.storageSlot(1));
-        Gui.drawModalRectWithCustomSizedTexture((int)x, (int)y, 0, 0, (int)size, (int)size, (int)size, (int)size);
+        DrawContextUtils.drawModalRectWithCustomSizedTexture(Resources.storageSlot(1), (int)x, (int)y, 0, 0, (int)size, (int)size, (int)size, (int)size);
 
         if (icon != null) {
             ItemRenderUtils.renderItemIcon(mc, icon, (int)(x + size*0.1f), (int)(y + size*0.1f), (int)(size*0.8f));
@@ -185,7 +186,7 @@ public class BagsInfoTab extends Tab {
         if (sbItem != null && sbItem.itemStack != null) {
             return sbItem.itemStack;
         }
-        return new ItemStack(Items.skull, 1, 3);
+        return ItemCompatKt.createPlayerHeadStack();
     }
 
     private void handleVerticalScroll(float x, float y, float w, float h, float contentH) {
@@ -204,7 +205,7 @@ public class BagsInfoTab extends Tab {
     private void applyScissor(float x, float y, float w, float h) {
         int f = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor((int)(x * f), (int)(GuiScreenUtils.getDisplayHeight() - (y + h) * f), (int)(w * f), (int)(h * f));
+        GlStateManagerCompat.scissor((int)(x * f), (int)(GuiScreenUtils.getDisplayHeight() - (y + h) * f), (int)(w * f), (int)(h * f));
     }
 
     private void drawItemTooltip(Minecraft mc, ItemData data, int mouseX, int mouseY) {

@@ -71,7 +71,7 @@ public abstract class VisitorPanelBase {
 
     @HandleEvent
     public void onContainerRender(GuiContainerRenderBeforeTooltipEvent event) {
-        render(event.gui, event.mouseX, event.mouseY, true);
+        render(event.gui, event.mouseX, event.mouseY, event.fromForeground);
     }
 
     @HandleEvent
@@ -148,7 +148,7 @@ public abstract class VisitorPanelBase {
         glProbe("ENTER", live);
         if (compensate) {
             GlStateManagerCompat.pushMatrix();
-            GlStateManagerCompat.translate(-((GuiContainer) gui).guiLeft, -((GuiContainer) gui).guiTop, 50);
+            GlStateManagerCompat.translate(-InventoryCompat.getGuiLeft((GuiContainer) gui), -InventoryCompat.getGuiTop((GuiContainer) gui), 50);
         }
         try {
             GlStateManagerCompat.pushMatrix();
@@ -233,11 +233,11 @@ public abstract class VisitorPanelBase {
 
         tipShownThisLaunch = true;
         io.hamlook.aetheria.utils.SoundUtils.playSound("note.pling");
-        IChatComponent line1 = TextCompat.createText("§e[ASM] §7Tip: click an item in the shopping list to open it on the Bazaar.");
-        IChatComponent line2 = TextCompat.createText("§7The order amount is filled for you automatically. ");
-        IChatComponent hide = TextCompat.createText("§a[HIDE]");
-        TextCompat.setHoverShowText(TextCompat.getChatStyle(hide), "Never show this tip again");
-        TextCompat.setClickRunCommand(TextCompat.getChatStyle(hide), "/visitortip hide");
+        IChatComponent line1 = TextCompat.fromFormatted("§e[ASM] §7Tip: click an item in the shopping list to open it on the Bazaar.");
+        IChatComponent line2 = TextCompat.fromFormatted("§7The order amount is filled for you automatically. ");
+        IChatComponent hide = TextCompat.fromFormatted("§a[HIDE]");
+        TextCompat.setChatStyle(hide, TextCompat.setHoverShowText(TextCompat.getChatStyle(hide), "Never show this tip again"));
+        TextCompat.setChatStyle(hide, TextCompat.setClickRunCommand(TextCompat.getChatStyle(hide), "/visitortip hide"));
         TextCompat.appendSibling(line2, hide);
         if (MinecraftCompat.getLocalPlayer() != null) {
             TextCompat.addChatMessage(line1);
@@ -270,10 +270,10 @@ public abstract class VisitorPanelBase {
         if (clickTargets.isEmpty()) return;
         boolean visible = panelEnabled();
         if (!visible) return;
-        if (!MouseCompat.getEventButtonState() || MouseCompat.getEventButton() != 0) return;
+        if (!event.buttonState || event.button != 0) return;
         if (MinecraftCompat.getCurrentScreen() == null) return;
-        int mx = MouseCompat.getEventX() * MinecraftCompat.getCurrentScreen().width / GuiScreenUtils.getDisplayWidth();
-        int my = MinecraftCompat.getCurrentScreen().height - MouseCompat.getEventY() * MinecraftCompat.getCurrentScreen().height / GuiScreenUtils.getDisplayHeight() - 1;
+        int mx = event.mouseX;
+        int my = event.mouseY;
         for (Clickable clickable : clickTargets) {
             if (clickable.contains(mx, my)) {
                 event.cancel();

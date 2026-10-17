@@ -11,6 +11,7 @@ import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -66,8 +67,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
         int height = getHeight();
 
         GlStateManagerCompat.color(1, 1, 1, 1);
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(button_tex);
-        RenderUtils.drawTexturedRect(x + width / 6 - 24, y + 45 - 7 - 14, 48, 16);
+        TextureCompat.drawBoundTextured(button_tex, x + width / 6 - 24, y + 45 - 7 - 14, 48, 16, 0, 0, 1, 1);
 
         TextRenderUtils.drawStringCenteredScaledMaxWidth("Add", MinecraftCompat.getFontRenderer(), x + width / 6, y + 45 - 7 - 6, false, 44, 0xFF303030);
 
@@ -79,8 +79,8 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
             float greenBlue = LerpUtils.clampZeroOne((250 + trashHoverTime - currentTime) / 250f);
             GlStateManagerCompat.color(1, greenBlue, greenBlue, 1);
         }
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(DELETE);
-        Utils.drawTexturedRect(x + width / 6 + 27, y + 45 - 7 - 13, 11, 14, GL11.GL_NEAREST);
+        TextureCompat.drawBoundTextured(DELETE, x + width / 6 + 27, y + 45 - 7 - 13, 11, 14, 0, 0, 1, 1);
+        GlStateManagerCompat.resetColor();
 
         DrawContextUtils.fill(x + 5, y + 45, x + width - 5, y + height - 5, 0xffdddddd);
         DrawContextUtils.fill(x + 6, y + 46, x + width - 6, y + height - 6, 0xff000000);
@@ -103,7 +103,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
                     String line = multilines[multilineIndex];
                     Utils.drawStringScaledMaxWidth(line + EnumChatFormatting.RESET, MinecraftCompat.getFontRenderer(), x + 20, y + 50 + yOff + multilineIndex * 10, true, width - 20, 0xffffffff);
                 }
-                MinecraftCompat.getFontRenderer().drawString("≡", x + 10, y + 50 + yOff + ySize / 2 - 4, 0xffffff, true);
+                DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "≡", x + 10, y + 50 + yOff + ySize / 2 - 4, 0xffffff, true);
             }
 
             yOff += ySize;
@@ -173,13 +173,18 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
 
             int ySize = multilines.length * 10;
 
-            MinecraftCompat.getFontRenderer().drawString("\u2261", dragOffsetX + mouseX, dragOffsetY + mouseY + ySize / 2 - 4, 0xffffff, true);
+            DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "\u2261", dragOffsetX + mouseX, dragOffsetY + mouseY + ySize / 2 - 4, 0xffffff, true);
         }
     }
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
-        if (!MouseCompat.getEventButtonState() && !dropdownOpen && dragStartIndex >= 0 && MouseCompat.getEventButton() == 0 && mouseX >= x + width / 6 + 27 - 3 && mouseX <= x + width / 6 + 27 + 11 + 3 && mouseY >= y + 45 - 7 - 13 - 3 && mouseY <= y + 45 - 7 - 13 + 14 + 3) {
+        return mouseInput(x, y, width, mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
+        if (!pressed && !dropdownOpen && dragStartIndex >= 0 && button == 0 && mouseX >= x + width / 6 + 27 - 3 && mouseX <= x + width / 6 + 27 + 11 + 3 && mouseY >= y + 45 - 7 - 13 - 3 && mouseY <= y + 45 - 7 - 13 + 14 + 3) {
             activeText.remove(dragStartIndex);
             currentDragging = -1;
             dragStartIndex = -1;
@@ -196,7 +201,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
             if (trashHoverTime > 0) trashHoverTime = -System.currentTimeMillis();
         }
 
-        if (MouseCompat.getEventButtonState()) {
+        if (pressed) {
             int height = getHeight();
 
             if (dropdownOpen) {
@@ -236,7 +241,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
                 return true;
             }
 
-            if (MouseCompat.getEventButton() == 0 && mouseX > x + 5 && mouseX < x + width - 5 && mouseY > y + 45 && mouseY < y + height - 6) {
+            if (button == 0 && mouseX > x + 5 && mouseX < x + width - 5 && mouseY > y + 45 && mouseY < y + height - 6) {
                 int yOff = 0;
                 int i = 0;
                 for (int strIndex : activeText) {
@@ -253,7 +258,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
                     i++;
                 }
             }
-        } else if (MouseCompat.getEventButton() == -1 && currentDragging >= 0) {
+        } else if (button == -1 && currentDragging >= 0) {
             int yOff = 0;
             int i = 0;
             for (int strIndex : activeText) {

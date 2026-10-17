@@ -12,6 +12,7 @@ import io.hamlook.aetheria.features.dungeons.utils.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.DungeonUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -71,6 +72,11 @@ public class DungeonStats extends Overlay {
     public static boolean isInBossFight() {
         DungeonStats s = getInstance();
         return s != null && s.timers.getBossTime() > 0 && s.timers.getBossDeadTime() == 0;
+    }
+
+    public static boolean isBloodActive() {
+        DungeonStats s = getInstance();
+        return s != null && s.timers.getBloodTime() > 0 && !s.timers.isBloodCleared();
     }
 
     public boolean isInStormPhase() {
@@ -204,9 +210,9 @@ public class DungeonStats extends Overlay {
 
         int[] c = getBossCoords(timers.getCurrentFloor());
         if (c != null) {
-            double dx = MinecraftCompat.getLocalPlayer().posX - c[0];
-            double dy = MinecraftCompat.getLocalPlayer().posY - c[1];
-            double dz = MinecraftCompat.getLocalPlayer().posZ - c[2];
+            double dx = EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()) - c[0];
+            double dy = EntityCompat.getPosY(MinecraftCompat.getLocalPlayer()) - c[1];
+            double dz = EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()) - c[2];
             if (dx * dx + dy * dy + dz * dz <= 30 * 30) {
                 timers.setBossTime(timers.elapsed());
                 if (timers.getClearedTime() == 0) {

@@ -13,6 +13,20 @@ import java.util.Deque;
 
 public class ChromaTextRenderer {
 
+    public static final int TIER_COUNT = 5;
+
+    /**
+     * Stand-in colours written into a {@code Style} by the legacy-code parser to
+     * mark chroma text, one per enchant tier. A {@code Style} cannot carry both
+     * a marker and the tier colour, so the marker replaces the tier colour and
+     * the renderer swaps in the animated colour from {@link #TIER_STYLES}.
+     *
+     * <p>Chosen to be garish rather than dark: if one ever survives to the
+     * screen it should be obvious and still readable, not silently black.
+     */
+    private static final int[] TIER_SENTINELS = {0xFF00FF, 0x00FF7F, 0x7F00FF, 0xFFFF00, 0x00FFFF};
+
+    private static final ChromaStyle[] TIER_STYLES = new ChromaStyle[TIER_COUNT];
     private static final Deque<ChromaStyle> STYLE_STACK = new ArrayDeque<>();
     private static boolean chromaActive;
     private static boolean chromaOn;
@@ -20,6 +34,43 @@ public class ChromaTextRenderer {
     private static ChromaStyle defaultStyle = ChromaStyle.of("251:255:255:255:255");
 
     private ChromaTextRenderer() {
+    }
+
+    public static int tierSentinelRgb(int tier) {
+        return TIER_SENTINELS[tier];
+    }
+
+    /** Returns the tier a sentinel colour represents, or -1 if it is not one. */
+    public static int tierOfSentinel(int rgb) {
+        switch (rgb) {
+            case 0xFF00FF:
+                return 0;
+            case 0x00FF7F:
+                return 1;
+            case 0x7F00FF:
+                return 2;
+            case 0xFFFF00:
+                return 3;
+            case 0x00FFFF:
+                return 4;
+            default:
+                return -1;
+        }
+    }
+
+    public static void setTierStyle(int tier, ChromaStyle style) {
+        if (tier >= 0 && tier < TIER_COUNT && style != null) TIER_STYLES[tier] = style;
+    }
+
+    /**
+     * Animated colour for a tier marker, bypassing the {@code chromaActive}
+     * latch — that latch is only armed on the legacy string draw path, which
+     * vanilla tooltips never take.
+     */
+    public static int chromaArgbForTier(int tier, float x, float y) {
+        if (tier < 0 || tier >= TIER_COUNT) return -1;
+        ChromaStyle style = TIER_STYLES[tier];
+        return style == null ? -1 : style.toArgb(x, y);
     }
 
     public static void setDefaultStyle(ChromaStyle style) {

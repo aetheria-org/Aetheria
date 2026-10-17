@@ -29,4 +29,12 @@ object WorldCompat {
         //#else
         //$$ world.getTime()
         //#endif
+
+    @JvmStatic
+    fun getPlayerByName(world: WorldClient, username: String): EntityPlayer? =
+        //#if MC < 1.16
+        world.getPlayerEntityByName(username)
+        //#else
+        //$$ getLoadedPlayers(world).firstOrNull { TextCompat.plainString(it.name) == username }
+        //#endif
 }

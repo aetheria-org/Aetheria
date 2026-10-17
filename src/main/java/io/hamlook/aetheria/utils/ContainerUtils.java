@@ -3,18 +3,17 @@ package io.hamlook.aetheria.utils;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiChest;
+import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.util.IChatComponent;
 
 import javax.annotation.Nullable;
 
 public class ContainerUtils {
-
-    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static GuiScreen cachedScreen;
     private static String cachedContainerName;
@@ -39,7 +38,7 @@ public class ContainerUtils {
     }
 
     public static boolean isGuiContainerOpen() {
-        return MinecraftCompat.getCurrentScreen() instanceof net.minecraft.client.gui.inventory.GuiContainer;
+        return MinecraftCompat.getCurrentScreen() instanceof GuiContainer;
     }
 
     @Nullable
@@ -69,29 +68,38 @@ public class ContainerUtils {
 
     public static int getWindowId() {
         if (!isChestOpen()) return -1;
-        return InventoryCompat.getContainer((GuiChest) MinecraftCompat.getCurrentScreen()).windowId;
+        return InventoryCompat.getWindowId(InventoryCompat.getContainer((GuiChest) MinecraftCompat.getCurrentScreen()));
     }
 
     @Nullable
     public static String getContainerName() {
         GuiScreen screen = MinecraftCompat.getCurrentScreen();
+        if (screen == null) return null;
         if (screen == cachedScreen) return cachedContainerName;
         cachedScreen = screen;
-        IInventory inv = getLowerInventory(getOpenChest(screen));
-        cachedContainerName = inv == null ? null : ColorUtils.stripColor(TextCompat.getUnformattedText(inv.getDisplayName())).trim();
+        IChatComponent title = InventoryCompat.getContainerTitle(screen);
+        cachedContainerName = title == null ? null : ColorUtils.stripColor(TextCompat.getUnformattedText(title)).trim();
         return cachedContainerName;
     }
 
     @Nullable
     public static String getContainerName(GuiScreen gui) {
-        IInventory inv = getLowerInventory(getOpenChest(gui));
-        return inv == null ? null : ColorUtils.stripColor(TextCompat.getUnformattedText(inv.getDisplayName())).trim();
+        IChatComponent title = InventoryCompat.getContainerTitle(gui);
+        return title == null ? null : ColorUtils.stripColor(TextCompat.getUnformattedText(title)).trim();
     }
 
     @Nullable
     public static String getTitle(ContainerChest chest) {
         if (chest == null) return null;
+        //#if MC < 1.16
         return ColorUtils.stripColor(TextCompat.getUnformattedText((chest.getLowerChestInventory()).getDisplayName())).trim();
+        //#else
+        //$$ Screen screen = MinecraftCompat.getCurrentScreen();
+        //$$ if (!(screen instanceof HandledScreen)) return null;
+        //$$ if (InventoryCompat.getContainer((HandledScreen) screen) != (Object) chest) return null;
+        //$$ Text title = InventoryCompat.getContainerTitle(screen);
+        //$$ return title == null ? null : ColorUtils.stripColor(TextCompat.getUnformattedText(title)).trim();
+        //#endif
     }
 
     public static boolean isInContainer(String name) {

@@ -16,6 +16,7 @@ import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.InventoryCompatKt;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -26,6 +27,11 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.inventory.ContainerChest;
+//#if MC < 1.21
+//#else
+//$$ import io.hamlook.aetheria.mixins.accessors.SignEditScreenAccessor;
+//$$ import net.minecraft.client.gui.screen.Screen;
+//#endif
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntitySign;
 
@@ -54,7 +60,7 @@ public final class VisitorShoppingList {
     private static String pendingBzsCommand = null;
     private static int pendingBzsTicks = 0;
     private static long signSubmitAtMs = 0L;
-    private static GuiEditSign pendingSubmitSign;
+    private static GuiScreen pendingSubmitSign;
     private static String lastRemoteAddress = null;
 
     static {
@@ -139,7 +145,7 @@ public final class VisitorShoppingList {
         }
 
         if (signSubmitAtMs > 0 && System.currentTimeMillis() >= signSubmitAtMs) {
-            GuiEditSign gui = pendingSubmitSign;
+            GuiScreen gui = pendingSubmitSign;
             signSubmitAtMs = 0L;
             pendingSubmitSign = null;
             if (gui != null && MinecraftCompat.getCurrentScreen() == gui) {
@@ -396,7 +402,7 @@ public final class VisitorShoppingList {
         int size = chest.getLowerChestInventory().getSizeInventory();
         for (int i = 0; i < size; i++) {
             ItemStack stack = chest.getLowerChestInventory().getStackInSlot(i);
-            if (stack != null && stack.stackSize > 0) return false;
+            if (stack != null && ItemCompatKt.getCountCompat(stack) > 0) return false;
         }
         return true;
     }
@@ -599,12 +605,12 @@ public final class VisitorShoppingList {
         if (now - haveCountsAt < HAVE_CACHE_MS) return haveCounts;
         Map<String, Integer> counts = new HashMap<>();
         EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
-        if (player != null && player.inventory != null) {
-            for (ItemStack stack : player.inventory.mainInventory) {
+        if (player != null && InventoryCompat.getInventory(player) != null) {
+            for (ItemStack stack : InventoryCompat.getMainInventory(player)) {
                 if (!InventoryCompatKt.isStackNotEmpty(stack)) continue;
                 String id = ItemUtils.getEffectiveItemId(stack);
                 if (id == null) continue;
-                counts.merge(id, stack.stackSize, Integer::sum);
+                counts.merge(id, ItemCompatKt.getCountCompat(stack), Integer::sum);
             }
         }
         haveCounts = counts;
@@ -891,33 +897,57 @@ public final class VisitorShoppingList {
     /** Empty slots across hotbar + main inventory (armor is a separate array). */
     public static int countEmptyMainInventorySlots() {
         EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
-        if (player == null || player.inventory == null) return 0;
+        if (player == null || InventoryCompat.getInventory(player) == null) return 0;
         int empty = 0;
-        for (ItemStack stack : player.inventory.mainInventory) {
-            if (!InventoryCompatKt.isStackNotEmpty(stack) || stack.stackSize <= 0) empty++;
+        for (ItemStack stack : InventoryCompat.getMainInventory(player)) {
+            if (!InventoryCompatKt.isStackNotEmpty(stack) || ItemCompatKt.getCountCompat(stack) <= 0) empty++;
         }
         return empty;
     }
 
-    public static void scheduleSignSubmit(GuiEditSign gui) {
+    public static void scheduleSignSubmit(GuiScreen gui) {
         pendingSubmitSign = gui;
         signSubmitAtMs = System.currentTimeMillis() + 200L;
     }
 
     private static void writeIntoSign(int amount) {
+        //#if MC < 1.21
         TileEntitySign sign = ((io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor) MinecraftCompat.getCurrentScreen()).ATHR$getTileSign();
         if (sign == null || sign.signText == null || sign.signText.length == 0) return;
         if (TextCompat.getUnformattedText(sign.signText[0]).isEmpty()) return;
         sign.signText[0] = TextCompat.createText(String.valueOf(amount));
+        //#else
+        //$$ Screen screen = MinecraftCompat.getCurrentScreen();
+        //$$ if (!(screen instanceof SignEditScreenAccessor)) return;
+        //$$ String[] messages = ((SignEditScreenAccessor) screen).ATHR$getMessages();
+        //$$ if (messages == null || messages.length == 0) return;
+        //$$ if (!messages[0].isEmpty()) return;
+        //$$ messages[0] = String.valueOf(amount);
+        //#endif
     }
 
     public static boolean isBazaarAmountSign(TileEntitySign sign) {
+        //#if MC < 1.21
         if (sign == null || sign.signText == null || sign.signText.length < 4) return false;
         if (!"^^^^^^^^^^^^^^^".equals(text(sign.signText[1]))) return false;
         if (!"Enter amount".equals(text(sign.signText[2]))) return false;
         String purpose = text(sign.signText[3]);
         return purpose.startsWith("to order") || purpose.startsWith("to sell");
+        //#else
+        //$$ return false;
+        //#endif
     }
+
+    //#if MC < 1.21
+    //#else
+    //$$ public static boolean isBazaarAmountSign(String[] lines) {
+    //$$     if (lines == null || lines.length < 4) return false;
+    //$$     if (!"^^^^^^^^^^^^^^^".equals(lines[1].trim())) return false;
+    //$$     if (!"Enter amount".equals(lines[2].trim())) return false;
+    //$$     String purpose = lines[3].trim();
+    //$$     return purpose.startsWith("to order") || purpose.startsWith("to sell");
+    //$$ }
+    //#endif
 
     private static String text(net.minecraft.util.IChatComponent component) {
         return component == null ? "" : ColorUtils.stripColor(TextCompat.getUnformattedText(component)).trim();

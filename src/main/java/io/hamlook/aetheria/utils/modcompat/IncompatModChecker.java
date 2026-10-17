@@ -40,17 +40,17 @@ public class IncompatModChecker {
 
     private static void sendWarning(List<IncompatMod> found) {
         IChatComponent root = TextCompat.createText("");
-        TextCompat.appendSibling(root, TextCompat.createText("§c[ATHR] §fDetected mods that may break Aetheria features:"));
-        TextCompat.appendSibling(root, TextCompat.createText("\n§7Hover a mod name to see what it breaks. Click §e[Hide]§7 to stop that warning."));
+        TextCompat.appendSibling(root, TextCompat.fromFormatted("§c[ATHR] §fDetected mods that may break Aetheria features:"));
+        TextCompat.appendSibling(root, TextCompat.fromFormatted("\n§7Hover a mod name to see what it breaks. Click §e[Hide]§7 to stop that warning."));
         for (IncompatMod mod : found) {
-            TextCompat.appendSibling(root, TextCompat.createText("\n§c - "));
-            IChatComponent name = TextCompat.createText("§e" + mod.displayName);
-            TextCompat.setHoverShowText(TextCompat.getChatStyle(name), "§e" + mod.displayName + "\n§7" + mod.hoverDetails);
+            TextCompat.appendSibling(root, TextCompat.fromFormatted("\n§c - "));
+            IChatComponent name = TextCompat.fromFormatted("§e" + mod.displayName);
+            TextCompat.setChatStyle(name, TextCompat.setHoverShowText(TextCompat.getChatStyle(name), "§e" + mod.displayName + "\n§7" + mod.hoverDetails));
             TextCompat.appendSibling(root, name);
-            TextCompat.appendSibling(root, TextCompat.createText(" §7(" + mod.impact + ") "));
-            IChatComponent hide = TextCompat.createText("§8[§cHide§8]");
-            TextCompat.setClickRunCommand(TextCompat.getChatStyle(hide), "/athrignoreincompat ignore " + mod.key());
-            TextCompat.setHoverShowText(TextCompat.getChatStyle(hide), "§cHide this warning for " + mod.displayName);
+            TextCompat.appendSibling(root, TextCompat.fromFormatted(" §7(" + mod.impact + ") "));
+            IChatComponent hide = TextCompat.fromFormatted("§8[§cHide§8]");
+            TextCompat.setChatStyle(hide, TextCompat.setClickRunCommand(TextCompat.getChatStyle(hide), "/athrignoreincompat ignore " + mod.key()));
+            TextCompat.setChatStyle(hide, TextCompat.setHoverShowText(TextCompat.getChatStyle(hide), "§cHide this warning for " + mod.displayName));
             TextCompat.appendSibling(root, hide);
         }
         TextCompat.addChatMessage(root);

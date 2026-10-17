@@ -10,6 +10,7 @@ import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
@@ -18,7 +19,6 @@ import net.minecraft.block.BlockColored;
 import net.minecraft.block.BlockLever;
 import net.minecraft.block.BlockPistonExtension;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.EnumDyeColor;
 import net.minecraft.util.BlockPos;
@@ -30,8 +30,6 @@ import java.util.*;
 
 @Deprecated
 public class WaterSolver {
-
-    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static final String[] LEVER_KEYS = {"minecraft:quartz_block", "minecraft:diamond_block", "minecraft:gold_block", "minecraft:emerald_block", "minecraft:coal_block", "minecraft:hardened_clay"};
 
@@ -145,10 +143,6 @@ public class WaterSolver {
         if (!inWaterRoom || solutions.isEmpty()) return;
         if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) return;
 
-        double vx = mc.getRenderManager().viewerPosX;
-        double vy = mc.getRenderManager().viewerPosY;
-        double vz = mc.getRenderManager().viewerPosZ;
-
         List<Object[]> pending = new ArrayList<>();
         for (Map.Entry<String, int[]> entry : solutions.entrySet()) {
             String key = entry.getKey();
@@ -169,13 +163,10 @@ public class WaterSolver {
         pending.sort(Comparator.comparingInt(a -> (int) a[1]));
 
         WorldRenderUtils.beginWorldRender(2f);
-        GL11.glPushMatrix();
-        GL11.glTranslated(-vx, -vy, -vz);
         for (int i = 0; i < pending.size(); i++) {
             BlockPos pos = (BlockPos) pending.get(i)[0];
             WorldRenderUtils.drawEspBox(pos.getX(), pos.getY(), pos.getZ(), i == 0 ? java.awt.Color.GREEN : java.awt.Color.YELLOW);
         }
-        GL11.glPopMatrix();
         WorldRenderUtils.endWorldRender();
 
         if (!pending.isEmpty()) {
@@ -184,8 +175,6 @@ public class WaterSolver {
         }
 
         GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glPushMatrix();
-        GL11.glTranslated(-vx, -vy, -vz);
         for (Map.Entry<String, int[]> entry : solutions.entrySet()) {
             String key = entry.getKey();
             if (key.equals("water")) continue;
@@ -198,7 +187,6 @@ public class WaterSolver {
                 WorldRenderUtils.drawTextInWorld(label, pos.getX() + 0.5, pos.getY() + 1.5 + (done + i) * 0.5, pos.getZ() + 0.5);
             }
         }
-        GL11.glPopMatrix();
         GL11.glEnable(GL11.GL_LIGHTING);
     }
 
@@ -252,7 +240,7 @@ public class WaterSolver {
     }
 
     private int detectPattern() {
-        int px = (int) MinecraftCompat.getLocalPlayer().posX, pz = (int) MinecraftCompat.getLocalPlayer().posZ;
+        int px = (int) EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()), pz = (int) EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer());
         for (int x = px - 25; x <= px + 25; x++) {
             for (int z = pz - 25; z <= pz + 25; z++) {
                 Block b77 = MinecraftCompat.getLocalWorld().getBlockState(new BlockPos(x, 77, z)).getBlock();
@@ -340,7 +328,7 @@ public class WaterSolver {
     }
 
     private BlockPos checkForBlock(Block target, int radius, int yLevel) {
-        int px = (int) MinecraftCompat.getLocalPlayer().posX, pz = (int) MinecraftCompat.getLocalPlayer().posZ;
+        int px = (int) EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()), pz = (int) EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer());
         for (int x = px - radius; x <= px + radius; x++)
             for (int z = pz - radius; z <= pz + radius; z++) {
                 BlockPos pos = new BlockPos(x, yLevel, z);

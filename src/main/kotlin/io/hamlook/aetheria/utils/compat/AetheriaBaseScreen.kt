@@ -32,13 +32,26 @@ abstract class AetheriaBaseScreen : GuiScreen() {
     //$$ }
     //#endif
 
+    private var athrLastW = -1
+    private var athrLastH = -1
+
     private fun postDrawScreen(context: DrawContext, mouseX: Int, mouseY: Int, partialTicks: Float) {
+        if (athrLastW != width || athrLastH != height) {
+            athrLastW = width
+            athrLastH = height
+            try {
+                onResizeScreen(width, height)
+            } catch (e: Exception) {
+                Aetheria.logger.log(Level.WARNING, "Error while resizing screen", e)
+            }
+        }
         DrawContextUtils.setContext(context)
         try {
             onDrawScreen(mouseX, mouseY, partialTicks)
         } catch (e: Exception) {
             Aetheria.logger.log(Level.WARNING, "Error while drawing screen", e)
         }
+        GlStateManagerCompat.resetColor()
         DrawContextUtils.clearContext()
     }
 
@@ -113,6 +126,18 @@ abstract class AetheriaBaseScreen : GuiScreen() {
     //$$
     //$$ protected open fun onKeyTyped(typedChar: Char, keyCode: Int) {}
     //$$
+    //$$ final override fun charTyped(ch: Char, modifiers: Int): Boolean {
+    //$$     val result = super.charTyped(ch, modifiers)
+    //$$     try {
+    //$$         onCharTyped(ch, modifiers)
+    //$$     } catch (e: Exception) {
+    //$$         Aetheria.logger.log(Level.WARNING, "Error while typing char", e)
+    //$$     }
+    //$$     return result
+    //$$ }
+    //$$
+    //$$ protected open fun onCharTyped(typedChar: Char, modifiers: Int) {}
+    //$$
     //$$ final override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
     //$$     val result = super.mouseReleased(mouseX, mouseY, button)
     //$$     try {
@@ -136,6 +161,20 @@ abstract class AetheriaBaseScreen : GuiScreen() {
     //$$ }
     //$$
     //$$ protected open fun onMouseClickMove(mouseX: Int, mouseY: Int, clickedMouseButton: Int, timeSinceLastClick: Long) {}
+    //$$
+    //$$ final override fun mouseScrolled(mouseX: Double, mouseY: Double, horizontalAmount: Double, verticalAmount: Double): Boolean {
+    //$$     val result = super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount)
+    //$$     try {
+    //$$         onMouseScrolled(mouseX.toInt(), mouseY.toInt(), verticalAmount)
+    //$$     } catch (e: Exception) {
+    //$$         Aetheria.logger.log(Level.WARNING, "Error while scrolling mouse", e)
+    //$$     }
+    //$$     return result
+    //$$ }
+    //$$
+    //$$ protected open fun onMouseScrolled(mouseX: Int, mouseY: Int, verticalAmount: Double) {
+    //$$     onHandleMouseInput()
+    //$$ }
     //#endif
 
     //#if MC < 1.16
@@ -194,4 +233,6 @@ abstract class AetheriaBaseScreen : GuiScreen() {
     //#endif
 
     protected open fun onInitGui() {}
+
+    protected open fun onResizeScreen(w: Int, h: Int) {}
 }

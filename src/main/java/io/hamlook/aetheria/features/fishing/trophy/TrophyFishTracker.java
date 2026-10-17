@@ -9,6 +9,7 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
@@ -119,7 +120,7 @@ public class TrophyFishTracker {
         boolean changed = false;
 
         for (Slot slot : container.inventorySlots) {
-            if (slot.inventory == MinecraftCompat.getLocalPlayer().inventory) continue;
+            if (slot.inventory == InventoryCompat.getInventory(MinecraftCompat.getLocalPlayer())) continue;
             ItemStack item = slot.getStack();
             if (item == null) continue;
 

@@ -43,6 +43,7 @@ import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -441,7 +442,7 @@ public class ProfileParser {
 
             if(arrow == null) continue;
             int currentAmount = quiver.getOrDefault(arrow, 0);
-            quiver.put(arrow, currentAmount + stack.stackSize);
+            quiver.put(arrow, currentAmount + ItemCompatKt.getCountCompat(stack));
 
         }
         return new QuiverData(quiver);
@@ -489,7 +490,7 @@ public class ProfileParser {
             }
             if(bait == null) continue;
             int currentAmount = baits.getOrDefault(bait, 0);
-            baits.put(bait, currentAmount + stack.stackSize);
+            baits.put(bait, currentAmount + ItemCompatKt.getCountCompat(stack));
 
         }
         return new FishingData(baits);
@@ -933,17 +934,16 @@ public class ProfileParser {
         String displayName = TextCompat.getFormattedText(stack.getDisplayName());
         String skyblockID = ItemUtils.getInternalName(stack);
         List<String> lore = getLoreColored(stack);
-        return new ItemData(displayName, lore, skyblockID,stack.isItemEnchanted(),stack.stackSize);
+        return new ItemData(displayName, lore, skyblockID,stack.isItemEnchanted(),ItemCompatKt.getCountCompat(stack));
     }
 
 
     public static ItemStack itemFromNBT(String data) {
-        NBTTagCompound tag = NbtCompat.parseTagFromJson(data);
-        if (tag == null) {
+        ItemStack stack = NbtCompat.decodeStack(data);
+        if (stack == null) {
             Aetheria.logger.info("Error parsing item from NBT: " + data);
-            return null;
         }
-        return ItemStack.loadItemStackFromNBT(tag);
+        return stack;
     }
 
     public static void parseName(ItemStack stack) {
@@ -1037,8 +1037,8 @@ public class ProfileParser {
         NBTTagCompound display = ItemUtils.getDisplayCompound(stack);
         if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return lore;
         NBTTagList loreList = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
-        for (int i = 0; i < loreList.tagCount(); i++)
-            lore.add(ColorUtils.stripColor(loreList.getStringTagAt(i)).trim());
+        for (int i = 0; i < NbtCompat.tagCount(loreList); i++)
+            lore.add(ColorUtils.stripColor(NbtCompat.getStringAt(loreList, i)).trim());
         return lore;
     }
 
@@ -1047,8 +1047,8 @@ public class ProfileParser {
         NBTTagCompound display = ItemUtils.getDisplayCompound(stack);
         if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return lore;
         NBTTagList loreList = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
-        for (int i = 0; i < loreList.tagCount(); i++)
-            lore.add(loreList.getStringTagAt(i));
+        for (int i = 0; i < NbtCompat.tagCount(loreList); i++)
+            lore.add(NbtCompat.getStringAt(loreList, i));
         return lore;
     }
 

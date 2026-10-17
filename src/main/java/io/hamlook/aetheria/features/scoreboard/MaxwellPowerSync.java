@@ -8,6 +8,7 @@ import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterInstance;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.inventory.IInventory;
@@ -64,12 +65,12 @@ public class MaxwellPowerSync implements StorageManager.Managed, StorageManager.
         IInventory inv = ContainerUtils.getLowerInventory();
         if (inv == null) return;
 
-        String title = ColorUtils.stripColor(TextCompat.getUnformattedText(inv.getDisplayName()));
+        String title = ContainerUtils.getContainerName();
         if (!title.contains("Accessory Bag Thaumaturgy")) return;
 
         for (int i = 0; i < inv.getSizeInventory(); i++) {
             ItemStack item = inv.getStackInSlot(i);
-            if (item == null || !item.hasTagCompound()) continue;
+            if (item == null || !NbtCompat.hasTagCompound(item)) continue;
 
             if (hasSelectedLine(item)) {
                 String name = ColorUtils.stripColor(TextCompat.getUnformattedText(item.getDisplayName())).trim();

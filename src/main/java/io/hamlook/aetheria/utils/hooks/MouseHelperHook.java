@@ -10,19 +10,21 @@ import io.hamlook.aetheria.utils.compat.MouseCompat;
 
 public class MouseHelperHook {
 
+    public static boolean shouldKeepCursorPosition() {
+        if (StorageManager.isOverlayActive()) {
+            return true;
+        }
+        return ATHRConfig.feature != null && ATHRConfig.feature.qol.preventCursorReset;
+    }
+
     /**
-     * Handles ungrab logic. Cancels vanilla reset when storage overlay is active
-     * or preventCursorReset is enabled.
+     * Legacy-only ungrab handler (LWJGL2 reads OS state directly, so no
+     * shadow boolean can desync here).
      *
      * @return true if the mixin should cancel the vanilla ungrab
      */
     public static boolean onUngrabMouseCursor() {
-        if (StorageManager.isOverlayActive()) {
-            MouseCompat.setGrabbed(false);
-            MouseCompat.setCursorPosition(CursorResetHandler.cachedX, CursorResetHandler.cachedY);
-            return true;
-        }
-        if (ATHRConfig.feature != null && ATHRConfig.feature.qol.preventCursorReset) {
+        if (shouldKeepCursorPosition()) {
             MouseCompat.setGrabbed(false);
             MouseCompat.setCursorPosition(CursorResetHandler.cachedX, CursorResetHandler.cachedY);
             return true;

@@ -15,6 +15,7 @@ import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.LerpUtils;
 import io.hamlook.aetheria.utils.LerpUtils.LerpingInteger;
 import io.hamlook.aetheria.utils.StringUtils;
+import io.hamlook.aetheria.utils.UrlOpener;
 import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -482,7 +483,7 @@ public class ConfigEditor extends GuiElement {
             boolean catOpen = categoriesWithTreeOpen.contains(catKey);
             String indicator = hasChildren ? (catOpen ? "▼ " : "▶ ") : "  ";
             String indicatorColor = hasChildren ? (catOpen ? EnumChatFormatting.WHITE.toString() : EnumChatFormatting.GRAY.toString()) : EnumChatFormatting.RESET.toString();
-            fr.drawString(indicatorColor + indicator + catName, innerLeft + 9 + BASE_INDENT, y + 70 + catY, -1);
+            DrawContextUtils.drawText(fr, indicatorColor + indicator + catName, innerLeft + 9 + BASE_INDENT, y + 70 + catY, -1, false);
             catY += 15;
 
             Set<List<String>> paths = getExpandedPaths(catKey);
@@ -525,9 +526,8 @@ public class ConfigEditor extends GuiElement {
 
         float searchFieldCenterY = innerTop - (20 + innerPadding) / 2f;
 
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(SEARCH_ICON);
         GlStateManagerCompat.color(1, 1, 1, 1);
-        RenderUtils.drawTexturedRect(innerRight - 20, searchFieldCenterY - 9, 18, 18, GL11.GL_NEAREST);
+        TextureCompat.drawBoundTextured(SEARCH_ICON, innerRight - 20, searchFieldCenterY - 9, 18, 18, 0, 0, 1, 1);
 
         minimumSearchSize.tick();
         boolean shouldShow = !searchField.getText().trim().isEmpty() || searchField.getFocus();
@@ -614,10 +614,9 @@ public class ConfigEditor extends GuiElement {
         DrawContextUtils.fill(innerRight - 9, innerTop + 6 + (int) (dist * optionsBarStart), innerRight - 6, innerTop + 6 + (int) (dist * optionsBarend), 0xff3a3a3a);
 
         for (int socialIndex = 0; socialIndex < socialsIco.length; socialIndex++) {
-            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(socialsIco[socialIndex]);
             GlStateManagerCompat.color(1, 1, 1, 1);
             int socialLeft = x + xSize - 23 - 18 * socialIndex;
-            RenderUtils.drawTexturedRect(socialLeft, y + 7, 16, 16, GL11.GL_LINEAR);
+            TextureCompat.drawBoundTextured(socialsIco[socialIndex], socialLeft, y + 7, 16, 16, 0, 0, 1, 1);
 
             if (mouseX >= socialLeft && mouseX <= socialLeft + 16 && mouseY >= y + 6 && mouseY <= y + 23) {
                 tooltipToDisplay = Lists.newArrayList(EnumChatFormatting.YELLOW + "Go to: " + EnumChatFormatting.RESET + socialsLink[socialIndex]);
@@ -674,7 +673,7 @@ public class ConfigEditor extends GuiElement {
             String indicator = hasChildren ? (inPath ? "▼ " : "▶ ") : "  ";
             String name = isDeepest ? EnumChatFormatting.DARK_AQUA + "" + EnumChatFormatting.UNDERLINE + subEntry.getValue().name : EnumChatFormatting.DARK_GRAY + subEntry.getValue().name;
             String prefix = hasChildren ? (inPath ? EnumChatFormatting.GRAY.toString() : EnumChatFormatting.DARK_GRAY.toString()) : EnumChatFormatting.RESET.toString();
-            fr.drawString(prefix + indicator + name, textBaseX, y + 70 + currentCatY, -1);
+            DrawContextUtils.drawText(fr, prefix + indicator + name, textBaseX, y + 70 + currentCatY, -1, false);
             currentCatY += 13;
 
             if (inPath && hasChildren) {
@@ -724,9 +723,20 @@ public class ConfigEditor extends GuiElement {
     }
 
     public boolean mouseInput(int mouseX, int mouseY) {
+        lastMouseButton = MouseCompat.getEventButton();
+        lastMousePressed = MouseCompat.getEventButtonState();
+        return mouseInput(mouseX, mouseY, lastMouseButton, lastMousePressed);
+    }
+
+    private int lastMouseButton = -1;
+    private boolean lastMousePressed = false;
+
+    public boolean mouseInput(int mouseX, int mouseY, int button, boolean pressed) {
+        lastMouseButton = button;
+        lastMousePressed = pressed;
         lastMouseX = mouseX;
 
-        if (!MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0) {
+        if (!lastMousePressed && lastMouseButton == 0) {
             isDraggingOptionsScroll = false;
             isDraggingCategoryScroll = false;
         }
@@ -768,7 +778,7 @@ public class ConfigEditor extends GuiElement {
         int categoryBarStartX = x + innerPadding + 7;
         int categoryBarEndX = x + innerPadding + 12;
         keyboardScrollXCutoff = innerLeft - 10;
-        if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0) {
+        if (lastMousePressed && lastMouseButton == 0) {
             if (mouseX >= optionsBarStartX && mouseX <= optionsBarEndX && mouseY > innerTop + 6 && mouseY < innerBottom - 6) {
                 if (mouseY >= optionsBarStartY && mouseY <= optionsBarEndY) {
                     isDraggingOptionsScroll = true;
@@ -800,18 +810,20 @@ public class ConfigEditor extends GuiElement {
                 return true;
             }
 
-            searchField.setFocus(mouseX >= innerRight - 20 && mouseX <= innerRight - 2 && mouseY >= searchFieldCenterY - 9 && mouseY <= searchFieldCenterY + 9);
+            boolean inIcon = mouseX >= innerRight - 20 && mouseX <= innerRight - 2
+                    && mouseY >= searchFieldCenterY - 9 && mouseY <= searchFieldCenterY + 9;
+            int strLen = MinecraftCompat.getFontRenderer().getStringWidth(searchField.getText()) + 10;
+            int len = Math.max(strLen, minimumSearchSize.getValue());
+            boolean inTextRect = minimumSearchSize.getValue() > 1
+                    && mouseX >= innerRight - 25 - len && mouseX <= innerRight - 25
+                    && mouseY >= searchFieldCenterY - 9 && mouseY <= searchFieldCenterY + 9;
+            searchField.setFocus(inIcon || inTextRect);
 
-            if (minimumSearchSize.getValue() > 1) {
-                int strLen = MinecraftCompat.getFontRenderer().getStringWidth(searchField.getText()) + 10;
-                int len = Math.max(strLen, minimumSearchSize.getValue());
+            if (inTextRect) {
+                String old = searchField.getText();
+                searchField.mouseClicked(mouseX, mouseY, lastMouseButton);
 
-                if (mouseX >= innerRight - 25 - len && mouseX <= innerRight - 25 && mouseY >= searchFieldCenterY - 9 && mouseY <= searchFieldCenterY + 9) {
-                    String old = searchField.getText();
-                    searchField.mouseClicked(mouseX, mouseY, MouseCompat.getEventButton());
-
-                    if (!searchField.getText().equals(old)) search();
-                }
+                if (!searchField.getText().equals(old)) search();
             }
         }
 
@@ -863,7 +875,7 @@ public class ConfigEditor extends GuiElement {
                 optionsScroll.setValue(newTarget);
                 optionsScroll.resetTimer();
             }
-        } else if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0) {
+        } else if (lastMousePressed && lastMouseButton == 0) {
             int catY = -categoryScroll.getValue();
             for (Map.Entry<String, ConfigProcessor.ProcessedCategory> entry : getCurrentConfigEditing().entrySet()) {
                 if (getSelectedCategory() == null) setSelectedCategory(entry.getKey());
@@ -886,10 +898,7 @@ public class ConfigEditor extends GuiElement {
             for (int socialIndex = 0; socialIndex < socialsLink.length; socialIndex++) {
                 int socialLeft = x + xSize - 23 - 18 * socialIndex;
                 if (mouseX >= socialLeft && mouseX <= socialLeft + 16 && mouseY >= y + 6 && mouseY <= y + 23) {
-                    try {
-                        Desktop.getDesktop().browse(new URI(socialsLink[socialIndex]));
-                    } catch (Exception ignored) {
-                    }
+                    UrlOpener.open(socialsLink[socialIndex]);
                     return true;
                 }
             }
@@ -900,7 +909,7 @@ public class ConfigEditor extends GuiElement {
             ConfigProcessor.ProcessedCategory cat = getCurrentConfigEditing().get(getSelectedCategory());
             boolean[] consumed = {false};
             forEachOption(cat, -optionsScroll.getValue(), innerLeft, innerRight, innerTop, innerBottom, innerPadding, optionWidthDefault, (ed, edX, edY, edW) -> {
-                if (ed.mouseInputOverlay(edX, edY, edW, mouseX, mouseY)) {
+                if (ed.mouseInputOverlay(edX, edY, edW, mouseX, mouseY, lastMouseButton, lastMousePressed)) {
                     consumed[0] = true;
                     return true;
                 }
@@ -915,7 +924,7 @@ public class ConfigEditor extends GuiElement {
                 ConfigProcessor.ProcessedCategory cat = getCurrentConfigEditing().get(getSelectedCategory());
                 boolean[] consumed = {false};
                 forEachOption(cat, -optionsScroll.getValue(), innerLeft, innerRight, innerTop, innerBottom, innerPadding, optionWidthDefault, (ed, edX, edY, edW) -> {
-                    if (ed.mouseInput(edX, edY, edW, mouseX, mouseY)) {
+                    if (ed.mouseInput(edX, edY, edW, mouseX, mouseY, lastMouseButton, lastMousePressed)) {
                         consumed[0] = true;
                         return true;
                     }
@@ -1002,9 +1011,21 @@ public class ConfigEditor extends GuiElement {
     }
 
     public boolean keyboardInput() {
-        int screenW3 = GuiScreenUtils.getScaledWindowWidth();
+        return keyboardInput(
+                KeyboardCompat.getEventCharacter(),
+                KeyboardCompat.getEventKey());
+    }
+
+    private char lastKeyChar = 0;
+    private int lastKeyCode = 0;
+    private boolean lastKeyPressed = false;
+
+    public boolean keyboardInput(char typedChar, int keyCode) {
+        lastKeyChar = typedChar;
+        lastKeyCode = keyCode;
+        lastKeyPressed = true;
         int scaleFactor3 = GuiScreenUtils.getScaleFactor();
-        int width = screenW3;
+        int width = GuiScreenUtils.getScaledWindowWidth();
 
         int xSize = Math.min(width - 100 / scaleFactor3, 540);
 
@@ -1013,9 +1034,9 @@ public class ConfigEditor extends GuiElement {
         int innerPadding = 20 / adjScaleFactor;
         int innerWidth = xSize - 194 - innerPadding * 2;
 
-        if (KeyboardCompat.getEventKeyState()) {
+        if (lastKeyPressed) {
             String old = searchField.getText();
-            searchField.keyTyped(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
+            searchField.keyTyped(lastKeyChar, lastKeyCode);
             searchField.setText(MinecraftCompat.getFontRenderer().trimStringToWidth(searchField.getText(), innerWidth / 2 - 20));
 
             if (!searchField.getText().equals(old)) search();
@@ -1036,7 +1057,7 @@ public class ConfigEditor extends GuiElement {
                         activeAccordions.put(accordion.getAccordionId(), accordionDepth);
                     }
                 }
-                if (editor.keyboardInput()) return true;
+                if (editor.keyboardInput(lastKeyChar, lastKeyCode)) return true;
             }
         }
 

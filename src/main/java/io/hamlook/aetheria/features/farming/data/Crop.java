@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.farming.data;
 
 import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
@@ -46,7 +47,7 @@ public class Crop {
             case "PUMPKIN": return new ItemStack(Item.getItemFromBlock(Blocks.pumpkin));
             case "MELON": return new ItemStack(Items.melon);
             case "SUGAR_CANE": return new ItemStack(Items.reeds);
-            case "INK_SACK__3": return new ItemStack(Items.dye, 1, 3);
+            case "INK_SACK__3": return ItemCompatKt.createDyeStackCompat(3);
             case "CACTUS": return new ItemStack(Item.getItemFromBlock(Blocks.cactus));
             case "RED_MUSHROOM": return new ItemStack(Item.getItemFromBlock(Blocks.red_mushroom));
             case "BROWN_MUSHROOM": return new ItemStack(Item.getItemFromBlock(Blocks.brown_mushroom));

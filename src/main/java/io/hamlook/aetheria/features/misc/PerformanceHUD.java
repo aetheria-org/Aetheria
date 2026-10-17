@@ -7,6 +7,8 @@ import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
@@ -135,7 +137,7 @@ public class PerformanceHUD extends Overlay {
     public void onTick(ASMTickEvent event) {
         if (event.phase != TickPhase.END) return;
         Minecraft mc = MinecraftCompat.getMinecraft();
-        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalPlayer().sendQueue == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null || !EntityCompat.hasNetworkHandler()) return;
 
         if (pingSentAt >= 0 && System.nanoTime() - pingSentAt > PING_TIMEOUT_NS) {
             pingSentAt = -1L;
@@ -163,7 +165,7 @@ public class PerformanceHUD extends Overlay {
     public List<String> getLines(boolean preview) {
         List<String> out = new ArrayList<>();
         if (ATHRConfig.feature.misc.performanceHudConfig.hudShowFps)
-            out.add(C_LABEL + "FPS: " + C_VAL + (preview ? 60 : Minecraft.getDebugFPS()));
+            out.add(C_LABEL + "FPS: " + C_VAL + (preview ? 60 : MinecraftCompat.getCurrentFps()));
         if (ATHRConfig.feature.misc.performanceHudConfig.hudShowTps)
             out.add(C_LABEL + "TPS: " + C_VAL + (preview ? "20.0" : String.format("%.1f", currentTps)));
         if (ATHRConfig.feature.misc.performanceHudConfig.hudShowPing) out.add(C_LABEL + "Ping: " + C_VAL + (preview ? "42ms" : formatPing()));
@@ -173,7 +175,7 @@ public class PerformanceHUD extends Overlay {
             } else {
                 net.minecraft.entity.player.EntityPlayer p = MinecraftCompat.getLocalPlayer();
                 if (p != null)
-                    out.add(C_LABEL + "XYZ: " + C_VAL + (int) Math.floor(p.posX) + " / " + (int) Math.floor(p.posY) + " / " + (int) Math.floor(p.posZ));
+                    out.add(C_LABEL + "XYZ: " + C_VAL + (int) Math.floor(EntityCompat.getPosX(p)) + " / " + (int) Math.floor(EntityCompat.getPosY(p)) + " / " + (int) Math.floor(EntityCompat.getPosZ(p)));
             }
         }
         if (ATHRConfig.feature.misc.performanceHudConfig.hudShowRotation) {
@@ -182,10 +184,10 @@ public class PerformanceHUD extends Overlay {
             } else {
                 net.minecraft.entity.player.EntityPlayer p = MinecraftCompat.getLocalPlayer();
                 if (p != null) {
-                    float yaw = p.rotationYaw % 360.0f;
+                    float yaw = EntityCompat.getYaw(p) % 360.0f;
                     if (yaw >= 180.0f) yaw -= 360.0f;
                     if (yaw < -180.0f) yaw += 360.0f;
-                    out.add(C_LABEL + "Yaw: " + C_VAL + String.format("%.1f", yaw) + "  " + C_LABEL + "Pitch: " + C_VAL + String.format("%.1f", p.rotationPitch));
+                    out.add(C_LABEL + "Yaw: " + C_VAL + String.format("%.1f", yaw) + "  " + C_LABEL + "Pitch: " + C_VAL + String.format("%.1f", EntityCompat.getPitch(p)));
                 }
             }
         }
@@ -214,9 +216,9 @@ public class PerformanceHUD extends Overlay {
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 
-        GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0);
-        GL11.glScalef(scale, scale, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(x, y, 0);
+        GlStateManagerCompat.scale(scale, scale, 1f);
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0) drawRoundedRect(-PADDING, -PADDING, w, h - PADDING, getCornerRadius(), bgColor);
@@ -235,6 +237,6 @@ public class PerformanceHUD extends Overlay {
             }
         }
 
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 }

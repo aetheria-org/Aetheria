@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.misc.itemList.recipe;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
@@ -63,11 +64,11 @@ public class CraftingRecipe extends Recipe {
         RecipeUtils.drawSlot(resultX, resultY, 26);
         ItemStack stack = targetItem.getStack();
         if (stack != null) {
-            GL11.glPushMatrix();
-            GL11.glTranslatef(resultX + 1, resultY + 1, 0);
-            GL11.glScalef(1.5f, 1.5f, 1f);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(resultX + 1, resultY + 1, 0);
+            GlStateManagerCompat.scale(1.5f, 1.5f, 1f);
             ItemRenderUtils.drawItemStack(stack, 0, 0);
-            GL11.glPopMatrix();
+            GlStateManagerCompat.popMatrix();
         }
     }
 

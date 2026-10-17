@@ -13,6 +13,7 @@ import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
@@ -157,23 +158,23 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
         if (isFetching) {
             NineSliceUtils.draw(CONTAINER_BG, boxX, boxY, boxW, boxH, 6, 18);
             String text = "Fetching data for " + this.username + "...";
-            int textWidth = fontRendererObj.getStringWidth(text);
-            drawString(fontRendererObj, text, centerX - (textWidth / 2), centerY - (fontRendererObj.FONT_HEIGHT / 2), 0xFFFFAA00);
+            int textWidth = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), text);
+            DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), text, centerX - (textWidth / 2), centerY - (DrawContextUtils.getFontHeight(MinecraftCompat.getFontRenderer()) / 2), 0xFFFFAA00, false);
 
             updateAndDrawSearchBar(boxX + boxW, boxY, mouseX, mouseY);
 
         } else if (hasError) {
             NineSliceUtils.draw(CONTAINER_BG, boxX, boxY, boxW, boxH, 6, 18);
             String text = "An error occurred while fetching data for " +  this.username + "!";
-            drawCenteredString(fontRendererObj, text, centerX, centerY - (fontRendererObj.FONT_HEIGHT / 2), 0xFFFF5555);
-            drawCenteredString(fontRendererObj,this.errorMessage,centerX, centerY + (2*fontRendererObj.FONT_HEIGHT),0xFFFF5555);
+            TextRenderUtils.drawCenteredStringScaleAware(text, centerX, centerY - (DrawContextUtils.getFontHeight(MinecraftCompat.getFontRenderer()) / 2), 0xFFFF5555, 1f, false);
+            TextRenderUtils.drawCenteredStringScaleAware(this.errorMessage,centerX, centerY + (2*DrawContextUtils.getFontHeight(MinecraftCompat.getFontRenderer())),0xFFFF5555, 1f, false);
             updateAndDrawSearchBar(boxX + boxW, boxY, mouseX, mouseY);
 
         } else if (this.playerProfile == null) {
             NineSliceUtils.draw(CONTAINER_BG, boxX, boxY, boxW, boxH, 6, 18);
             String text = this.username + " (Not In Database)";
-            int textWidth = fontRendererObj.getStringWidth(text);
-            drawString(fontRendererObj, text, centerX - (textWidth / 2), centerY - (fontRendererObj.FONT_HEIGHT / 2), 0xFFAAAAAA);
+            int textWidth = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), text);
+            DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), text, centerX - (textWidth / 2), centerY - (DrawContextUtils.getFontHeight(MinecraftCompat.getFontRenderer()) / 2), 0xFFAAAAAA, false);
 
             updateAndDrawSearchBar(boxX + boxW, boxY, mouseX, mouseY);
 
@@ -214,23 +215,23 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
             if (tabButton == null) {
                 tabButton = PVButton.create(1, tabX, tabY, tabW, tabH, tabName, () -> { isTabDropdownOpen = !isTabDropdownOpen; isDropdownOpen = false; });
                 GuiScreenUtils.addButton(this, tabButton);
-            } else {
-                GuiScreenUtils.setX(tabButton, tabX);
+            } else {                GuiScreenUtils.setX(tabButton, tabX);
                 GuiScreenUtils.setY(tabButton, tabY);
                 GuiScreenUtils.setW(tabButton, tabW);
                 GuiScreenUtils.setH(tabButton, tabH);
                 tabButton.displayString = tabName;
             }
 
-
             float lineY = tabY + tabH + getScaledF(8);
-            Gui.drawRect((rightBoxX + getScaled(12)), (int) lineY, (rightBoxX + boxW - getScaled(12)), (int) (lineY + Math.max(1, getScaledF(1))), new java.awt.Color(255, 255, 255, 40).getRGB());
+            DrawContextUtils.fill((rightBoxX + getScaled(12)), (int) lineY, (rightBoxX + boxW - getScaled(12)), (int) (lineY + Math.max(1, getScaledF(1))), new java.awt.Color(255, 255, 255, 40).getRGB());
 
             float contentY = lineY + getScaledF(8);
             int contentH = (boxY + boxH) - (int)contentY - getScaled(12);
             
             updateAndDrawSearchBar(rightBoxX + boxW, boxY, mouseX, mouseY);
             tabs.get(tab).draw(rightBoxX, contentY, boxW, contentH, activeProfileData, mc);
+            if (profileButton != null) profileButton.athr$drawManual(mc, mouseX, mouseY, partialTicks);
+            if (tabButton != null) tabButton.athr$drawManual(mc, mouseX, mouseY, partialTicks);
         }
 
         if (isDropdownOpen && this.playerProfile != null && this.playerProfile.profiles != null) {
@@ -243,7 +244,7 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
         if (tooltipToDraw != null) {
             GlStateManagerCompat.pushMatrix();
             GlStateManagerCompat.translate(0, 0, 500);
-            TextRenderUtils.drawHoveringText(tooltipToDraw, tooltipX, tooltipY, fontRendererObj);
+            TextRenderUtils.drawHoveringText(tooltipToDraw, tooltipX, tooltipY, MinecraftCompat.getFontRenderer());
             GlStateManagerCompat.popMatrix();
             tooltipToDraw = null;
         }
@@ -289,7 +290,7 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
                     mouseY >= itemY && mouseY <= itemY + itemHeight;
 
             if (isHovered) {
-                net.minecraft.client.gui.Gui.drawRect(dropX + 4, itemY, dropX + dropW - 4, itemY + itemHeight, 0x30FFFFFF);
+                  DrawContextUtils.fill(dropX + 4, itemY, dropX + dropW - 4, itemY + itemHeight, 0x30FFFFFF);
             }
 
             float centerX = dropX + (dropW / 2.0f);
@@ -327,7 +328,7 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
                     mouseY >= itemY && mouseY <= itemY + tabItemHeight;
 
             if (isHovered) {
-                net.minecraft.client.gui.Gui.drawRect(tabDropX + 4, itemY, tabDropX + tabDropW - 4, itemY + tabItemHeight, 0x30FFFFFF);
+                  DrawContextUtils.fill(tabDropX + 4, itemY, tabDropX + tabDropW - 4, itemY + tabItemHeight, 0x30FFFFFF);
             }
 
             float centerX = tabDropX + (tabDropW / 2.0f);
@@ -358,6 +359,16 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
             return;
         }
     }
+
+    //#if MC < 1.21
+    //#else
+    //$$ @Override
+    //$$ protected void onCharTyped(char typedChar, int modifiers) {
+    //$$     if (searchBar != null && searchBar.isFocused) {
+    //$$         searchBar.keyTyped(typedChar, 0);
+    //$$     }
+    //$$ }
+    //#endif
 
     @Override
     protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
@@ -409,8 +420,8 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
         }
     }
 
-    @Override
     //#if MC < 1.21
+    @Override
     protected void actionPerformed(GuiButton button) {
         if (profileButton != null && button.id == profileButton.id) {
             isDropdownOpen = !isDropdownOpen;
@@ -464,14 +475,14 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
         float labelScale = textScale * 0.70f;
         float hourScale = textScale * 0.55f;
 
-        float nameWidth = fontRendererObj.getStringWidth(name) * textScale;
+        float nameWidth = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), name) * textScale;
 
-        float updDateWidth = fontRendererObj.getStringWidth(updateDate) * labelScale;
-        float updHourWidth = fontRendererObj.getStringWidth(updateHour) * hourScale;
+        float updDateWidth = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), updateDate) * labelScale;
+        float updHourWidth = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), updateHour) * hourScale;
         float fullUpdWidth = updDateWidth + getScaled(5) + updHourWidth;
 
-        float syncDateWidth = fontRendererObj.getStringWidth(syncDate) * labelScale;
-        float syncHourWidth = fontRendererObj.getStringWidth(syncHour) * hourScale;
+        float syncDateWidth = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), syncDate) * labelScale;
+        float syncHourWidth = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), syncHour) * hourScale;
         float fullSyncWidth = syncDateWidth + getScaled(5) + syncHourWidth;
 
         float maxTextWidth = Math.max(nameWidth, Math.max(fullUpdWidth, fullSyncWidth));
@@ -494,19 +505,19 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
 
         TextRenderUtils.drawStringScaleAware(name, textX, nameY, textScale, false);
 
-        float textHeight = fontRendererObj.FONT_HEIGHT * labelScale;
+        float textHeight = DrawContextUtils.getFontHeight(MinecraftCompat.getFontRenderer()) * labelScale;
 
         boolean hoverUpd = mouseX >= textX && mouseX <= textX + fullUpdWidth && mouseY >= updateY && mouseY <= updateY + textHeight;
         boolean hoverSync = mouseX >= textX && mouseX <= textX + fullSyncWidth && mouseY >= syncY && mouseY <= syncY + textHeight;
 
         TextRenderUtils.drawStringScaleAware(updateDate, textX, updateY, labelScale, false);
         if (hoverUpd) {
-            TextRenderUtils.drawStringScaleAware(updateHour, textX + updDateWidth + getScaled(5), updateY + (textHeight - fontRendererObj.FONT_HEIGHT * hourScale), hourScale, false);
+            TextRenderUtils.drawStringScaleAware(updateHour, textX + updDateWidth + getScaled(5), updateY + (textHeight - DrawContextUtils.getFontHeight(MinecraftCompat.getFontRenderer()) * hourScale), hourScale, false);
         }
 
         TextRenderUtils.drawStringScaleAware(syncDate, textX, syncY, labelScale, false);
         if (hoverSync) {
-            TextRenderUtils.drawStringScaleAware(syncHour, textX + syncDateWidth + getScaled(5), syncY + (textHeight - fontRendererObj.FONT_HEIGHT * hourScale), hourScale, false);
+            TextRenderUtils.drawStringScaleAware(syncHour, textX + syncDateWidth + getScaled(5), syncY + (textHeight - DrawContextUtils.getFontHeight(MinecraftCompat.getFontRenderer()) * hourScale), hourScale, false);
         }
 
         return leftBoxWidth;

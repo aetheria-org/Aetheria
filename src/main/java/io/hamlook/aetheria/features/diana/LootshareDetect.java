@@ -7,6 +7,7 @@ import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
@@ -57,13 +58,13 @@ public class LootshareDetect {
             if (!INSTANCE.trackedInqs.contains(e.getKey())) continue;
             EntityArmorStand stand = e.getValue();
             if (EntityCompat.isDead(stand)) continue;
-            double d = MinecraftCompat.getLocalPlayer().getDistanceSqToEntity(stand);
+            double d = EntityCompat.getDistanceSqTo(MinecraftCompat.getLocalPlayer(), stand);
             if (d < minDist) {
                 minDist = d;
                 closest = stand;
             }
         }
-        return closest != null ? closest.getCustomNameTag() : null;
+        return closest != null ? TextCompat.codedString(closest.getCustomNameTag()) : null;
     }
 
     // Returns the closest tracked non-inq diana mob stand name, only after a dig message fired
@@ -77,13 +78,13 @@ public class LootshareDetect {
             if (!INSTANCE.trackedNonInqs.contains(e.getKey())) continue;
             EntityArmorStand stand = e.getValue();
             if (EntityCompat.isDead(stand)) continue;
-            double d = MinecraftCompat.getLocalPlayer().getDistanceSqToEntity(stand);
+            double d = EntityCompat.getDistanceSqTo(MinecraftCompat.getLocalPlayer(), stand);
             if (d < minDist) {
                 minDist = d;
                 closest = stand;
             }
         }
-        return closest != null ? closest.getCustomNameTag() : null;
+        return closest != null ? TextCompat.codedString(closest.getCustomNameTag()) : null;
     }
 
     @HandleEvent
@@ -125,8 +126,8 @@ public class LootshareDetect {
                 continue;
             }
 
-            String name = entity.getCustomNameTag();
-            if (name.contains(DIANA_MARKER)) {
+            String name = TextCompat.codedString(entity.getCustomNameTag());
+            if (TextCompat.matchesCoded(name, DIANA_MARKER)) {
                 tracked.put(id, (EntityArmorStand) entity);
                 String cleanName = net.minecraft.util.StringUtils.stripControlCodes(name);
                 if (cleanName.contains("Minos Inquisitor")) {
@@ -150,7 +151,7 @@ public class LootshareDetect {
 
             if (!EntityCompat.isDead(stand)) {
                 if (!trackedInqs.contains(id) && !trackedNonInqs.contains(id)) {
-                    String clean = net.minecraft.util.StringUtils.stripControlCodes(stand.getCustomNameTag());
+                    String clean = TextCompat.plainString(stand.getCustomNameTag());
                     if (clean.contains("Minos Inquisitor")) trackedInqs.add(id);
                 }
                 continue;

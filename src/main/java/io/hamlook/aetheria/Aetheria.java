@@ -3,8 +3,13 @@ package io.hamlook.aetheria;
 import io.hamlook.aetheria.api.event.AetheriaEventBus;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.command.brigadier.CommandsRegistry;
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.StorageManager;
+//#if MC < 1.21
+//#else
+//$$ import io.hamlook.aetheria.command.brigadier.FabricCommandsBridge;
+//#endif
+import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.core.LogBridge;
 import io.hamlook.aetheria.data.ApiHandler;
 import io.hamlook.aetheria.events.ASMServerJoinEvent;
 import io.hamlook.aetheria.features.capes.CapeManager;
@@ -55,6 +60,8 @@ public class Aetheria {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         logger = Logger.getLogger("[ATHR] ");
+        LogBridge.install(logger);
+        logger.info(LogBridge.stamp(VERSION));
         ATHRConfig.init();
         ATHRRepo.init();
         EmojiManager.init();
@@ -94,6 +101,8 @@ public class Aetheria {
     //$$ @Override
     //$$ public void onInitialize() {
     //$$     logger = Logger.getLogger("[ATHR] ");
+    //$$     LogBridge.install(logger);
+    //$$     logger.info(LogBridge.stamp(VERSION));
     //$$     ATHRConfig.init();
     //$$     ATHRRepo.init();
     //$$     EmojiManager.init();
@@ -120,12 +129,15 @@ public class Aetheria {
     //$$     AetheriaEventBus.INSTANCE.register(GuiWaiter.INSTANCE);
     //$$     AetheriaEventBus.INSTANCE.register(this);
     //$$     EventRegistrar.registerAll();
+    //$$     CommandsRegistry.INSTANCE.registerAll();
+    //$$     FabricCommandsBridge.INSTANCE.register();
     //$$     CMMHelper.initialise();
     //$$ }
     //#endif
 
     @HandleEvent
     public void onServerJoin(ASMServerJoinEvent e) {
+        if (logger != null) logger.info(LogBridge.stamp(VERSION));
         RepoHandler.refresh(ATHRRepo.KEY_PLAYERSIZES);
         RepoHandler.refresh(ATHRRepo.KEY_TIMERS);
         RepoHandler.refresh(ATHRRepo.KEY_UPDATE);

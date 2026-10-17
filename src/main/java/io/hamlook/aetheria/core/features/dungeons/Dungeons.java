@@ -8,7 +8,7 @@ public class Dungeons {
     @Expose
     @ConfigOption(name = "Blood Mob Highlight", desc = "Highlight blood room mobs. Box = bounding box, Outline = body glow, Off = disabled")
     @ConfigEditorDropdown(values = {"Box", "Outline", "Off"})
-    public int bloodMobHighlight = 2;
+    public int bloodMobHighlight = 0;
 
     @Expose
     @ConfigOption(name = "Blood Mob Color", desc = "Color used for blood mob box and outline highlight")

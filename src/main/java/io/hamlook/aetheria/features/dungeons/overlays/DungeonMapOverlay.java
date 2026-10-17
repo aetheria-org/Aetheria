@@ -14,6 +14,8 @@ import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomDetector;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -23,6 +25,9 @@ import lombok.Getter;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
+//#if MC > 1.21
+//$$ import net.minecraft.item.FilledMapItem;
+//#endif
 import net.minecraft.world.storage.MapData;
 
 import java.util.Arrays;
@@ -73,16 +78,19 @@ public class DungeonMapOverlay extends Overlay {
     }
 
     public static MapData getDungeonMap(EntityPlayerSP player) {
-        if (player == null || player.inventory == null) return null;
-        ItemStack[] inv = ArrayNormalizationKt.normalizeAsArray(player.inventory.mainInventory);
+        if (player == null || InventoryCompat.getInventory(player) == null) return null;
+        ItemStack[] inv = InventoryCompat.getMainInventory(player);
         if (inv == null || inv.length < 9) return null;
         ItemStack stack = inv[8];
         if (stack == null) return null;
+        //#if MC < 1.21
         return Items.filled_map.getMapData(stack, MinecraftCompat.getLocalWorld());
+        //#else
+        //$$ return FilledMapItem.getMapState(stack, MinecraftCompat.getLocalWorld());
+        //#endif
     }
 
-    @HandleEvent
-    public void onUnload(ASMWorldUnloadEvent e) {
+    public void resetRunState() {
         cachedGrid = null;
         lastMapColors = null;
         playerTracker.clear();
@@ -94,7 +102,18 @@ public class DungeonMapOverlay extends Overlay {
         calibBtp = 0f;
         anchorStartX = -1;
         anchorStartY = -1;
+        entranceCenterX = 0;
+        entranceCenterZ = 0;
         lastPopulateTick = -40;
+    }
+
+    public static void resetRun() {
+        if (instance != null) instance.resetRunState();
+    }
+
+    @HandleEvent
+    public void onUnload(ASMWorldUnloadEvent e) {
+        resetRunState();
     }
 
     @Override
@@ -107,7 +126,7 @@ public class DungeonMapOverlay extends Overlay {
 
         DungeonMapConfig cfg = ATHRConfig.feature.dungeons.dungeonMapConfig;
 
-        if ((playerTracker.getPlayerNames().isEmpty() || player.ticksExisted - lastPopulateTick >= 40) && player.ticksExisted % 20 == 0) {
+        if ((playerTracker.getPlayerNames().isEmpty() || player.ticksExisted < lastPopulateTick || player.ticksExisted - lastPopulateTick >= 40) && player.ticksExisted % 20 == 0) {
             playerTracker.populate();
             lastPopulateTick = player.ticksExisted;
         }
@@ -207,28 +226,6 @@ public class DungeonMapOverlay extends Overlay {
                     anchorStartX = cachedGrid.getStartPixelX();
                     anchorStartY = cachedGrid.getStartPixelY();
                 }
-                // Calibration latch: pair the entrance's world position (block
-                // scanner) with its pixel position (this parse — anchored to the
-                // same corner the calibration freezes). One-shot per run.
-                if (!mapCalibrated && DungeonRoomDetector.roomBoundsValid && DungeonRoomDetector.originBlock != null) {
-                    entranceCenterX = (DungeonRoomDetector.roomMinX + DungeonRoomDetector.roomMaxX) / 2.0 + 0.5;
-                    entranceCenterZ = (DungeonRoomDetector.roomMinZ + DungeonRoomDetector.roomMaxZ) / 2.0 + 0.5;
-                    calibOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) entranceCenterX;
-                    calibOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) entranceCenterZ;
-                    calibBtp = cachedGrid.blockToPixel;
-                    mapCalibrated = true;
-                }
-                if (mapCalibrated) {
-                    cachedGrid.worldOriginX = calibOriginX;
-                    cachedGrid.worldOriginZ = calibOriginZ;
-                    cachedGrid.blockToPixel = calibBtp;
-                } else {
-                    // Uncalibrated fallback keeps worldToPixel total for non-self
-                    // consumers; entity-based self tracking is gated off until
-                    // calibrated (renderer falls back to self's decoration).
-                    cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) player.posX;
-                    cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) player.posZ;
-                }
                 int maxPixelX = 128;
                 int maxPixelY = 128;
                 for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : cachedGrid.getRooms().entrySet()) {
@@ -239,6 +236,27 @@ public class DungeonMapOverlay extends Overlay {
                 }
                 lastW = maxPixelX;
                 lastH = maxPixelY;
+            }
+        }
+        // Calibration runs on every call with a valid grid, not just on reparse:
+        // the block scanner can become ready while the map bytes are stable, and
+        // a reparse-only latch would never fire. One-shot per run.
+        if (cachedGrid != null && cachedGrid.isValid()) {
+            if (!mapCalibrated && DungeonRoomDetector.roomBoundsValid && DungeonRoomDetector.originBlock != null) {
+                entranceCenterX = (DungeonRoomDetector.roomMinX + DungeonRoomDetector.roomMaxX) / 2.0 + 0.5;
+                entranceCenterZ = (DungeonRoomDetector.roomMinZ + DungeonRoomDetector.roomMaxZ) / 2.0 + 0.5;
+                calibOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) entranceCenterX;
+                calibOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) entranceCenterZ;
+                calibBtp = cachedGrid.blockToPixel;
+                mapCalibrated = true;
+            }
+            if (mapCalibrated) {
+                cachedGrid.worldOriginX = calibOriginX;
+                cachedGrid.worldOriginZ = calibOriginZ;
+                cachedGrid.blockToPixel = calibBtp;
+            } else {
+                cachedGrid.worldOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) EntityCompat.getPosX(player);
+                cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) EntityCompat.getPosZ(player);
             }
         }
     }

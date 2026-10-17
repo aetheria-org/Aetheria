@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.misc.itemList.recipe;
 
 import com.google.gson.JsonArray;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
@@ -59,7 +60,7 @@ public class NpcShopRecipe extends Recipe {
 
         int sf = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(gridX * sf, (MinecraftCompat.getMinecraft().displayHeight - (gridY + gridH) * sf), gridW * sf, gridH * sf);
+        GlStateManagerCompat.scissor(gridX * sf, (MinecraftCompat.getDisplayHeight() - (gridY + gridH) * sf), gridW * sf, gridH * sf);
 
         int startIdx = currentPage * itemsPerPage;
         int endIdx = Math.min(startIdx + itemsPerPage, recipes.size());

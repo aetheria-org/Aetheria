@@ -7,6 +7,7 @@ import io.hamlook.aetheria.utils.chat.ChatUtils
 import io.hamlook.aetheria.utils.SoundUtils
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.compat.TextureCompat
 import io.hamlook.aetheria.utils.overlay.SimpleOverlay
 import io.hamlook.aetheria.utils.render.RenderUtils
 
@@ -70,14 +71,12 @@ object DVD : SimpleOverlay() {
         val boxWidth = getBoxWidth()
         val boxHeight = getBoxHeight()
 
-        mc.textureManager.bindTexture(Resources.DVD_LOGO)
-
         val r = (color shr 16 and 0xFF) / 255f
         val g = (color shr 8 and 0xFF) / 255f
         val b = (color and 0xFF) / 255f
         GlStateManagerCompat.color(r, g, b, 1f)
 
-        RenderUtils.drawTexturedRect(x.toFloat(), y.toFloat(), boxWidth.toFloat(), boxHeight.toFloat())
+        TextureCompat.drawBoundTextured(Resources.DVD_LOGO, x.toFloat(), y.toFloat(), boxWidth.toFloat(), boxHeight.toFloat(), 0f, 0f, 1f, 1f)
 
         GlStateManagerCompat.color(1f, 1f, 1f, 1f)
     }

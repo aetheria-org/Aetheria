@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.features.chat.globalchat.ui;
 
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.WebSocketClient;
 import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
 import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
@@ -208,9 +209,9 @@ public class ChatUI extends AetheriaBaseScreen {
         int inputWidth = width - SIDEBAR_WIDTH - PADDING * 2;
         inputField = new ChatInputField(inputX + 8, boxY + 2, inputWidth - 16 - EMOJI_BUTTON_W * 2 - 24, INPUT_HEIGHT - 4);
         editField = new ChatInputField(editBoxX, editBoxY, editBoxWidth, INPUT_HEIGHT);
-        emojiSearchField = new GuiTextField(0, MinecraftCompat.getFontRenderer(), 0, 0, 0, 16);
-        emojiSearchField.setEnableBackgroundDrawing(false);
-        emojiSearchField.setMaxStringLength(32);
+        emojiSearchField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), 0, 0, 0, 16);
+        GuiScreenUtils.setTextFieldBackground(emojiSearchField, false);
+        GuiScreenUtils.setTextFieldMaxLength(emojiSearchField, 32);
     }
 
     @Override
@@ -238,11 +239,16 @@ public class ChatUI extends AetheriaBaseScreen {
         return false;
     }
 
+    //#if MC < 1.21
     @Override
     public void updateScreen() {
+    //#else
+    //$$ @Override
+    //$$ public void tick() {
+    //#endif
         inputField.updateDrag();
         if (editField != null) editField.updateDrag();
-        if (emojiSearchField != null) emojiSearchField.updateCursorCounter();
+        if (emojiSearchField != null) GuiScreenUtils.tickTextField(emojiSearchField);
         if (pendingLinkUrl != null) {
             String url = pendingLinkUrl;
             pendingLinkUrl = null;
@@ -349,7 +355,7 @@ public class ChatUI extends AetheriaBaseScreen {
             return;
         }
         if (emojiPanelOpen && emojiSearchField != null && emojiSearchField.isFocused()) {
-            emojiSearchField.textboxKeyTyped(typedChar, keyCode);
+            GuiScreenUtils.typeTextField(emojiSearchField, typedChar, keyCode);
             emojiScroll = 0;
             return;
         }
@@ -365,6 +371,24 @@ public class ChatUI extends AetheriaBaseScreen {
             sendCurrentMessage();
         }
     }
+
+    //#if MC < 1.21
+    //#else
+    //$$ @Override
+    //$$ protected void onCharTyped(char typedChar, int modifiers) {
+    //$$     if (editingMessage != null) {
+    //$$         editField.keyTyped(typedChar, 0);
+    //$$         return;
+    //$$     }
+    //$$     if (emojiPanelOpen && emojiSearchField != null && emojiSearchField.isFocused()) {
+    //$$         GuiScreenUtils.typeTextField(emojiSearchField, typedChar, 0);
+    //$$         emojiScroll = 0;
+    //$$         return;
+    //$$     }
+    //$$     if (selectedChannel != null && !selectedChannel.canSend) return;
+    //$$     inputField.keyTyped(typedChar, 0);
+    //$$ }
+    //#endif
 
     @Override
     protected void onHandleMouseInput() {
@@ -879,7 +903,7 @@ public class ChatUI extends AetheriaBaseScreen {
         GuiScreenUtils.setY(emojiSearchField, sr[1]);
         GuiScreenUtils.setW(emojiSearchField, sr[2]);
         GuiScreenUtils.setH(emojiSearchField, sr[3]);
-        emojiSearchField.drawTextBox();
+        GuiScreenUtils.renderTextField(emojiSearchField, mouseX, mouseY);
         if (emojiSearchField.getText().isEmpty() && !emojiSearchField.isFocused()) {
             drawText("Search emojis...", sr[0] + 2, sr[1] + 4, 0xFF6D6F78);
         }
@@ -1853,10 +1877,9 @@ public class ChatUI extends AetheriaBaseScreen {
         if (img != null && img.isLoaded) {
             ResourceLocation tex = img.getTextureToRender(false);
             if (tex != null) {
-                mc.getTextureManager().bindTexture(tex);
                 applyMsgGlColor();
                 GlStateManagerCompat.enableBlend();
-                drawScaledCustomSizeModalRect(x, y, 0, 0, img.width, img.height, AVATAR_SIZE, AVATAR_SIZE, img.width, img.height);
+                DrawContextUtils.drawScaledCustomSizeModalRect(tex, x, y, 0, 0, img.width, img.height, AVATAR_SIZE, AVATAR_SIZE, img.width, img.height);
                 GlStateManagerCompat.disableBlend();
                 return;
             }
@@ -1884,11 +1907,10 @@ public class ChatUI extends AetheriaBaseScreen {
         }
         ResourceLocation tex = img.getTextureToRender(false);
         if (tex == null) return;
-        mc.getTextureManager().bindTexture(tex);
         applyMsgGlColor();
         GlStateManagerCompat.enableBlend();
         int size = DiscordMarkdown.EMOJI_SIZE;
-        drawScaledCustomSizeModalRect(x, y - 2, 0, 0, img.width, img.height, size, size, img.width, img.height);
+        DrawContextUtils.drawScaledCustomSizeModalRect(tex, x, y - 2, 0, 0, img.width, img.height, size, size, img.width, img.height);
         GlStateManagerCompat.disableBlend();
     }
 
@@ -1929,10 +1951,9 @@ public class ChatUI extends AetheriaBaseScreen {
 
         ResourceLocation tex = img.getTextureToRender(mouseX >= x && mouseX <= x + drawW && mouseY >= y && mouseY <= y + drawH);
         if (tex != null) {
-            mc.getTextureManager().bindTexture(tex);
             applyMsgGlColor();
             GlStateManagerCompat.enableBlend();
-            drawScaledCustomSizeModalRect(x, y, 0, 0, img.width, img.height, drawW, drawH, img.width, img.height);
+            DrawContextUtils.drawScaledCustomSizeModalRect(tex, x, y, 0, 0, img.width, img.height, drawW, drawH, img.width, img.height);
             GlStateManagerCompat.disableBlend();
         }
     }
@@ -1992,10 +2013,9 @@ public class ChatUI extends AetheriaBaseScreen {
                     int srcW, srcH, srcX = 0, srcY = 0;
                     if (ratio > 1f) { srcW = srcH = img.height; srcX = (img.width - srcW) / 2; }
                     else { srcW = srcH = img.width; srcY = (img.height - srcH) / 2; }
-                    mc.getTextureManager().bindTexture(tex);
                     applyMsgGlColor();
                     GlStateManagerCompat.enableBlend();
-                    drawScaledCustomSizeModalRect(cx, cy, srcX, srcY, srcW, srcH, cell, cell, img.width, img.height);
+                    DrawContextUtils.drawScaledCustomSizeModalRect(tex, cx, cy, srcX, srcY, srcW, srcH, cell, cell, img.width, img.height);
                     GlStateManagerCompat.disableBlend();
                 }
             }
@@ -2423,10 +2443,9 @@ public class ChatUI extends AetheriaBaseScreen {
         int oy = y + (size - h) / 2;
         ResourceLocation tex = img.getTextureToRender(mouseX >= ox && mouseX <= ox + w && mouseY >= oy && mouseY <= oy + h);
         if (tex == null) return;
-        mc.getTextureManager().bindTexture(tex);
         applyMsgGlColor();
         GlStateManagerCompat.enableBlend();
-        drawScaledCustomSizeModalRect(ox, oy, 0, 0, img.width, img.height, w, h, img.width, img.height);
+        DrawContextUtils.drawScaledCustomSizeModalRect(tex, ox, oy, 0, 0, img.width, img.height, w, h, img.width, img.height);
         GlStateManagerCompat.disableBlend();
     }
 
@@ -2493,7 +2512,7 @@ public class ChatUI extends AetheriaBaseScreen {
     private void enableScissor(int x, int y, int w, int h) {
         int scale = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + h) * scale, w * scale, h * scale);
+        GlStateManagerCompat.scissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + h) * scale, w * scale, h * scale);
     }
 
     private void disableScissor() {

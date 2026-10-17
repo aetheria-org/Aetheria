@@ -61,7 +61,13 @@ object BlockCompat {
         //$$ val x = pos.getX().toDouble()
         //$$ val y = pos.getY().toDouble()
         //$$ val z = pos.getZ().toDouble()
-        //$$ return Box(x, y, z, x + 1, y + 1, z + 1)
+        //$$ val full = Box(x, y, z, x + 1, y + 1, z + 1)
+        //$$ val world = MinecraftCompat.getLocalWorld() ?: return full
+        //$$ val state = world.getBlockState(pos)
+        //$$ val shape = state.getOutlineShape(world, pos, net.minecraft.block.ShapeContext.absent())
+        //$$ if (shape.isEmpty) return full
+        //$$ val b = shape.boundingBox
+        //$$ return Box(x + b.minX, y + b.minY, z + b.minZ, x + b.maxX, y + b.maxY, z + b.maxZ)
         //#endif
     }
 
@@ -70,7 +76,7 @@ object BlockCompat {
         //#if MC < 1.16
         block == Blocks.air
         //#else
-        //$$ block == Blocks.AIR
+        //$$ block == Blocks.AIR || block == Blocks.CAVE_AIR || block == Blocks.VOID_AIR
         //#endif
 
     @JvmStatic
@@ -87,6 +93,16 @@ object BlockCompat {
         state.block == Blocks.stone && state.getValue(BlockStone.VARIANT) == BlockStone.EnumType.STONE
         //#else
         //$$ state.block == Blocks.STONE
+        //#endif
+
+    @JvmStatic
+    fun isStoneFamily(block: Block): Boolean =
+        //#if MC < 1.16
+        block == Blocks.stone
+        //#else
+        //$$ block == Blocks.STONE || block == Blocks.DIORITE || block == Blocks.ANDESITE ||
+        //$$     block == Blocks.GRANITE || block == Blocks.POLISHED_DIORITE ||
+        //$$     block == Blocks.POLISHED_ANDESITE || block == Blocks.POLISHED_GRANITE
         //#endif
 
     @JvmStatic
@@ -190,6 +206,14 @@ object BlockCompat {
         Block.blockRegistry.getNameForObject(block).toString()
         //#else
         //$$ Registries.BLOCK.getId(block).toString()
+        //#endif
+
+    @JvmStatic
+    fun distanceSq(a: BlockPos, b: BlockPos): Double =
+        //#if MC < 1.16
+        a.distanceSq(b)
+        //#else
+        //$$ a.getSquaredDistance(b)
         //#endif
 
     @JvmStatic

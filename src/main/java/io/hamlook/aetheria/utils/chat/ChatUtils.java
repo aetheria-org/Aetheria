@@ -148,16 +148,20 @@ public class ChatUtils {
     public static IChatComponent ensureSiblings(IChatComponent component) {
         if (TextCompat.getSiblings(component).isEmpty()) {
             IChatComponent root = TextCompat.createText("");
-            IChatComponent child = TextCompat.createText(component.getUnformattedTextForChat());
-            child.setChatStyle(TextCompat.createDeepCopy(TextCompat.getChatStyle(component)));
+            IChatComponent child = TextCompat.createText(TextCompat.getUnformattedTextForChat(component));
+            TextCompat.setChatStyle(child, TextCompat.createDeepCopy(TextCompat.getChatStyle(component)));
             TextCompat.appendSibling(root, child);
             return root;
         }
+        //#if MC < 1.21
         return component;
+        //#else
+        //$$ return TextCompat.deepMutableCopy(component);
+        //#endif
     }
 
     public static void sendMessage(String message) {
-        TextCompat.addChatMessage(TextCompat.createText(message));
+        TextCompat.addChatMessage(TextCompat.fromFormatted(message));
     }
 
     public static void sendMessage(IChatComponent component) {
@@ -172,7 +176,7 @@ public class ChatUtils {
 
     public static void sendMultilineMessage(String message) {
         for (String line : message.split("\n")) {
-            TextCompat.addChatMessage(TextCompat.createText(line));
+            TextCompat.addChatMessage(TextCompat.fromFormatted(line));
         }
     }
 

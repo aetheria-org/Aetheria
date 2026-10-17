@@ -26,8 +26,33 @@ public final class KeybindHelper {
     public static final int KEY_RETURN = 28;
     public static final int KEY_NUMPAD_ENTER = 156;
 
+    // Version-split key predicates (LWJGL2 codes vs GLFW codes)
+    public static boolean isEscapeKey(int keyCode) {
+        //#if MC < 1.16
+        return keyCode == KEY_ESCAPE;
+        //#else
+        //$$ return keyCode == 256;
+        //#endif
+    }
+
+    public static boolean isEnterKey(int keyCode) {
+        //#if MC < 1.16
+        return keyCode == KEY_RETURN || keyCode == KEY_NUMPAD_ENTER;
+        //#else
+        //$$ return keyCode == 257 || keyCode == 335;
+        //#endif
+    }
+
+    public static boolean isBackspaceKey(int keyCode) {
+        //#if MC < 1.16
+        return keyCode == 14;
+        //#else
+        //$$ return keyCode == 259;
+        //#endif
+    }
+
     public static String getKeyName(int keyCode) {
-        if (keyCode == 0) return "NONE";
+        if (keyCode == 0 || keyCode == -1) return "NONE";
         if (keyCode < 0) return "Button " + (keyCode + 101);
         try {
             String name = KeyboardCompat.getKeyName(keyCode);
@@ -45,7 +70,7 @@ public final class KeybindHelper {
     }
 
     private static boolean isKeyInvalid(int keyCode) {
-        return keyCode == 0;
+        return keyCode == 0 || keyCode == -1;
     }
 
     public static boolean isKeyDown(int keyCode) {
@@ -132,23 +157,41 @@ public final class KeybindHelper {
 
     // Coordinate helpers, poll-based (for draw/render)
     public static int[] getMouseCoords(int guiWidth, int guiHeight) {
-        int mouseX = MouseCompat.getX() * guiWidth / MC.displayWidth;
-        int mouseY = guiHeight - MouseCompat.getY() * guiHeight / MC.displayHeight - 1;
+        //#if MC < 1.21
+        int mouseX = MouseCompat.getX() * guiWidth / MinecraftCompat.getDisplayWidth();
+        int mouseY = guiHeight - MouseCompat.getY() * guiHeight / MinecraftCompat.getDisplayHeight() - 1;
+        //#else
+        //$$ int mouseX = (int) (MouseCompat.getX() * guiWidth / (float) MinecraftCompat.getDisplayWidth());
+        //$$ int mouseY = (int) (MouseCompat.getY() * guiHeight / (float) MinecraftCompat.getDisplayHeight());
+        //#endif
         return new int[]{mouseX, mouseY};
     }
 
     public static float[] getMouseCoordsFloat(double guiWidth, double guiHeight) {
-        float mouseX = (float) (MouseCompat.getX() * guiWidth / MC.displayWidth);
-        float mouseY = (float) (guiHeight - MouseCompat.getY() * guiHeight / MC.displayHeight - 1);
+        //#if MC < 1.21
+        float mouseX = (float) (MouseCompat.getX() * guiWidth / MinecraftCompat.getDisplayWidth());
+        float mouseY = (float) (guiHeight - MouseCompat.getY() * guiHeight / MinecraftCompat.getDisplayHeight() - 1);
+        //#else
+        //$$ float mouseX = (float) (MouseCompat.getX() * guiWidth / MinecraftCompat.getDisplayWidth());
+        //$$ float mouseY = (float) (MouseCompat.getY() * guiHeight / MinecraftCompat.getDisplayHeight());
+        //#endif
         return new float[]{mouseX, mouseY};
     }
 
     // Coordinate helpers, event-based (for mouse input events)
     public static int getScaledEventX(int guiWidth) {
-        return MouseCompat.getEventX() * guiWidth / MC.displayWidth;
+        //#if MC < 1.21
+        return MouseCompat.getEventX() * guiWidth / MinecraftCompat.getDisplayWidth();
+        //#else
+        //$$ return (int) (MouseCompat.getEventX() * guiWidth / (float) MinecraftCompat.getDisplayWidth());
+        //#endif
     }
 
     public static int getScaledEventY(int guiHeight) {
-        return guiHeight - MouseCompat.getEventY() * guiHeight / MC.displayHeight - 1;
+        //#if MC < 1.21
+        return guiHeight - MouseCompat.getEventY() * guiHeight / MinecraftCompat.getDisplayHeight() - 1;
+        //#else
+        //$$ return (int) (MouseCompat.getEventY() * guiHeight / (float) MinecraftCompat.getDisplayHeight());
+        //#endif
     }
 }

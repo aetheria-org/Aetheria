@@ -231,7 +231,8 @@ public class PriceDetector {
         if (!(event.gui instanceof GuiContainer)) return;
         ContainerChest chest = ContainerUtils.getOpenChest(event.gui);
         if (chest == null) return;
-        String title = TextCompat.getUnformattedText(chest.getLowerChestInventory().getName());
+        String title = ContainerUtils.getTitle(chest);
+        if (title == null) return;
 
         if (title.contains("Auction Browser") && ATHRConfig.feature.misc.itemPriceConfig.auctionEnabled) {
             scanning = true;
@@ -284,7 +285,8 @@ public class PriceDetector {
 
     public static boolean parseBZMenus(ContainerChest chest) {
         List<BazaarEntry> entries = new ArrayList<>();
-        String title = TextCompat.getUnformattedText(chest.getLowerChestInventory().getName());
+        String title = ContainerUtils.getTitle(chest);
+        if (title == null) return false;
         long now = System.currentTimeMillis();
 
         if (title.contains("➜")) {
@@ -373,16 +375,16 @@ public class PriceDetector {
             String playerUsername = "";
             long expireTime = 0;
 
-            if (stack.hasTagCompound()) {
-                NBTTagCompound tag = stack.getTagCompound();
+            if (NbtCompat.hasTagCompound(stack)) {
+                NBTTagCompound tag = NbtCompat.getTagCompound(stack);
 
                 NBTTagCompound display = NbtCompat.getDisplayCompound(stack);
                 if (display != null) {
                     NBTTagList loreList = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
                     boolean cutLore = false;
 
-                    for (int j = 0; j < loreList.tagCount(); j++) {
-                        String rawLine = loreList.getStringTagAt(j);
+                    for (int j = 0; j < NbtCompat.tagCount(loreList); j++) {
+                        String rawLine = NbtCompat.getStringAt(loreList, j);
                         String stripped = ColorUtils.stripColor(rawLine);
 
                         if (!cutLore) {
@@ -425,23 +427,24 @@ public class PriceDetector {
 
     private static JsonObject nbtToJson(NBTTagCompound compound) {
         JsonObject json = new JsonObject();
-        for (String key : compound.getKeySet()) {
-            NBTBase base = compound.getTag(key);
-            byte id = base.getId();
+        for (String key : NbtCompat.keySet(compound)) {
+            NBTBase base = NbtCompat.getTag(compound, key);
+            if (base == null) continue;
+            int id = NbtCompat.getId(base);
 
-            if (id == 1) json.addProperty(key, ((NBTTagByte) base).getByte());
-            else if (id == 2) json.addProperty(key, ((NBTTagShort) base).getShort());
-            else if (id == 3) json.addProperty(key, ((NBTTagInt) base).getInt());
-            else if (id == 4) json.addProperty(key, ((NBTTagLong) base).getLong());
-            else if (id == 5) json.addProperty(key, ((NBTTagFloat) base).getFloat());
-            else if (id == 6) json.addProperty(key, ((NBTTagDouble) base).getDouble());
-            else if (id == 8) json.addProperty(key, ((NBTTagString) base).getString());
+            if (id == 1) json.addProperty(key, NbtCompat.getByteValue(base));
+            else if (id == 2) json.addProperty(key, NbtCompat.getShortValue(base));
+            else if (id == 3) json.addProperty(key, NbtCompat.getIntValue(base));
+            else if (id == 4) json.addProperty(key, NbtCompat.getLongValue(base));
+            else if (id == 5) json.addProperty(key, NbtCompat.getFloatValue(base));
+            else if (id == 6) json.addProperty(key, NbtCompat.getDoubleValue(base));
+            else if (id == 8) json.addProperty(key, NbtCompat.getStringValue(base));
             else if (id == 10) json.add(key, nbtToJson((NBTTagCompound) base));
             else if (id == 9) {
                 JsonArray arr = new JsonArray();
                 NBTTagList list = (NBTTagList) base;
-                for (int i = 0; i < list.tagCount(); i++) {
-                    if (list.getTagType() == 8) arr.add(new JsonPrimitive(list.getStringTagAt(i)));
+                for (int i = 0; i < NbtCompat.tagCount(list); i++) {
+                    if (NbtCompat.getHeldType(list) == 8) arr.add(new JsonPrimitive(NbtCompat.getStringAt(list, i)));
                 }
                 json.add(key, arr);
             }

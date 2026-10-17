@@ -5,6 +5,7 @@ import net.minecraft.client.entity.EntityPlayerSP
 import net.minecraft.client.gui.FontRenderer
 import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.multiplayer.WorldClient
+import net.minecraft.client.network.NetworkPlayerInfo
 import net.minecraft.client.renderer.RenderGlobal
 import net.minecraft.client.settings.GameSettings
 import net.minecraft.entity.Entity
@@ -71,6 +72,14 @@ object MinecraftCompat {
         //#endif
 
     @JvmStatic
+    fun getCurrentFps(): Int =
+        //#if MC < 1.16
+        Minecraft.getDebugFPS()
+        //#else
+        //$$ getMinecraft().getCurrentFps()
+        //#endif
+
+    @JvmStatic
     fun getDisplayWidth(): Int =
         //#if MC < 1.16
         Minecraft.getMinecraft().displayWidth
@@ -103,6 +112,23 @@ object MinecraftCompat {
         //#endif
 
     @JvmStatic
+    fun displayGuiScreen(screen: GuiScreen?) {
+        //#if MC < 1.16
+        getMinecraft().displayGuiScreen(screen)
+        //#else
+        //$$ getMinecraft().setScreen(screen)
+        //#endif
+    }
+
+    @JvmStatic
+    fun getPlayerListEntries(): Collection<NetworkPlayerInfo> =
+        //#if MC < 1.16
+        getLocalPlayer()?.sendQueue?.playerInfoMap ?: emptyList()
+        //#else
+        //$$ getMinecraft().networkHandler?.playerList ?: emptyList()
+        //#endif
+
+    @JvmStatic
     fun getViewerYaw(): Float =
         //#if MC < 1.16
         Minecraft.getMinecraft().getRenderManager().playerViewY
@@ -125,6 +151,18 @@ object MinecraftCompat {
         //#else
         //$$ MinecraftClient.getInstance().worldRenderer
         //#endif
+
+    @JvmStatic
+    fun showTitle(title: String, subtitle: String, fadeIn: Int, stay: Int, fadeOut: Int) {
+        //#if MC < 1.16
+        getMinecraft().ingameGUI.displayTitle(title, subtitle, fadeIn, stay, fadeOut)
+        //#else
+        //$$ val hud = getMinecraft().inGameHud
+        //$$ hud.setTitleTicks(fadeIn, stay, fadeOut)
+        //$$ hud.setTitle(TextCompat.fromFormatted(title))
+        //$$ hud.setSubtitle(TextCompat.fromFormatted(subtitle))
+        //#endif
+    }
 
     @JvmStatic
     fun getIngameGui(): net.minecraft.client.gui.GuiIngame =

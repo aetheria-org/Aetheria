@@ -37,6 +37,11 @@ public class GuiOptionEditorText extends GuiOptionEditor {
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
+        return mouseInput(x, y, width, mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
         int height = getHeight();
 
         int fullWidth = Math.min(width / 3 - 10, 80);
@@ -50,9 +55,9 @@ public class GuiOptionEditorText extends GuiOptionEditor {
         int textFieldY = y + height - 7 - 14;
         textField.setSize(fullWidth, 16);
 
-        if (MouseCompat.getEventButtonState() && (MouseCompat.getEventButton() == 0 || MouseCompat.getEventButton() == 1)) {
+        if (pressed && (button == 0 || button == 1)) {
             if (mouseX > textFieldX && mouseX < textFieldX + fullWidth && mouseY > textFieldY && mouseY < textFieldY + 16) {
-                textField.mouseClicked(mouseX, mouseY, MouseCompat.getEventButton());
+                textField.mouseClicked(mouseX, mouseY, button);
                 return true;
             }
             textField.unfocus();
@@ -63,9 +68,14 @@ public class GuiOptionEditorText extends GuiOptionEditor {
 
     @Override
     public boolean keyboardInput() {
-        if (KeyboardCompat.getEventKeyState() && textField.getFocus()) {
+        return keyboardInput(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
+    }
+
+    @Override
+    public boolean keyboardInput(char typedChar, int keyCode) {
+        if (textField.getFocus()) {
             KeyboardCompat.enableRepeatEvents(true);
-            textField.keyTyped(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
+            textField.keyTyped(typedChar, keyCode);
 
             try {
                 textField.setCustomBorderColour(0xffffffff);

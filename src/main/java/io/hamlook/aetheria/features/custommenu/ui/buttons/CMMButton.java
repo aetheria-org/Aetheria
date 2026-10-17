@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.custommenu.ui.buttons;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.custommenu.Position;
 import io.hamlook.aetheria.features.custommenu.ui.CMMElement;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
@@ -46,9 +47,9 @@ public abstract class CMMButton extends CMMElement {
 
     public static void drawCenteredString(String displayString, int xPos, int yPos, int width, int height, int color, boolean shadow) {
         FontRenderer fr = MinecraftCompat.getFontRenderer();
-        float x = xPos + (width / 2f) - (fr.getStringWidth(displayString) / 2f);
-        float y = (yPos + (height / 2f) - (fr.FONT_HEIGHT / 2f)) + 1;
-        fr.drawString(displayString, x, y, color, shadow);
+        float x = xPos + (width / 2f) - (DrawContextUtils.getStringWidth(fr, displayString) / 2f);
+        float y = (yPos + (height / 2f) - (DrawContextUtils.getFontHeight(fr) / 2f)) + 1;
+        DrawContextUtils.drawText(fr, displayString, x, y, color, shadow);
     }
 
     public boolean checkHover(int mouseX, int mouseY) {

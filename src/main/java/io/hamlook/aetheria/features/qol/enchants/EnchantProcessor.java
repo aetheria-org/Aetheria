@@ -17,6 +17,7 @@ import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.ChromaTextRenderer;
 import net.minecraft.client.gui.FontRenderer;
@@ -52,7 +53,7 @@ public class EnchantProcessor {
         if (BY_LORE.isEmpty()) return;
 
         NBTTagCompound enchantNBT = getEnchantNBT(event.itemStack);
-        if (enchantNBT != null && enchantNBT.hasNoTags()) return;
+        if (enchantNBT != null && NbtCompat.isEmpty(enchantNBT)) return;
 
         List<String> loreList = event.toolTip;
         if (LORE_CACHE.isCached(loreList) && configSignature().equals(LORE_CACHE.signature)) {
@@ -253,23 +254,41 @@ public class EnchantProcessor {
 
 
     private String formatColor(EnchantMeta meta, int level) {
-        String color = getTierColor(meta, level);
+        int tier = tierIndex(meta, level);
+        String color = tierColor(tier);
 
         int argb = ChromaColour.specialToSimpleRGB(color);
         String prefix = nearestMcColor(argb);
         if (ATHRConfig.feature.qol.enchantParser.enchantChroma && ChromaColour.getSpeed(color) > 0) {
-            prefix += "§z";
-            ChromaTextRenderer.setDefaultStyle(ChromaStyle.of(color, ATHRConfig.feature.qol.enchantParser.enchantChromaMode, ATHRConfig.feature.qol.enchantParser.enchantChromaSize));
-        }
+                ChromaStyle style = ChromaStyle.of(color, ATHRConfig.feature.qol.enchantParser.enchantChromaMode, ATHRConfig.feature.qol.enchantParser.enchantChromaSize);
+                ChromaTextRenderer.setDefaultStyle(style);
+                ChromaTextRenderer.setTierStyle(tier, style);
+                // 1.8.9's FontRenderer redirect swallows only "§z", so the tier digit would render as a glyph.
+                //#if MC < 1.21
+                prefix += "§z";
+                //#else
+                //$$ prefix += "§z" + tier;
+                //#endif
+            }
         if (meta.sortType == 0) prefix += "§l";
         return prefix;
     }
 
-    private String getTierColor(EnchantMeta meta, int level) {
-        if (meta.sortType == 0) return ATHRConfig.feature.qol.enchantParser.enchantUltimateColor;
-        if (level >= meta.maxLevel) return ATHRConfig.feature.qol.enchantParser.enchantPerfectColor;
-        if (level > meta.goodLevel) return ATHRConfig.feature.qol.enchantParser.enchantGreatColor;
-        if (level == meta.goodLevel) return ATHRConfig.feature.qol.enchantParser.enchantGoodColor;
+    private static final int TIER_ULTIMATE = 0, TIER_PERFECT = 1, TIER_GREAT = 2, TIER_GOOD = 3, TIER_POOR = 4;
+
+    private int tierIndex(EnchantMeta meta, int level) {
+        if (meta.sortType == 0) return TIER_ULTIMATE;
+        if (level >= meta.maxLevel) return TIER_PERFECT;
+        if (level > meta.goodLevel) return TIER_GREAT;
+        if (level == meta.goodLevel) return TIER_GOOD;
+        return TIER_POOR;
+    }
+
+    private String tierColor(int tier) {
+        if (tier == TIER_ULTIMATE) return ATHRConfig.feature.qol.enchantParser.enchantUltimateColor;
+        if (tier == TIER_PERFECT) return ATHRConfig.feature.qol.enchantParser.enchantPerfectColor;
+        if (tier == TIER_GREAT) return ATHRConfig.feature.qol.enchantParser.enchantGreatColor;
+        if (tier == TIER_GOOD) return ATHRConfig.feature.qol.enchantParser.enchantGoodColor;
         return ATHRConfig.feature.qol.enchantParser.enchantPoorColor;
     }
 

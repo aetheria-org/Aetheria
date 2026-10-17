@@ -5,6 +5,7 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -92,7 +93,7 @@ public class CurrentPetOverlay extends Overlay {
             formattedName = CurrentPetApi.getDisplayName();
             if (formattedName.isEmpty()) formattedName = CurrentPetApi.getColoredName();
             String tex = CurrentPetApi.getTextureValue();
-            if (!tex.isEmpty()) skullItem = ItemUtils.createSkullWithTexture(tex);
+            if (!tex.isEmpty()) skullItem = ItemUtils.getCachedSkull(tex);
         }
 
         float scale = getScale();
@@ -108,9 +109,9 @@ public class CurrentPetOverlay extends Overlay {
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 
-        GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0);
-        GL11.glScalef(scale, scale, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(x, y, 0);
+        GlStateManagerCompat.scale(scale, scale, 1f);
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0) drawRoundedRect(-PADDING, -PADDING, w, h - PADDING, getCornerRadius(), bgColor);
@@ -124,6 +125,6 @@ public class CurrentPetOverlay extends Overlay {
         int textY = (SKULL_SIZE - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2;
         DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), formattedName, SKULL_SIZE + GAP, textY, 0xFFFFFF);
 
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 }

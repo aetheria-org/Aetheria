@@ -60,7 +60,7 @@ class SlotBinds {
     fun onMouseClick(event: ASMMouseEvent) {
         if (!isEnabled() || !isShiftDown()) return
         val gui = event.gui as? GuiInventory ?: return
-        if (!MouseCompat.getEventButtonState() || MouseCompat.getEventButton() != 0) return
+        if (!event.buttonState || event.button != 0) return
         val clicked = InventoryCompat.getSlotUnderMouse(gui)?.slotNumber?.takeIf { it.isValidSlot() } ?: return
         val bound = binds()?.get(clicked) ?: return
         if (!bound.isValidSlot() || bound == clicked) return

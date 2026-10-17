@@ -47,28 +47,12 @@ public final class SkyblockData {
     }
 
     public static List<String> getScoreboardLines() {
-        Minecraft mc = MinecraftCompat.getMinecraft();
         if (MinecraftCompat.getLocalWorld() == null) return Collections.emptyList();
 
         Scoreboard scoreboard = MinecraftCompat.getLocalWorld().getScoreboard();
         if (scoreboard == null) return Collections.emptyList();
 
-        ScoreObjective objective = ScoreboardCompat.getSidebarObjective(scoreboard);
-        if (objective == null) return Collections.emptyList();
-
-        List<Score> scores;
-        try {
-            scores = scoreboard.getSortedScores(objective).stream().filter(s -> s != null && s.getPlayerName() != null && !s.getPlayerName().startsWith("#")).collect(Collectors.toList());
-        } catch (ConcurrentModificationException e) {
-            return Collections.emptyList();
-        }
-
-        int size = scores.size();
-        return IntStream.range(Math.max(0, size - 15), size).mapToObj(i -> {
-            Score score = scores.get(i);
-            ScorePlayerTeam team = scoreboard.getPlayersTeam(score.getPlayerName());
-            return ScorePlayerTeam.formatPlayerName(team, score.getPlayerName());
-        }).collect(Collectors.toList());
+        return ScoreboardCompat.getSidebarLines(scoreboard);
     }
 
     public static List<String> getCleanScoreboardLines() {

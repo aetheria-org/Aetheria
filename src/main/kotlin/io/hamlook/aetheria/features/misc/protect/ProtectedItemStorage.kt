@@ -24,7 +24,7 @@ object ProtectedItemStorage {
             protectedUuids.addAll(loaded)
         } catch (e: Exception) {
             TextCompat.addChatMessage(
-                TextCompat.createText("§c[ATHR] Failed to load protected items: ${e.message}")
+                TextCompat.fromFormatted("§c[ATHR] Failed to load protected items: ${e.message}")
             )
         }
     }
@@ -34,7 +34,7 @@ object ProtectedItemStorage {
             file.writeText(gson.toJson(protectedUuids))
         } catch (e: Exception) {
             TextCompat.addChatMessage(
-                TextCompat.createText("§c[ATHR] Failed to save protected items: ${e.message}")
+                TextCompat.fromFormatted("§c[ATHR] Failed to save protected items: ${e.message}")
             )
         }
     }

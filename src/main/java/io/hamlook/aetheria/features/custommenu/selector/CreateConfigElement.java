@@ -13,12 +13,15 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 
 import java.awt.*;
+import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class CreateConfigElement {
 
     public boolean enabled = false;
-    public GuiTextField nameField = new GuiTextField(0, MinecraftCompat.getMinecraft().fontRendererObj, 0,0,0,0);
+    public GuiTextField nameField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), 0,0,0,0);
     public CMMButton createButton = new CMMButton(0, 0, 0, 0, "Create") {
         @Override
         public void onClick(GuiScreen screen) {
@@ -58,28 +61,29 @@ public class CreateConfigElement {
     }
 
     private void drawNameField() {
-        if(nameField.getEnableBackgroundDrawing()){
-            nameField.setEnableBackgroundDrawing(false);
+        if(GuiScreenUtils.drawsTextFieldBackground(nameField)){
+            GuiScreenUtils.setTextFieldBackground(nameField, false);
         }
-        GuiScreen.drawRect(GuiScreenUtils.getX(nameField),GuiScreenUtils.getY(nameField),
+        DrawContextUtils.fill(GuiScreenUtils.getX(nameField),GuiScreenUtils.getY(nameField),
                 GuiScreenUtils.getX(nameField)+GuiScreenUtils.getW(nameField),
                 GuiScreenUtils.getY(nameField)+GuiScreenUtils.getH(nameField),new Color(255,255,255).getRGB());
-        GuiScreen.drawRect(GuiScreenUtils.getX(nameField)+1,GuiScreenUtils.getY(nameField)+1,GuiScreenUtils.getX(nameField)+GuiScreenUtils.getW(nameField)-1,
+        DrawContextUtils.fill(GuiScreenUtils.getX(nameField)+1,GuiScreenUtils.getY(nameField)+1,GuiScreenUtils.getX(nameField)+GuiScreenUtils.getW(nameField)-1,
                 GuiScreenUtils.getY(nameField)+GuiScreenUtils.getH(nameField)-1,new Color(28, 28, 28).getRGB());
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(GuiScreenUtils.getX(nameField), GuiScreenUtils.getY(nameField)+ScreenHelper.getStaticHeight(5), 0);
-        GlStateManager.scale(2*ScreenHelper.getScaleFactor(),2* ScreenHelper.getScaleFactor(), 1.0f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(GuiScreenUtils.getX(nameField), GuiScreenUtils.getY(nameField)+ScreenHelper.getStaticHeight(5), 0);
+        GlStateManagerCompat.scale(2*ScreenHelper.getScaleFactor(),2* ScreenHelper.getScaleFactor(), 1.0f);
 
         int originalX = GuiScreenUtils.getX(nameField);
         int originalY = GuiScreenUtils.getY(nameField);
         GuiScreenUtils.setX(nameField, 0);
         GuiScreenUtils.setY(nameField, 0);
 
-        nameField.drawTextBox();
+        int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
+        GuiScreenUtils.renderTextField(nameField, mouse[0], mouse[1]);
         GuiScreenUtils.setX(nameField, originalX);
         GuiScreenUtils.setY(nameField, originalY);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     public void updatePositions(int x, int y){
@@ -127,6 +131,6 @@ public class CreateConfigElement {
     }
 
     public boolean keyboardInput(char  typedChar, int keyCode){
-        return nameField.textboxKeyTyped(typedChar,keyCode);
+        return GuiScreenUtils.typeTextField(nameField, typedChar,keyCode);
     }
 }

@@ -4,9 +4,13 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 //#if MC < 1.21
 import io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor;
+//#else
+//$$ import io.hamlook.aetheria.mixins.accessors.SignEditScreenAccessor;
+//$$ import net.minecraft.client.gui.screen.Screen;
 //#endif
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.TextCompat;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.tileentity.TileEntitySign;
 
@@ -54,7 +58,50 @@ public final class VisitorSignFill {
         VisitorShoppingList.noteParse("[signfill] filled " + missing + "x " + FarmingApi.getSearchedItemName());
         VisitorShoppingList.scheduleSignSubmit(gui);
         //#else
-        // TODO(sign-port): SignEditScreen uses SignBlockEntity front text; needs the SignText model port
+        //$$ onSignOpenedModern(gui);
         //#endif
     }
+
+    //#if MC < 1.21
+    //#else
+    //$$ public static void onSignOpenedModern(Screen gui) {
+    //$$     if (ATHRConfig.feature == null) return;
+    //$$     if (ATHRConfig.feature.farming.visitors.signFillMode != 0) return;
+    //$$     if (VisitorShoppingList.isSearchExpired()) {
+    //$$         VisitorShoppingList.noteParse("[signfill] declined: search expired");
+    //$$         return;
+    //$$     }
+    //$$
+    //$$     if (!(gui instanceof SignEditScreenAccessor)) return;
+    //$$     String[] messages = ((SignEditScreenAccessor) gui).ATHR$getMessages();
+    //$$     if (messages == null || messages.length < 4) return;
+    //$$     if (!VisitorShoppingList.isBazaarAmountSign(messages)) {
+    //$$         VisitorShoppingList.noteParse("[signfill] declined: not a bazaar amount sign");
+    //$$         return;
+    //$$     }
+    //$$
+    //$$     if (!messages[0].isEmpty()) {
+    //$$         VisitorShoppingList.noteParse("[signfill] declined: sign text occupied");
+    //$$         return;
+    //$$     }
+    //$$     String signature = FarmingApi.getLastChestSignature();
+    //$$     if (!VisitorShoppingList.nameMatchesFlow(signature)) {
+    //$$         VisitorShoppingList.noteParse("[signfill] declined: no flow match, signature='" + signature + "'");
+    //$$         return;
+    //$$     }
+    //$$
+    //$$     int listedTotal = FarmingApi.consumePendingSign();
+    //$$     if (listedTotal <= 0) return;
+    //$$
+    //$$     int missing = VisitorShoppingList.missingAmount(FarmingApi.getSearchedItemId(), listedTotal);
+    //$$     if (missing <= 0) {
+    //$$         ChatUtils.sendMessage("§e[ASM] §7You already have enough §f" + FarmingApi.getSearchedItemName() + "§7.");
+    //$$         return;
+    //$$     }
+    //$$
+    //$$     messages[0] = String.valueOf(missing);
+    //$$     VisitorShoppingList.noteParse("[signfill] filled " + missing + "x " + FarmingApi.getSearchedItemName());
+    //$$     VisitorShoppingList.scheduleSignSubmit(gui);
+    //$$ }
+    //#endif
 }

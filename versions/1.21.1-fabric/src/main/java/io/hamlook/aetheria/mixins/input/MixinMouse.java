@@ -1,6 +1,8 @@
 package io.hamlook.aetheria.mixins.input;
 
 import io.hamlook.aetheria.utils.compat.InputEventQueue;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
+import io.hamlook.aetheria.features.qol.CursorResetHandler;
 import io.hamlook.aetheria.utils.hooks.MouseHelperHook;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -30,10 +32,10 @@ public class MixinMouse {
         InputEventQueue.pushMouseMoveAbs(x, y);
     }
 
-    @Inject(method = "unlockCursor", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "unlockCursor", at = @At("TAIL"))
     private void athr$ungrabCursor(CallbackInfo ci) {
-        if (MouseHelperHook.onUngrabMouseCursor()) {
-            ci.cancel();
+        if (MouseHelperHook.shouldKeepCursorPosition()) {
+            MouseCompat.setCursorPosition(CursorResetHandler.cachedX, CursorResetHandler.cachedY);
         }
     }
 

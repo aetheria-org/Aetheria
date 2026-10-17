@@ -4,6 +4,7 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
@@ -28,7 +29,7 @@ public abstract class GuiOptionEditor {
 
         int maxLines = 5;
         float scale = 1;
-        int lineCount = fr.listFormattedStringToWidth(option.desc, width * 2 / 3 - 10).size();
+        int lineCount = DrawContextUtils.wrapFormattedText(fr, option.desc, width * 2 / 3 - 10).size();
 
         if (lineCount <= 0) return;
 
@@ -36,7 +37,7 @@ public abstract class GuiOptionEditor {
 
         while (paraHeight >= HEIGHT - 10) {
             scale -= 1 / 8f;
-            lineCount = fr.listFormattedStringToWidth(option.desc, (int) (width * 2 / 3 / scale - 10)).size();
+            lineCount = DrawContextUtils.wrapFormattedText(fr, option.desc, (int) (width * 2 / 3 / scale - 10)).size();
             paraHeight = (int) (9 * scale * lineCount - 1 * scale);
         }
 
@@ -44,7 +45,7 @@ public abstract class GuiOptionEditor {
         GlStateManagerCompat.translate(x + 5 + width / 3f, y + HEIGHT / 2f - paraHeight / 2, 0);
         GlStateManagerCompat.scale(scale, scale, 1);
 
-        fr.drawSplitString(option.desc, 0, 0, (int) (width * 2 / 3 / scale - 10), 0xc0c0c0);
+        DrawContextUtils.drawSplitString(fr, option.desc, 0, 0, (int) (width * 2 / 3 / scale - 10), 0xc0c0c0);
 
         GlStateManagerCompat.popMatrix();
     }
@@ -55,10 +56,22 @@ public abstract class GuiOptionEditor {
 
     public abstract boolean mouseInput(int x, int y, int width, int mouseX, int mouseY);
 
+    public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
+        return mouseInput(x, y, width, mouseX, mouseY);
+    }
+
     public abstract boolean keyboardInput();
+
+    public boolean keyboardInput(char typedChar, int keyCode) {
+        return keyboardInput();
+    }
 
     public boolean mouseInputOverlay(int x, int y, int width, int mouseX, int mouseY) {
         return false;
+    }
+
+    public boolean mouseInputOverlay(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
+        return mouseInputOverlay(x, y, width, mouseX, mouseY);
     }
 
     public void renderOverlay(int x, int y, int width) {

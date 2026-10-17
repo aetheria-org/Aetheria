@@ -56,6 +56,7 @@ import io.hamlook.aetheria.features.waypoints.WaypointGroupGui;
 import io.hamlook.aetheria.network.PrivacyNoticeScreen;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
+import io.hamlook.aetheria.utils.KeybindMigration;
 import io.hamlook.aetheria.utils.compat.KeybindCompat;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -170,6 +171,9 @@ public class ATHRConfig {
             } else {
                 System.err.println("[ATHR] Recovered config settings from a corrupted backup.");
             }
+        }
+        if (KeybindMigration.migrateIfNeeded(feature)) {
+            saveConfig();
         }
     }
 
@@ -606,7 +610,7 @@ public class ATHRConfig {
         }
 
         if (MinecraftCompat.getLocalPlayer() == null) return;
-        if (openGuiKey.isPressed() && MinecraftCompat.getCurrentScreen() == null) openOptionsGui();
+        if (KeybindCompat.wasPressed(openGuiKey) && MinecraftCompat.getCurrentScreen() == null) openOptionsGui();
 
         boolean managerKeyDown = feature != null && isKeyOrMouseDown(feature.waypoints.waypointManagerKey);
         if (managerKeyDown && !waypointManagerKeyWasDown && MinecraftCompat.getCurrentScreen() == null)

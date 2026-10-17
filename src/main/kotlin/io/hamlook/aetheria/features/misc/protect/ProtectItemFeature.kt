@@ -49,7 +49,7 @@ class ProtectItemFeature {
 
         private fun notifyRaw(message: String) {
             if (ATHRConfig.feature?.misc?.protectItem?.showChatNotifications != true) return
-            TextCompat.addChatMessage(TextCompat.createText("${EnumChatFormatting.RED}[ATHR] §r$message"))
+            TextCompat.addChatMessage(TextCompat.fromFormatted("${EnumChatFormatting.RED}[ATHR] §r$message"))
         }
     }
 

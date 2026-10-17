@@ -13,7 +13,7 @@ import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.HttpClient;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import net.minecraft.client.renderer.texture.DynamicTexture;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import net.minecraft.util.ResourceLocation;
 
 import javax.imageio.ImageIO;
@@ -232,9 +232,8 @@ public class EmojiManager {
                     EmojiLinks.SHEET_SIZE = fImg.getWidth();
                     MinecraftCompat.getMinecraft().addScheduledTask(() -> {
                         try {
-                            DynamicTexture texture = new DynamicTexture(fImg);
                             ResourceLocation loc = EmojiLinks.getSpriteResource(EmojiLinks.CUSTOM_SHEET);
-                            MinecraftCompat.getMinecraft().getTextureManager().loadTexture(loc, texture);
+                            TextureCompat.uploadTexture(loc, fImg);
                         } catch (Exception e) {
                             Aetheria.logger.info("[EMOJI] Error re-uploading custom sheet: " + e.getMessage());
                         }
@@ -272,9 +271,8 @@ public class EmojiManager {
                         sheetSizes.put(sheetName, img.getWidth());
                         Aetheria.logger.info("[EMOJI] Sheet Size for " + sheetName + " = " + sheetSizes.get(sheetName));
                         EmojiLinks.SHEET_SIZE = img.getWidth();
-                        DynamicTexture texture = new DynamicTexture(img);
                         ResourceLocation location = EmojiLinks.getSpriteResource(sheetName);
-                        MinecraftCompat.getMinecraft().getTextureManager().loadTexture(location, texture);
+                        TextureCompat.uploadTexture(location, img);
                     } catch (Exception e) {
                         Aetheria.logger.info("[EMOJI] Error uploading texture for " + entry.getKey() + ": " + e.getMessage());
                     }

@@ -7,6 +7,7 @@ import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.chat.ChatUtils
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.compat.TextCompat
 import io.hamlook.aetheria.utils.item.ItemUtils
 
 @RegisterEvents
@@ -86,15 +87,15 @@ class ProtectItemCommand {
         if (ProtectedItemStorage.contains(uuid)) {
             ProtectedItemStorage.remove(uuid)
 
-            msg("§e${held.displayName} §7is no longer protected.")
+            msg("§e" + TextCompat.getFormattedText(held.displayName) + " §7is no longer protected.")
         } else {
             ProtectedItemStorage.add(uuid)
 
-            msg("§a${held.displayName} §7is now protected!")
+            msg("§a" + TextCompat.getFormattedText(held.displayName) + " §7is now protected!")
         }
     }
 
     private fun msg(message: String) {
-        ChatUtils.sendMessage(PREFIX + message)
+        ChatUtils.sendMessage(TextCompat.fromFormatted(PREFIX + message))
     }
 }

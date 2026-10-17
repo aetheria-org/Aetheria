@@ -12,6 +12,7 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
@@ -174,7 +175,9 @@ public class GardenPlotWarpGrid {
     public void onDrawGui(GuiContainerRenderBeforeTooltipEvent event) {
         if (!isEnabled() || !isSupportedGui(event.gui)) return;
         GlStateManagerCompat.pushMatrix();
-        GlStateManagerCompat.translate(-event.gui.guiLeft, -event.gui.guiTop, 50);
+        if (event.fromForeground) {
+            GlStateManagerCompat.translate(-InventoryCompat.getGuiLeft(event.gui), -InventoryCompat.getGuiTop(event.gui), 50);
+        }
         int[] pos = calculatePosition();
         draw(pos[0], pos[1]);
         GlStateManagerCompat.popMatrix();
@@ -182,10 +185,10 @@ public class GardenPlotWarpGrid {
 
     @HandleEvent
     public void onMouseInput(ASMMouseEvent event) {
-        if (!isEnabled() || !isSupportedGui(event.gui) || !KeybindHelper.getEventButtonState() || KeybindHelper.getEventButton() != 0) return;
+        if (!isEnabled() || !isSupportedGui(event.gui) || !event.buttonState || event.button != 0) return;
 
-        int mouseX = KeybindHelper.getScaledEventX(event.gui.width);
-        int mouseY = KeybindHelper.getScaledEventY(event.gui.height);
+        int mouseX = event.mouseX;
+        int mouseY = event.mouseY;
 
         for (int row = 0; row < GRID_DIM; row++) {
             for (int col = 0; col < GRID_DIM; col++) {

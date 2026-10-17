@@ -12,6 +12,8 @@ import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.KeybindCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import lombok.Getter;
@@ -92,10 +94,10 @@ public class SearchBar {
     }
 
     public static GuiTextField createStorageSearchBar(int x, int y, int width) {
-        storageSearchBar = new GuiTextField(1, MinecraftCompat.getFontRenderer(), x, y, width, BAR_HEIGHT);
-        storageSearchBar.setCanLoseFocus(true);
-        storageSearchBar.setMaxStringLength(50);
-        storageSearchBar.setEnableBackgroundDrawing(false);
+        storageSearchBar = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), x, y, width, BAR_HEIGHT);
+        GuiScreenUtils.setTextFieldCanLoseFocus(storageSearchBar, true);
+        GuiScreenUtils.setTextFieldMaxLength(storageSearchBar, 50);
+        GuiScreenUtils.setTextFieldBackground(storageSearchBar, false);
         storageSearchBar.setFocused(false);
         if (ATHRConfig.feature != null && !ATHRConfig.feature.misc.searchBarConfig.persistStorageSearch)
             storageSearchText = "";
@@ -117,14 +119,14 @@ public class SearchBar {
 
     public static boolean handleStorageKeyTyped(GuiTextField field, char typedChar, int keyCode) {
         if (field == null || !field.isFocused()) return false;
-        boolean consumed = field.textboxKeyTyped(typedChar, keyCode);
+        boolean consumed = GuiScreenUtils.typeTextField(field, typedChar, keyCode);
         storageSearchText = field.getText();
         return consumed;
     }
 
     public static boolean handleStorageKeyTyped(GuiTextField field, char typedChar, int keyCode, String[] textHolder) {
         if (field == null || !field.isFocused()) return false;
-        boolean consumed = field.textboxKeyTyped(typedChar, keyCode);
+        boolean consumed = GuiScreenUtils.typeTextField(field, typedChar, keyCode);
         textHolder[0] = field.getText();
         return consumed;
     }
@@ -155,11 +157,20 @@ public class SearchBar {
         }
     }
 
+    private static GuiTextField tempCalcField = null;
+
     private static GuiTextField createTempFieldWithText(GuiTextField original, String text) {
-        GuiTextField temp = new GuiTextField(original.getId(), MinecraftCompat.getFontRenderer(), GuiScreenUtils.getX(original), GuiScreenUtils.getY(original), original.width, original.height);
+        if (tempCalcField == null) {
+            tempCalcField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), 0, 0, 0, BAR_HEIGHT);
+        }
+        GuiTextField temp = tempCalcField;
+        GuiScreenUtils.setX(temp, GuiScreenUtils.getX(original));
+        GuiScreenUtils.setY(temp, GuiScreenUtils.getY(original));
+        GuiScreenUtils.setW(temp, GuiScreenUtils.getW(original));
+        GuiScreenUtils.setH(temp, GuiScreenUtils.getH(original));
         temp.setText(text);
         temp.setFocused(original.isFocused());
-        temp.setCursorPosition(original.getCursorPosition());
+        GuiScreenUtils.setTextFieldCursor(temp, GuiScreenUtils.getTextFieldCursor(original));
         return temp;
     }
 
@@ -188,10 +199,14 @@ public class SearchBar {
         String tooltip = sendToItemList ? "§aSearch Item List" : "§aSearch Inventory & Calculator";
         RenderUtils.drawButton(toggleBtnX, toggleBtnY, TOGGLE_BTN_W, BAR_HEIGHT, tooltip, () -> {
             if (sendToItemList) {
-                MC.getTextureManager().bindTexture(Resources.SEARCH_ICON);
                 GlStateManagerCompat.color(1f, 1f, 1f, 1f);
                 int size = 12;
-                Gui.drawModalRectWithCustomSizedTexture(toggleBtnX + (TOGGLE_BTN_W - size) / 2, toggleBtnY + (BAR_HEIGHT - size) / 2, 0, 0, size, size, size, size);
+                //#if MC < 1.21
+                MC.getTextureManager().bindTexture(Resources.SEARCH_ICON);
+                DrawContextUtils.drawModalRectWithCustomSizedTexture(toggleBtnX + (TOGGLE_BTN_W - size) / 2, toggleBtnY + (BAR_HEIGHT - size) / 2, 0, 0, size, size, size, size);
+                //#else
+                //$$ DrawContextUtils.drawModalRectWithCustomSizedTexture(Resources.SEARCH_ICON, toggleBtnX + (TOGGLE_BTN_W - size) / 2, toggleBtnY + (BAR_HEIGHT - size) / 2, 0, 0, size, size, size, size);
+                //#endif
             } else {
                 String icon = "≡";
                 DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), icon, (int) (toggleBtnX + TOGGLE_BTN_W / 2f - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), icon) / 2f), (int) (toggleBtnY + BAR_HEIGHT / 2f - 4), 0xFFFFFF);
@@ -319,14 +334,24 @@ public class SearchBar {
 
         int[] pos = calculateBarPosition(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
 
-        searchBar = new GuiTextField(0, MinecraftCompat.getFontRenderer(), pos[0], pos[1], BAR_WIDTH, BAR_HEIGHT);
-        searchBar.setCanLoseFocus(false);
-        searchBar.setMaxStringLength(100);
-        searchBar.setEnableBackgroundDrawing(false);
+        searchBar = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), pos[0], pos[1], BAR_WIDTH, BAR_HEIGHT);
+        GuiScreenUtils.setTextFieldCanLoseFocus(searchBar, false);
+        GuiScreenUtils.setTextFieldMaxLength(searchBar, 100);
+        GuiScreenUtils.setTextFieldBackground(searchBar, false);
         searchBar.setFocused(false);
         if (!ATHRConfig.feature.misc.searchBarConfig.persistSearchText) searchText = "";
         if (!isItemListActive()) sendToItemList = false;
         searchBar.setText(searchText);
+    }
+
+    public static boolean handleCharTyped(char chr) {
+        if (!isEnabled() || searchBar == null || !searchBar.isFocused()) return false;
+        if (!isSupportedGui(MinecraftCompat.getCurrentScreen())) return false;
+        if (GuiScreenUtils.typeTextField(searchBar, chr, 0)) {
+            searchText = searchBar.getText();
+            return true;
+        }
+        return false;
     }
 
     @HandleEvent
@@ -335,13 +360,18 @@ public class SearchBar {
 
         int keyCode = KeybindHelper.getEventKeyCode();
 
+        if (searchBar != null && searchBar.isFocused() && KeybindCompat.inventoryKeyMatches(keyCode)) {
+            event.cancel();
+            return;
+        }
+
         if (!searchBar.isFocused()) {
             int hoverKey = ATHRConfig.feature.misc.searchBarConfig.hoverPasteKey;
             if (KeybindHelper.isKeyValid(hoverKey) && keyCode == hoverKey && hoveredItemName != null) {
                 searchText = hoveredItemName;
                 searchBar.setText(hoveredItemName);
                 searchBar.setFocused(true);
-                searchBar.setCursorPositionEnd();
+                GuiScreenUtils.cursorTextFieldToEnd(searchBar);
                 event.cancel();
             }
             return;
@@ -376,7 +406,7 @@ public class SearchBar {
             }
         }
 
-        if (keyCode != KeybindHelper.KEY_ESCAPE && searchBar.textboxKeyTyped(typedChar, keyCode)) {
+        if (!KeybindHelper.isEscapeKey(keyCode) && GuiScreenUtils.typeTextField(searchBar, typedChar, keyCode)) {
             searchText = searchBar.getText();
             event.cancel();
         }
@@ -386,10 +416,10 @@ public class SearchBar {
     public void onMouseInput(ASMMouseEvent event) {
         if (!isEnabled() || !(event.gui instanceof GuiContainer) || searchBar == null) return;
 
-        int mouseX = KeybindHelper.getScaledEventX(event.gui.width);
-        int mouseY = KeybindHelper.getScaledEventY(event.gui.height);
+        int mouseX = event.mouseX;
+        int mouseY = event.mouseY;
 
-        int wheel = KeybindHelper.getEventDWheel();
+        int wheel = event.dWheel;
         boolean insideRecentPanel = isInsideRecentPanel(mouseX, mouseY);
         List<String> recentMatches = insideRecentPanel ? filteredSortedRecent() : null;
 
@@ -400,22 +430,22 @@ public class SearchBar {
             return;
         }
 
-        if (!KeybindHelper.getEventButtonState()) return;
+        if (!event.buttonState) return;
 
-        if (KeybindHelper.getEventButton() == 0 && isInsideClearButton(mouseX, mouseY)) {
+        if (event.button == 0 && isInsideClearButton(mouseX, mouseY)) {
             searchText = "";
             searchBar.setText("");
             event.cancel();
             return;
         }
 
-        if (KeybindHelper.getEventButton() == 0 && insideRecentPanel) {
+        if (event.button == 0 && insideRecentPanel) {
             int index = recentScrollOffset + hoveredRecentRow(mouseX, mouseY);
             if (index >= 0 && index < recentMatches.size()) {
                 String entry = recentMatches.get(index);
                 searchText = entry;
                 searchBar.setText(entry);
-                searchBar.setCursorPositionEnd();
+                GuiScreenUtils.cursorTextFieldToEnd(searchBar);
             }
             event.cancel();
             return;
@@ -425,8 +455,8 @@ public class SearchBar {
 
         searchBar.setFocused(inside);
         if (inside) {
-            searchBar.mouseClicked(mouseX, mouseY, KeybindHelper.getEventButton());
-        } else if (isItemListActive() && KeybindHelper.getEventButton() == 0 && mouseX >= toggleBtnX && mouseX < toggleBtnX + TOGGLE_BTN_W && mouseY >= toggleBtnY && mouseY < toggleBtnY + BAR_HEIGHT) {
+            searchBar.mouseClicked(mouseX, mouseY, event.button);
+        } else if (isItemListActive() && event.button == 0 && mouseX >= toggleBtnX && mouseX < toggleBtnX + TOGGLE_BTN_W && mouseY >= toggleBtnY && mouseY < toggleBtnY + BAR_HEIGHT) {
             sendToItemList = !sendToItemList;
             event.cancel();
         }
@@ -446,8 +476,10 @@ public class SearchBar {
 
         if (isEnabled() && isSupportedGui(event.gui) && searchBar != null && !StorageManager.isOverlayActive()) {
             GlStateManagerCompat.pushMatrix();
-            GlStateManagerCompat.translate(-event.gui.guiLeft, -event.gui.guiTop, 50);
-            searchBar.updateCursorCounter();
+            if (event.fromForeground) {
+                GlStateManagerCompat.translate(-InventoryCompat.getGuiLeft(event.gui), -InventoryCompat.getGuiTop(event.gui), 50);
+            }
+            GuiScreenUtils.tickTextField(searchBar);
             drawSearchBar(searchBar);
             drawClearButton(GuiScreenUtils.getX(searchBar), GuiScreenUtils.getY(searchBar));
             if (isItemListActive()) drawToggleButton(GuiScreenUtils.getX(searchBar), GuiScreenUtils.getY(searchBar));

@@ -29,7 +29,7 @@ public class PlayerNameButtonListener {
     public void onChat(ASMChatEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.playerButtons.enabled) return;
 
-        String plain = StringUtils.stripControlCodes(event.message.getFormattedText());
+        String plain = StringUtils.stripControlCodes(TextCompat.getFormattedText(event.message));
 
         String ign = ChatUtils.getPlayerMessageSender(plain);
         if (ign == null) ign = ChatUtils.getPartySender(plain);
@@ -40,7 +40,8 @@ public class PlayerNameButtonListener {
         if (ign == null) return;
 
         event.message = ChatUtils.ensureSiblings(event.message);
-        wrapIgn(event.message, ign);
+        int before = TextCompat.getSiblings(event.message).size();
+        boolean wrapped = wrapIgn(event.message, ign);
     }
 
     /**
@@ -53,7 +54,11 @@ public class PlayerNameButtonListener {
         List<IChatComponent> siblings = root.getSiblings();
         for (int i = 0; i < siblings.size(); i++) {
             IChatComponent sib = siblings.get(i);
-            String sibText = sib.getUnformattedTextForChat();
+            if (!TextCompat.getSiblings(sib).isEmpty()) {
+                if (wrapIgn(sib, ign)) return true;
+                continue;
+            }
+            String sibText = TextCompat.getUnformattedTextForChat(sib);
 
             int idx = sibText.toLowerCase(Locale.ROOT).indexOf(ign.toLowerCase(Locale.ROOT));
             if (idx != -1) {
@@ -76,8 +81,8 @@ public class PlayerNameButtonListener {
                 IChatComponent nameComp = TextCompat.createText(name);
                 ChatStyle nameStyle = TextCompat.createDeepCopy(baseStyle);
                 TextCompat.setUnderlined(nameComp, true);
-                TextCompat.setClickSuggestCommand(nameStyle, MARKER_PREFIX + ign);
-                TextCompat.setHoverShowText(nameStyle, "§eClick for player options");
+                nameStyle = TextCompat.setClickSuggestCommand(nameStyle, MARKER_PREFIX + ign);
+                nameStyle = TextCompat.setHoverShowText(nameStyle, "§eClick for player options");
                 TextCompat.setChatStyle(nameComp, nameStyle);
 
                 IChatComponent afterComp = TextCompat.createText(after);

@@ -3,6 +3,7 @@
 
 package io.hamlook.aetheria.core.moulconfig.gui;
 
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import org.lwjgl.opengl.GL11;
 
@@ -29,7 +30,7 @@ public class GlScissorStack {
 
         void set(int scaleFactor) {
             int height = GuiScreenUtils.getDisplayHeight();
-            GL11.glScissor(left * scaleFactor, height - bottom * scaleFactor, (right - left) * scaleFactor, (bottom - top) * scaleFactor);
+            GlStateManagerCompat.scissor(left * scaleFactor, height - bottom * scaleFactor, (right - left) * scaleFactor, (bottom - top) * scaleFactor);
         }
     }
 

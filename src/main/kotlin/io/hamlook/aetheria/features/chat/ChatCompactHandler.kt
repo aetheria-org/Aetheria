@@ -22,6 +22,24 @@ object ChatCompactHandler {
     @JvmField
     var currentMessageHash: Int = -1
 
+    /**
+     * Set when a dedup hit produces a copy that must replace the original
+     * (frozen packet components can't be mutated in place). The mixin
+     * re-adds it and cancels the original. Single-thread only (render thread).
+     */
+    @JvmField
+    var replacement: IChatComponent? = null
+
+    @JvmField
+    var reentering: Boolean = false
+
+    @JvmStatic
+    fun takeReplacement(): IChatComponent? {
+        val r = replacement
+        replacement = null
+        return r
+    }
+
     private val TIMESTAMP_REGEX = Regex("""^(?:\[\d\d:\d\d(:\d\d)?( AM| PM)?]|<\d\d:\d\d(:\d\d)?>)\s""")
 
     // ── Public API (called from Java Mixins via @JvmStatic) ──────────────────
@@ -29,8 +47,16 @@ object ChatCompactHandler {
     @JvmStatic
     fun applyTimestamp(original: IChatComponent): IChatComponent {
         val cfg = ATHRConfig.feature?.chat ?: return original
+        //#if MC < 1.16
         if (!cfg.timestampsEnabled) return original
-        if (TextCompat.getUnformattedText(original).trim().isEmpty()) return original
+        val src = original
+        //#else
+        //$$ val src = TextCompat.parseLegacyLiterals(original)
+        //$$ if (!cfg.timestampsEnabled) return src
+        //#endif
+        val plain = TextCompat.getUnformattedText(src).trim()
+        if (plain.isEmpty()) return src
+        if (TIMESTAMP_REGEX.containsMatchIn(plain)) return src
 
         val pattern = when {
             cfg.timestamp24Hour && cfg.timestampShowSeconds -> "HH:mm:ss"
@@ -43,7 +69,7 @@ object ChatCompactHandler {
         val bracket = if (cfg.timestampStyle == 0) "[$time] " else "<$time> "
 
         val wrapper = ChatComponentIgnored(EnumChatFormatting.GRAY.toString() + bracket + EnumChatFormatting.RESET)
-        TextCompat.appendSibling(wrapper.wrapped, original)
+        TextCompat.appendSibling(wrapper.wrapped, src)
         return wrapper.wrapped
     }
 
@@ -86,10 +112,17 @@ object ChatCompactHandler {
         entry.messageCount++
         entry.lastSeenMessageMillis = now
 
+        val countSuffix = "§7 (${decimalFormat.format(entry.messageCount)})"
+        //#if MC < 1.16
         TextCompat.appendSibling(
             component,
-            TextCompat.createText(EnumChatFormatting.GRAY.toString() + " (${decimalFormat.format(entry.messageCount)})")
+            TextCompat.createText(countSuffix)
         )
+        //#else
+        //$$ val display = TextCompat.deepMutableCopy(component)
+        //$$ TextCompat.appendSibling(display, TextCompat.fromFormatted(countSuffix))
+        //$$ replacement = display
+        //#endif
     }
 
     @JvmStatic
@@ -152,6 +185,7 @@ object ChatCompactHandler {
         }
 
         i = 0
+        //#if MC < 1.16
         while (i < drawnChatLines.size && i < 300) {
             if (tracked.contains(drawnChatLines[i])) {
                 drawnChatLines.removeAt(i)
@@ -161,6 +195,20 @@ object ChatCompactHandler {
                 i++
             }
         }
+        //#else
+        //$$ val drawnRaw: MutableList<Any?> = drawnChatLines as MutableList<Any?>
+        //$$ val liveParents = HashSet(chatLines)
+        //$$ while (i < drawnRaw.size && i < 300) {
+        //$$     val parent = (drawnRaw[i] as? ChatLineHook)?.`athr$getParentLine`()
+        //$$     if (parent != null && (tracked.contains(parent) || !liveParents.contains(parent))) {
+        //$$         drawnRaw.removeAt(i)
+        //$$         removed = true
+        //$$     } else {
+        //$$         if (consecutiveOnly) break
+        //$$         i++
+        //$$     }
+        //$$ }
+        //#endif
 
         return removed
     }

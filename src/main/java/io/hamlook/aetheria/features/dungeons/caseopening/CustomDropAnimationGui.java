@@ -5,13 +5,21 @@ import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.FramebufferCompat;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.netty.util.internal.ThreadLocalRandom;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.texture.TextureMap;
+//#if MC > 1.21
+//$$ import net.minecraft.client.texture.MissingSprite;
+//#endif
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.client.shader.ShaderGroup;
 import net.minecraft.util.ResourceLocation;
@@ -21,7 +29,6 @@ import org.lwjgl.opengl.GL11;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 
 public class CustomDropAnimationGui extends AetheriaBaseScreen {
 
@@ -159,19 +166,18 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
         this.stopPoint = 41 * spacing + randstop * itemBoxWidth;
         this.slowPoint = stopPoint - ((ATHRConfig.feature.dungeons.caseOpening.caseOpeningSlowDistance + randslow) * spacing);
 
-        frameBufferLayer1 = new Framebuffer(screenWidth, screenHeight, true);
-        frameBufferLayer2 = new Framebuffer(screenWidth, screenHeight, true);
-        GL11.glPushMatrix();
-        GL11.glScalef(1f / scaleFactor, 1f / scaleFactor, 1f);
+        frameBufferLayer1 = FramebufferCompat.createStencilFramebuffer(screenWidth, screenHeight);
+        frameBufferLayer2 = FramebufferCompat.createStencilFramebuffer(screenWidth, screenHeight);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.scale(1f / scaleFactor, 1f / scaleFactor, 1f);
         setupStencil(frameBufferLayer1);
         setupStencil(frameBufferLayer2);
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
         if (blurShader != null) blurShader.createBindFramebuffers(GuiScreenUtils.getDisplayWidth(), GuiScreenUtils.getDisplayHeight());
     }
 
     private void setupStencil(Framebuffer fb) {
         fb.setFramebufferColor(0, 0, 0, 0);
-        fb.enableStencil();
         fb.bindFramebuffer(true);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_STENCIL_BUFFER_BIT);
         GL11.glEnable(GL11.GL_STENCIL_TEST);
@@ -200,7 +206,9 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
     @Override
     public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         // Clear the screen to prevent black background with OptiFine
+        //#if MC < 1.21
         drawDefaultBackground();
+        //#endif
 
         float progress = Math.min((System.nanoTime() - guiOpenStartTime) / (float) animationDuration, 1.0f);
         progress = 1 - (1 - progress) * (1 - progress);
@@ -262,13 +270,13 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
             mc.displayGuiScreen(ChestListener.originalGui);
         }
 
-        GL11.glPushMatrix();
-        GL11.glScalef(1f / scaleFactor, 1f / scaleFactor, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.scale(1f / scaleFactor, 1f / scaleFactor, 1f);
         renderLayer(frameBufferLayer1, progress, false);
         if (blurShader != null) blurShader.loadShaderGroup(partialTicks);
         renderLayer(frameBufferLayer2, progress, true);
         renderJudgementLine();
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     private void renderLayer(Framebuffer fb, float progress, boolean inner) {
@@ -289,8 +297,7 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
         if (!inner) {
             GlStateManagerCompat.enableBlend();
             GlStateManagerCompat.blendFunc(GL11.GL_ZERO, GL11.GL_ONE_MINUS_SRC_ALPHA);
-            mc.getTextureManager().bindTexture(FADE_SIDE);
-            Gui.drawModalRectWithCustomSizedTexture(0, 0, 0, 0, 1920, 1080, screenWidth, screenHeight);
+            TextureCompat.drawBoundTextured(FADE_SIDE, 0, 0, 1920, 1080, 0, 0, 1920f / screenWidth, 1080f / screenHeight);
             GlStateManagerCompat.disableBlend();
             GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         }
@@ -322,7 +329,7 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
             DrawContextUtils.fill((int) x, (int) y1, (int) (x + itemBoxWidth * size), (int) y2, boxColor);
             GlStateManagerCompat.enableBlend();
             GlStateManagerCompat.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-            drawGradientRect((int) x, (int) (y2 - itemBoxHeight * size), (int) (x + itemBoxWidth * size), (int) y2, (boxColor & 0x00FFFFFF), (boxColor & 0x00FFFFFF) | 0xCC000000);
+            RenderUtils.drawGradientRect(0, (int) x, (int) (y2 - itemBoxHeight * size), (int) (x + itemBoxWidth * size), (int) y2, (boxColor & 0x00FFFFFF), (boxColor & 0x00FFFFFF) | 0xCC000000);
             GlStateManagerCompat.disableBlend();
 
             renderItemImage(i, x, y, size);
@@ -331,10 +338,10 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
                 float textScale = ATHRConfig.feature.dungeons.caseOpening.caseOpeningTextScale;
                 float textX = x + itemBoxWidth * size / 2;
                 float textY = y + itemBoxHeight * size * 3 / 4;
-                GL11.glPushMatrix();
-                GL11.glScalef(textScale, textScale, 1f);
+                GlStateManagerCompat.pushMatrix();
+                GlStateManagerCompat.scale(textScale, textScale, 1f);
                 floatFont.drawCenteredString(normalizeString(carouselItems.get(i).item.name()), textX / textScale, textY / textScale, boxColor, true);
-                GL11.glPopMatrix();
+                GlStateManagerCompat.popMatrix();
             }
         }
     }
@@ -352,14 +359,19 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
         float imageX = x + (itemBoxWidth * size) / 2 - imageSize / 2;
         float imageY = y + (itemBoxHeight * size) / 2 - imageSize / 2;
 
+        ResourceLocation rl;
         try {
-            mc.getTextureManager().bindTexture(tex.getRl());
+            rl = tex.getRl();
         } catch (Exception e) {
-            mc.getTextureManager().bindTexture(TextureMap.LOCATION_MISSING_TEXTURE);
+            //#if MC < 1.21
+            rl = TextureMap.LOCATION_MISSING_TEXTURE;
+            //#else
+            //$$ rl = MissingSprite.getMissingSpriteId();
+            //#endif
         }
 
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
-        drawScaledCustomSizeModalRect((int) imageX, (int) imageY, 0, v, 16, 16, (int) imageSize, (int) imageSize, 16f, frameHeight * tex.getFrames());
+        DrawContextUtils.drawScaledCustomSizeModalRect(rl, (int) imageX, (int) imageY, 0, v, 16, 16, (int) imageSize, (int) imageSize, 16f, frameHeight * tex.getFrames());
     }
 
     private void renderJudgementLine() {
@@ -402,15 +414,14 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
     private void drawCircleMask(float cx, float cy, float radius, int color) {
         float a = (color >> 24 & 255) / 255f, r = (color >> 16 & 255) / 255f, g = (color >> 8 & 255) / 255f, b = (color & 255) / 255f;
         GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glColor4f(r, g, b, a);
         GL11.glDisable(GL11.GL_CULL_FACE);
-        GL11.glBegin(GL11.GL_TRIANGLE_FAN);
-        GL11.glVertex2f(cx, cy);
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.TRIANGLE_FAN, TessellatorCompat.POSITION_COLOR);
+        vb.pos(cx, cy, 0).color(r, g, b, a).endVertex();
         for (int i = 0; i <= 64; i++) {
-            double angle = 2.0 * Math.PI * i / 64;
-            GL11.glVertex2f((float) (cx + Math.cos(angle) * radius), (float) (cy + Math.sin(angle) * radius));
+            double angle = i * Math.PI * 2 / 64;
+            vb.pos((float) (cx + Math.cos(angle) * radius), (float) (cy + Math.sin(angle) * radius), 0).color(r, g, b, a).endVertex();
         }
-        GL11.glEnd();
+        vb.draw();
         GL11.glEnable(GL11.GL_TEXTURE_2D);
     }
 
@@ -426,7 +437,11 @@ public class CustomDropAnimationGui extends AetheriaBaseScreen {
 
     @Override
     public void guiClosed() {
+        //#if MC < 1.21
         if (mc.entityRenderer != null) mc.entityRenderer.stopUseShader();
+        //#else
+        //$$ if (mc.gameRenderer != null) mc.gameRenderer.disablePostProcessor();
+        //#endif
     }
 
     @Override

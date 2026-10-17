@@ -130,7 +130,7 @@ public final class TextRenderUtils {
             int wrappedWidth = 0;
             List<String> wrapped = new ArrayList<>();
             for (int i = 0; i < textLines.size(); i++) {
-                List<String> wl = font.listFormattedStringToWidth(textLines.get(i), tooltipTextWidth);
+                List<String> wl = DrawContextUtils.wrapFormattedText(font, textLines.get(i), tooltipTextWidth);
                 if (i == 0) titleLinesCount = wl.size();
                 for (String l : wl) {
                     wrappedWidth = Math.max(wrappedWidth, DrawContextUtils.getStringWidth(font, l));
@@ -211,7 +211,7 @@ public final class TextRenderUtils {
             String ch = String.valueOf(text.charAt(i));
             float progress = len == 1 ? 0f : (float) i / (len - 1);
             int color = interpolateColor(startColor, endColor, progress);
-            fr.drawString(ch, currentX, 0, color, false);
+            DrawContextUtils.drawText(fr, ch, currentX, 0, color, false);
             currentX += DrawContextUtils.getStringWidth(fr, ch);
         }
 

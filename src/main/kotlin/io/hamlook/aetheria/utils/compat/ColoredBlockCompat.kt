@@ -250,6 +250,20 @@ enum class ColoredBlockCompat(
             //#endif
         }
 
+        //#if MC < 1.16
+        @JvmStatic fun stainedClayColorOf(state: IBlockState): ColoredBlockCompat? {
+        //#else
+        //$$ @JvmStatic fun stainedClayColorOf(state: BlockState): ColoredBlockCompat? {
+        //#endif
+            //#if MC < 1.16
+            if (state.block != Blocks.stained_hardened_clay) return null
+            val color = state.getValue(BlockColored.COLOR)
+            return values().firstOrNull { it.getDyeColor() == color }
+            //#else
+            //$$ return values().firstOrNull { it.getStainedClayBlock() == state.block }
+            //#endif
+        }
+
         @JvmStatic fun fromMeta(meta: Int): ColoredBlockCompat =
             values().firstOrNull { it.metaColor == meta } ?: WHITE
     }

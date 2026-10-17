@@ -37,7 +37,7 @@ public final class GuiIngameMenuHook {
     //$$             lowestY = Math.max(lowestY, GuiScreenUtils.getY(w) + GuiScreenUtils.getH(w));
     //$$         }
     //$$     }
-    //$$     GuiScreenUtils.addButton(screen, ButtonWidget.builder(Text.literal("Aetheria Mod"), b -> MinecraftCompat.getMinecraft().displayGuiScreen(new OptionsMenu())).dimensions(width / 2 - 100, lowestY + 4, 200, 20).build());
+    //$$ GuiScreenUtils.addButton(screen, ButtonWidget.builder(Text.literal("Aetheria Mod"), b -> MinecraftCompat.displayGuiScreen(new OptionsMenu())).dimensions(width / 2 - 100, lowestY + 4, 200, 20).build());
     //$$ }
     //#endif
 

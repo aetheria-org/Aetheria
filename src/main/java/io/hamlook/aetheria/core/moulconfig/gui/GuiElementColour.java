@@ -10,7 +10,6 @@ import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
@@ -131,21 +130,18 @@ public class GuiElementColour extends GuiElement {
 
         if (valueSlider) {
             valueOffset = 15;
-            MinecraftCompat.getMinecraft().getTextureManager().loadTexture(colourPickerBarValueLocation, new DynamicTexture(biValue));
-            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(colourPickerBarValueLocation);
+            TextureCompat.uploadTexture(colourPickerBarValueLocation, biValue);
             GlStateManagerCompat.color(1, 1, 1, 1);
-            RenderUtils.drawTexturedRect(x + 5 + 64 + 5, y + 5, 10, 64, GL11.GL_NEAREST);
+            TextureCompat.drawBoundTextured(colourPickerBarValueLocation, x + 5 + 64 + 5, y + 5, 10, 64, 0, 0, 1, 1);
         }
 
         if (opacitySlider) {
             opacityOffset = 15;
-            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(colour_selector_bar_alpha);
             GlStateManagerCompat.color(1, 1, 1, 1);
-            RenderUtils.drawTexturedRect(x + 5 + 64 + 5 + valueOffset, y + 5, 10, 64, GL11.GL_NEAREST);
-            MinecraftCompat.getMinecraft().getTextureManager().loadTexture(colourPickerBarOpacityLocation, new DynamicTexture(biOpacity));
-            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(colourPickerBarOpacityLocation);
+            TextureCompat.drawBoundTextured(colour_selector_bar_alpha, x + 5 + 64 + 5 + valueOffset, y + 5, 10, 64, 0, 0, 1, 1);
+            TextureCompat.uploadTexture(colourPickerBarOpacityLocation, biOpacity);
             GlStateManagerCompat.color(1, 1, 1, 1);
-            RenderUtils.drawTexturedRect(x + 5 + 64 + 5 + valueOffset, y + 5, 10, 64, GL11.GL_NEAREST);
+            TextureCompat.drawBoundTextured(colourPickerBarOpacityLocation, x + 5 + 64 + 5 + valueOffset, y + 5, 10, 64, 0, 0, 1, 1);
         }
 
         int chromaSpeed = ChromaColour.getSpeed(colour);
@@ -159,30 +155,26 @@ public class GuiElementColour extends GuiElement {
             DrawContextUtils.fill(x+5+64+valueOffset+opacityOffset+5+1, y+5+27+1, x+5+64+valueOffset+opacityOffset+5+9, y+5+36, Color.HSBtoRGB((hsvChroma[0] + (System.currentTimeMillis() - ChromaColour.startTime) / 1000f) % 1, 0.8f, 0.8f));
         }
 
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(colour_selector_bar);
         GlStateManagerCompat.color(1, 1, 1, 1);
-        if (valueSlider)   RenderUtils.drawTexturedRect(x+5+64+5, y+5, 10, 64, GL11.GL_NEAREST);
-        if (opacitySlider) RenderUtils.drawTexturedRect(x+5+64+5+valueOffset, y+5, 10, 64, GL11.GL_NEAREST);
+        if (valueSlider)   TextureCompat.drawBoundTextured(colour_selector_bar, x+5+64+5, y+5, 10, 64, 0, 0, 1, 1);
+        if (opacitySlider) TextureCompat.drawBoundTextured(colour_selector_bar, x+5+64+5+valueOffset, y+5, 10, 64, 0, 0, 1, 1);
 
         if (chromaSpeed > 0) {
-            RenderUtils.drawTexturedRect(x+5+64+valueOffset+opacityOffset+5, y+5, 10, 64, GL11.GL_NEAREST);
+            TextureCompat.drawBoundTextured(colour_selector_bar, x+5+64+valueOffset+opacityOffset+5, y+5, 10, 64, 0, 0, 1, 1);
         } else {
-            MinecraftCompat.getMinecraft().getTextureManager().bindTexture(colour_selector_chroma);
-            RenderUtils.drawTexturedRect(x+5+64+valueOffset+opacityOffset+5, y+5+27, 10, 10, GL11.GL_NEAREST);
+            TextureCompat.drawBoundTextured(colour_selector_chroma, x+5+64+valueOffset+opacityOffset+5, y+5+27, 10, 10, 0, 0, 1, 1);
         }
 
         if (valueSlider)   DrawContextUtils.fill(x+5+64+5, y+5+64-(int)(64*hsv[2]), x+5+64+valueOffset, y+5+64-(int)(64*hsv[2])+1, 0xFF000000);
         if (opacitySlider) DrawContextUtils.fill(x+5+64+5+valueOffset, y+5+64-c.getAlpha()/4, x+5+64+valueOffset+opacityOffset, y+5+64-c.getAlpha()/4-1, 0xFF000000);
         if (chromaSpeed > 0) DrawContextUtils.fill(x+5+64+valueOffset+opacityOffset+5, y+5+64-(int)(chromaSpeed/255f*64), x+5+64+valueOffset+opacityOffset+15, y+5+64-(int)(chromaSpeed/255f*64)+1, 0xFF000000);
 
-        MinecraftCompat.getMinecraft().getTextureManager().loadTexture(colourPickerLocation, new DynamicTexture(bi));
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(colourPickerLocation);
+        TextureCompat.uploadTexture(colourPickerLocation, bi);
         GlStateManagerCompat.color(1, 1, 1, 1);
-        RenderUtils.drawTexturedRect(x+1, y+1, 72, 72, GL11.GL_LINEAR);
+        TextureCompat.drawBoundTextured(colourPickerLocation, x+1, y+1, 72, 72, 0, 0, 1, 1);
 
-        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(colour_selector_dot);
         GlStateManagerCompat.color(1, 1, 1, 1);
-        RenderUtils.drawTexturedRect(x+5+32+selX-4, y+5+32+selY-4, 8, 8, GL11.GL_NEAREST);
+        TextureCompat.drawBoundTextured(colour_selector_dot, x+5+32+selX-4, y+5+32+selY-4, 8, 8, 0, 0, 1, 1);
 
         TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + Math.round(hsv[2]*100), MinecraftCompat.getFontRenderer(), x+5+64+5+5-(Math.round(hsv[2]*100)==100?1:0), y+5+64+5+5, true, 13, -1);
         if (opacitySlider) TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + Math.round(c.getAlpha()/255f*100), MinecraftCompat.getFontRenderer(), x+5+64+5+valueOffset+5, y+5+64+5+5, true, 13, -1);
@@ -199,19 +191,24 @@ public class GuiElementColour extends GuiElement {
 
     @Override
     public boolean mouseInput(int mouseX, int mouseY) {
+        return mouseInput(mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int mouseX, int mouseY, int button, boolean pressed) {
         float[] mf = KeybindHelper.getMouseCoordsFloat((double) GuiScreenUtils.getScaledWindowWidth(), (double) GuiScreenUtils.getScaledWindowHeight());
         float mxF = mf[0], myF = mf[1];
 
-        if ((MouseCompat.getEventButton() == 0 || MouseCompat.getEventButton() == 1) && MouseCompat.getEventButtonState()) {
+        if ((button == 0 || button == 1) && pressed) {
             if (mouseX > x+5+8 && mouseX < x+5+56 && mouseY > y+5+64+5 && mouseY < y+5+74) {
-                hexField.mouseClicked(mouseX, mouseY, MouseCompat.getEventButton());
+                hexField.mouseClicked(mouseX, mouseY, button);
                 clickedComponent = -1;
                 return true;
             }
         }
-        if (!MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0) clickedComponent = -1;
+        if (!pressed && button == 0) clickedComponent = -1;
 
-        if (MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == 0) {
+        if (pressed && button == 0) {
             if (mouseX >= x && mouseX <= x+119 && mouseY >= y && mouseY <= y+89) {
                 hexField.unfocus();
                 int xW = mouseX - x - 5, yRel = mouseY - y - 5;
@@ -269,10 +266,15 @@ public class GuiElementColour extends GuiElement {
 
     @Override
     public boolean keyboardInput() {
-        if (KeyboardCompat.getEventKeyState() && hexField.getFocus()) {
-            if (KeyboardCompat.getEventKey() == Keyboard.KEY_ESCAPE) { hexField.unfocus(); return true; }
+        return keyboardInput(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
+    }
+
+    @Override
+    public boolean keyboardInput(char typedChar, int keyCode) {
+        if (hexField.getFocus()) {
+            if (keyCode == Keyboard.KEY_ESCAPE) { hexField.unfocus(); return true; }
             String old = hexField.getText();
-            hexField.keyTyped(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
+            hexField.keyTyped(typedChar, keyCode);
             if (hexField.getText().length() > 6) {
                 hexField.setText(old);
             } else {

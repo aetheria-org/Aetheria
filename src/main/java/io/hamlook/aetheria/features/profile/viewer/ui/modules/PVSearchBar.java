@@ -2,6 +2,8 @@ package io.hamlook.aetheria.features.profile.viewer.ui.modules;
 
 import io.hamlook.aetheria.features.profile.viewer.ProfileViewerAPI;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
+import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
@@ -33,9 +35,9 @@ public class PVSearchBar {
 
     public void draw(int mouseX, int mouseY, float uiScale) {
         NineSliceUtils.draw(ProfileViewerGUI.CONTAINER_BG, x, y, width, height, 6, 18);
-        Gui.drawRect(x + 2, y + 2, x + width - 2, y + height - 2, 0x60000000);
+        DrawContextUtils.fill(x + 2, y + 2, x + width - 2, y + height - 2, 0x60000000);
 
-        boolean showCursor = isFocused && (Minecraft.getSystemTime() % 1000 < 500);
+        boolean showCursor = isFocused && (System.currentTimeMillis() % 1000 < 500);
         float textScale = Math.max(0.25f, uiScale * 1.8f);
         float textY = y + (height / 2f);
 
@@ -67,7 +69,7 @@ public class PVSearchBar {
                 boolean isHovered = mouseX >= x && mouseX <= x + width && mouseY >= itemY && mouseY <= itemY + itemH;
 
                 if (isHovered) {
-                    Gui.drawRect(x + 4, (int) itemY, x + width - 4, (int) (itemY + itemH), 0x30FFFFFF);
+                    DrawContextUtils.fill(x + 4, (int) itemY, x + width - 4, (int) (itemY + itemH), 0x30FFFFFF);
                 }
 
                 TextRenderUtils.drawStringScaleAware("§f" + sug, startX, itemY + (itemH / 2f) - ((MinecraftCompat.getFontRenderer().FONT_HEIGHT * textScale) / 2f), textScale, false);
@@ -116,12 +118,12 @@ public class PVSearchBar {
     public boolean keyTyped(char typedChar, int keyCode) {
         if (!isFocused) return false;
 
-        if (keyCode == 28 || keyCode == 156) {
+        if (KeybindHelper.isEnterKey(keyCode)) {
             isFocused = false;
             return true;
         }
 
-        if (keyCode == 14) {
+        if (KeybindHelper.isBackspaceKey(keyCode)) {
             if (!text.isEmpty()) {
                 text = text.substring(0, text.length() - 1);
                 updateSuggestions();

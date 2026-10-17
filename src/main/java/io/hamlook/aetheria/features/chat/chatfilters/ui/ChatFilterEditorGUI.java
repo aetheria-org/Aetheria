@@ -6,6 +6,7 @@ import io.hamlook.aetheria.features.chat.chatfilters.ChatFilterManager;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterAction;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterCase;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterMode;
+import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
@@ -130,14 +131,14 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
 
         String prevAdd = addWordField != null ? addWordField.getText() : "";
         int addFieldW = getScaledX(LEFT_W - BTN_W - PAD);
-        addWordField = new GuiTextField(0, MinecraftCompat.getFontRenderer(), lx(), boxY + getScaledY(PAD + HEADER_H + ROW_GAP), addFieldW, fieldH);
-        addWordField.setMaxStringLength(50);
+        addWordField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), lx(), boxY + getScaledY(PAD + HEADER_H + ROW_GAP), addFieldW, fieldH);
+        GuiScreenUtils.setTextFieldMaxLength(addWordField, 50);
         addWordField.setText(prevAdd);
 
         String prevCustom = customPreviewField != null ? customPreviewField.getText() : "";
         int customFieldW = getScaledX(rw() - BTN_W - PAD - 4);
-        customPreviewField = new GuiTextField(1, MinecraftCompat.getFontRenderer(), rx(), secCustomY() + getScaledY(LABEL_H + ROW_GAP), customFieldW, fieldH);
-        customPreviewField.setMaxStringLength(100);
+        customPreviewField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), rx(), secCustomY() + getScaledY(LABEL_H + ROW_GAP), customFieldW, fieldH);
+        GuiScreenUtils.setTextFieldMaxLength(customPreviewField, 100);
         customPreviewField.setText(prevCustom);
     }
 
@@ -147,28 +148,28 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         int fieldH = getScaledY(FIELD_H);
         int addBtnX = lx() + getScaledX(LEFT_W - BTN_W);
         int addBtnY = boxY + getScaledY(PAD + HEADER_H + ROW_GAP);
-        GuiScreenUtils.addButton(this, CFButton.create(0, addBtnX, addBtnY, getScaledX(BTN_W), fieldH, "Add", 0.2f, 0.4f, 0.8f, () -> { addWord(); previewDirty = true; initGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(0, addBtnX, addBtnY, getScaledX(BTN_W), fieldH, "Add", 0.2f, 0.4f, 0.8f, () -> { addWord(); previewDirty = true; refreshGui(); }));
 
         int testBtnX = rx() + getScaledX(rw() - BTN_W + 4);
         int testBtnY = secCustomY() + getScaledY(LABEL_H + ROW_GAP);
-        GuiScreenUtils.addButton(this, CFButton.create(8, testBtnX, testBtnY, getScaledX(BTN_W), fieldH, "Test", 0.2f, 0.4f, 0.8f, () -> { testCustomSentence(); previewDirty = true; initGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(8, testBtnX, testBtnY, getScaledX(BTN_W), fieldH, "Test", 0.2f, 0.4f, 0.8f, () -> { testCustomSentence(); previewDirty = true; refreshGui(); }));
 
         int th = getScaledY(TOGGLE_H);
         int tw = getScaledX(TOGGLE_W);
 
         int matchBtnY = secMatchY() + getScaledY(LABEL_H + ROW_GAP);
-        GuiScreenUtils.addButton(this, CFButton.create(1, rx(), matchBtnY, tw, th, "STARTS", true, mode == FilterMode.STARTS, () -> { mode = FilterMode.STARTS; previewDirty = true; initGui(); }));
-        GuiScreenUtils.addButton(this, CFButton.create(2, rx() + getScaledX(82), matchBtnY, tw, th, "ENDS", true, mode == FilterMode.ENDS, () -> { mode = FilterMode.ENDS; previewDirty = true; initGui(); }));
-        GuiScreenUtils.addButton(this, CFButton.create(3, rx() + getScaledX(164), matchBtnY, getScaledX(TOGGLE_W + 10), th, "CONTAINS", true, mode == FilterMode.CONTAINS, () -> { mode = FilterMode.CONTAINS; previewDirty = true; initGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(1, rx(), matchBtnY, tw, th, "STARTS", true, mode == FilterMode.STARTS, () -> { mode = FilterMode.STARTS; previewDirty = true; refreshGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(2, rx() + getScaledX(82), matchBtnY, tw, th, "ENDS", true, mode == FilterMode.ENDS, () -> { mode = FilterMode.ENDS; previewDirty = true; refreshGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(3, rx() + getScaledX(164), matchBtnY, getScaledX(TOGGLE_W + 10), th, "CONTAINS", true, mode == FilterMode.CONTAINS, () -> { mode = FilterMode.CONTAINS; previewDirty = true; refreshGui(); }));
 
         int caseBtnY = secCaseY() + getScaledY(LABEL_H + ROW_GAP);
-        GuiScreenUtils.addButton(this, CFButton.create(4, rx(), caseBtnY, getScaledX(TOGGLE_W + 10), th, "SENSITIVE", true, filterCase == FilterCase.SENSITIVE, () -> { filterCase = FilterCase.SENSITIVE; previewDirty = true; initGui(); }));
-        GuiScreenUtils.addButton(this, CFButton.create(5, rx() + getScaledX(92), caseBtnY, getScaledX(TOGGLE_W + 18), th, "INSENSITIVE", true, filterCase == FilterCase.INSENSITIVE, () -> { filterCase = FilterCase.INSENSITIVE; previewDirty = true; initGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(4, rx(), caseBtnY, getScaledX(TOGGLE_W + 10), th, "SENSITIVE", true, filterCase == FilterCase.SENSITIVE, () -> { filterCase = FilterCase.SENSITIVE; previewDirty = true; refreshGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(5, rx() + getScaledX(92), caseBtnY, getScaledX(TOGGLE_W + 18), th, "INSENSITIVE", true, filterCase == FilterCase.INSENSITIVE, () -> { filterCase = FilterCase.INSENSITIVE; previewDirty = true; refreshGui(); }));
 
         int actionBtnY = secActionY() + getScaledY(LABEL_H + ROW_GAP);
-        GuiScreenUtils.addButton(this, CFButton.create(6, rx(), actionBtnY, tw, th, "CANCEL", true, action == FilterAction.CANCEL, () -> { action = FilterAction.CANCEL; previewDirty = true; initGui(); }));
-        GuiScreenUtils.addButton(this, CFButton.create(7, rx() + getScaledX(82), actionBtnY, tw, th, "REPLACE", true, action == FilterAction.REPLACE, () -> { action = FilterAction.REPLACE; previewDirty = true; initGui(); }));
-        GuiScreenUtils.addButton(this, CFButton.create(9, rx() + getScaledX(164), actionBtnY, tw, th, "CENSOR", true, action == FilterAction.CENSOR, () -> { action = FilterAction.CENSOR; previewDirty = true; initGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(6, rx(), actionBtnY, tw, th, "CANCEL", true, action == FilterAction.CANCEL, () -> { action = FilterAction.CANCEL; previewDirty = true; refreshGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(7, rx() + getScaledX(82), actionBtnY, tw, th, "REPLACE", true, action == FilterAction.REPLACE, () -> { action = FilterAction.REPLACE; previewDirty = true; refreshGui(); }));
+        GuiScreenUtils.addButton(this, CFButton.create(9, rx() + getScaledX(164), actionBtnY, tw, th, "CENSOR", true, action == FilterAction.CENSOR, () -> { action = FilterAction.CENSOR; previewDirty = true; refreshGui(); }));
 
         int saveX = boxX + boxW - getScaledX(PAD + BTN_W * 2 + PAD);
         GuiScreenUtils.addButton(this, CFButton.create(100, saveX, bottomBtnY(), getScaledX(BTN_W), getScaledY(BTN_H), "Save", 0.2f, 0.7f, 0.2f, () -> { saveFilter(); mc.displayGuiScreen(parent); }));
@@ -297,15 +298,17 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         ChatFilterManager.saveToFile();
     }
 
+    //#if MC < 1.21
     @Override
     public void updateScreen() {
         addWordField.updateCursorCounter();
         customPreviewField.updateCursorCounter();
     }
+    //#endif
 
     @Override
     protected void onKeyTyped(char typedChar, int keyCode) {
-        if (keyCode == 1) {
+        if (KeybindHelper.isEscapeKey(keyCode)) {
             if (addWordField.isFocused()) {
                 addWordField.setFocused(false);
                 return;
@@ -316,11 +319,11 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
             }
         }
         if (addWordField.isFocused()) {
-            addWordField.textboxKeyTyped(typedChar, keyCode);
-            if (keyCode == 28) addWord();
+            GuiScreenUtils.typeTextField(addWordField, typedChar, keyCode);
+            if (KeybindHelper.isEnterKey(keyCode)) addWord();
         } else if (customPreviewField.isFocused()) {
-            customPreviewField.textboxKeyTyped(typedChar, keyCode);
-            if (keyCode == 28) testCustomSentence();
+            GuiScreenUtils.typeTextField(customPreviewField, typedChar, keyCode);
+            if (KeybindHelper.isEnterKey(keyCode)) testCustomSentence();
         }
     }
 
@@ -349,7 +352,11 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
 
     @Override
     protected void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
+        //#if MC < 1.21
         drawDefaultBackground();
+        //#else
+        //$$ // modern background handled via Screen.renderBackground
+        //#endif
 
         GlStateManagerCompat.color(0.18f, 0.18f, 0.18f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), boxX, boxY, boxW, boxH, 6, 18);
@@ -399,7 +406,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         TextRenderUtils.drawStringScaleAware("§7Filter Word:", lx(), fieldY - getScaledY(LABEL_H), textScale, false);
         drawTextField(addWordField, "e.g. badword, spam...");
 
-        int tipY = GuiScreenUtils.getY(addWordField) + addWordField.height + getScaledY(ROW_GAP / 2);
+        int tipY = GuiScreenUtils.getY(addWordField) + GuiScreenUtils.getH(addWordField) + getScaledY(ROW_GAP / 2);
         TextRenderUtils.drawStringScaleAware("§8Use & for colors (&c), \\& for literal &. Press ENTER to add.", lx(), tipY, textScale * 0.85f, false);
     }
 
@@ -417,7 +424,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         drawTextField(customPreviewField, "Type a sentence to test...");
 
         if (!customPreviewResult.isEmpty()) {
-            int resultY = GuiScreenUtils.getY(customPreviewField) + customPreviewField.height + getScaledY(4);
+            int resultY = GuiScreenUtils.getY(customPreviewField) + GuiScreenUtils.getH(customPreviewField) + getScaledY(4);
             GlStateManagerCompat.color(0.75f, 0.75f, 0.75f, 1f);
             TextRenderUtils.drawStringScaleAware("Result: " + customPreviewResult, sx, resultY, textScale, false);
             GlStateManagerCompat.color(1f, 1f, 1f, 1f);
@@ -441,7 +448,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         }
 
         if (field.isFocused() && System.currentTimeMillis() % 1000 > 500) {
-            int cursor = Math.min(field.getCursorPosition(), text.length());
+            int cursor = Math.min(GuiScreenUtils.getTextFieldCursor(field), text.length());
             String before = MinecraftCompat.getFontRenderer().trimStringToWidth(text.substring(0, cursor), maxW);
             int cx = x + 5 + DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), before);
             DrawContextUtils.fill(cx, textY - 1, cx + 1, textY + MinecraftCompat.getFontRenderer().FONT_HEIGHT + 1, 0xFFFFFFFF);

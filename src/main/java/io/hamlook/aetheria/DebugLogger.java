@@ -2,6 +2,7 @@ package io.hamlook.aetheria;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,7 +16,7 @@ public final class DebugLogger {
     public static void log(String message) {
         LOG.info("[ATHR DEBUG] {}", message);
         if (ATHRConfig.feature != null && ATHRConfig.feature.debug.enableDebug) {
-            ChatUtils.sendMessage(PREFIX + message);
+            ChatUtils.sendMessage(TextCompat.fromFormatted(PREFIX + message));
         }
     }
 }

@@ -6,6 +6,9 @@ import io.hamlook.aetheria.features.profile.data.skills.SkillData;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
@@ -123,7 +126,12 @@ public class SkillInfoTab extends Tab {
             case "farming": return new ItemStack(Items.golden_hoe);
             case "mining": return new ItemStack(Items.diamond_pickaxe);
             case "combat": return new ItemStack(Items.iron_sword);
-            case "foraging": return new ItemStack(Item.getItemFromBlock(Blocks.sapling), 1, 3);
+            case "foraging":
+                //#if MC < 1.16
+                return new ItemStack(Item.getItemFromBlock(Blocks.sapling), 1, 3);
+                //#else
+                //$$ return new ItemStack(Item.fromBlock(Blocks.JUNGLE_SAPLING));
+                //#endif
             case "fishing": return new ItemStack(Items.fishing_rod);
             case "enchanting": return new ItemStack(Item.getItemFromBlock(Blocks.enchanting_table));
             case "alchemy": return new ItemStack(Items.brewing_stand);
@@ -131,7 +139,7 @@ public class SkillInfoTab extends Tab {
             case "social": return new ItemStack(Items.emerald);
             case "taming": return new ItemStack(Items.bone);
             case "carpentry": return new ItemStack(Item.getItemFromBlock(Blocks.crafting_table));
-            case "catacombs": return new ItemStack(Items.skull, 1, 1);
+            case "catacombs": return ItemCompatKt.createPlayerHeadStack();
             default: return new ItemStack(Items.paper);
         }
     }
@@ -151,17 +159,17 @@ public class SkillInfoTab extends Tab {
         GL11.glLineWidth(thickness);
         GlStateManagerCompat.color(red, green, blue, alpha);
 
-        GL11.glBegin(GL11.GL_LINE_STRIP);
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINE_STRIP, TessellatorCompat.POSITION_COLOR);
 
         int segments = 100;
         int maxSegments = (int)(segments * progress);
 
         for (int i = 0; i <= maxSegments; i++) {
             double angle = (Math.PI * 2 * i / segments) - (Math.PI / 2);
-            GL11.glVertex2d(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
+            vb.pos(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, 0).color(red, green, blue, alpha).endVertex();
         }
 
-        GL11.glEnd();
+        vb.draw();
 
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
         GlStateManagerCompat.enableTexture2D();

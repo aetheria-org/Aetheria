@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.dungeons.utils;
 
+import io.hamlook.aetheria.events.BloodClearedEvent;
 import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
 
 import java.util.regex.Matcher;
@@ -8,6 +9,7 @@ import java.util.regex.Pattern;
 public class PhaseDetector {
     
     private static final Pattern BLOOD_DOOR = Pattern.compile("The BLOOD DOOR has been opened!");
+    private static final Pattern BLOOD_CLEARED = Pattern.compile("You have proven yourself\\. You may pass\\.");
     private static final Pattern RUN_FAILED = Pattern.compile("Warning! This dungeon will close in 10s");
     private static final Pattern BOSS_SLAIN = Pattern.compile("Defeated (.+) in \\d");
     private static final Pattern SCORE_LINE = Pattern.compile("Team Score: (\\d+) \\((.{1,2})\\) *(\\(NEW RECORD!\\))?");
@@ -53,6 +55,12 @@ public class PhaseDetector {
         if (timers.getBloodTime() == 0 && BLOOD_DOOR.matcher(clean).find()) {
             timers.setBloodTime(timers.elapsed());
             pbTracker.checkPhasePb(timers.getCurrentFloor().name() + "_blood", timers.getBloodTime(), "Blood Rush");
+            return true;
+        }
+
+        if (!timers.isBloodCleared() && BLOOD_CLEARED.matcher(clean).find()) {
+            timers.setBloodCleared(true);
+            new BloodClearedEvent().post();
             return true;
         }
         

@@ -24,11 +24,17 @@ public class SkullTextureCache {
         GameProfile profile = new GameProfile(UUID.randomUUID(), "");
         profile.getProperties().put("textures", new Property("textures", textureValue));
 
+        //#if MC < 1.16
         MinecraftCompat.getMinecraft().getSkinManager().loadProfileTextures(profile, (type, location, texture) -> {
             if (type == MinecraftProfileTexture.Type.SKIN) {
                 cache.put(textureValue, location);
             }
         }, false);
+        //#else
+        //$$ MinecraftCompat.getMinecraft().getSkinProvider().fetchSkinTextures(profile).thenAccept(textures -> {
+        //$$     if (textures != null && textures.texture() != null) cache.put(textureValue, textures.texture());
+        //$$ });
+        //#endif
     }
 
     public static ResourceLocation get(String textureValue) {
