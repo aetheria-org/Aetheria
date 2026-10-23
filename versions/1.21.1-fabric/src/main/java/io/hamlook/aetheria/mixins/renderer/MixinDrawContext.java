@@ -55,19 +55,6 @@ public class MixinDrawContext {
         }
     }
 
-    @Inject(method = "drawTextWithShadow(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;III)I",
-            at = @At("HEAD"), cancellable = true)
-    private void athr$drawEmojiShadow(TextRenderer textRenderer, String text, int x, int y, int color,
-                                       CallbackInfoReturnable<Integer> cir) {
-        DrawContextUtils.setContext((DrawContext) (Object) this);
-        try {
-            int endX = FontRendererEmojiHook.processEmojisModern(textRenderer, text, x, y, color, true);
-            if (endX != -1) cir.setReturnValue(endX);
-        } finally {
-            DrawContextUtils.clearContext();
-        }
-    }
-
     @Inject(method = "drawText(Lnet/minecraft/client/font/TextRenderer;Ljava/lang/String;IIIZ)I",
             at = @At("HEAD"), cancellable = true)
     private void athr$drawEmojiPlain(TextRenderer textRenderer, String text, int x, int y, int color, boolean shadow,

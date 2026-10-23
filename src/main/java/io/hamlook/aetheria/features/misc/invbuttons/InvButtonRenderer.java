@@ -151,9 +151,9 @@ public class InvButtonRenderer {
             if (!cmd.startsWith("/")) cmd = "/" + cmd;
             GlStateManagerCompat.pushMatrix();
             if (event.fromForeground) {
-                GlStateManagerCompat.translate(-gl, -gt, 400);
+                GlStateManagerCompat.translate(-gl, -gt, 0);
             }
-            TextRenderUtils.drawHoveringText(Collections.singletonList("§7" + cmd), mx, my, MinecraftCompat.getFontRenderer());
+            TextRenderUtils.drawHoveringText(Collections.singletonList("§7" + cmd), mx, my, 400, MinecraftCompat.getFontRenderer());
             GlStateManagerCompat.popMatrix();
         }
 

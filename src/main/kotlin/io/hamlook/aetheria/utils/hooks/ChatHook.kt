@@ -74,14 +74,21 @@ object ChatHook {
     }
 
     @JvmStatic
+    fun scaleChatAlpha(color: Int, opacity: Int): Int {
+        val alpha = (color ushr 24) * opacity / 100
+        return (alpha shl 24) or (color and 0xFFFFFF)
+    }
+
+    @JvmStatic
     fun getBackgroundColor(left: Int, top: Int, right: Int, bottom: Int, color: Int, chatOpen: Boolean): Int {
         val config = ATHRConfig.feature ?: return color
 
         val newRight = if (config.chat.chatHeads) right + 10 else right
-        var newColor = if (config.chat.transparentChat) 0x00000000 else color
+        val opacity = config.chat.chatBackgroundOpacity
+        var newColor = scaleChatAlpha(color, opacity)
 
         if (config.chat.chatCopyEnabled && chatOpen && hoveredLine != null && renderLine == hoveredLine) {
-            newColor = if (config.chat.transparentChat) 0x22AAAACC else 0x60AAAACC
+            newColor = if (opacity < 100) 0x22AAAACC else 0x60AAAACC
         }
 
         DrawContextUtils.fill(left, top, newRight, bottom, newColor)
@@ -141,6 +148,7 @@ object ChatHook {
     //$$         return x
     //$$     }
     //$$     if (parent.`athr$isHeadHidden`()) return x + 10f
+    //$$     if (!renderLine.`athr$isHeadRow`()) return x + 10f
     //$$
     //$$     val alpha = (color shr 24) and 0xFF
     //$$     val headAlpha = if (alpha == 0) 1.0f else alpha / 255f
@@ -160,10 +168,11 @@ object ChatHook {
     //$$     val config = ATHRConfig.feature ?: return color
     //$$
     //$$     val newRight = if (config.chat.chatHeads) right + 10 else right
-    //$$     var newColor = if (config.chat.transparentChat) 0x00000000 else color
+    //$$     val opacity = config.chat.chatBackgroundOpacity
+    //$$     var newColor = scaleChatAlpha(color, opacity)
     //$$
     //$$     if (config.chat.chatCopyEnabled && chatOpen && hoveredVisible != null && renderVisible === hoveredVisible) {
-    //$$         newColor = if (config.chat.transparentChat) 0x22AAAACC else 0x60AAAACC
+    //$$         newColor = if (opacity < 100) 0x22AAAACC else 0x60AAAACC
     //$$     }
     //$$
     //$$     context.fill(left, top, newRight, bottom, newColor)

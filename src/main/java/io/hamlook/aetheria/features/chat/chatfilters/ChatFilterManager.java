@@ -32,12 +32,12 @@ public class ChatFilterManager {
 
     public static IChatComponent applyFilters(IChatComponent message) {
         if (message == null) return null;
-        String msg = TextCompat.getFormattedText(message);
+        String msg = TextCompat.getFormattedTextWithResets(message);
         for (ChatFilter filter : chatFilters) {
             msg = filter.applyFilter(msg);
             if (msg == null) return null;
         }
-        if (msg.equals(TextCompat.getFormattedText(message))) return message;
+        if (msg.equals(TextCompat.getFormattedTextWithResets(message))) return message;
         return TextCompat.createText(msg.trim());
     }
 }

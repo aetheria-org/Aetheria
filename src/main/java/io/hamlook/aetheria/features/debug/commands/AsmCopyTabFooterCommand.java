@@ -41,7 +41,7 @@ public class AsmCopyTabFooterCommand {
                     return;
                 }
 
-                String formatted = TextCompat.getFormattedText(footer);
+                String formatted = TextCompat.getFormattedTextWithResets(footer);
                 String text = noColor ? StringUtils.stripControlCodes(formatted) : formatted;
 
                 ClipboardCompat.setClipboard(text);

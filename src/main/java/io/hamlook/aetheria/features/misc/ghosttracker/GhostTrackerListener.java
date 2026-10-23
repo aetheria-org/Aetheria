@@ -95,12 +95,12 @@ public class GhostTrackerListener {
         String msg = ChatUtils.clean(event);
         if (isPlayerOrPartyMessage(msg)) return;
 
-        if (GhostTrackerConstants.COIN_DROP_MESSAGE.equals(TextCompat.getFormattedText(event.message))) {
+        if (GhostTrackerConstants.COIN_DROP_MESSAGE.equals(TextCompat.getFormattedTextWithResets(event.message))) {
             GhostStats.getInstance().addDrop("Coins");
             return;
         }
 
-        Matcher matcher = GhostTrackerConstants.RARE_DROP_PATTERN.matcher(TextCompat.getFormattedText(event.message));
+        Matcher matcher = GhostTrackerConstants.RARE_DROP_PATTERN.matcher(TextCompat.getFormattedTextWithResets(event.message));
         if (!matcher.find()) return;
 
         handleRareDrop(matcher);

@@ -13,7 +13,7 @@ fun ChatLineCompat.getChatComponentCompat(): Any =
 
 fun ChatLineCompat.getChatStringCompat(): String =
     //#if MC < 1.16
-    TextCompat.getFormattedText(this.chatComponent)
+    TextCompat.getFormattedTextWithResets(this.chatComponent)
     //#else
-    //$$ TextCompat.getFormattedText(this.content)
+    //$$ TextCompat.getFormattedTextWithResets(this.content)
     //#endif

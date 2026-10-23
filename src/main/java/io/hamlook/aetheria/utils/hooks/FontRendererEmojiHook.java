@@ -8,19 +8,41 @@ import net.minecraft.client.gui.FontRenderer;
 //#if MC < 1.21
 //#else
 //$$ import net.minecraft.client.font.TextRenderer;
+//$$ import net.minecraft.text.CharacterVisitor;
 //$$ import net.minecraft.text.OrderedText;
 //$$ import net.minecraft.text.Style;
 //#endif
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class FontRendererEmojiHook {
 
-    private static final Pattern EMOJI_PATTERN = Pattern.compile(":([a-zA-Z0-9_~+-]{1,}):");
     private static final ThreadLocal<Boolean> PROCESSING = ThreadLocal.withInitial(() -> false);
+
+    // index of the colon opening the next :shortcode: at or after from, -1 if none
+    static int findShortcode(String text, int from) {
+        int length = text.length();
+        for (int i = text.indexOf(':', from); i >= 0; i = text.indexOf(':', i + 1)) {
+            int end = i + 1;
+            while (end < length && isShortcodeChar(text.charAt(end))) end++;
+            if (end > i + 1 && end < length && text.charAt(end) == ':') return i;
+        }
+        return -1;
+    }
+
+    // index of the colon closing the shortcode opened at start, -1 if none
+    static int shortcodeEnd(String text, int start) {
+        int length = text.length();
+        int end = start + 1;
+        while (end < length && isShortcodeChar(text.charAt(end))) end++;
+        return end > start + 1 && end < length && text.charAt(end) == ':' ? end : -1;
+    }
+
+    private static boolean isShortcodeChar(char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+                || c == '_' || c == '~' || c == '+' || c == '-';
+    }
 
     /**
      * Processes emoji shortcodes in a text string, drawing emoji textures
@@ -31,28 +53,29 @@ public class FontRendererEmojiHook {
     public static int processEmojis(FontRenderer fr, String text, float x, float y, int color, boolean dropShadow) {
         if (PROCESSING.get()) return -1;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.emojiConfig.enabled) return -1;
-        if (!EmojiManager.isLoaded() || text == null || !text.contains(":")) return -1;
+        if (!EmojiManager.isLoaded() || text == null) return -1;
 
-        Matcher matcher = EMOJI_PATTERN.matcher(text);
-        if (!matcher.find()) return -1;
-        matcher.reset();
+        int cursor = findShortcode(text, 0);
+        if (cursor < 0) return -1;
 
         PROCESSING.set(true);
         try {
             float cursorX = x;
             int lastEnd = 0;
 
-            while (matcher.find()) {
-                cursorX = drawPlain(fr, text.substring(lastEnd, matcher.start()), cursorX, y, color, dropShadow);
+            while (cursor >= 0) {
+                int end = shortcodeEnd(text, cursor);
+                cursorX = drawPlain(fr, text.substring(lastEnd, cursor), cursorX, y, color, dropShadow);
 
-                String key = matcher.group(1);
+                String key = text.substring(cursor + 1, end);
                 float size = fr.FONT_HEIGHT;
                 if (EmojiManager.exists(key) && RenderUtils.drawEmoji(key, cursorX, y, size)) {
                     cursorX += size + 1;
                 } else {
-                    cursorX = drawPlain(fr, matcher.group(), cursorX, y, color, dropShadow);
+                    cursorX = drawPlain(fr, text.substring(cursor, end + 1), cursorX, y, color, dropShadow);
                 }
-                lastEnd = matcher.end();
+                lastEnd = end + 1;
+                cursor = findShortcode(text, lastEnd);
             }
 
             if (lastEnd < text.length()) {
@@ -79,28 +102,29 @@ public class FontRendererEmojiHook {
     //$$ public static int processEmojisModern(TextRenderer fr, String text, float x, float y, int color, boolean dropShadow) {
     //$$     if (PROCESSING.get()) return -1;
     //$$     if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.emojiConfig.enabled) return -1;
-    //$$     if (!EmojiManager.isLoaded() || text == null || !text.contains(":")) return -1;
+    //$$     if (!EmojiManager.isLoaded() || text == null) return -1;
     //$$
-    //$$     Matcher matcher = EMOJI_PATTERN.matcher(text);
-    //$$     if (!matcher.find()) return -1;
-    //$$     matcher.reset();
+    //$$     int cursor = findShortcode(text, 0);
+    //$$     if (cursor < 0) return -1;
     //$$
     //$$     PROCESSING.set(true);
     //$$     try {
     //$$         float cursorX = x;
     //$$         int lastEnd = 0;
     //$$
-    //$$         while (matcher.find()) {
-    //$$             cursorX = drawPlainModern(fr, text.substring(lastEnd, matcher.start()), cursorX, y, color, dropShadow);
+    //$$         while (cursor >= 0) {
+    //$$             int end = shortcodeEnd(text, cursor);
+    //$$             cursorX = drawPlainModern(fr, text.substring(lastEnd, cursor), cursorX, y, color, dropShadow);
     //$$
-    //$$             String key = matcher.group(1);
+    //$$             String key = text.substring(cursor + 1, end);
     //$$             float size = fr.fontHeight;
     //$$             if (EmojiManager.exists(key) && RenderUtils.drawEmoji(key, cursorX, y, size)) {
     //$$                 cursorX += size + 1;
     //$$             } else {
-    //$$                 cursorX = drawPlainModern(fr, matcher.group(), cursorX, y, color, dropShadow);
+    //$$                 cursorX = drawPlainModern(fr, text.substring(cursor, end + 1), cursorX, y, color, dropShadow);
     //$$             }
-    //$$             lastEnd = matcher.end();
+    //$$             lastEnd = end + 1;
+    //$$             cursor = findShortcode(text, lastEnd);
     //$$         }
     //$$
     //$$         if (lastEnd < text.length()) {
@@ -131,6 +155,22 @@ public class FontRendererEmojiHook {
     //$$     }
     //$$ }
     //$$
+    //$$ private static final ThreadLocal<Boolean> COLON_FOUND = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    //$$
+    //$$ private static final CharacterVisitor COLON_SCANNER = (index, style, codePoint) -> {
+    //$$     if (codePoint == ':') {
+    //$$         COLON_FOUND.set(Boolean.TRUE);
+    //$$         return false;
+    //$$     }
+    //$$     return true;
+    //$$ };
+    //$$
+    //$$ private static boolean containsColon(OrderedText text) {
+    //$$     COLON_FOUND.set(Boolean.FALSE);
+    //$$     text.accept(COLON_SCANNER);
+    //$$     return COLON_FOUND.get();
+    //$$ }
+    //$$
     //$$ private static List<StyledRun> collectRuns(OrderedText text) {
     //$$     List<StyledRun> runs = new ArrayList<>();
     //$$     StringBuilder current = new StringBuilder();
@@ -148,9 +188,9 @@ public class FontRendererEmojiHook {
     //$$     return runs;
     //$$ }
     //$$
-    //$$ private static boolean runsContainEmoji(List<StyledRun> runs) {
+    //$$ private static boolean runsContainShortcode(List<StyledRun> runs) {
     //$$     for (StyledRun run : runs) {
-    //$$         if (EMOJI_PATTERN.matcher(run.text).find()) return true;
+    //$$         if (findShortcode(run.text, 0) >= 0) return true;
     //$$     }
     //$$     return false;
     //$$ }
@@ -159,9 +199,10 @@ public class FontRendererEmojiHook {
     //$$     if (PROCESSING.get()) return -1;
     //$$     if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.emojiConfig.enabled) return -1;
     //$$     if (!EmojiManager.isLoaded()) return -1;
+    //$$     if (!containsColon(text)) return -1;
     //$$
     //$$     List<StyledRun> runs = collectRuns(text);
-    //$$     if (!runsContainEmoji(runs)) return -1;
+    //$$     if (!runsContainShortcode(runs)) return -1;
     //$$
     //$$     PROCESSING.set(true);
     //$$     try {
@@ -176,23 +217,24 @@ public class FontRendererEmojiHook {
     //$$ }
     //$$
     //$$ private static float drawRunWithEmojis(TextRenderer fr, StyledRun run, float x, float y, int color, boolean shadow) {
-    //$$     Matcher matcher = EMOJI_PATTERN.matcher(run.text);
-    //$$     if (!matcher.find()) {
+    //$$     int cursor = findShortcode(run.text, 0);
+    //$$     if (cursor < 0) {
     //$$         return drawStyledSegment(fr, run.text, run.style, x, y, color, shadow);
     //$$     }
-    //$$     matcher.reset();
     //$$     float cursorX = x;
     //$$     int lastEnd = 0;
-    //$$     while (matcher.find()) {
-    //$$         cursorX = drawStyledSegment(fr, run.text.substring(lastEnd, matcher.start()), run.style, cursorX, y, color, shadow);
-    //$$         String key = matcher.group(1);
+    //$$     while (cursor >= 0) {
+    //$$         int end = shortcodeEnd(run.text, cursor);
+    //$$         cursorX = drawStyledSegment(fr, run.text.substring(lastEnd, cursor), run.style, cursorX, y, color, shadow);
+    //$$         String key = run.text.substring(cursor + 1, end);
     //$$         float size = fr.fontHeight;
     //$$         if (EmojiManager.exists(key) && RenderUtils.drawEmoji(key, cursorX, y, size)) {
     //$$             cursorX += size + 1;
     //$$         } else {
-    //$$             cursorX = drawStyledSegment(fr, matcher.group(), run.style, cursorX, y, color, shadow);
+    //$$             cursorX = drawStyledSegment(fr, run.text.substring(cursor, end + 1), run.style, cursorX, y, color, shadow);
     //$$         }
-    //$$         lastEnd = matcher.end();
+    //$$         lastEnd = end + 1;
+    //$$         cursor = findShortcode(run.text, lastEnd);
     //$$     }
     //$$     if (lastEnd < run.text.length()) {
     //$$         cursorX = drawStyledSegment(fr, run.text.substring(lastEnd), run.style, cursorX, y, color, shadow);
@@ -211,26 +253,29 @@ public class FontRendererEmojiHook {
     //$$     if (PROCESSING.get()) return -1;
     //$$     if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.emojiConfig.enabled) return -1;
     //$$     if (!EmojiManager.isLoaded()) return -1;
+    //$$     if (!containsColon(text)) return -1;
     //$$
     //$$     List<StyledRun> runs = collectRuns(text);
-    //$$     if (!runsContainEmoji(runs)) return -1;
+    //$$     if (!runsContainShortcode(runs)) return -1;
     //$$
     //$$     boolean wasProcessing = PROCESSING.get();
     //$$     PROCESSING.set(true);
     //$$     try {
-    //$$         float width = 0;
+    //$$         int width = 0;
     //$$         for (StyledRun run : runs) {
-    //$$             Matcher matcher = EMOJI_PATTERN.matcher(run.text);
+    //$$             int cursor = findShortcode(run.text, 0);
     //$$             int lastEnd = 0;
-    //$$             while (matcher.find()) {
-    //$$                 width += segmentWidth(fr, run.text.substring(lastEnd, matcher.start()), run.style);
-    //$$                 String key = matcher.group(1);
+    //$$             while (cursor >= 0) {
+    //$$                 int end = shortcodeEnd(run.text, cursor);
+    //$$                 width += segmentWidth(fr, run.text.substring(lastEnd, cursor), run.style);
+    //$$                 String key = run.text.substring(cursor + 1, end);
     //$$                 if (EmojiManager.exists(key)) {
     //$$                     width += fr.fontHeight + 1;
     //$$                 } else {
-    //$$                     width += segmentWidth(fr, matcher.group(), run.style);
+    //$$                     width += segmentWidth(fr, run.text.substring(cursor, end + 1), run.style);
     //$$                 }
-    //$$                 lastEnd = matcher.end();
+    //$$                 lastEnd = end + 1;
+    //$$                 cursor = findShortcode(run.text, lastEnd);
     //$$             }
     //$$             if (lastEnd < run.text.length()) {
     //$$                 width += segmentWidth(fr, run.text.substring(lastEnd), run.style);

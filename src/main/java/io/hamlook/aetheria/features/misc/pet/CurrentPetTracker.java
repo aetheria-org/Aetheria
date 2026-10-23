@@ -14,6 +14,7 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import lombok.Getter;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
@@ -37,6 +38,8 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     private static final Pattern LVL_PATTERN = Pattern.compile("^\\[Lvl (\\d+)] (.+)$");
     private static final Pattern SKIN_PATTERN = Pattern.compile("(§. ?✦)");
     private static final Pattern RARITY_PATTERN = Pattern.compile("§7\\[Lvl \\d+] (§.)");
+    /** Section sign as it looks after the text was encoded twice, e.g. in a name that came from a broken source. */
+    private static final String MOJIBAKE_SECTION = "Â§";
     private static final CurrentPetTracker INSTANCE = new CurrentPetTracker();
     private boolean convertToItemEnabled = false;
     private long ignoreContainerUpdatesUntil = 0L;
@@ -54,7 +57,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     }
 
     private static PetItemData parsePetItem(ItemStack item) {
-        String rawName = TextCompat.getFormattedText(item.getDisplayName()).replace("§", "§");
+        String rawName = ItemUtils.getDisplayName(item).replace(MOJIBAKE_SECTION, "§");
         String stripped = StringUtils.stripControlCodes(rawName).trim();
 
         int level = 0;
@@ -109,26 +112,30 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     }
 
     private void scanContainer(ContainerChest container) {
+        EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
+        if (player == null) return;
         for (Slot slot : container.inventorySlots) {
-            if (slot.inventory == InventoryCompat.getInventory(MinecraftCompat.getLocalPlayer())) continue;
+            if (slot.inventory == InventoryCompat.getInventory(player)) continue;
 
             if (slot.slotNumber == CONVERT_SLOT_INDEX) {
                 ItemStack s = slot.getStack();
-                boolean hasEnabled = s != null && s.getItem() != null && CONVERT_ITEM_NAME.equals(s.getDisplayName()) && ItemUtils.getLoreLine(s, "§aEnabled") != null;
-                convertToItemEnabled = hasEnabled;
+                convertToItemEnabled = s != null && s.getItem() != null
+                        && CONVERT_ITEM_NAME.equals(s.getDisplayName())
+                        && ItemUtils.getLoreLine(s, "§aEnabled") != null;
                 continue;
             }
 
             ItemStack item = slot.getStack();
             if (item == null || item.getItem() == null) continue;
 
-            String texture = ItemUtils.getSkullTexture(item);
-            if (texture == null || texture.isEmpty()) continue;
+            ItemUtils.SkullIdentity identity = ItemUtils.skullIdentity(item);
+            if (identity == null) continue;
 
             PetItemData data = parsePetItem(item);
             if (data == null) continue;
             if (data.level <= 0) continue;
-            PetCache.getInstance().update(data.base, data.level, data.rarityColor, data.skinTag, texture);
+            PetCache.getInstance().update(data.base, data.level, data.rarityColor, data.skinTag,
+                    identity.textureValue, identity.profileId, identity.profileName, identity.signature);
             if (System.currentTimeMillis() < ignoreContainerUpdatesUntil) {
                 continue;
             }
@@ -165,7 +172,12 @@ public class CurrentPetTracker extends ProfileManagedStorage {
             return;
         }
 
-        if (event.getSlot().inventory == InventoryCompat.getInventory(MinecraftCompat.getLocalPlayer())) {
+        EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
+        if (player == null) {
+            return;
+        }
+
+        if (event.getSlot().inventory == InventoryCompat.getInventory(player)) {
             return;
         }
 
@@ -174,8 +186,8 @@ public class CurrentPetTracker extends ProfileManagedStorage {
             return;
         }
 
-        String texture = ItemUtils.getSkullTexture(item);
-        if (texture == null || texture.isEmpty()) {
+        ItemUtils.SkullIdentity identity = ItemUtils.skullIdentity(item);
+        if (identity == null) {
             return;
         }
 
@@ -188,7 +200,8 @@ public class CurrentPetTracker extends ProfileManagedStorage {
             return;
         }
 
-        PetCache.getInstance().update(data.base, data.level, data.rarityColor, data.skinTag, texture);
+        PetCache.getInstance().update(data.base, data.level, data.rarityColor, data.skinTag,
+                identity.textureValue, identity.profileId, identity.profileName, identity.signature);
 
         String key = data.key();
         boolean hasActiveLore = ItemUtils.getLoreLine(item, ACTIVE_LORE) != null;
@@ -204,7 +217,7 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     @HandleEvent
     public void onChat(ASMChatEvent event) {
         if (!ChatUtils.isFromServer(event)) return;
-        Matcher am = AUTOPET.matcher(TextCompat.getFormattedText(event.message));
+        Matcher am = AUTOPET.matcher(TextCompat.getFormattedTextWithResets(event.message));
         if (!am.find()) return;
 
         int level = Integer.parseInt(am.group(1));

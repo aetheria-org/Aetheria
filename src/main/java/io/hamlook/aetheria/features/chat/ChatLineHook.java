@@ -33,5 +33,9 @@ public interface ChatLineHook {
     //$$ ChatHudLine athr$getParentLine();
     //$$
     //$$ void athr$setParentLine(ChatHudLine parent);
+    //$$
+    //$$ boolean athr$isHeadRow();
+    //$$
+    //$$ void athr$setHeadRow(boolean headRow);
     //#endif
 }

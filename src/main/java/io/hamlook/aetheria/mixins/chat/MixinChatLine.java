@@ -56,6 +56,7 @@ public class MixinChatLine implements ChatLineHook {
     //$$ @Unique private PlayerListEntry athr$playerInfo = null;
     //$$ @Unique private boolean athr$headHidden = false;
     //$$ @Unique private ChatHudLine athr$parentLine = null;
+    //$$ @Unique private boolean athr$headRow = false;
     //$$
     //$$ @Override public PlayerListEntry athr$getPlayerInfo() { return athr$playerInfo; }
     //$$ @Override public void athr$setPlayerInfo(PlayerListEntry info) { athr$playerInfo = info; }
@@ -63,5 +64,7 @@ public class MixinChatLine implements ChatLineHook {
     //$$ @Override public void athr$setHeadHidden(boolean hidden) { athr$headHidden = hidden; }
     //$$ @Override public ChatHudLine athr$getParentLine() { return athr$parentLine; }
     //$$ @Override public void athr$setParentLine(ChatHudLine parent) { athr$parentLine = parent; }
+    //$$ @Override public boolean athr$isHeadRow() { return athr$headRow; }
+    //$$ @Override public void athr$setHeadRow(boolean headRow) { athr$headRow = headRow; }
     //#endif
 }

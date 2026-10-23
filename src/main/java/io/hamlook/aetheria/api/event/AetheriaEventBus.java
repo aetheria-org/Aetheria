@@ -61,6 +61,16 @@ public class AetheriaEventBus {
         return getHandler(event.getClass()).post(event);
     }
 
+    public boolean hasListeners(Class<? extends AetheriaEvent> eventClass) {
+        Class<?> type = eventClass;
+        while (type != null && AetheriaEvent.class.isAssignableFrom(type)) {
+            List<EventHandler.Listener> direct = listeners.get(type);
+            if (direct != null && !direct.isEmpty()) return true;
+            type = type.getSuperclass();
+        }
+        return false;
+    }
+
     private EventHandler getHandler(Class<? extends AetheriaEvent> eventClass) {
         return handlers.computeIfAbsent(eventClass, clazz -> {
             List<EventHandler.Listener> all = new ArrayList<>();

@@ -29,6 +29,7 @@ import net.minecraft.util.IChatComponent;
 //$$ import net.minecraft.network.message.MessageSignatureData;
 //$$ import net.minecraft.text.OrderedText;
 //$$ import net.minecraft.text.Text;
+//$$ import org.spongepowered.asm.mixin.Unique;
 //#endif
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -172,6 +173,8 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 //$$     @Shadow @Final private MinecraftClient client;
 //$$     @Shadow private int scrolledLines;
 //$$
+//$$     @Unique private int athr$visibleRowIndex = -1;
+//$$
 //$$     @Shadow public abstract boolean isChatFocused();
 //$$     @Shadow public abstract int getVisibleLineCount();
 //$$     @Shadow public abstract double getChatScale();
@@ -225,12 +228,18 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 //$$         ChatLineInitHook.tagHead(line);
 //$$     }
 //$$
+//$$     @Inject(method = "addVisibleMessage", at = @At("HEAD"))
+//$$     private void athr$resetVisibleRowIndex(CallbackInfo ci) {
+//$$         athr$visibleRowIndex = -1;
+//$$     }
+//$$
 //$$     @Redirect(
 //$$             method = "addVisibleMessage",
 //$$             at = @At(value = "INVOKE", target = "Ljava/util/List;add(ILjava/lang/Object;)V"))
 //$$     private void athr$linkParent(List<Object> list, int index, Object element,
 //$$             @Local(argsOnly = true) ChatHudLine parent) {
 //$$         ((ChatLineHook) element).athr$setParentLine(parent);
+//$$         ((ChatLineHook) element).athr$setHeadRow(++athr$visibleRowIndex == 0);
 //$$         list.add(index, element);
 //$$     }
 //$$

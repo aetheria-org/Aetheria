@@ -11,6 +11,7 @@ import io.hamlook.aetheria.features.profile.data.bags.FishingData;
 import io.hamlook.aetheria.features.profile.data.bags.QuiverData;
 import io.hamlook.aetheria.features.profile.data.bags.vars.Arrow;
 import io.hamlook.aetheria.features.profile.data.bags.vars.Bait;
+import io.hamlook.aetheria.features.profile.viewer.ProfileTooltips;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.*;
@@ -209,18 +210,10 @@ public class BagsInfoTab extends Tab {
     }
 
     private void drawItemTooltip(Minecraft mc, ItemData data, int mouseX, int mouseY) {
-        if (data == null) return;
-        List<String> lines = new ArrayList<>();
-        lines.add(data.displayName);
-        if (data.lore != null) lines.addAll(data.lore);
-
-        lines.add("");
-        lines.add("§8Item SB_ID: §7" + data.skyblockID);
-        lines.add("§8ItemRegistry SB_ID: §7" + io.hamlook.aetheria.features.misc.itemList.ItemResolver.resolveId(data.skyblockID, data.displayName));
-
-        if (MinecraftCompat.getCurrentScreen() instanceof ProfileViewerGUI) {
-            ((ProfileViewerGUI) MinecraftCompat.getCurrentScreen()).drawTooltip(lines, mouseX, mouseY);
-        }
+        if (!(MinecraftCompat.getCurrentScreen() instanceof ProfileViewerGUI)) return;
+        List<String> lines = ProfileTooltips.itemLines(data);
+        if (lines.isEmpty()) return;
+        ((ProfileViewerGUI) MinecraftCompat.getCurrentScreen()).drawTooltip(lines, mouseX, mouseY);
     }
 
     private int parseRarity(String displayName) {

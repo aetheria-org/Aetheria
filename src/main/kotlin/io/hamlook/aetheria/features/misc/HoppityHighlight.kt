@@ -4,7 +4,7 @@ import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.ColorUtils
 import io.hamlook.aetheria.utils.ContainerUtils
-import io.hamlook.aetheria.utils.compat.getDisplayNameCompat
+import io.hamlook.aetheria.utils.item.ItemUtils
 import io.hamlook.aetheria.utils.render.HighlightUtils
 
 @RegisterEvents
@@ -20,7 +20,7 @@ object HoppityHighlight {
             if (ContainerUtils.getTitle(container)?.contains("Hoppity") != true) return@registerHighlighter null
 
             val stack = slot.stack ?: return@registerHighlighter null
-            if (ColorUtils.stripColor(stack.getDisplayNameCompat()).contains("NEW RABBIT!")) HIGHLIGHT_COLOR else null
+            if (ColorUtils.stripColor(ItemUtils.getDisplayName(stack)).contains("NEW RABBIT!")) HIGHLIGHT_COLOR else null
         }
     }
 }

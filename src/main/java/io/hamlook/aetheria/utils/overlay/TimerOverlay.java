@@ -1,6 +1,6 @@
 package io.hamlook.aetheria.utils.overlay;
 
-import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.time.TimeFormatter;
 import net.minecraft.item.ItemStack;
 
@@ -47,7 +47,7 @@ public abstract class TimerOverlay extends Overlay {
         for (String id : active) {
             ItemStack stack = findItemStack(id);
             if (stack == null) continue;
-            String line = TextCompat.getFormattedText(stack.getDisplayName()) + " §f" + TimeFormatter.formatTime(getRemainingMs(id));
+            String line = ItemUtils.getDisplayName(stack) + " §f" + TimeFormatter.formatTime(getRemainingMs(id));
             lines.add(line);
             putLineIcon(line, stack);
         }

@@ -84,7 +84,7 @@ public class ItemCooldowns {
     @HandleEvent
     public void onChat(ASMChatEvent event) {
         if (event.type == ASMChatEvent.Type.ACTION_BAR) return;
-        String msg = normalize(TextCompat.getFormattedText(event.message));
+        String msg = normalize(TextCompat.getFormattedTextWithResets(event.message));
         if (ChatUtils.isPlayerChat(msg) || ChatUtils.getGuildSender(msg) != null) return;
         for (ChatTrigger t : chatTriggers) {
             if (t.pattern.matcher(msg).find()) {

@@ -131,9 +131,9 @@ public class DamageNameplates {
     //#endif
 
     //#if MC >= 1.21
-    // Detection runs on the component's code-free text and colours come from Style,
-    // so no legacy formatting codes are involved. toLegacyCodes() would drop repeated
-    // codes and quantise colours, breaking the match.
+    // Detection runs on the component's code-free text and compares exact RGB values,
+    // so it needs the lossless styled form; a §-string formatter would quantise the
+    // colours to the nearest of the 16 legacy ones and break the match.
     //$$ private static final int WHITE = 0xFFFFFF, GRAY = 0xAAAAAA, GOLD = 0xFFAA00, RED = 0xFF5555;
     //$$ private static final int[] CRIT_RGB = {WHITE, 0xFFFF55, GOLD, RED, RED, WHITE};
     //$$ private static final Pattern CLEAN_CRIT = Pattern.compile(STAR + "([0-9][0-9.,kKmMbBtT]*)" + STAR + "(.*)");

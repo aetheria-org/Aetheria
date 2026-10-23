@@ -181,7 +181,7 @@ public class GuiBridge {
     //$$     });
     //$$     ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
     //$$         List<String> coded = new ArrayList<>(lines.size());
-    //$$         for (int i = 0; i < lines.size(); i++) coded.add(TextCompat.getFormattedText(lines.get(i)));
+    //$$         for (int i = 0; i < lines.size(); i++) coded.add(TextCompat.getFormattedTextWithResets(lines.get(i)));
     //$$         List<String> plain = new ArrayList<>(coded);
     //$$         new ASMTooltipEvent(stack, plain).post();
     //$$         for (int i = 0; i < lines.size() && i < plain.size(); i++) {

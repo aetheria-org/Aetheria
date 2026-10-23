@@ -94,6 +94,18 @@ object NbtCompat {
     }
 
     @JvmStatic
+    fun getLoreLines(item: ItemStack): List<String> {
+        //#if MC < 1.21
+        val display = getDisplayCompound(item) ?: return emptyList()
+        if (!hasKey(display, "Lore", TAG_LIST)) return emptyList()
+        val lore = getTagList(display, "Lore", TAG_STRING)
+        return (0 until tagCount(lore)).map { getStringAt(lore, it) }
+        //#else
+        //$$ return item.get(DataComponentTypes.LORE)?.lines?.map { TextCompat.getFormattedText(it) } ?: emptyList()
+        //#endif
+    }
+
+    @JvmStatic
     fun hasKey(compound: NBTTagCompound, key: String, type: Int): Boolean {
         //#if MC < 1.16
         return compound.hasKey(key, type)

@@ -17,7 +17,6 @@ import io.hamlook.aetheria.utils.compat.InventoryCompat
 import io.hamlook.aetheria.utils.compat.KeyboardCompat
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import io.hamlook.aetheria.utils.compat.TextCompat
-import io.hamlook.aetheria.utils.compat.getDisplayNameCompat
 import io.hamlook.aetheria.utils.item.ItemUtils
 import net.minecraft.item.ItemStack
 import net.minecraft.util.EnumChatFormatting
@@ -40,10 +39,10 @@ class ProtectItemFeature {
             }
             if (ProtectedItemStorage.contains(uuid)) {
                 ProtectedItemStorage.remove(uuid)
-                notifyRaw("${EnumChatFormatting.YELLOW}${stack.getDisplayNameCompat()} ${EnumChatFormatting.GRAY}is no longer protected.")
+                notifyRaw("${EnumChatFormatting.YELLOW}${ItemUtils.getDisplayName(stack)} ${EnumChatFormatting.GRAY}is no longer protected.")
             } else {
                 ProtectedItemStorage.add(uuid)
-                notifyRaw("${EnumChatFormatting.GREEN}${stack.getDisplayNameCompat()} ${EnumChatFormatting.GRAY}is now protected!")
+                notifyRaw("${EnumChatFormatting.GREEN}${ItemUtils.getDisplayName(stack)} ${EnumChatFormatting.GRAY}is now protected!")
             }
         }
 
@@ -82,7 +81,7 @@ class ProtectItemFeature {
         if (!isProtected(stack)) return
 
         event.cancel()
-        notifyBlocked(stack.getDisplayNameCompat(), "dropped")
+        notifyBlocked(ItemUtils.getDisplayName(stack), "dropped")
     }
 
 
@@ -116,7 +115,7 @@ class ProtectItemFeature {
         if (!isProtected(cursorItem)) return
 
         event.cancel()
-        notifyBlocked(cursorItem.getDisplayNameCompat(), "thrown away")
+        notifyBlocked(ItemUtils.getDisplayName(cursorItem), "thrown away")
     }
 
 
@@ -132,7 +131,7 @@ class ProtectItemFeature {
         if (!isProtected(stack)) return
 
         event.cancel()
-        notifyBlocked(stack.getDisplayNameCompat(), "dropped")
+        notifyBlocked(ItemUtils.getDisplayName(stack), "dropped")
     }
 
     private fun isDangerousGuiInteraction(event: SlotClickEvent): Boolean {
@@ -147,7 +146,7 @@ class ProtectItemFeature {
             val stack = slot.stack
             if (stack != null && isProtected(stack)) {
                 event.cancel()
-                notifyBlocked(stack.getDisplayNameCompat(), "moved in this menu")
+                notifyBlocked(ItemUtils.getDisplayName(stack), "moved in this menu")
                 return
             }
         }
@@ -156,7 +155,7 @@ class ProtectItemFeature {
         val cursorItem = InventoryCompat.getCursorStack(MinecraftCompat.getLocalPlayer() ?: return)
         if (cursorItem != null && isProtected(cursorItem)) {
             event.cancel()
-            notifyBlocked(cursorItem.getDisplayNameCompat(), "moved in this menu")
+            notifyBlocked(ItemUtils.getDisplayName(cursorItem), "moved in this menu")
         }
     }
 
@@ -209,6 +208,7 @@ class ProtectItemFeature {
 
 
     private fun isProtected(stack: ItemStack?): Boolean {
+        if (ProtectedItemStorage.protectedUuids.isEmpty()) return false
         val uuid = ItemUtils.getItemUuid(stack) ?: return false
         return ProtectedItemStorage.contains(uuid)
     }

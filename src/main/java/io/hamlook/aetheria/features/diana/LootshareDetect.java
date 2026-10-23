@@ -9,6 +9,7 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityArmorStand;
@@ -64,7 +65,7 @@ public class LootshareDetect {
                 closest = stand;
             }
         }
-        return closest != null ? TextCompat.codedString(closest.getCustomNameTag()) : null;
+        return closest != null ? EntityCompat.getNametag(closest) : null;
     }
 
     // Returns the closest tracked non-inq diana mob stand name, only after a dig message fired
@@ -84,7 +85,7 @@ public class LootshareDetect {
                 closest = stand;
             }
         }
-        return closest != null ? TextCompat.codedString(closest.getCustomNameTag()) : null;
+        return closest != null ? EntityCompat.getNametag(closest) : null;
     }
 
     @HandleEvent
@@ -92,7 +93,9 @@ public class LootshareDetect {
         if (MinecraftCompat.getLocalWorld() == null) return;
         if (!(event.entity instanceof EntityArmorStand)) return;
         // Only bother tracking if spade in hotbar (diana active) or a mob was just dug
-        if ((DianaStats.hasSpadeInHotbar() || nonInqMobActive) && DianaStats.getInstance().isDianaMayor())
+        if (SkyblockData.getCurrentLocation() == SkyblockData.Location.HUB
+                && DianaStats.getInstance().isDianaMayor()
+                && (nonInqMobActive || DianaStats.hasSpadeInHotbar()))
             unconfirmed.put(event.entity.getEntityId(), System.currentTimeMillis());
     }
 
@@ -126,7 +129,7 @@ public class LootshareDetect {
                 continue;
             }
 
-            String name = TextCompat.codedString(entity.getCustomNameTag());
+            String name = EntityCompat.getNametag(entity);
             if (TextCompat.matchesCoded(name, DIANA_MARKER)) {
                 tracked.put(id, (EntityArmorStand) entity);
                 String cleanName = net.minecraft.util.StringUtils.stripControlCodes(name);

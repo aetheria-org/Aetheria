@@ -32,7 +32,7 @@ public class ActionBarDispatcher {
         if (event.type != ASMChatEvent.Type.ACTION_BAR) return;
 
         String stripped = StringUtils.stripControlCodes(TextCompat.getUnformattedText(event.message));
-        String formatted = TextCompat.getFormattedText(event.message);
+        String formatted = TextCompat.getFormattedTextWithResets(event.message);
 
         lastActionBarFormatted = formatted;
         lastActionBarStripped = stripped;

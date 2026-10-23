@@ -13,7 +13,6 @@ import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.overlay.Overlay;
@@ -47,7 +46,7 @@ public class ItemPickupLog extends Overlay {
 
     private static void accumulate(Map<String, Integer> map, ItemStack stack) {
         if (stack == null) return;
-        map.merge(TextCompat.getFormattedText(stack.getDisplayName()), ItemCompatKt.getCountCompat(stack), Integer::sum);
+        map.merge(ItemUtils.getDisplayName(stack), ItemCompatKt.getCountCompat(stack), Integer::sum);
     }
 
     private static ItemStack[] copyInventory(ItemStack[] src) {
@@ -78,7 +77,7 @@ public class ItemPickupLog extends Overlay {
             if (a == null && b == null) continue;
             if (a == null || b == null) return true;
             if (ItemCompatKt.getCountCompat(a) != ItemCompatKt.getCountCompat(b)) return true;
-            if (!TextCompat.getFormattedText(a.getDisplayName()).equals(TextCompat.getFormattedText(b.getDisplayName()))) return true;
+            if (!ItemUtils.getDisplayName(a).equals(ItemUtils.getDisplayName(b))) return true;
         }
         return false;
     }
@@ -171,7 +170,7 @@ public class ItemPickupLog extends Overlay {
         String id = ItemUtils.getInternalName(stack);
         if (id.isEmpty()) return;
         map.merge(id, ItemCompatKt.getCountCompat(stack), Integer::sum);
-        internalToDisplay.putIfAbsent(id, TextCompat.getFormattedText(stack.getDisplayName()));
+        internalToDisplay.putIfAbsent(id, ItemUtils.getDisplayName(stack));
     }
 
     private void diffAndLog(ItemStack[] prev, ItemStack[] curr) {

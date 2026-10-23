@@ -60,30 +60,22 @@ public class ItemRenderUtils {
         renderItemIcon(mc, stack, x, y, 16);
     }
 
-    /**
-     * Standard state for GUI item rendering: unlit-safe white color, standard
-     * alpha blend function. Callers that draw text/rects right after an item
-     * render must return to this state. Vanilla item rendering leaves blend
-     * disabled and a multiplicative glint function (enchanted stacks), which
-     * darkens everything drawn after it.
-     */
     private static void beginGuiItemRender() {
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        //#if MC < 1.21
         RenderHelperCompat.enableGUIStandardItemLighting();
+        //#endif
     }
 
-    /**
-     * Counterpart to {@link #beginGuiItemRender()}: restores lighting off and
-     * the standard alpha blend function. Must run even when the item render
-     * throws, or every later draw inherits the polluted state.
-     */
     private static void endGuiItemRender() {
+        //#if MC < 1.21
         RenderHelperCompat.disableStandardItemLighting();
         GlStateManagerCompat.disableLighting();
         GlStateManagerCompat.disableRescaleNormal();
         GlStateManagerCompat.tryBlendFuncSeparate(
                 GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
         GlStateManagerCompat.enableTexture2D();
+        //#endif
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         GlStateManagerCompat.enableBlend();
     }
@@ -141,6 +133,7 @@ public class ItemRenderUtils {
     }
 
     public static void renderItemWithEffects(Minecraft mc, ItemStack stack, int x, int y) {
+        //#if MC < 1.21
         beginGuiItemRender();
         try {
             GL11.glEnable(GL12.GL_RESCALE_NORMAL);
@@ -148,6 +141,14 @@ public class ItemRenderUtils {
         } finally {
             endGuiItemRender();
         }
+        //#else
+        //$$ GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        //$$ try {
+        //$$     DrawContextUtils.drawItem(stack, x, y);
+        //$$ } finally {
+        //$$     GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        //$$ }
+        //#endif
     }
 
 }

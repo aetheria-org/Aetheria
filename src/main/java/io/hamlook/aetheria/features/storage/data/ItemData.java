@@ -2,7 +2,7 @@ package io.hamlook.aetheria.features.storage.data;
 
 import com.google.gson.annotations.SerializedName;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
-import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.item.ItemStack;
 
 public class ItemData {
@@ -31,7 +31,7 @@ public class ItemData {
         if (encoded == null) return null;
         item.data = encoded;
 
-        item.displayName = TextCompat.codedString(stack.getDisplayName());
+        item.displayName = ItemUtils.getDisplayName(stack);
         item.cachedStack = stack;
 
         return item;

@@ -70,7 +70,7 @@ public class TrophyFishTracker {
     public void onChat(ASMChatEvent event) {
         if (ATHRConfig.feature == null) return;
 
-        Matcher m = TROPHY_CHAT.matcher(TextCompat.getFormattedText(event.message));
+        Matcher m = TROPHY_CHAT.matcher(TextCompat.getFormattedTextWithResets(event.message));
         if (!m.find()) return;
 
         String fishName = ColorUtils.stripColor(m.group("displayName").replace("§k", "")).trim();

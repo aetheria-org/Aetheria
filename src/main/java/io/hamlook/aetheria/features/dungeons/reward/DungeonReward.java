@@ -37,7 +37,7 @@ public final class DungeonReward {
         this.price = price1;
     }
     public String getText() {
-        return item == null ? "" : TextCompat.getFormattedText(item.getDisplayName()) + " §7: " +
+        return item == null ? "" : ItemUtils.getDisplayName(item) + " §7: " +
                                    getPriceText();
     }
 

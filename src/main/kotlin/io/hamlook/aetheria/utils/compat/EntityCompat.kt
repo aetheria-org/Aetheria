@@ -107,10 +107,22 @@ object EntityCompat {
         //$$ entity.getItemBySlot(EquipmentSlot.FEET)
         //#endif
 
+    //#if MC < 1.16
+    private const val HEAD_SLOT = 4
+    private const val CHEST_SLOT = 3
+    private const val LEGS_SLOT = 2
+    private const val FEET_SLOT = 1
+    //#endif
+
     @JvmStatic
     fun getAllEquipment(entity: EntityLivingBase): Array<ItemStack> =
         //#if MC < 1.16
-        entity.inventory.normalizeAsArray()
+        arrayOf(
+            entity.getEquipmentInSlot(HEAD_SLOT),
+            entity.getEquipmentInSlot(CHEST_SLOT),
+            entity.getEquipmentInSlot(LEGS_SLOT),
+            entity.getEquipmentInSlot(FEET_SLOT)
+        )
         //#elseif MC < 1.21
         //$$ entity.armorSlots.map { it }.toTypedArray()
         //#else
@@ -129,6 +141,14 @@ object EntityCompat {
         entity.name
         //#else
         //$$ TextCompat.getUnformattedText(entity.name)
+        //#endif
+
+    @JvmStatic
+    fun getNametag(entity: Entity): String? =
+        //#if MC < 1.16
+        entity.customNameTag
+        //#else
+        //$$ entity.customName?.let { TextCompat.getFormattedText(it) }
         //#endif
 
     @JvmStatic

@@ -37,7 +37,7 @@ public class ChatUtils {
     }
 
     public static String clean(ASMChatEvent event) {
-        return StringUtils.stripControlCodes(TextCompat.getFormattedText(event.message)).trim();
+        return StringUtils.stripControlCodes(TextCompat.getFormattedTextWithResets(event.message)).trim();
     }
 
     public static boolean isChatOpen() {

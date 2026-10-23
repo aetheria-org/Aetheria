@@ -75,7 +75,7 @@ public class AsmCopyBossbarCommand {
                 field.setAccessible(true);
                 Object value = field.get(tabList);
                 if (value == null) return null;
-                if (value instanceof IChatComponent) return TextCompat.getFormattedText(((IChatComponent) value));
+                if (value instanceof IChatComponent) return TextCompat.getFormattedTextWithResets(((IChatComponent) value));
                 return value.toString();
             }
         } catch (Exception ignored) {

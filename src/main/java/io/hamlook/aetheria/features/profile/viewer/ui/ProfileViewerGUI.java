@@ -242,10 +242,7 @@ public class ProfileViewerGUI extends AetheriaBaseScreen {
         }
 
         if (tooltipToDraw != null) {
-            GlStateManagerCompat.pushMatrix();
-            GlStateManagerCompat.translate(0, 0, 500);
-            TextRenderUtils.drawHoveringText(tooltipToDraw, tooltipX, tooltipY, MinecraftCompat.getFontRenderer());
-            GlStateManagerCompat.popMatrix();
+            TextRenderUtils.drawHoveringText(tooltipToDraw, tooltipX, tooltipY, 500, MinecraftCompat.getFontRenderer());
             tooltipToDraw = null;
         }
     }

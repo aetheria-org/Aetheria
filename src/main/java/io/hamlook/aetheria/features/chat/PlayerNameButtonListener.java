@@ -29,7 +29,7 @@ public class PlayerNameButtonListener {
     public void onChat(ASMChatEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.playerButtons.enabled) return;
 
-        String plain = StringUtils.stripControlCodes(TextCompat.getFormattedText(event.message));
+        String plain = StringUtils.stripControlCodes(TextCompat.getFormattedTextWithResets(event.message));
 
         String ign = ChatUtils.getPlayerMessageSender(plain);
         if (ign == null) ign = ChatUtils.getPartySender(plain);

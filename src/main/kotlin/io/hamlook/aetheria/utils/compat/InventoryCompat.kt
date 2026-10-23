@@ -20,6 +20,8 @@ import net.minecraft.util.IChatComponent
 
 object InventoryCompat {
 
+    private val EMPTY_INVENTORY = arrayOfNulls<ItemStack>(0)
+
     //#if MC < 1.16
     @JvmStatic
     fun getContainer(gui: GuiContainer): Container = gui.inventorySlots
@@ -105,6 +107,13 @@ object InventoryCompat {
         //#else
         //$$ player.getInventory().main.normalizeItemStackArray()
         //#endif
+
+    @JvmStatic
+    fun getMainInventory(): Array<ItemStack?> {
+        val player = MinecraftCompat.getLocalPlayer() ?: return EMPTY_INVENTORY
+        return getMainInventory(player)
+    }
+
 
     @JvmStatic
     fun getArmorInventory(player: EntityPlayer): Array<ItemStack?> =

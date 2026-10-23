@@ -47,7 +47,7 @@ public class ChatFilter {
     public void onChat(ASMChatEvent event) {
         if (FILTERS.isEmpty()) return;
 
-        String raw = TextCompat.getFormattedText(event.message);
+        String raw = TextCompat.getFormattedTextWithResets(event.message);
         for (Predicate<String> filter : FILTERS.values()) {
             if (filter.test(raw)) {
                 event.cancel();

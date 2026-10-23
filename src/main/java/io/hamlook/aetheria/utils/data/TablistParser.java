@@ -124,7 +124,7 @@ public class TablistParser {
     public static String readCookieBuff() {
         net.minecraft.util.IChatComponent footer = getTabFooter();
         if (footer == null) return null;
-        String[] lines = net.minecraft.util.StringUtils.stripControlCodes(TextCompat.getFormattedText(footer)).split("\n");
+        String[] lines = net.minecraft.util.StringUtils.stripControlCodes(TextCompat.getFormattedTextWithResets(footer)).split("\n");
         boolean sawCookie = false;
         for (String line : lines) {
             String l = line.trim();

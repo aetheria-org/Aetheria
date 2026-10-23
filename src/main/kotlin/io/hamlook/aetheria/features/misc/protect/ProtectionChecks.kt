@@ -2,7 +2,6 @@ package io.hamlook.aetheria.features.misc.protect
 
 import io.hamlook.aetheria.utils.ColorUtils
 import io.hamlook.aetheria.utils.ContainerUtils
-import io.hamlook.aetheria.utils.compat.getDisplayNameCompat
 import io.hamlook.aetheria.utils.compat.hasDisplayNameCompat
 import io.hamlook.aetheria.utils.item.ItemUtils
 import net.minecraft.inventory.ContainerChest
@@ -29,7 +28,7 @@ object ProtectionChecks {
 
             // Check display name for "Sell Item" button
             if (stack.hasDisplayNameCompat()) {
-                val displayName = ColorUtils.stripColor(stack.getDisplayNameCompat())
+                val displayName = ColorUtils.stripColor(ItemUtils.getDisplayName(stack))
                 if (displayName == "Sell Item") {
                     return true
                 }

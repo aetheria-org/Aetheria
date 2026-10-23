@@ -163,12 +163,31 @@ object TextCompat {
     //$$     Identifier.of(path)
     //#endif
 
+    /**
+     * Renders a component as the legacy § text: a style code wherever the style changes,
+     * and no reset after it. 1.8 read item names, lore and nametags as plain § strings,
+     * so this is the shape those consumers expect. On 1.8 it is the native formatted text.
+     */
     @JvmStatic
     fun getFormattedText(component: IChatComponent): String =
         //#if MC < 1.16
         component.formattedText
         //#else
         //$$ component.toLegacyCodes()
+        //#endif
+
+    /**
+     * Renders a component the way 1.8's getFormattedText did: the style code, the text
+     * and a §r for every component, empty ones included. Use for the component trees the
+     * server sends - chat, action bar, tab footer, bossbar, sign text - whose patterns were
+     * captured from 1.8 output. On 1.8 it is the native formatted text.
+     */
+    @JvmStatic
+    fun getFormattedTextWithResets(component: IChatComponent): String =
+        //#if MC < 1.16
+        component.formattedText
+        //#else
+        //$$ component.toLegacyCodesWithResets()
         //#endif
 
     @JvmStatic
@@ -193,7 +212,7 @@ object TextCompat {
         //#if MC < 1.16
         getFormattedText(component)
         //#else
-        //$$ (component as Text).toLegacyCodes()
+        //$$ getFormattedText(component)
         //#endif
 
     @JvmStatic
@@ -213,7 +232,7 @@ object TextCompat {
         //#if MC < 1.16
         matchesCoded(getFormattedText(haystack), needle)
         //#else
-        //$$ matchesCoded((haystack as Text).toLegacyCodes(), needle)
+        //$$ matchesCoded(getFormattedText(haystack), needle)
         //#endif
 
     private fun normalizeRuns(s: String): String {
@@ -278,35 +297,51 @@ object TextCompat {
     //$$     return best
     //$$ }
     //$$
-    //$$ private fun codesFor(style: Style): String {
+//$$ private fun codesFor(style: Style): String {
     //$$     if (style.isEmpty) return ""
     //$$     return buildString {
-    //$$     val rgb = style.color?.rgb
-    //$$     val exact = if (rgb == null) null else codeLut[rgb]
-    //$$     append('§').append(exact ?: if (rgb == null) 'r' else nearestLegacy(rgb))
-    //$$     if (style.isBold) append("§l")
-    //$$     if (style.isItalic) append("§o")
-    //$$     if (style.isUnderlined) append("§n")
-    //$$     if (style.isStrikethrough) append("§m")
-    //$$     if (style.isObfuscated) append("§k")
+    //$$         val rgb = style.color?.rgb
+    //$$         if (rgb != null) append('§').append(codeLut[rgb] ?: nearestLegacy(rgb))
+    //$$         if (style.isBold) append("§l")
+    //$$         if (style.isItalic) append("§o")
+    //$$         if (style.isUnderlined) append("§n")
+    //$$         if (style.isObfuscated) append("§k")
+    //$$         if (style.isStrikethrough) append("§m")
     //$$     }
     //$$ }
     //$$
     //$$ private fun Text.toLegacyCodes(): String {
     //$$     val sb = StringBuilder()
-    //$$     var lastCodes: String? = null
     //$$     visit({ style, str ->
     //$$         if (str.isNotEmpty()) {
-    //$$             val codes = codesFor(style)
-    //$$             if (codes != lastCodes) {
-    //$$                 sb.append(codes)
-    //$$                 lastCodes = codes
-    //$$             }
+    //$$             sb.append(codesFor(style))
     //$$             sb.append(str)
     //$$         }
     //$$         Optional.empty<String>()
     //$$     }, Style.EMPTY)
     //$$     return sb.toString()
+    //$$ }
+    //$$
+    //$$ private fun Text.toLegacyCodesWithResets(): String {
+    //$$     val sb = StringBuilder()
+    //$$     appendNode(this, Style.EMPTY, sb)
+    //$$     return sb.toString()
+    //$$ }
+    //$$
+    //$$ private fun appendNode(node: Text, inherited: Style, sb: StringBuilder) {
+    //$$     val merged = node.style.withParent(inherited)
+    //$$     val content = node.content
+    //$$     if (content is PlainTextContent && content.string().isEmpty()) {
+    //$$         sb.append(codesFor(merged)).append("§r")
+    //$$     } else {
+    //$$         content.visit({ style, str ->
+    //$$             sb.append(codesFor(style))
+    //$$             sb.append(str)
+    //$$             sb.append("§r")
+    //$$             Optional.empty<String>()
+    //$$         }, merged)
+    //$$     }
+    //$$     for (sibling in node.siblings) appendNode(sibling, merged, sb)
     //$$ }
     //$$
     //$$ class StyledText internal constructor(
@@ -332,8 +367,8 @@ object TextCompat {
     //$$  * Flattens a component into code-free text plus per-run styles.
     //$$  *
     //$$  * Plain text and style offsets come from the same walk, so offsets always
-    //$$  * line up. Unlike [toLegacyCodes] this performs no code deduplication and no
-    //$$  * colour quantisation, so it is lossless.
+    //$$  * line up. Unlike [toLegacyCodes] this performs no colour quantisation, so it is
+    //$$  * lossless.
     //$$  */
     //$$ @JvmStatic
     //$$ fun flattenStyled(component: Text): StyledText {

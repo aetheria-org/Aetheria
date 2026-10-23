@@ -9,7 +9,6 @@ import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
-import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.item.NBTFormatter;
 import net.minecraft.item.ItemStack;
@@ -39,7 +38,7 @@ public class AsmCopyItemCommand {
                 List<String> result = new ArrayList<>();
                 result.add("internal name: " + ItemUtils.getInternalName(item));
                 result.add("effective id: " + ItemUtils.getEffectiveItemId(item));
-                result.add("display name: '" + TextCompat.getFormattedText(item.getDisplayName()) + "'");
+                result.add("display name: '" + ItemUtils.getDisplayName(item) + "'");
                 result.add("minecraft id: '" + ItemCompatKt.getIdentifierString(item.getItem()) + "'");
                 result.add("stack size: " + ItemCompatKt.getCountCompat(item));
                 result.add("");

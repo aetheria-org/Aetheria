@@ -21,6 +21,7 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
+import io.hamlook.aetheria.utils.item.OtherInventoryData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiScreen;
@@ -43,7 +44,7 @@ public final class VisitorShoppingList {
     private static final long HAVE_CACHE_MS = 1000L;
     private static final long SEARCH_TTL_MS = 60_000L;
     private static final int MAX_ROWS = 12;
-    private static final long CONTENTS_WAIT_MS = 1500L;
+    private static final long PENDING_OFFER_TTL_MS = 5000L;
     private static final int PARSE_LOG_MAX = 15;
 
     private static final Map<String, String> RESOLVED_IDS = new HashMap<>();
@@ -52,9 +53,9 @@ public final class VisitorShoppingList {
 
     private static Map<String, Integer> haveCounts = Collections.emptyMap();
     private static long haveCountsAt = 0L;
-    private static GuiScreen lastParsedScreen;
-    private static GuiScreen pendingScreen;
-    private static long pendingSinceMs;
+    private static String pendingOfferVisitor;
+    private static ItemStack pendingOfferStack;
+    private static long pendingOfferAtMs;
     private static final ArrayDeque<String> PARSE_LOG = new ArrayDeque<>();
 
     private static String pendingBzsCommand = null;
@@ -80,8 +81,7 @@ public final class VisitorShoppingList {
 
     @HandleEvent
     public void onUnload(ASMWorldUnloadEvent event) {
-        lastParsedScreen = null;
-        pendingScreen = null;
+        clearPendingOffer();
         pendingBzsCommand = null;
         signSubmitAtMs = 0L;
         pendingSubmitSign = null;
@@ -92,8 +92,7 @@ public final class VisitorShoppingList {
     }
 
     private static void clearTransientState() {
-        lastParsedScreen = null;
-        pendingScreen = null;
+        clearPendingOffer();
         PARSE_LOG.clear();
         PENDING_CONFIRMS.clear();
         pendingBzsCommand = null;
@@ -108,8 +107,25 @@ public final class VisitorShoppingList {
         if (!(InventoryCompat.getContainer(gui) instanceof ContainerChest)) return;
         ContainerChest chest = (ContainerChest) InventoryCompat.getContainer(gui);
         updateChestSignature(chest);
-        if (lastParsedScreen == event.gui) return;
-        attemptParse(chest, event.gui);
+    }
+
+    @HandleEvent
+    public void onInventoryFullyOpened(InventoryFullyOpenedEvent event) {
+        ItemStack offer = findAcceptOffer(event.getInventoryItems().values());
+        if (offer == null) return;
+
+        String visitor = event.getInventoryName();
+        if (visitor.isEmpty()) return;
+
+        if (FarmingApi.getActiveVisitors().contains(visitor)) {
+            recordOffer(visitor, offer);
+            return;
+        }
+
+        pendingOfferVisitor = visitor;
+        pendingOfferStack = offer;
+        pendingOfferAtMs = System.currentTimeMillis();
+        noteParse("'" + visitor + "' offer arrived before tab capture; retrying");
     }
 
     public static boolean nameMatchesFlow(String raw) {
@@ -155,6 +171,26 @@ public final class VisitorShoppingList {
                 noteParse("[flow] sign changed before auto-submit; aborted");
             }
         }
+
+        retryPendingOffer();
+    }
+
+    private static void retryPendingOffer() {
+        if (pendingOfferStack == null) return;
+
+        if (FarmingApi.getActiveVisitors().contains(pendingOfferVisitor)) {
+            recordOffer(pendingOfferVisitor, pendingOfferStack);
+            clearPendingOffer();
+        } else if (System.currentTimeMillis() - pendingOfferAtMs > PENDING_OFFER_TTL_MS) {
+            noteParse("dropped offer for '" + pendingOfferVisitor + "' (not in tab capture)");
+            clearPendingOffer();
+        }
+    }
+
+    private static void clearPendingOffer() {
+        pendingOfferVisitor = null;
+        pendingOfferStack = null;
+        pendingOfferAtMs = 0L;
     }
 
     @HandleEvent
@@ -171,6 +207,9 @@ public final class VisitorShoppingList {
                 + ", last remote address: " + (lastRemoteAddress == null ? "<none yet>" : lastRemoteAddress));
         lines.add("panel show-in: " + (showIn >= 0 && showIn < showIns.length ? showIns[showIn] : showIn)
                 + ", only-show-with-data: " + (cfg == null || cfg.panel == null || cfg.panel.onlyShowWithData));
+        OtherInventoryData data = OtherInventoryData.INSTANCE;
+        lines.add("last opened container: '" + data.getInventoryName() + "'"
+                + (data.isFullyOpened() ? " (fully opened)" : " (contents pending)"));
 
         List<String> active = FarmingApi.getActiveVisitors();
         if (active.isEmpty()) {
@@ -463,48 +502,6 @@ public final class VisitorShoppingList {
         return neededNamesCache;
     }
 
-    /**
-     * The GUI can render before the server's S30PacketWindowItems arrives (laggy
-     * servers), so an empty first frame must NOT mark the screen parsed. Wait up
-     * to CONTENTS_WAIT_MS for an "Accept Offer" item to appear; only then decide
-     */
-    private static void attemptParse(ContainerChest chest, GuiScreen gui) {
-        long now = System.currentTimeMillis();
-        if (pendingScreen != gui) {
-            pendingScreen = gui;
-            pendingSinceMs = now;
-        }
-
-        ItemStack offer = findAcceptOffer(chest);
-        if (offer == null) {
-            if (now - pendingSinceMs >= CONTENTS_WAIT_MS) {
-                finishScreen(gui);
-                noteParse("no 'Accept Offer' item " + CONTENTS_WAIT_MS + "ms after open -> not a visitor menu");
-            }
-            return;
-        }
-
-        String visitor = ContainerUtils.getTitle(chest);
-        if (visitor.isEmpty()) {
-            finishScreen(gui);
-            noteParse("'Accept Offer' found but chest title empty");
-            return;
-        }
-
-        if (!FarmingApi.getActiveVisitors().contains(visitor)) {
-            noteParse("'" + visitor + "' offer seen, waiting for tab capture to list it");
-            return;
-        }
-
-        finishScreen(gui);
-        recordOffer(visitor, offer);
-    }
-
-    private static void finishScreen(GuiScreen gui) {
-        lastParsedScreen = gui;
-        pendingScreen = null;
-    }
-
     static void noteParse(String msg) {
         if (!PARSE_LOG.isEmpty() && PARSE_LOG.peekLast().equals(msg)) return;
         PARSE_LOG.addLast(msg);
@@ -530,10 +527,8 @@ public final class VisitorShoppingList {
         noteParse(msg.toString());
     }
 
-    private static ItemStack findAcceptOffer(ContainerChest chest) {
-        int size = chest.getLowerChestInventory().getSizeInventory();
-        for (int i = 0; i < size; i++) {
-            ItemStack stack = chest.getLowerChestInventory().getStackInSlot(i);
+    private static ItemStack findAcceptOffer(Iterable<ItemStack> stacks) {
+        for (ItemStack stack : stacks) {
             if (stack != null && "Accept Offer".equals(stripped(stack))) return stack;
         }
         return null;

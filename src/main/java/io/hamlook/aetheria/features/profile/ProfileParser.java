@@ -53,8 +53,6 @@ import net.minecraft.inventory.Container;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -931,7 +929,7 @@ public class ProfileParser {
 
     public static ItemData parseItemData(ItemStack stack) {
         if (stack == null) return null;
-        String displayName = TextCompat.getFormattedText(stack.getDisplayName());
+        String displayName = ItemUtils.getDisplayName(stack);
         String skyblockID = ItemUtils.getInternalName(stack);
         List<String> lore = getLoreColored(stack);
         return new ItemData(displayName, lore, skyblockID,stack.isItemEnchanted(),ItemCompatKt.getCountCompat(stack));
@@ -1034,22 +1032,12 @@ public class ProfileParser {
 
     public static List<String> getLore(ItemStack stack) {
         List<String> lore = new ArrayList<>();
-        NBTTagCompound display = ItemUtils.getDisplayCompound(stack);
-        if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return lore;
-        NBTTagList loreList = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
-        for (int i = 0; i < NbtCompat.tagCount(loreList); i++)
-            lore.add(ColorUtils.stripColor(NbtCompat.getStringAt(loreList, i)).trim());
+        for (String line : ItemUtils.getLoreLinesWithoutColor(stack)) lore.add(line.trim());
         return lore;
     }
 
     public static List<String> getLoreColored(ItemStack stack) {
-        List<String> lore = new ArrayList<>();
-        NBTTagCompound display = ItemUtils.getDisplayCompound(stack);
-        if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return lore;
-        NBTTagList loreList = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
-        for (int i = 0; i < NbtCompat.tagCount(loreList); i++)
-            lore.add(NbtCompat.getStringAt(loreList, i));
-        return lore;
+        return new ArrayList<>(ItemUtils.getLoreLines(stack));
     }
 
     private static long parseCoins(String raw) {

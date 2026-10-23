@@ -376,38 +376,31 @@ public class PriceDetector {
             long expireTime = 0;
 
             if (NbtCompat.hasTagCompound(stack)) {
-                NBTTagCompound tag = NbtCompat.getTagCompound(stack);
+                boolean cutLore = false;
 
-                NBTTagCompound display = NbtCompat.getDisplayCompound(stack);
-                if (display != null) {
-                    NBTTagList loreList = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
-                    boolean cutLore = false;
+                for (String rawLine : ItemUtils.getLoreLines(stack)) {
+                    String stripped = ColorUtils.stripColor(rawLine);
 
-                    for (int j = 0; j < NbtCompat.tagCount(loreList); j++) {
-                        String rawLine = NbtCompat.getStringAt(loreList, j);
-                        String stripped = ColorUtils.stripColor(rawLine);
-
-                        if (!cutLore) {
-                            if (stripped.contains("-----------------")) {
-                                cutLore = true;
-                            }else{
-                                formattedLore.add(rawLine);
-                            }
+                    if (!cutLore) {
+                        if (stripped.contains("-----------------")) {
+                            cutLore = true;
+                        } else {
+                            formattedLore.add(rawLine);
                         }
+                    }
 
-                        if (stripped.startsWith("Buy it now:")) {
-                            price = extractPrice(stripped);
-                            type = PriceType.BIN;
-                        } else if (stripped.startsWith("Starting bid:") || stripped.startsWith("Top bid:")) {
-                            price = extractPrice(stripped);
-                        } else if (stripped.startsWith("Seller: ")) {
-                            String sellerContent = stripped.substring("Seller: ".length()).trim();
-                            String[] parts = sellerContent.split(" ");
-                            playerUsername = parts[parts.length - 1];
-                        } else if (stripped.startsWith("Ends in: ")) {
-                            String timeStr = stripped.substring("Ends in: ".length()).trim();
-                            expireTime = now + parseDurationToMs(timeStr);
-                        }
+                    if (stripped.startsWith("Buy it now:")) {
+                        price = extractPrice(stripped);
+                        type = PriceType.BIN;
+                    } else if (stripped.startsWith("Starting bid:") || stripped.startsWith("Top bid:")) {
+                        price = extractPrice(stripped);
+                    } else if (stripped.startsWith("Seller: ")) {
+                        String sellerContent = stripped.substring("Seller: ".length()).trim();
+                        String[] parts = sellerContent.split(" ");
+                        playerUsername = parts[parts.length - 1];
+                    } else if (stripped.startsWith("Ends in: ")) {
+                        String timeStr = stripped.substring("Ends in: ".length()).trim();
+                        expireTime = now + parseDurationToMs(timeStr);
                     }
                 }
 

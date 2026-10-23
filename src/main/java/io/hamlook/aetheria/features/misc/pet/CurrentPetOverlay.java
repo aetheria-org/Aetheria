@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.features.misc.pet;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.init.RegisterEvents;
@@ -16,7 +17,6 @@ import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
-import org.lwjgl.opengl.GL11;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +26,8 @@ public class CurrentPetOverlay extends Overlay {
 
     private static final int SKULL_SIZE = 16;
     private static final int GAP = 4;
+
+    private static boolean textureLengthLogged;
 
     @Getter
     private static CurrentPetOverlay instance;
@@ -93,7 +95,13 @@ public class CurrentPetOverlay extends Overlay {
             formattedName = CurrentPetApi.getDisplayName();
             if (formattedName.isEmpty()) formattedName = CurrentPetApi.getColoredName();
             String tex = CurrentPetApi.getTextureValue();
-            if (!tex.isEmpty()) skullItem = ItemUtils.getCachedSkull(tex);
+            if (!tex.isEmpty()) {
+                if (!textureLengthLogged) {
+                    textureLengthLogged = true;
+                    Aetheria.logger.info("[ATHR] pet overlay: current pet skin texture value length = " + tex.length());
+                }
+                skullItem = ItemUtils.getCachedSkull(tex);
+            }
         }
 
         float scale = getScale();

@@ -73,7 +73,7 @@ public class GoldTracker {
     public void onChat(ASMChatEvent event) {
         if (!isActive()) return;
 
-        String raw = TextCompat.getFormattedText(event.message);
+        String raw = TextCompat.getFormattedTextWithResets(event.message);
 
         Matcher m = COMPACT_PATTERN.matcher(raw);
         if (m.find()) {

@@ -33,7 +33,7 @@ public class ChatPingListener {
         if (MinecraftCompat.getLocalPlayer() == null) return;
 
         String name = TextCompat.getUnformattedText(MinecraftCompat.getLocalPlayer().getName()).toLowerCase();
-        String stripped = StringUtils.stripControlCodes(TextCompat.getFormattedText(event.message));
+        String stripped = StringUtils.stripControlCodes(TextCompat.getFormattedTextWithResets(event.message));
 
         int colonIdx = stripped.indexOf(':');
         if (colonIdx != -1) {

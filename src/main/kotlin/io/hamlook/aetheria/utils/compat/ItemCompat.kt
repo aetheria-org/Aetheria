@@ -21,6 +21,13 @@ import net.minecraft.item.ItemStack
 //$$ import net.minecraft.text.Text
 //#endif
 
+fun isEmptyCompat(item: ItemStack?): Boolean =
+    //#if MC < 1.16
+    item == null
+    //#else
+    //$$ item == null || item.isEmpty()
+    //#endif
+
 fun ItemStack.getCountCompat(): Int =
     //#if MC < 1.16
     this.stackSize

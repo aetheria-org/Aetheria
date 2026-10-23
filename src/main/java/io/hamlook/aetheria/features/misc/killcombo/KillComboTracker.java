@@ -70,7 +70,7 @@ public class KillComboTracker {
         String stripped = ChatUtils.clean(event);
         if (isPlayerMessage(stripped)) return;
 
-        String text = TextCompat.getFormattedText(event.message);
+        String text = TextCompat.getFormattedTextWithResets(event.message);
 
         if (text.contains(EXPIRE_MARKER)) {
             handleExpire(text);

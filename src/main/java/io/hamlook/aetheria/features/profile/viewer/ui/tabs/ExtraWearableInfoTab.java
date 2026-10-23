@@ -8,6 +8,7 @@ import io.hamlook.aetheria.features.profile.data.ItemData;
 import io.hamlook.aetheria.features.profile.data.ProfileData;
 import io.hamlook.aetheria.features.profile.data.pets.Pet;
 import io.hamlook.aetheria.features.profile.data.wardrobe.WardrobeSet;
+import io.hamlook.aetheria.features.profile.viewer.ProfileTooltips;
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.*;
@@ -270,32 +271,16 @@ public class ExtraWearableInfoTab extends Tab {
 
     private void drawPetTooltip(Minecraft mc, RenderablePet pet, int mouseX, int mouseY) {
         if (pet == null || pet.raw == null || pet.raw.data == null) return;
-        List<String> lines = new ArrayList<>();
-        lines.add(pet.raw.data.displayName);
-        if (pet.raw.data.lore != null) lines.addAll(pet.raw.data.lore);
-        
-        lines.add("");
-        lines.add("§8Item SB_ID: §7" + pet.raw.data.skyblockID);
-        lines.add("§8ItemRegistry SB_ID: §7" + pet.debugRegistryID);
-
-        if (MinecraftCompat.getCurrentScreen() instanceof ProfileViewerGUI) {
-            ((ProfileViewerGUI) MinecraftCompat.getCurrentScreen()).drawTooltip(lines, mouseX, mouseY);
-        }
+        if (!(MinecraftCompat.getCurrentScreen() instanceof ProfileViewerGUI)) return;
+        ((ProfileViewerGUI) MinecraftCompat.getCurrentScreen())
+                .drawTooltip(ProfileTooltips.itemLines(pet.raw.data, pet.debugRegistryID), mouseX, mouseY);
     }
 
     private void drawItemTooltip(Minecraft mc, ItemData data, int mouseX, int mouseY) {
-        if (data == null) return;
-        List<String> lines = new ArrayList<>();
-        lines.add(data.displayName);
-        if (data.lore != null) lines.addAll(data.lore);
-
-        lines.add("");
-        lines.add("§8Item SB_ID: §7" + data.skyblockID);
-        lines.add("§8ItemRegistry SB_ID: §7" + io.hamlook.aetheria.features.misc.itemList.ItemResolver.resolveId(data.skyblockID, data.displayName));
-
-        if (MinecraftCompat.getCurrentScreen() instanceof ProfileViewerGUI) {
-            ((ProfileViewerGUI) MinecraftCompat.getCurrentScreen()).drawTooltip(lines, mouseX, mouseY);
-        }
+        if (!(MinecraftCompat.getCurrentScreen() instanceof ProfileViewerGUI)) return;
+        List<String> lines = ProfileTooltips.itemLines(data);
+        if (lines.isEmpty()) return;
+        ((ProfileViewerGUI) MinecraftCompat.getCurrentScreen()).drawTooltip(lines, mouseX, mouseY);
     }
 
     private void handleHorizontalScroll(float x, float y, float w, float h, float contentW, boolean isPet) {

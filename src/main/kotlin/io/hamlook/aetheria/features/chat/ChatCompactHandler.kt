@@ -83,7 +83,7 @@ object ChatCompactHandler {
         val cfg = ATHRConfig.feature?.chat ?: return
         if (!cfg.compactingEnabled || refresh) return
 
-        val clear = cleanColor(TextCompat.getFormattedText(component)).trim()
+        val clear = cleanColor(TextCompat.getFormattedTextWithResets(component)).trim()
         if (clear.isEmpty() || isDivider(clear)) return
 
         val hash = getChatComponentHash(component)

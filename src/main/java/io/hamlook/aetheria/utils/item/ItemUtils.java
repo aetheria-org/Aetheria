@@ -1,15 +1,22 @@
 package io.hamlook.aetheria.utils.item;
 
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
-import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+//#if MC > 1.21
+//$$ import net.minecraft.component.DataComponentTypes;
+//$$ import net.minecraft.component.type.ProfileComponent;
+//#endif
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,13 +33,8 @@ public class ItemUtils {
 
 
     public static @Nullable NBTTagCompound getExtraAttributes(@Nullable ItemStack item) {
-        if (item == null) return null;
-        return NbtCompat.getExtraAttributes(item);
-    }
-
-    public static @Nullable NBTTagCompound getDisplayCompound(@Nullable ItemStack item) {
-        if (item == null) return null;
-        return NbtCompat.getDisplayCompound(item);
+        if (ItemCompatKt.isEmptyCompat(item)) return null;
+        return CachedItemData.of(item).nbt.get(item, ItemUtils::loadNbtData).extraAttributes;
     }
 
     public static @Nullable NBTTagCompound getEnchantments(@Nullable ItemStack item) {
@@ -44,21 +46,32 @@ public class ItemUtils {
 
 
     public static @NotNull List<String> getLoreLines(@Nullable ItemStack item) {
-        NBTTagCompound display = getDisplayCompound(item);
-        if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return Collections.emptyList();
-        NBTTagList lore = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
-        List<String> lines = new ArrayList<>(NbtCompat.tagCount(lore));
-        for (int i = 0; i < NbtCompat.tagCount(lore); i++) lines.add(NbtCompat.getStringAt(lore, i));
-        return lines;
+        if (ItemCompatKt.isEmptyCompat(item)) return Collections.emptyList();
+        return CachedItemData.of(item).lore.get(item, ItemUtils::loadLore);
     }
 
     public static @NotNull List<String> getLoreLinesWithoutColor(@Nullable ItemStack item) {
-        NBTTagCompound display = getDisplayCompound(item);
-        if (display == null || !NbtCompat.hasKey(display, "Lore", NbtCompat.TAG_LIST)) return Collections.emptyList();
-        NBTTagList lore = NbtCompat.getTagList(display, "Lore", NbtCompat.TAG_STRING);
-        List<String> lines = new ArrayList<>(NbtCompat.tagCount(lore));
-        for (int i = 0; i < NbtCompat.tagCount(lore); i++) lines.add(ColorUtils.stripColor(NbtCompat.getStringAt(lore, i)));
-        return lines;
+        if (ItemCompatKt.isEmptyCompat(item)) return Collections.emptyList();
+        return CachedItemData.of(item).loreStripped.get(item, ItemUtils::loadLoreStripped);
+    }
+
+    private static List<String> loadLore(ItemStack item) {
+        return Collections.unmodifiableList(NbtCompat.getLoreLines(item));
+    }
+
+    private static List<String> loadLoreStripped(ItemStack item) {
+        List<String> lines = getLoreLines(item);
+        if (lines.isEmpty()) return lines;
+        List<String> out = new ArrayList<>(lines.size());
+        for (String line : lines) out.add(ColorUtils.stripColor(line));
+        return Collections.unmodifiableList(out);
+    }
+
+    private static CachedItemData.NbtData loadNbtData(ItemStack item) {
+        NBTTagCompound extra = NbtCompat.getExtraAttributes(item);
+        String internalName = extra != null && extra.hasKey("id") ? extra.getString("id") : "";
+        String uuid = extra != null && extra.hasKey("uuid") ? extra.getString("uuid") : null;
+        return new CachedItemData.NbtData(extra, internalName, computeEffectiveItemId(extra), uuid);
     }
 
     @Nullable
@@ -80,49 +93,130 @@ public class ItemUtils {
 
 
     public static String getInternalName(@Nullable ItemStack item) {
-        NBTTagCompound extra = getExtraAttributes(item);
-        return extra != null && extra.hasKey("id") ? extra.getString("id") : "";
+        if (ItemCompatKt.isEmptyCompat(item)) return "";
+        return CachedItemData.of(item).nbt.get(item, ItemUtils::loadNbtData).internalName;
+    }
+
+    public static @NotNull String getDisplayName(@Nullable ItemStack item) {
+        if (item == null) return "";
+        return CachedItemData.of(item).displayName.get(item, ItemUtils::loadDisplayName);
+    }
+
+    private static String loadDisplayName(ItemStack item) {
+        return ItemCompatKt.getDisplayNameCompat(item);
+    }
+
+    // hotbar check, uses the per tick snapshot
+    public static boolean isItemInHotbar(String internalId) {
+        return PlayerInventoryCache.isItemInHotbar(internalId);
+    }
+
+    // main inventory, read fresh, no snapshot
+    public static ItemStack[] getMainInventory() {
+        return InventoryCompat.getMainInventory();
     }
 
 
-    public static String getSkullTexture(@Nullable ItemStack item) {
+    public static final class SkullIdentity {
+        public final String textureValue;
+        public final String profileId;
+        public final String profileName;
+        public final String signature;
+        public final GameProfile profile;
+
+        private SkullIdentity(String textureValue, String profileId, String profileName, String signature) {
+            this.textureValue = textureValue;
+            this.profileId = profileId;
+            this.profileName = profileName;
+            this.signature = signature;
+            UUID uuid;
+            try {
+                uuid = profileId.isEmpty() ? UUID.nameUUIDFromBytes(textureValue.getBytes(StandardCharsets.UTF_8)) : UUID.fromString(profileId);
+            } catch (IllegalArgumentException e) {
+                uuid = UUID.nameUUIDFromBytes(textureValue.getBytes(StandardCharsets.UTF_8));
+            }
+            GameProfile profile = new GameProfile(uuid, profileName);
+            profile.getProperties().put("textures", signature.isEmpty()
+                    ? new Property("textures", textureValue)
+                    : new Property("textures", textureValue, signature));
+            this.profile = profile;
+        }
+
+        public static SkullIdentity of(String textureValue, String profileId, String profileName, String signature) {
+            return new SkullIdentity(textureValue, profileId, profileName, signature);
+        }
+    }
+
+    public static @Nullable SkullIdentity skullIdentity(@Nullable ItemStack item) {
+        if (ItemCompatKt.isEmptyCompat(item)) return null;
         NBTTagCompound tag = NbtCompat.getTagCompound(item);
-        if (tag == null) return "";
-        if (!NbtCompat.hasKey(tag, "SkullOwner")) return "";
+        if (tag == null || !NbtCompat.hasKey(tag, "SkullOwner")) return null;
         NBTTagCompound skullOwner = NbtCompat.getCompound(tag, "SkullOwner");
-        if (!NbtCompat.hasKey(skullOwner, "Properties")) return "";
         NBTTagList textures = NbtCompat.getTagList(NbtCompat.getCompound(skullOwner, "Properties"), "textures", NbtCompat.TAG_COMPOUND);
-        if (NbtCompat.tagCount(textures) == 0) return "";
+        if (NbtCompat.tagCount(textures) == 0) return null;
         NBTTagCompound entry = NbtCompat.getCompoundAt(textures, 0);
-        return NbtCompat.hasKey(entry, "Value") ? NbtCompat.getString(entry, "Value") : "";
+        if (!NbtCompat.hasKey(entry, "Value")) return null;
+        String value = NbtCompat.getString(entry, "Value");
+        if (value.isEmpty()) return null;
+        String signature = NbtCompat.hasKey(entry, "Signature") ? NbtCompat.getString(entry, "Signature") : "";
+        String id = NbtCompat.hasKey(skullOwner, "Id") ? NbtCompat.getString(skullOwner, "Id") : "";
+        String name = NbtCompat.hasKey(skullOwner, "Name") ? NbtCompat.getString(skullOwner, "Name") : "";
+        return SkullIdentity.of(value, id, name, signature);
     }
 
-    public static ItemStack createSkullWithTexture(String textureValue) {
+    private static final Map<String, SkullIdentity> SKULL_IDENTITIES = new ConcurrentHashMap<>();
+
+    public static void registerSkullIdentity(String textureValue, String profileId, String profileName, String signature) {
+        if (textureValue == null || textureValue.isEmpty()) return;
+        SKULL_IDENTITIES.put(textureValue, SkullIdentity.of(textureValue, profileId, profileName, signature));
+    }
+
+    /** The identity registered for this texture value, or a synthetic one without a head item behind it. */
+    public static @Nullable SkullIdentity skullIdentity(@Nullable String textureValue) {
+        if (textureValue == null || textureValue.isEmpty()) return null;
+        SkullIdentity identity = SKULL_IDENTITIES.get(textureValue);
+        return identity != null ? identity : SkullIdentity.of(textureValue, "", "", "");
+    }
+
+    public static @Nullable ItemStack createSkullWithTexture(@Nullable String textureValue) {
+        SkullIdentity identity = skullIdentity(textureValue);
+        if (identity == null) return null;
         ItemStack skull = ItemCompatKt.createPlayerHeadStack();
+        //#if MC < 1.21
         NBTTagCompound tag = NbtCompat.createCompound();
         NBTTagCompound skullOwner = NbtCompat.createCompound();
-        NbtCompat.setString(skullOwner, "Id", UUID.randomUUID().toString());
+        NbtCompat.setString(skullOwner, "Id", identity.profile.getId().toString());
+        NbtCompat.setString(skullOwner, "Name", identity.profileName);
         NBTTagCompound properties = NbtCompat.createCompound();
         NBTTagList textures = NbtCompat.createList();
         NBTTagCompound textureTag = NbtCompat.createCompound();
-        NbtCompat.setString(textureTag, "Value", textureValue);
+        NbtCompat.setString(textureTag, "Value", identity.textureValue);
+        NbtCompat.setString(textureTag, "Signature", identity.signature);
         NbtCompat.appendTag(textures, textureTag);
         NbtCompat.setTagList(properties, "textures", textures);
         NbtCompat.setTag(skullOwner, "Properties", properties);
         NbtCompat.setTag(tag, "SkullOwner", skullOwner);
         NbtCompat.setTagCompound(skull, tag);
+        //#else
+        //$$ skull.set(DataComponentTypes.PROFILE, new ProfileComponent(identity.profile));
+        //#endif
         return skull;
     }
 
     private static final Map<String, ItemStack> SKULL_CACHE = new ConcurrentHashMap<>();
 
-    public static ItemStack getCachedSkull(String textureValue) {
+    public static @Nullable ItemStack getCachedSkull(@Nullable String textureValue) {
+        if (textureValue == null || textureValue.isEmpty()) return null;
         return SKULL_CACHE.computeIfAbsent(textureValue, ItemUtils::createSkullWithTexture);
     }
 
 
     public static String getEffectiveItemId(@Nullable ItemStack item) {
-        NBTTagCompound extra = getExtraAttributes(item);
+        if (ItemCompatKt.isEmptyCompat(item)) return "";
+        return CachedItemData.of(item).nbt.get(item, ItemUtils::loadNbtData).effectiveId;
+    }
+
+    private static String computeEffectiveItemId(@Nullable NBTTagCompound extra) {
         if (extra == null) return "";
         String baseId = extra.hasKey("id") ? extra.getString("id") : "";
         if ("PET".equals(baseId)) {
@@ -176,11 +270,6 @@ public class ItemUtils {
         return extra != null && extra.hasKey("id");
     }
 
-    /**
-     * Returns the stack's tag for mutation. Legacy returns the live compound;
-     * on modern the returned compound is detached — callers must write it back
-     * with {@link NbtCompat#setTagCompound} after mutating (see SkyblockItem).
-     */
     public static @NotNull NBTTagCompound getOrCreateTag(@NotNull ItemStack item) {
         NBTTagCompound existing = NbtCompat.getTagCompound(item);
         if (existing != null) return existing;
@@ -191,7 +280,7 @@ public class ItemUtils {
 
     @Nullable
     public static String getItemUuid(@Nullable ItemStack item) {
-        NBTTagCompound extra = getExtraAttributes(item);
-        return extra != null && extra.hasKey("uuid") ? extra.getString("uuid") : null;
+        if (ItemCompatKt.isEmptyCompat(item)) return null;
+        return CachedItemData.of(item).nbt.get(item, ItemUtils::loadNbtData).uuid;
     }
 }
