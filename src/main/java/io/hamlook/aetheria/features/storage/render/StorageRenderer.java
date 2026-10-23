@@ -82,6 +82,7 @@ public class StorageRenderer {
     private int[] rowYOffsets = new int[0];
 
     boolean containersDirty = false;
+    boolean layoutDirty = false;
 
     public StorageRenderer(LinkedHashMap<String, SContainer> containers) {
         this.containers = containers;
@@ -94,6 +95,10 @@ public class StorageRenderer {
 
     public void markDirty() {
         containersDirty = true;
+    }
+
+    public void markLayoutDirty() {
+        layoutDirty = true;
     }
 
     public boolean isHoveredItemFromInventory() {
@@ -115,6 +120,13 @@ public class StorageRenderer {
         GlStateManagerCompat.disableBlend();
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         DrawContextUtils.fill(x, y, x + width, y + height, 0xFF000000);
+        // DrawContext queues fill() into the GUI layer until the frame ends, but
+        // NineSliceUtils draws its texture immediately on 1.21; without the flush
+        // the queued black quad renders over the nine-slice (panel turns black).
+        //#if MC < 1.21
+        //#else
+        //$$ DrawContextUtils.flushIfPresent();
+        //#endif
         GlStateManagerCompat.enableBlend();
         NineSliceUtils.draw(getContainerBg(), x, y, width, height, NINE_SLICE_CORNER, NINE_SLICE_SIZE);
     }
@@ -299,7 +311,7 @@ public class StorageRenderer {
         // Update search text — only rebuild filtered list when needed
         String newSearchText = SearchBar.getStorageSearchText().toLowerCase();
         boolean searchChanged = !newSearchText.equals(lastSearchText);
-        boolean needsRebuild = searchChanged || containersDirty;
+        boolean needsRebuild = searchChanged || containersDirty || layoutDirty;
 
         if (searchChanged) {
             searchCache.clear();
@@ -310,6 +322,12 @@ public class StorageRenderer {
         if (containersDirty) {
             searchCache.clear();
             containersDirty = false;
+        }
+        if (layoutDirty) {
+            rowHeightCache.clear();
+            containerHeightCache.clear();
+            initLayout();
+            layoutDirty = false;
         }
 
         searchText = newSearchText;
@@ -651,8 +669,9 @@ public class StorageRenderer {
     private void drawContainer(int index, int mouseX, int mouseY, FontRenderer fr, boolean isActive, boolean dimMode) {
         ContainerLayout layout = cachedLayouts[index];
         SContainer container = filteredContainers.get(index);
+        boolean hovering = isHovering(mouseX, mouseY, layout.x, layout.y, layout.width, layout.height);
 
-        drawContainerBackground(layout, isActive, mouseX, mouseY, dimMode);
+        drawContainerBackground(layout, isActive, hovering, dimMode);
         drawContainerTitle(container, layout, fr, isActive, dimMode);
         drawContainerSlots(container, layout, mouseX, mouseY);
 
@@ -661,7 +680,8 @@ public class StorageRenderer {
             GlStateManagerCompat.enableBlend();
             GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
             GlStateManagerCompat.disableTexture2D();
-            DrawContextUtils.fill(layout.x, layout.y, layout.x + layout.width, layout.y + layout.height, 0x55000000);
+            DrawContextUtils.fill(layout.x, layout.y, layout.x + layout.width, layout.y + layout.height,
+                    hovering ? 0x2A000000 : 0x55000000);
             GlStateManagerCompat.enableTexture2D();
             GlStateManagerCompat.disableBlend();
         }
@@ -691,24 +711,15 @@ public class StorageRenderer {
         return getContainerLayout(index);
     }
 
-    private void drawContainerBackground(ContainerLayout info, boolean isActive, int mouseX, int mouseY, boolean dimMode) {
-        boolean hovering = isHovering(mouseX, mouseY, info.x, info.y, info.width, info.height);
-
+    private void drawContainerBackground(ContainerLayout info, boolean isActive, boolean hovering, boolean dimMode) {
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
         GlStateManagerCompat.disableLighting();
 
-        if (isActive) {
-            if (dimMode) {
-                GlStateManagerCompat.color(1.4f, 1.4f, 0.7f, 1f);
-            } else {
-                GlStateManagerCompat.color(1.2f, 1.2f, 0.8f, 1f);
-            }
-        } else if (hovering && !dimMode) {
-            GlStateManagerCompat.color(1.3f, 1.3f, 1.3f, 1f);
-        } else if (hovering) {
-            GlStateManagerCompat.color(1.1f, 1.1f, 1.1f, 1f);
+        if (!dimMode && !isActive) {
+            float shade = hovering ? 0.92f : 0.84f;
+            GlStateManagerCompat.color(shade, shade, shade, 1f);
         }
 
         NineSliceUtils.draw(getContainerBg(), info.x, info.y, info.width, info.height, NINE_SLICE_CORNER, NINE_SLICE_SIZE);

@@ -7,6 +7,7 @@ net.minecraft.client.gui.screen.ingame.SignEditScreen blockEntity sign
 
 net.minecraft.client.gui.widget.Widget net.minecraft.client.gui.Drawable
 
+net.minecraft.client.network.ClientPlayerEntity closeHandledScreen() closeScreen()
 net.minecraft.client.network.ClientPlayerEntity networkHandler.sendChatMessage() sendChatMessage()
 
 net.minecraft.client.network.PlayerListEntry skinTextures.texture() getSkinTexture()

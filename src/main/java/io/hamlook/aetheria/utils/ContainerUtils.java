@@ -7,8 +7,10 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.IChatComponent;
 
 import javax.annotation.Nullable;
@@ -64,6 +66,31 @@ public class ContainerUtils {
     @Nullable
     public static IInventory getLowerInventory(ContainerChest chest) {
         return chest == null ? null : chest.getLowerChestInventory();
+    }
+
+    public static int getInventorySize(IInventory inventory) {
+        //#if MC < 1.16
+        return inventory.getSizeInventory();
+        //#else
+        //$$ return inventory.size();
+        //#endif
+    }
+
+    public static ItemStack getStackInSlot(IInventory inventory, int slot) {
+        //#if MC < 1.16
+        return inventory.getStackInSlot(slot);
+        //#else
+        //$$ return inventory.getStack(slot);
+        //#endif
+    }
+
+    public static boolean isPlayerInventory(IInventory inventory) {
+        EntityPlayer player = MinecraftCompat.getLocalPlayer();
+        //#if MC < 1.16
+        return player != null && inventory == player.inventory;
+        //#else
+        //$$ return player != null && inventory == player.getInventory();
+        //#endif
     }
 
     public static int getWindowId() {

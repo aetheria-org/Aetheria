@@ -121,6 +121,11 @@ object MinecraftCompat {
     }
 
     @JvmStatic
+    fun closeScreen() {
+        getLocalPlayer()?.closeScreen()
+    }
+
+    @JvmStatic
     fun getPlayerListEntries(): Collection<NetworkPlayerInfo> =
         //#if MC < 1.16
         getLocalPlayer()?.sendQueue?.playerInfoMap ?: emptyList()

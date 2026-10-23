@@ -15,14 +15,26 @@ import io.hamlook.aetheria.utils.render.RenderUtils;
 import lombok.Setter;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.inventory.ContainerChest;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.Slot;
+import net.minecraft.item.ItemStack;
+import org.lwjgl.input.Keyboard;
+
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 @RegisterEvents
 public class StorageListener {
+
+    private static final String STORAGE_MENU_TITLE = "Storage";
 
     @Setter
     private static boolean switchingContainer = false;
     private boolean shouldRenderOverlay = false;
     private boolean overlayInitialized = false;
+    private int windowId = -1;
+    private int menuWindowId = -1;
+    private String containerId = null;
 
     @HandleEvent
     public void onChatMessage(ASMChatEvent event) {
@@ -35,6 +47,158 @@ public class StorageListener {
             overlayInitialized = false;
             StorageManager.closeOverlay();
         }
+    }
+
+    @HandleEvent
+    public void onInventoryOpened(InventoryOpenEvent event) {
+        // FullyOpened and Updated extend this event; only handle the plain open packet here
+        if (event.getClass() != InventoryOpenEvent.class) return;
+        if (!ATHRConfig.feature.storage.enabled) return;
+
+        String title = event.getInventoryName();
+        windowId = event.getInventoryId();
+
+        if (STORAGE_MENU_TITLE.equals(title)) {
+            menuWindowId = event.getInventoryId();
+            containerId = null;
+            return;
+        }
+
+        menuWindowId = -1;
+        StorageParser.StorageTarget target = StorageParser.parseTarget(title);
+        containerId = target == null ? null : target.id;
+        if (target == null) return;
+
+        StorageData.ensureLoaded();
+        SContainer container = ensureContainer(target);
+        applyWindowSize(container, event.getInventorySize());
+        StorageManager.setActiveContainer(containerId);
+    }
+
+    @HandleEvent
+    public void onInventoryFullyOpened(InventoryFullyOpenedEvent event) {
+        if (!ATHRConfig.feature.storage.enabled) return;
+        if (isStorageMenu(event)) {
+            applyStorageMenu(event);
+            return;
+        }
+        applyFullSnapshot(event);
+    }
+
+    @HandleEvent
+    public void onInventoryUpdated(InventoryUpdatedEvent event) {
+        if (!ATHRConfig.feature.storage.enabled) return;
+        if (isStorageMenu(event)) {
+            applyStorageMenu(event);
+            return;
+        }
+        if (event.getInventoryId() != windowId || containerId == null) return;
+
+        int changedSlot = event.getChangedSlot();
+        if (changedSlot < 0) {
+            applyFullSnapshot(event);
+            return;
+        }
+
+        SContainer container = StorageData.containers.get(containerId);
+        if (container == null) return;
+        if (changedSlot < 9 || changedSlot >= 9 + container.slotCount) return;
+
+        ItemStack stack = event.getInventoryItems().get(changedSlot);
+        container.setStack(changedSlot - 9, stack == null ? null : stack.copy());
+        StorageData.markDirty(container);
+        StorageManager.markContainersDirty();
+    }
+
+    @HandleEvent
+    public void onInventoryClosed(InventoryClosedEvent event) {
+        if (event.getInventoryId() != windowId && event.getInventoryId() != menuWindowId) return;
+        windowId = -1;
+        menuWindowId = -1;
+        containerId = null;
+    }
+
+    @HandleEvent(priority = HandleEvent.HIGHEST)
+    public void onSend(PacketEvent.Send event) {
+        if (!ATHRConfig.feature.storage.enabled || containerId == null) return;
+        if (!ContainerUtils.isChestOpen()) return;
+
+        ClickData click = PacketCompat.clickData(event.packet);
+        if (click == null || click.getWindowId() != windowId) return;
+
+        SContainer container = StorageData.containers.get(containerId);
+        IInventory inventory = ContainerUtils.getLowerInventory();
+        if (container == null || inventory == null) return;
+
+        int maxSlot = Math.min(9 + container.slotCount, ContainerUtils.getInventorySize(inventory));
+        for (int i = 9; i < maxSlot; i++) {
+            ItemStack stack = ContainerUtils.getStackInSlot(inventory, i);
+            container.setStack(i - 9, stack == null ? null : stack.copy());
+        }
+
+        StorageManager.markContainersDirty();
+        StorageData.markDirty(container);
+    }
+
+    private boolean isStorageMenu(InventoryOpenEvent event) {
+        return event.getInventoryId() == menuWindowId && STORAGE_MENU_TITLE.equals(event.getInventoryName());
+    }
+
+    private void applyStorageMenu(InventoryOpenEvent event) {
+        StorageData.ensureLoaded();
+        LinkedHashMap<String, SContainer> detected = StorageParser.parseOverlay(event.getInventoryItems(), StorageData.containers);
+        if (detected.isEmpty()) return;
+
+        StorageData.replaceContainers(detected);
+        StorageManager.markContainersDirty();
+        overlayInitialized = true;
+    }
+
+    private void applyFullSnapshot(InventoryOpenEvent event) {
+        if (event.getInventoryId() != windowId || containerId == null) return;
+
+        SContainer container = StorageData.containers.get(containerId);
+        if (container == null) return;
+
+        applyWindowSize(container, event.getInventorySize());
+
+        container.slots.clear();
+        for (int i = 0; i < container.slotCount; i++) {
+            ItemStack stack = event.getInventoryItems().get(9 + i);
+            if (stack != null) container.setStack(i, stack.copy());
+        }
+
+        StorageData.markDirty(container);
+        StorageManager.markContainersDirty();
+    }
+
+    private void applyWindowSize(SContainer container, int windowSize) {
+        if (container == null) return;
+
+        int contentSlots = StorageUtils.contentSlots(windowSize);
+        if (contentSlots <= 0 || contentSlots == container.slotCount) return;
+
+        container.slotCount = contentSlots;
+        container.renderH = StorageUtils.renderHeightForSlotCount(contentSlots);
+        container.slots.keySet().removeIf(index -> index >= contentSlots);
+
+        StorageData.markDirty(container);
+        StorageManager.markContainersDirty();
+        StorageManager.markLayoutDirty();
+    }
+
+    private SContainer ensureContainer(StorageParser.StorageTarget target) {
+        SContainer existing = StorageData.containers.get(target.id);
+        if (existing != null) return existing;
+
+        int slotCount = target.slotCount > 0
+                ? target.slotCount
+                : StorageUtils.initialSlotCount(target.type, StorageData.containers.values());
+        SContainer container = new SContainer(new HashMap<>(), target.id, target.page, target.type, false, 307,
+                StorageUtils.renderHeightForSlotCount(slotCount), slotCount, false);
+        StorageData.containers.put(target.id, container);
+        StorageData.markDirty(container);
+        return container;
     }
 
     @HandleEvent
@@ -76,13 +240,10 @@ public class StorageListener {
         switch (getStorageGuiType(title)) {
             case STORAGE_MENU:
                 shouldRenderOverlay = true;
-                overlayInitialized = false;
                 switchingContainer = false;
                 break;
             case STORAGE_CONTAINER:
-                if (StorageData.containers.isEmpty()) {
-                    StorageData.loadContainers();
-                }
+                StorageData.ensureLoaded();
                 shouldRenderOverlay = true;
                 overlayInitialized = true;
                 switchingContainer = false;
@@ -97,30 +258,12 @@ public class StorageListener {
     }
 
     private StorageGuiType getStorageGuiType(String title) {
-        if (title.equals("Storage")) {
+        if (title.equals(STORAGE_MENU_TITLE)) {
             return StorageGuiType.STORAGE_MENU;
         } else if (StorageParser.isStorageContainer(title)) {
             return StorageGuiType.STORAGE_CONTAINER;
         }
         return StorageGuiType.OTHER;
-    }
-
-    @HandleEvent
-    public void onBackgroundDrawn(ASMGuiBackgroundDrawEvent event) {
-        if (!shouldRenderOverlay) return;
-        if (!ATHRConfig.feature.storage.enabled) return;
-
-        if (!ContainerUtils.isInContainer(event.gui, "Storage")) return;
-
-        ContainerChest chest = ContainerUtils.getOpenChest(event.gui);
-        if (chest == null) return;
-
-        if (!overlayInitialized) {
-            boolean success = StorageManager.initializeOverlay(chest);
-            if (success) {
-                overlayInitialized = true;
-            }
-        }
     }
 
     @HandleEvent
@@ -148,8 +291,8 @@ public class StorageListener {
         int dWheel = event.dWheel;
         if (dWheel != 0) {
             // Don't scroll overlay if shift is held (for item moving)
-            if (KeyboardCompat.isKeyDown(org.lwjgl.input.Keyboard.KEY_LSHIFT) ||
-                    KeyboardCompat.isKeyDown(org.lwjgl.input.Keyboard.KEY_RSHIFT)) {
+            if (KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) ||
+                    KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT)) {
                 return false;
             }
 
@@ -185,9 +328,11 @@ public class StorageListener {
         if (!StorageManager.isMouseOverStorageArea(mouseX, mouseY)) return false;
         ContainerChest chest = ContainerUtils.getOpenChest(guiChest);
         if (chest == null) return false;
-        for (net.minecraft.inventory.Slot slot : chest.inventorySlots) {
-            if (slot == null) continue;
-            if (slot.inventory == InventoryCompat.getInventory(MinecraftCompat.getLocalPlayer())) continue;
+
+        int slotCount = InventoryCompat.getContainerSize(chest);
+        for (int i = 0; i < slotCount; i++) {
+            Slot slot = InventoryCompat.getSlot(chest, i);
+            if (ContainerUtils.isPlayerInventory(slot.inventory)) continue;
             if (r.isMouseOverActiveContainerSlot(slot, mouseX, mouseY)) return true;
         }
         return false;
@@ -205,7 +350,7 @@ public class StorageListener {
             event.cancel();
             return;
         }
-        if (keyCode == org.lwjgl.input.Keyboard.KEY_ESCAPE) return;
+        if (keyCode == Keyboard.KEY_ESCAPE) return;
         if (StorageManager.isTransitioning()) return;
         if (!KeyboardCompat.getEventKeyState()) return;
 

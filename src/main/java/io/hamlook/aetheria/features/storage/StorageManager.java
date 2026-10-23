@@ -18,9 +18,11 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import lombok.Getter;
-import net.minecraft.inventory.ContainerChest;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.inventory.GuiChest;
+import net.minecraft.inventory.Slot;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.LinkedHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -87,31 +89,6 @@ public class StorageManager {
         return overlayActive;
     }
 
-    public static boolean initializeOverlay(ContainerChest parser) {
-        if (StorageData.containers.isEmpty()) {
-            StorageData.loadContainers();
-        }
-
-        LinkedHashMap<String, SContainer> containers = StorageParser.parseOverlay(parser, StorageData.containers);
-
-        if (containers.isEmpty()) {
-            return false;
-        }
-
-        StorageData.containers = containers;
-
-        lastValidChestTime = System.currentTimeMillis();
-        renderer = new StorageRenderer(containers);
-        overlayActive = true;
-
-        // Request scroll to active container
-        if (ATHRConfig.feature.storage.autoScrollToActive && activeContainerId != null) {
-            renderer.requestScrollToActive();
-        }
-
-        return true;
-    }
-
     public static void renderOverlay(int mouseX, int mouseY) {
         if (ContainerUtils.isChestOpen()) {
             lastValidChestTime = System.currentTimeMillis();
@@ -162,11 +139,8 @@ public class StorageManager {
             renderer.handleScroll(dWheel);
         }
 
-        if (buttonState) {
-            int mouseButton = button;
-            if (mouseButton == 0) {
-                renderer.handleClick(mouseX, mouseY);
-            }
+        if (buttonState && button == 0) {
+            renderer.handleClick(mouseX, mouseY);
         }
     }
 
@@ -208,7 +182,7 @@ public class StorageManager {
         }
 
         StorageListener.setSwitchingContainer(true);
-        MinecraftCompat.getLocalPlayer().closeScreen();
+        MinecraftCompat.closeScreen();
 
         String command = buildContainerCommand(container);
         executeCommandDelayed(command);
@@ -236,7 +210,7 @@ public class StorageManager {
             MinecraftCompat.getMinecraft().addScheduledTask(() -> {
                 if (MinecraftCompat.getCurrentScreen() != null && !retried) {
                     Aetheria.logger.warning("[ATHR] Storage switch: screen still open, re-closing and retrying once: " + command);
-                    MinecraftCompat.getLocalPlayer().closeScreen();
+                    MinecraftCompat.closeScreen();
                     executeCommandDelayed(command, true);
                     return;
                 }
@@ -281,14 +255,20 @@ public class StorageManager {
         }
     }
 
+    public static void markLayoutDirty() {
+        if (renderer != null) {
+            renderer.markLayoutDirty();
+        }
+    }
+
     public static boolean isStorageChest() {
-        net.minecraft.client.gui.GuiScreen screen = MinecraftCompat.getCurrentScreen();
-        if (!(screen instanceof net.minecraft.client.gui.inventory.GuiChest)) return false;
+        GuiScreen screen = MinecraftCompat.getCurrentScreen();
+        if (!(screen instanceof GuiChest)) return false;
         String title = ContainerUtils.getContainerName(screen);
         return title != null && ("Storage".equals(title) || StorageParser.isStorageContainer(title));
     }
 
-    public static void overrideIsMouseOverSlot(net.minecraft.inventory.Slot slotIn, int mouseX, int mouseY, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+    public static void overrideIsMouseOverSlot(Slot slotIn, int mouseX, int mouseY, CallbackInfoReturnable<Boolean> cir) {
         if (!isOverlayActive() || renderer == null) return;
         if (!isStorageChest()) return;
 

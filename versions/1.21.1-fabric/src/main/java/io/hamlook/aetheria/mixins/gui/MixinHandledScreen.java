@@ -113,6 +113,20 @@ public abstract class MixinHandledScreen {
         }
     }
 
+    @Inject(method = "isPointOverSlot(Lnet/minecraft/screen/slot/Slot;DD)Z",
+            at = @At("HEAD"), cancellable = true)
+    private void athr$storageSlotHover(Slot slot, double pointX, double pointY, CallbackInfoReturnable<Boolean> cir) {
+        StorageManager.overrideIsMouseOverSlot(slot, (int) pointX, (int) pointY, cir);
+    }
+
+    @Inject(method = "isClickOutsideBounds(DDIII)Z", at = @At("HEAD"), cancellable = true)
+    private void athr$storageClickBounds(double mouseX, double mouseY, int left, int top, int button,
+                                         CallbackInfoReturnable<Boolean> cir) {
+        if (StorageManager.isOverlayActive() && StorageManager.isStorageChest()) {
+            cir.setReturnValue(false);
+        }
+    }
+
     @Inject(method = "drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;)V",
             at = @At("RETURN"))
     private void athr$searchHighlight(DrawContext context, Slot slot, CallbackInfo ci) {

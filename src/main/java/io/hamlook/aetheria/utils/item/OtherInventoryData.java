@@ -2,8 +2,11 @@ package io.hamlook.aetheria.utils.item;
 
 import io.hamlook.aetheria.api.event.AetheriaEventBus;
 import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.InventoryClosedEvent;
 import io.hamlook.aetheria.events.InventoryFullyOpenedEvent;
+import io.hamlook.aetheria.events.InventoryOpenEvent;
 import io.hamlook.aetheria.events.InventoryUpdatedEvent;
 import io.hamlook.aetheria.events.PacketEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
@@ -24,9 +27,9 @@ import java.util.Map;
 
 /**
  * Tracks the server-opened container (the "other" inventory, not the player's own).
- * Fires InventoryFullyOpenedEvent when the bulk contents packet arrives, then
- * InventoryUpdatedEvent for later slot changes. Pressing E is client side and
- * never reaches this (no open-window packet).
+ * Fires InventoryOpenEvent when the window opens, InventoryFullyOpenedEvent when the
+ * bulk contents packet arrives, InventoryUpdatedEvent for later slot changes and
+ * InventoryClosedEvent when the container closes.
  */
 @RegisterEvents
 public final class OtherInventoryData {
@@ -42,7 +45,7 @@ public final class OtherInventoryData {
     private boolean fullyOpened;
     private final Map<Integer, ItemStack> items = new LinkedHashMap<>();
 
-    @HandleEvent(priority = HandleEvent.NORMAL)
+    @HandleEvent()
     public synchronized void onPacket(PacketEvent.Receive event) {
         Object packet = event.packet;
 
@@ -64,13 +67,18 @@ public final class OtherInventoryData {
             //$$ updateSlot(p.getSyncId(), p.getSlot(), p.getStack());
             //#endif
         } else if (packet instanceof S2EPacketCloseWindow) {
-            reset();
+            close();
         }
     }
 
     @HandleEvent
     public synchronized void onWorldUnload(ASMWorldUnloadEvent event) {
-        reset();
+        close();
+    }
+
+    @HandleEvent
+    public void onGuiOpen(ASMGuiOpenEvent event) {
+        if (event.gui == null) close();
     }
 
     public synchronized String getInventoryName() {
@@ -82,11 +90,17 @@ public final class OtherInventoryData {
     }
 
     private void open(int windowId, String name, int size) {
+        close();
+
         this.windowId = windowId;
         this.name = name;
         this.size = size;
         fullyOpened = false;
         items.clear();
+
+        if (!AetheriaEventBus.INSTANCE.hasListeners(InventoryOpenEvent.class)) return;
+        MinecraftCompat.getMinecraft().addScheduledTask(
+                () -> new InventoryOpenEvent(windowId, name, size, new LinkedHashMap<>()).post());
     }
 
     private void contents(int windowId, ItemStack[] stacks) {
@@ -103,7 +117,7 @@ public final class OtherInventoryData {
 
         boolean first = !fullyOpened;
         fullyOpened = true;
-        dispatch(first);
+        dispatch(first, -1);
     }
 
     private void updateSlot(int windowId, int index, ItemStack stack) {
@@ -113,7 +127,7 @@ public final class OtherInventoryData {
         if (size > 0 && index >= size) {
             if (!fullyOpened) {
                 fullyOpened = true;
-                dispatch(true);
+                dispatch(true, -1);
             }
             return;
         }
@@ -121,17 +135,17 @@ public final class OtherInventoryData {
         if (ItemCompatKt.isEmptyCompat(stack)) items.remove(index);
         else items.put(index, stack);
 
-        if (fullyOpened) dispatch(false);
+        if (fullyOpened) dispatch(false, index);
         else if (size > 0 && items.size() == size) {
             fullyOpened = true;
-            dispatch(true);
+            dispatch(true, -1);
         }
     }
 
-    private void dispatch(boolean fullyOpened) {
-        boolean wantsFully = fullyOpened && AetheriaEventBus.INSTANCE.hasListeners(InventoryFullyOpenedEvent.class);
-        boolean wantsUpdated = AetheriaEventBus.INSTANCE.hasListeners(InventoryUpdatedEvent.class);
-        if (!wantsFully && !wantsUpdated) return;
+    private void dispatch(boolean first, int changedSlot) {
+        boolean postFully = first && AetheriaEventBus.INSTANCE.hasListeners(InventoryFullyOpenedEvent.class);
+        boolean postUpdated = AetheriaEventBus.INSTANCE.hasListeners(InventoryUpdatedEvent.class) && !postFully;
+        if (!postFully && !postUpdated) return;
 
         int windowId = this.windowId;
         String name = this.name;
@@ -140,9 +154,20 @@ public final class OtherInventoryData {
 
         // bulk packets arrive on the netty thread on modern; consumers expect the client thread
         MinecraftCompat.getMinecraft().addScheduledTask(() -> {
-            if (wantsFully) new InventoryFullyOpenedEvent(windowId, name, size, snapshot).post();
-            if (wantsUpdated) new InventoryUpdatedEvent(windowId, name, size, snapshot).post();
+            if (postFully) new InventoryFullyOpenedEvent(windowId, name, size, snapshot).post();
+            if (postUpdated) new InventoryUpdatedEvent(windowId, name, size, snapshot, changedSlot).post();
         });
+    }
+
+    private synchronized void close() {
+        if (windowId == -1) return;
+
+        int id = windowId;
+        String title = name;
+        reset();
+
+        if (!AetheriaEventBus.INSTANCE.hasListeners(InventoryClosedEvent.class)) return;
+        MinecraftCompat.getMinecraft().addScheduledTask(() -> new InventoryClosedEvent(id, title).post());
     }
 
     private synchronized void reset() {

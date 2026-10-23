@@ -24,6 +24,27 @@ public class StorageData {
     }
 
 
+    /**
+     * Loads persisted containers unless something is already in memory. Called from
+     * packet-driven open handlers, which on modern run before the chest screen exists.
+     */
+    public static void ensureLoaded() {
+        if (containers.isEmpty()) {
+            loadContainers();
+        }
+    }
+
+
+    /**
+     * Replaces the detected container set in place so a live renderer keeps a valid
+     * reference to this map.
+     */
+    public static void replaceContainers(Map<String, SContainer> detected) {
+        containers.clear();
+        containers.putAll(detected);
+    }
+
+
     public static void markDirty(SContainer container) {
         if (container == null) return;
         dirtyContainers.put(container.id, container);
