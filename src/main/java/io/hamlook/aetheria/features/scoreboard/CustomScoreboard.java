@@ -18,6 +18,9 @@ import io.hamlook.aetheria.utils.data.TablistParser;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.overlay.OverlayUtils;
+import io.hamlook.aetheria.utils.render.MarqueeUtils;
+import io.hamlook.aetheria.utils.time.TimeFormatter;
+import net.minecraft.client.gui.FontRenderer;
 import lombok.Getter;
 import org.lwjgl.opengl.GL11;
 
@@ -30,6 +33,11 @@ public class CustomScoreboard extends Overlay {
     private static final int PAD_X = 4;
     private static final int PAD_Y = 4;
     private static final int LINE_GAP = 1;
+
+    private static final String FETCHUR_LABEL = "§fFetchur: ";
+    private static final String FETCHUR_COLOR = "§e";
+    private static final String FETCHUR_MARKER = FETCHUR_LABEL + FETCHUR_COLOR;
+    private static final int MIN_CHARS = 12;
 
     private static final int LINE_SERVER       = 0;
     private static final int LINE_TIME         = 1;
@@ -131,12 +139,66 @@ public class CustomScoreboard extends Overlay {
     // ── alignment ─────────────────────────────────────────────────────────────
     // alignment config: 0=Left, 1=Center, 2=Right
 
-    private int xFor(String line, int boxW, int alignment) {
-        int w = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), line);
+    private static int xForWidth(int width, int boxW, int alignment) {
         switch (alignment) {
-            case 1: return PAD_X + (boxW - PAD_X * 2 - w) / 2;
-            case 2: return boxW - PAD_X - w;
+            case 1: return PAD_X + (boxW - PAD_X * 2 - width) / 2;
+            case 2: return boxW - PAD_X - width;
             default: return PAD_X;
+        }
+    }
+
+    private static final class FetchurMarquee {
+        final int lineIndex;
+        final String styledItem;
+        final int labelWidth;
+        final int windowWidth;
+
+        FetchurMarquee(int lineIndex, String styledItem, int labelWidth, int windowWidth) {
+            this.lineIndex = lineIndex;
+            this.styledItem = styledItem;
+            this.labelWidth = labelWidth;
+            this.windowWidth = windowWidth;
+        }
+    }
+
+    private static FetchurMarquee fetchurMarquee(List<String> lines, int[] widths, int minWidth) {
+        if (!ATHRConfig.feature.scoreboard.marqueeEnabled) return null;
+        int index = -1;
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).startsWith(FETCHUR_MARKER)) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) return null;
+        FontRenderer font = MinecraftCompat.getFontRenderer();
+        int labelWidth = DrawContextUtils.getStringWidth(font, FETCHUR_LABEL);
+        int itemWidth = widths[index] - labelWidth;
+        if (itemWidth <= 0) return null;
+        int widestOther = minWidth;
+        for (int i = 0; i < lines.size(); i++) {
+            if (i != index && widths[i] > widestOther) widestOther = widths[i];
+        }
+        String item = lines.get(index).substring(FETCHUR_MARKER.length());
+        // floor so the window dont get unreadable on narrow sidebars
+        int floorWidth = DrawContextUtils.getStringWidth(font, item.substring(0, Math.min(MIN_CHARS, item.length())));
+        int windowWidth = Math.max(floorWidth, widestOther - labelWidth);
+        if (itemWidth <= windowWidth) return null;
+        return new FetchurMarquee(index, FETCHUR_COLOR + item, labelWidth, windowWidth);
+    }
+
+    private static void drawBodyLines(List<String> lines, int[] widths, FetchurMarquee marquee, int boxW, int alignment, int textY, int lh) {
+        for (int i = 1; i < lines.size(); i++) {
+            if (marquee != null && i == marquee.lineIndex) {
+                int x = xForWidth(marquee.labelWidth + marquee.windowWidth, boxW, alignment);
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), FETCHUR_LABEL, x, textY, 0xFFFFFF);
+                MarqueeUtils.draw(MinecraftCompat.getFontRenderer(), marquee.styledItem,
+                        x + marquee.labelWidth, textY, marquee.windowWidth, 0xFFFFFF, true);
+            } else {
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), lines.get(i),
+                        xForWidth(widths[i], boxW, alignment), textY, 0xFFFFFF);
+            }
+            textY += lh;
         }
     }
 
@@ -347,6 +409,7 @@ public class CustomScoreboard extends Overlay {
                     if (!inDungeon) {
                         String cookie = TablistParser.readCookieBuff();
                         if (cookie != null && !cookie.toLowerCase().contains("not active")) {
+                            if (ATHRConfig.feature.scoreboard.cookieShortTime) cookie = TimeFormatter.trimUnits(cookie, 2);
                             lines.add("§dCookie Buff: §f" + cookie); rawIndex.add(-1);
                         }
                     }
@@ -360,7 +423,7 @@ public class CustomScoreboard extends Overlay {
                 }
                 case LINE_FETCHUR:
                     if (SkyblockData.isOnSkyblock()) {
-                        lines.add("§fFetchur: §e" + FetchurData.getTodaysItem()); rawIndex.add(-1);
+                        lines.add(FETCHUR_MARKER + FetchurData.getTodaysItem()); rawIndex.add(-1);
                     }
                     break;
                 case LINE_COPPER:
@@ -436,9 +499,17 @@ public class CustomScoreboard extends Overlay {
         int alignment  = ATHRConfig.feature.scoreboard.lineAlignment;
         int minWidth   = ATHRConfig.feature.scoreboard.minWidth;
 
+        int[] widths = new int[lines.size()];
+        for (int i = 0; i < lines.size(); i++)
+            widths[i] = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), lines.get(i));
+
+        FetchurMarquee marquee = fetchurMarquee(lines, widths, minWidth);
+
         int maxW = minWidth;
-        for (String line : lines)
-            maxW = Math.max(maxW, DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), line));
+        for (int i = 0; i < lines.size(); i++) {
+            int width = (marquee != null && i == marquee.lineIndex) ? marquee.labelWidth + marquee.windowWidth : widths[i];
+            if (width > maxW) maxW = width;
+        }
 
         int boxW = maxW + PAD_X * 2;
         int boxH = lines.size() * lh + PAD_Y * 2 - LINE_GAP;
@@ -464,29 +535,10 @@ public class CustomScoreboard extends Overlay {
             drawRoundedRect(0, 0, boxW, boxH, getCornerRadius(), bgColor);
 
         int textY = PAD_Y;
-        if (SkyblockData.isOnSkyblock()) {
-            // Line 0 is the Skyblock title — always centered
-            String firstLine = lines.get(0);
-            int titleX = (boxW - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), firstLine)) / 2;
-            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), firstLine, titleX, textY, -1);
-            textY += lh;
-            for (int i = 1; i < lines.size(); i++) {
-                String line = lines.get(i);
-                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line, xFor(line, boxW, alignment), textY, 0xFFFFFF);
-                textY += lh;
-            }
-        } else {
-            // Outside Skyblock — first line always centered, rest use alignment
-            String firstLine = lines.get(0);
-            int titleX = (boxW - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), firstLine)) / 2;
-            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), firstLine, titleX, textY, -1);
-            textY += lh;
-            for (int i = 1; i < lines.size(); i++) {
-                String line = lines.get(i);
-                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line, xFor(line, boxW, alignment), textY, 0xFFFFFF);
-                textY += lh;
-            }
-        }
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), lines.get(0),
+                (boxW - widths[0]) / 2, textY, -1);
+        textY += lh;
+        drawBodyLines(lines, widths, marquee, boxW, alignment, textY, lh);
 
         GlStateManagerCompat.disableBlend();
         GlStateManagerCompat.popMatrix();

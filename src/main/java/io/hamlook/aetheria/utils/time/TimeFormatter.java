@@ -9,6 +9,8 @@ public class TimeFormatter {
             "(\\d+)\\s*(d|days|day|h|hours|hour|hrs|hr|m|mins|min|minutes|minute|s|secs|sec|seconds|second)?",
             Pattern.CASE_INSENSITIVE);
 
+    private static final Pattern SHORT_UNIT = Pattern.compile("\\d+[dhms]");
+
     public static long parseDurationMs(String raw) {
         if (raw == null || raw.isEmpty()) return -1L;
         Matcher m = DURATION_TOKEN.matcher(raw.toLowerCase());
@@ -40,6 +42,20 @@ public class TimeFormatter {
             }
         }
         return any ? total : -1L;
+    }
+
+    public static String trimUnits(String value, int maxUnits) {
+        if (value == null || maxUnits <= 0) return value;
+        StringBuilder out = new StringBuilder();
+        int kept = 0;
+        for (String token : value.trim().split("\\s+")) {
+            if (!SHORT_UNIT.matcher(token).matches()) continue;
+            if (kept == maxUnits) break;
+            if (kept > 0) out.append(' ');
+            out.append(token);
+            kept++;
+        }
+        return kept == 0 ? value : out.toString();
     }
 
     public static String formatTime(long millis) {

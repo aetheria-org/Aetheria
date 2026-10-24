@@ -36,6 +36,16 @@ public class Scoreboard {
     public int minWidth = 100;
 
     @Expose
+    @ConfigOption(name = "Short Cookie Time", desc = "Show the Cookie Buff time in at most two units (1d 22h instead of 1d 22h 56m 2s)")
+    @ConfigEditorBoolean
+    public boolean cookieShortTime = true;
+
+    @Expose
+    @ConfigOption(name = "Scroll Fetchur Item", desc = "Scroll the Fetchur item when it is wider than the space available, instead of widening the scoreboard")
+    @ConfigEditorBoolean
+    public boolean marqueeEnabled = true;
+
+    @Expose
     @ConfigOption(name = "Line Alignment", desc = "Alignment for all lines except the title (which is always centered)")
     @ConfigEditorDropdown(values = {"Left", "Center", "Right"})
     public int lineAlignment = 0;

@@ -10,6 +10,7 @@ import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.features.scoreboard.BankParser;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.mixins.accessors.GuiPlayerTabOverlayAccessor;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.compat.EntityCompat;
@@ -21,8 +22,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiPlayerTabOverlay;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.scoreboard.ScorePlayerTeam;
+import net.minecraft.util.IChatComponent;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -68,7 +71,7 @@ public class TablistParser {
     @Getter
     private static SkyblockData.Environment scoreboardEnvironment = SkyblockData.Environment.UNKNOWN;
     @Setter
-    private static java.util.function.BiConsumer<Long, Long> gemstonePowderChangeListener = null;
+    private static BiConsumer<Long, Long> gemstonePowderChangeListener = null;
     private int tickCounter = 0;
     private long worldJoinTime = -1;
 
@@ -84,16 +87,33 @@ public class TablistParser {
         return PLAYER_ORDERING.sortedCopy(MinecraftCompat.getPlayerListEntries());
     }
 
-    private static net.minecraft.util.IChatComponent getTabFooter() {
-        try {
-            Minecraft mc = MinecraftCompat.getMinecraft();
-            if (MinecraftCompat.getLocalPlayer() == null) return null;
-            java.lang.reflect.Field f = mc.ingameGUI.getTabList().getClass().getDeclaredField("field_175255_h");
-            f.setAccessible(true);
-            return (net.minecraft.util.IChatComponent) f.get(mc.ingameGUI.getTabList());
-        } catch (Exception e) {
+    private static String footerTextCache;
+    private static int footerTextCacheTick = -1;
+
+    public static IChatComponent getTabFooter() {
+        Minecraft mc = clientWithPlayer();
+        if (mc == null) return null;
+        return ((GuiPlayerTabOverlayAccessor) mc.ingameGUI.getTabList()).ATHR$getFooter();
+    }
+
+    public static String getTabFooterText() {
+        Minecraft mc = clientWithPlayer();
+        if (mc == null) {
+            footerTextCache = null;
+            footerTextCacheTick = -1;
             return null;
         }
+        int tick = MinecraftCompat.getLocalPlayer().ticksExisted;
+        if (tick == footerTextCacheTick) return footerTextCache;
+        footerTextCacheTick = tick;
+        IChatComponent footer = getTabFooter();
+        footerTextCache = footer == null ? null : ColorUtils.stripColor(TextCompat.getFormattedTextWithResets(footer));
+        return footerTextCache;
+    }
+
+    private static Minecraft clientWithPlayer() {
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        return MinecraftCompat.getLocalPlayer() != null ? mc : null;
     }
 
     public static String readGems() {
@@ -105,8 +125,8 @@ public class TablistParser {
         boolean inServer = false;
         for (NetworkPlayerInfo info : infos) {
             String raw = TextCompat.codedString(tab.getPlayerName(info));
-            if (raw == null || raw.isEmpty()) continue;
-            String line = net.minecraft.util.StringUtils.stripControlCodes(raw).trim();
+            if (raw.isEmpty()) continue;
+            String line = ColorUtils.stripColor(raw).trim();
             if (line.isEmpty()) continue;
             if (line.equals("Server Info") || raw.contains("Server Info")) {
                 inServer = true;
@@ -121,20 +141,23 @@ public class TablistParser {
         return null;
     }
 
+    private static final String COOKIE_LABEL = "Cookie Buff";
+
     public static String readCookieBuff() {
-        net.minecraft.util.IChatComponent footer = getTabFooter();
-        if (footer == null) return null;
-        String[] lines = net.minecraft.util.StringUtils.stripControlCodes(TextCompat.getFormattedTextWithResets(footer)).split("\n");
-        boolean sawCookie = false;
-        for (String line : lines) {
+        String text = getTabFooterText();
+        if (text == null) return null;
+        boolean afterLabel = false;
+        for (String line : text.split("\n")) {
             String l = line.trim();
             if (l.isEmpty()) continue;
-            if (!sawCookie && l.contains("Cookie Buff")) {
-                sawCookie = true;
+            if (!afterLabel && l.contains(COOKIE_LABEL)) {
+                String inline = l.substring(l.indexOf(COOKIE_LABEL) + COOKIE_LABEL.length()).trim();
+                if (inline.startsWith(":")) inline = inline.substring(1).trim();
+                if (!inline.isEmpty()) return inline;
+                afterLabel = true;
                 continue;
             }
-            if (sawCookie && l.contains("Active")) continue;
-            if (sawCookie) return l;
+            if (afterLabel && !l.contains("Active")) return l;
         }
         return null;
     }
@@ -156,9 +179,9 @@ public class TablistParser {
 
         for (NetworkPlayerInfo info : infos) {
             String raw = TextCompat.codedString(tab.getPlayerName(info));
-            if (raw == null || raw.isEmpty()) continue;
+            if (raw.isEmpty()) continue;
 
-            String line = net.minecraft.util.StringUtils.stripControlCodes(raw).trim();
+            String line = ColorUtils.stripColor(raw).trim();
 
             if (raw.contains("§3§l Server Info§r") || line.equals("Server Info")) {
                 inServerSection = true;
