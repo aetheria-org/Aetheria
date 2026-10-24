@@ -159,6 +159,17 @@ public class Config {
             case "openLicenseMoulConfig": openUrl("https://github.com/NotEnoughUpdates/MoulConfig"); break;
             case "openLicenseLombok": openUrl("https://projectlombok.org/"); break;
             case "openLicenseJbAnnotations": openUrl("https://github.com/JetBrains/java-annotations"); break;
+            case "openLicenseFabricLoader": openUrl("https://github.com/FabricMC/fabric-loader"); break;
+            case "openLicenseFabricApi": openUrl("https://github.com/FabricMC/fabric"); break;
+            case "openLicenseFabricLanguageKotlin": openUrl("https://github.com/FabricMC/fabric-language-kotlin"); break;
+            case "openLicenseMixinExtras": openUrl("https://github.com/LlamaLad7/MixinExtras"); break;
+            case "openLicenseKotlin": openUrl("https://github.com/JetBrains/kotlin"); break;
+            case "openLicenseGson": openUrl("https://github.com/google/gson"); break;
+            case "openLicenseRsyntaxtextarea": openUrl("https://github.com/bobbylight/RSyntaxTextArea"); break;
+            case "openLicenseJavaWebsocket": openUrl("https://github.com/TooTallNate/Java-WebSocket"); break;
+            case "openLicenseSlf4j": openUrl("https://github.com/qos-ch/slf4j"); break;
+            case "openLicenseImageioApng": openUrl("https://github.com/Tianscar/imageio-apng"); break;
+            case "openLicenseWebp4j": openUrl("https://github.com/MrNanko/webp4j"); break;
             case "openModrinth": openUrl("https://modrinth.com/mod/aetheriamod"); break;
             case "openSkyAtlas": openUrl("https://skyatlas.lol"); break;
             case "resetPlayerButtonsColors":
