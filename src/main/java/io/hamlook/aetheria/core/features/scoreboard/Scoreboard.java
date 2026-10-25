@@ -1,14 +1,44 @@
 package io.hamlook.aetheria.core.features.scoreboard;
 
 import com.google.gson.annotations.Expose;
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
 import io.hamlook.aetheria.utils.Position;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
 
 public class Scoreboard {
+
+    private static int maxLineId = -1;
+
+    public static int maxLineId() {
+        if (maxLineId >= 0) return maxLineId;
+        try {
+            String[] example = Scoreboard.class.getDeclaredField("scoreboardLines")
+                    .getAnnotation(ConfigEditorDraggableList.class)
+                    .exampleText();
+            maxLineId = example.length - 1;
+        } catch (Exception e) {
+            Aetheria.logger.log(Level.SEVERE, "[ATHR] could not read scoreboard exampleText; assuming 28 lines", e);
+            maxLineId = 28;
+        }
+        return maxLineId;
+    }
+
+    public static final Map<Integer, Integer> LINE_ANCHORS = new HashMap<>();
+
+    private static final Set<Integer> DEFAULT_OFF_LINES = new HashSet<>(Arrays.asList(20, 21, 22, 23));
+
+    public static boolean isLineDefaultOn(int id) {
+        return !DEFAULT_OFF_LINES.contains(id);
+    }
 
     @Expose
     @ConfigOption(name = "Enable", desc = "Replace the vanilla sidebar with a custom scoreboard")
@@ -102,6 +132,9 @@ public class Scoreboard {
     public List<Integer> scoreboardLines = new ArrayList<>(Arrays.asList(
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26, 27, 28
     ));
+
+    @Expose
+    public int scoreboardLinesSeen = 28;
 
     @Expose
     @ConfigOption(name = "Unknown Lines Warning", desc = "Show a chat warning when the scoreboard contains a line the mod doesn't recognise.\n§eReporting these in the Discord helps get them added!")

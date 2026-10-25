@@ -15,6 +15,7 @@ import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
+import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
@@ -47,7 +48,9 @@ public class EnchantProcessor {
     @HandleEvent(priority = HandleEvent.LOW)
     public void onTooltip(ASMTooltipEvent event) {
         if (event == null || event.itemStack == null || event.toolTip == null || ATHRConfig.feature == null) return;
-        if (!ATHRConfig.feature.qol.enchantParser.enchantHighlight) return;
+        EnchantParserConfig parserConfig = ATHRConfig.feature.qol.enchantParser;
+        if (!SkyblockData.isOnSkyblock()) return;
+        if (!parserConfig.enchantHighlight) return;
 
         ensureLoaded();
         if (BY_LORE.isEmpty()) return;
@@ -55,17 +58,19 @@ public class EnchantProcessor {
         NBTTagCompound enchantNBT = getEnchantNBT(event.itemStack);
         if (enchantNBT != null && NbtCompat.isEmpty(enchantNBT)) return;
 
+        boolean isEnchantedBook = "ENCHANTED_BOOK".equals(ItemUtils.getInternalName(event.itemStack));
+        String signature = configSignature(isEnchantedBook);
+
         List<String> loreList = event.toolTip;
-        if (LORE_CACHE.isCached(loreList) && configSignature().equals(LORE_CACHE.signature)) {
+        if (LORE_CACHE.isCached(loreList) && signature.equals(LORE_CACHE.signature)) {
             loreList.clear();
             loreList.addAll(LORE_CACHE.cachedAfter);
             return;
         }
         LORE_CACHE.updateBefore(loreList);
-        LORE_CACHE.signature = configSignature();
+        LORE_CACHE.signature = signature;
         FontRenderer fontRenderer = MinecraftCompat.getFontRenderer();
 
-        boolean isEnchantedBook = "ENCHANTED_BOOK".equals(ItemUtils.getInternalName(event.itemStack));
         int startEnchant = -1, endEnchant = -1, maxTooltipWidth = 0;
 
         for (int i = 0; i < loreList.size(); i++) {
@@ -96,6 +101,10 @@ public class EnchantProcessor {
         TreeSet<FormattedEnchant> orderedEnchants = new TreeSet<>();
         FormattedEnchant lastEnchant = null;
         boolean hasLore = false;
+        EnchantParserConfig.Descriptions descriptions = parserConfig.descriptions;
+        boolean hideDescriptions = isEnchantedBook
+                ? descriptions.hideBookDescriptions
+                : descriptions.hideEnchantDescriptions;
 
         for (int i = startEnchant; i <= endEnchant && i < loreList.size(); i++) {
             String unformattedLine = ColorUtils.stripColor(loreList.get(i));
@@ -110,7 +119,7 @@ public class EnchantProcessor {
                 orderedEnchants.add(lastEnchant);
                 containsEnchant = true;
             }
-            if (!containsEnchant && lastEnchant != null && !ATHRConfig.feature.qol.enchantParser.hideEnchantDescriptions) {
+            if (!containsEnchant && lastEnchant != null && !hideDescriptions) {
                 lastEnchant.lore.add(loreList.get(i));
                 hasLore = true;
             }
@@ -259,8 +268,9 @@ public class EnchantProcessor {
 
         int argb = ChromaColour.specialToSimpleRGB(color);
         String prefix = nearestMcColor(argb);
-        if (ATHRConfig.feature.qol.enchantParser.enchantChroma && ChromaColour.getSpeed(color) > 0) {
-                ChromaStyle style = ChromaStyle.of(color, ATHRConfig.feature.qol.enchantParser.enchantChromaMode, ATHRConfig.feature.qol.enchantParser.enchantChromaSize);
+        EnchantParserConfig.Colors colors = ATHRConfig.feature.qol.enchantParser.colors;
+        if (colors.enchantChroma && ChromaColour.getSpeed(color) > 0) {
+                ChromaStyle style = ChromaStyle.of(color, colors.enchantChromaMode, colors.enchantChromaSize);
                 ChromaTextRenderer.setDefaultStyle(style);
                 ChromaTextRenderer.setTierStyle(tier, style);
                 // 1.8.9's FontRenderer redirect swallows only "§z", so the tier digit would render as a glyph.
@@ -285,11 +295,12 @@ public class EnchantProcessor {
     }
 
     private String tierColor(int tier) {
-        if (tier == TIER_ULTIMATE) return ATHRConfig.feature.qol.enchantParser.enchantUltimateColor;
-        if (tier == TIER_PERFECT) return ATHRConfig.feature.qol.enchantParser.enchantPerfectColor;
-        if (tier == TIER_GREAT) return ATHRConfig.feature.qol.enchantParser.enchantGreatColor;
-        if (tier == TIER_GOOD) return ATHRConfig.feature.qol.enchantParser.enchantGoodColor;
-        return ATHRConfig.feature.qol.enchantParser.enchantPoorColor;
+        EnchantParserConfig.Colors colors = ATHRConfig.feature.qol.enchantParser.colors;
+        if (tier == TIER_ULTIMATE) return colors.enchantUltimateColor;
+        if (tier == TIER_PERFECT) return colors.enchantPerfectColor;
+        if (tier == TIER_GREAT) return colors.enchantGreatColor;
+        if (tier == TIER_GOOD) return colors.enchantGoodColor;
+        return colors.enchantPoorColor;
     }
 
     private String nearestMcColor(int argb) {
@@ -329,23 +340,11 @@ public class EnchantProcessor {
         return x * x;
     }
 
-    private String configSignature() {
+    private String configSignature(boolean isEnchantedBook) {
         EnchantParserConfig c = ATHRConfig.feature.qol.enchantParser;
-        return c.enchantLayout + "|" + c.hideEnchantDescriptions + "|" + c.enchantChroma + "|" + c.enchantChromaMode + "|" + c.enchantChromaSize + "|" + c.enchantPoorColor + "|" + c.enchantGoodColor + "|" + c.enchantGreatColor + "|" + c.enchantPerfectColor + "|" + c.enchantUltimateColor + "|" + ATHRConfig.feature.qol.romanNumerals;
-    }
-
-    private String toRoman(int number) {
-        int[] values = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
-        String[] numerals = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
-        StringBuilder out = new StringBuilder();
-        int n = Math.max(1, number);
-        for (int i = 0; i < values.length; i++) {
-            while (n >= values[i]) {
-                n -= values[i];
-                out.append(numerals[i]);
-            }
-        }
-        return out.toString();
+        EnchantParserConfig.Descriptions d = c.descriptions;
+        EnchantParserConfig.Colors colors = c.colors;
+        return c.enchantLayout + "|" + d.hideEnchantDescriptions + "|" + d.hideBookDescriptions + "|" + isEnchantedBook + "|" + colors.enchantChroma + "|" + colors.enchantChromaMode + "|" + colors.enchantChromaSize + "|" + colors.enchantPoorColor + "|" + colors.enchantGoodColor + "|" + colors.enchantGreatColor + "|" + colors.enchantPerfectColor + "|" + colors.enchantUltimateColor + "|" + ATHRConfig.feature.qol.romanNumerals;
     }
 
     private static class EnchantMeta {
@@ -400,7 +399,7 @@ public class EnchantProcessor {
 
         private String formatted() {
             if (cachedFormatted == null) {
-                String lvl = ATHRConfig.feature.qol.romanNumerals ? Integer.toString(level) : toRoman(level);
+                String lvl = ATHRConfig.feature.qol.romanNumerals ? Integer.toString(level) : RomanNumeralParser.toRoman(level);
                 cachedFormatted = formatColor(meta, level) + meta.loreName + " " + lvl;
             }
             return cachedFormatted;

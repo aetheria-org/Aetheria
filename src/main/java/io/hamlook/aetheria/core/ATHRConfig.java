@@ -1,8 +1,14 @@
 package io.hamlook.aetheria.core;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.OptionsMenu;
 import io.hamlook.aetheria.api.event.AetheriaEventBus;
 import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.core.config.ConfigListDefaults;
+import io.hamlook.aetheria.core.config.ConfigMigrations;
 import io.hamlook.aetheria.core.moulconfig.editors.GuiPositionEditor;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
@@ -51,12 +57,14 @@ import io.hamlook.aetheria.features.qol.overlays.ItemCooldownOverlay;
 import io.hamlook.aetheria.features.qol.overlays.ItemInvincibilityOverlay;
 import io.hamlook.aetheria.features.qol.raredroptracker.RareDropTrackerGUI;
 import io.hamlook.aetheria.features.qol.raredroptracker.RareDropTrackerOverlay;
+import io.hamlook.aetheria.core.features.scoreboard.Scoreboard;
 import io.hamlook.aetheria.features.scoreboard.CustomScoreboard;
 import io.hamlook.aetheria.features.waypoints.WaypointGroupGui;
 import io.hamlook.aetheria.network.PrivacyNoticeScreen;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.KeybindMigration;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.KeybindCompat;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -79,9 +87,11 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.logging.Level;
 
 public class ATHRConfig {
 
@@ -111,6 +121,12 @@ public class ATHRConfig {
     private static boolean configRetriedOnce = false;
     private static long lastFlushAttemptMs = 0L;
     private static File cleanShutdownMarker;
+    private static volatile boolean configWritable = true;
+    private static volatile boolean blockedWriteLogged = false;
+    private static boolean lastParseIncomplete = false;
+    private static int lastParseReached = -1;
+    private static File quarantinedThisLoad = null;
+    private static String pendingConfigNotice = null;
     private static final long CONFIG_SAVE_DEBOUNCE_MS = 2000L;
     private static final long CONFIG_SAVE_MAX_LATENCY_MS = 10000L;
 
@@ -151,12 +167,59 @@ public class ATHRConfig {
     }
 
     private static void loadConfig() {
+        configWritable = true;
+        blockedWriteLogged = false;
+        quarantinedThisLoad = null;
+        lastParseIncomplete = false;
+        lastParseReached = -1;
+        pendingConfigNotice = null;
+
+        boolean migrated = false;
+        boolean fresh = false;
+        boolean incomplete = false;
+        int loadedVersion = -1;
+
         if (configFile.exists()) {
-            feature = StorageManager.loadSafe(configFile, Config.class, GsonBuilder.GSON_STRICT);
+            String raw = StorageManager.loadSafeRaw(configFile, true);
+            if (raw != null) {
+                JsonObject original = parseObject(raw);
+                if (original == null) {
+                    Aetheria.logger.severe("[ATHR] config.json is not a JSON object; quarantining it");
+                    quarantinedThisLoad = StorageManager.backupCorrupted(configFile);
+                } else {
+                    int from = ConfigMigrations.readVersion(original);
+                    if (from < ConfigMigrations.CURRENT) {
+                        backupBeforeMigration(from);
+                    }
+                    JsonObject migratedRoot = ConfigMigrations.apply(original);
+                    loadedVersion = ConfigMigrations.readVersion(migratedRoot);
+                    migrated = loadedVersion > from;
+                    incomplete = ConfigMigrations.isIncomplete(from, loadedVersion);
+                    feature = deserialize(migratedRoot);
+                    if (feature == null && migratedRoot != original) {
+                        Aetheria.logger.severe("[ATHR] migrated config did not deserialize; retrying the unmigrated tree with writes disabled");
+                        feature = deserialize(original);
+                        if (feature != null) {
+                            incomplete = true;
+                            loadedVersion = from;
+                        }
+                    }
+                    if (feature == null) {
+                        quarantinedThisLoad = StorageManager.backupCorrupted(configFile);
+                    }
+                }
+            }
         }
+
         if (feature == null) {
-            feature = tryRestoreFromCorruptedBackups();
-            if (feature == null) {
+            feature = tryRestoreFromCorruptedBackups(quarantinedThisLoad);
+            if (feature != null) {
+                migrated = true;
+                incomplete = lastParseIncomplete;
+                if (lastParseReached >= 0) loadedVersion = lastParseReached;
+                System.err.println("[ATHR] Recovered config settings from a corrupted backup.");
+            } else {
+                fresh = true;
                 feature = new Config();
                 if (configFile.exists()) {
                     System.err.println("[ATHR] config.json failed to load and no usable .corrupted backup was found; using defaults.");
@@ -168,16 +231,79 @@ public class ATHRConfig {
                                 + " was likely corrupted by an interrupted write.");
                     }
                 }
-            } else {
-                System.err.println("[ATHR] Recovered config settings from a corrupted backup.");
             }
         }
-        if (KeybindMigration.migrateIfNeeded(feature)) {
+
+        if (fresh) {
+            feature.configVersion = ConfigMigrations.CURRENT;
+            feature.scoreboard.scoreboardLinesSeen = Scoreboard.maxLineId();
+        }
+
+        int effectiveVersion = loadedVersion >= 0 ? loadedVersion : lastParseReached;
+
+        if (incomplete) {
+            configWritable = false;
+            Aetheria.logger.severe("[ATHR] config migration stopped at v" + effectiveVersion
+                    + " (target v" + ConfigMigrations.CURRENT
+                    + "); config writes are disabled this session and config.json is unchanged");
+            CrashLog.report(configFile, "loading", "config migration incomplete at v" + effectiveVersion);
+            pendingConfigNotice = "§c[ATHR] Config migration failed at v" + effectiveVersion
+                    + ". Settings are not being saved this session. Backup: config.json.pre-v" + effectiveVersion;
+        }
+
+        boolean newer = effectiveVersion > ConfigMigrations.CURRENT;
+        boolean reconciled = false;
+        if (!incomplete && !newer) {
+            try {
+                reconciled = ConfigListDefaults.apply(feature);
+            } catch (Exception e) {
+                Aetheria.logger.log(Level.SEVERE, "[ATHR] scoreboard line reconcile failed", e);
+            }
+        }
+        boolean keybinds = false;
+        if (!incomplete && !newer) {
+            try {
+                keybinds = KeybindMigration.migrateIfNeeded(feature);
+            } catch (Exception e) {
+                Aetheria.logger.log(Level.SEVERE, "[ATHR] keybind migration failed", e);
+            }
+        }
+        if ((migrated && !newer) || reconciled || keybinds) {
             saveConfig();
         }
     }
 
-    private static Config tryRestoreFromCorruptedBackups() {
+    private static JsonObject parseObject(String json) {
+        try {
+            JsonElement element = JsonParser.parseString(json);
+            return element != null && element.isJsonObject() ? element.getAsJsonObject() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static Config deserialize(JsonObject root) {
+        try {
+            Config loaded = GsonBuilder.GSON_STRICT.fromJson(root, Config.class);
+            if (loaded == null) throw new IllegalStateException("deserialized to null");
+            return loaded;
+        } catch (Exception e) {
+            Aetheria.logger.log(Level.SEVERE, "[ATHR] config tree could not be deserialized", e);
+            CrashLog.report(configFile, "loading", "deserialization failed: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private static void backupBeforeMigration(int from) {
+        File backup = new File(configDirectory, "config.json.pre-v" + from);
+        try {
+            Files.copy(configFile.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            Aetheria.logger.warning("[ATHR] could not write pre-migration backup: " + e.getMessage());
+        }
+    }
+
+    private static Config tryRestoreFromCorruptedBackups(File skip) {
         if (configFile == null) return null;
         File parent = configFile.getParentFile();
         if (parent == null) return null;
@@ -186,10 +312,13 @@ public class ATHRConfig {
         if (backups == null || backups.length == 0) return null;
         Arrays.sort(backups, (a, b) -> b.getName().compareTo(a.getName()));
         for (File backup : backups) {
-            try (Reader r = new BufferedReader(new InputStreamReader(Files.newInputStream(backup.toPath()), StandardCharsets.UTF_8))) {
-                Config restored = GsonBuilder.GSON_STRICT.fromJson(r, Config.class);
+            if (skip != null && backup.getName().equals(skip.getName())) continue;
+            try {
+                String json = new String(Files.readAllBytes(backup.toPath()), StandardCharsets.UTF_8);
+                Config restored = parseConfig(json);
                 if (restored != null) {
-                    System.err.println("[ATHR] Restoring config from " + backup.getName());
+                    Aetheria.logger.warning("[ATHR] Restoring config from " + backup.getName()
+                            + " — settings newer than this backup are not present");
                     return restored;
                 }
             } catch (Exception ignored) {}
@@ -197,14 +326,48 @@ public class ATHRConfig {
         return null;
     }
 
+    private static Config parseConfig(String json) {
+        lastParseIncomplete = false;
+        lastParseReached = -1;
+        JsonObject original = parseObject(json);
+        if (original == null) return null;
+        int from = ConfigMigrations.readVersion(original);
+        JsonObject migratedRoot = ConfigMigrations.apply(original);
+        int reached = ConfigMigrations.readVersion(migratedRoot);
+        lastParseReached = reached;
+        Config loaded = deserialize(migratedRoot);
+        if (loaded != null) {
+            lastParseIncomplete = ConfigMigrations.isIncomplete(from, reached);
+            return loaded;
+        }
+        if (migratedRoot != original) {
+            loaded = deserialize(original);
+            if (loaded != null) {
+                lastParseIncomplete = true;
+                return loaded;
+            }
+        }
+        return null;
+    }
+
     public static boolean saveConfig() {
         if (feature == null || configFile == null) return false;
+        if (!configWritable) {
+            configDirty = false;
+            if (!blockedWriteLogged) {
+                blockedWriteLogged = true;
+                Aetheria.logger.severe("[ATHR] config write blocked: a migration failed this session. "
+                        + "config.json is unchanged; restore config.json.pre-v* only if you accept losing newer edits.");
+            }
+            return false;
+        }
         boolean ok = StorageManager.saveAtomic(configFile, feature, GsonBuilder.GSON_STRICT);
         if (ok) configDirty = false;
         return ok;
     }
 
     public static void markConfigDirty() {
+        if (!configWritable) return;
         configDirty = true;
         lastSaveRequestMs = System.currentTimeMillis();
     }
@@ -598,6 +761,10 @@ public class ATHRConfig {
     @HandleEvent
     public void onClientTick(ASMTickEvent event) {
         if (event.phase != TickPhase.END) return;
+        if (pendingConfigNotice != null && MinecraftCompat.getLocalPlayer() != null) {
+            ChatUtils.sendMessage(pendingConfigNotice);
+            pendingConfigNotice = null;
+        }
         flushConfigIfDirty();
 
         if (screenToOpen != null) {

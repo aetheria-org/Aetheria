@@ -16,47 +16,66 @@ public class EnchantParserConfig {
     public int enchantLayout = 0;
 
     @Expose
-    @ConfigOption(name = "Hide Descriptions", desc = "Remove the description line below each enchant name.")
-    @ConfigEditorBoolean
-    public boolean hideEnchantDescriptions = true;
+    @Category(name = "Descriptions", desc = "Description lines shown under each enchant")
+    public Descriptions descriptions = new Descriptions();
 
     @Expose
-    @ConfigOption(name = "Chroma", desc = "Animate enchant colors with a rainbow chroma effect when chroma is selected in color picker")
-    @ConfigEditorBoolean
-    public boolean enchantChroma = true;
+    @Category(name = "Colors", desc = "Enchant name colors and chroma")
+    public Colors colors = new Colors();
 
-    @Expose
-    @ConfigOption(name = "Chroma Mode", desc = "All Same: one color. Fade: color shifts across the text.")
-    @ConfigEditorDropdown(values = {"All Same", "Fade"})
-    public int enchantChromaMode = 1;
+    public static class Descriptions {
 
-    @Expose
-    @ConfigOption(name = "Chroma Size", desc = "Width of the Fade gradient in pixels.")
-    @ConfigEditorSliderAnnotation(minValue = 20f, maxValue = 400f, minStep = 5f)
-    public float enchantChromaSize = 120f;
+        @Expose
+        @ConfigOption(name = "Hide Descriptions", desc = "Remove the description line below each enchant name on items.")
+        @ConfigEditorBoolean
+        public boolean hideEnchantDescriptions = true;
 
-    @Expose
-    @ConfigOption(name = "Poor Color", desc = "Color for enchants below half of max level.")
-    @ConfigEditorColour
-    public String enchantPoorColor = "0:170:170:170:170";
+        @Expose
+        @ConfigOption(name = "Hide Book Descriptions", desc = "Remove the description line below each enchant on enchanted books.")
+        @ConfigEditorBoolean
+        public boolean hideBookDescriptions = false;
+    }
 
-    @Expose
-    @ConfigOption(name = "Good Color", desc = "Color for enchants at or above half of max level.")
-    @ConfigEditorColour
-    public String enchantGoodColor = "0:255:85:255:85";
+    public static class Colors {
 
-    @Expose
-    @ConfigOption(name = "Great Color", desc = "Color for enchants one level below max.")
-    @ConfigEditorColour
-    public String enchantGreatColor = "224:255:85:85:255";
+        @Expose
+        @ConfigOption(name = "Chroma", desc = "Animate enchant colors with a rainbow chroma effect when chroma is selected in color picker")
+        @ConfigEditorBoolean
+        public boolean enchantChroma = true;
 
-    @Expose
-    @ConfigOption(name = "Perfect Color", desc = "Color for enchants at max level.")
-    @ConfigEditorColour
-    public String enchantPerfectColor = "222:255:255:0:15";
+        @Expose
+        @ConfigOption(name = "Chroma Mode", desc = "All Same: one color. Fade: color shifts across the text.")
+        @ConfigEditorDropdown(values = {"All Same", "Fade"})
+        public int enchantChromaMode = 1;
 
-    @Expose
-    @ConfigOption(name = "Ultimate Color", desc = "Color for ultimate enchants.")
-    @ConfigEditorColour
-    public String enchantUltimateColor = "0:255:250:0:255";
+        @Expose
+        @ConfigOption(name = "Chroma Size", desc = "Width of the Fade gradient in pixels.")
+        @ConfigEditorSliderAnnotation(minValue = 20f, maxValue = 400f, minStep = 5f)
+        public float enchantChromaSize = 120f;
+
+        @Expose
+        @ConfigOption(name = "Poor Color", desc = "Color for enchants below half of max level.")
+        @ConfigEditorColour
+        public String enchantPoorColor = "0:170:170:170:170";
+
+        @Expose
+        @ConfigOption(name = "Good Color", desc = "Color for enchants at or above half of max level.")
+        @ConfigEditorColour
+        public String enchantGoodColor = "0:255:85:255:85";
+
+        @Expose
+        @ConfigOption(name = "Great Color", desc = "Color for enchants one level below max.")
+        @ConfigEditorColour
+        public String enchantGreatColor = "224:255:85:85:255";
+
+        @Expose
+        @ConfigOption(name = "Perfect Color", desc = "Color for enchants at max level.")
+        @ConfigEditorColour
+        public String enchantPerfectColor = "222:255:255:0:15";
+
+        @Expose
+        @ConfigOption(name = "Ultimate Color", desc = "Color for ultimate enchants.")
+        @ConfigEditorColour
+        public String enchantUltimateColor = "0:255:250:0:255";
+    }
 }

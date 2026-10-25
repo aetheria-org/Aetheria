@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.utils;
 
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -49,6 +50,18 @@ public final class RomanNumeralParser {
             }
         }
         return value;
+    }
+
+    public static String toRoman(int number) {
+        if (number <= 0) return "I";
+        StringBuilder out = new StringBuilder();
+        for (Map.Entry<Integer, String> entry : INT_ROMAN_MAP.descendingMap().entrySet()) {
+            while (number >= entry.getKey()) {
+                number -= entry.getKey();
+                out.append(entry.getValue());
+            }
+        }
+        return out.toString();
     }
 
     public static String replaceInString(String input) {

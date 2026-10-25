@@ -29,6 +29,9 @@ public class Config {
     public int keybindMigrationVersion = 0;
 
     @Expose
+    public int configVersion = 0;
+
+    @Expose
     @Category(name = "About", desc = "Links, credits & used software")
     public final About about = new About();
 

@@ -245,6 +245,10 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
                 int yOff = 0;
                 int i = 0;
                 for (int strIndex : activeText) {
+                    if (strIndex < 0 || strIndex >= exampleText.length) {
+                        i++;
+                        continue;
+                    }
                     int ySize = 10 * exampleText[strIndex].split("\n").length;
                     if (mouseY < y + 50 + yOff + ySize) {
                         dragOffsetX = x + 10 - mouseX;
@@ -262,6 +266,10 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
             int yOff = 0;
             int i = 0;
             for (int strIndex : activeText) {
+                if (strIndex < 0 || strIndex >= exampleText.length) {
+                    i++;
+                    continue;
+                }
                 if (dragOffsetY + mouseY + 4 < y + 50 + yOff + 10) {
                     activeText.remove(dragStartIndex);
                     activeText.add(i, currentDragging);
