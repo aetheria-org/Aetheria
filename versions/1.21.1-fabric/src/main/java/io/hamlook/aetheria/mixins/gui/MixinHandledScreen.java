@@ -151,10 +151,6 @@ public abstract class MixinHandledScreen {
         }
     }
 
-    @Inject(method = "mouseClicked(DDI)Z", at = @At("HEAD"))
-    private void athr$profileMouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
-        GuiContainerHook.profileMouseClicked((HandledScreen) (Object) this, this.focusedSlot, button);
-    }
 
     @Inject(method = "keyPressed(III)Z", at = @At("HEAD"))
     private void athr$nbtCopy(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> cir) {

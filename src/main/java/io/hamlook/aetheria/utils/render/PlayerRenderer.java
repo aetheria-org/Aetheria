@@ -3,7 +3,7 @@ package io.hamlook.aetheria.utils.render;
 import com.mojang.authlib.GameProfile;
 import io.hamlook.aetheria.features.capes.Cape;
 import io.hamlook.aetheria.features.capes.CapeManager;
-import io.hamlook.aetheria.features.profile.viewer.SkinManager;
+import io.hamlook.aetheria.utils.SkinManager;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;

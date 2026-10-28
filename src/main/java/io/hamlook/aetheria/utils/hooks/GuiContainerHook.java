@@ -5,7 +5,6 @@ import io.hamlook.aetheria.core.Config;
 import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.events.SlotClickEvent;
 import io.hamlook.aetheria.features.misc.protect.ProtectItemFeature;
-import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.features.qol.BetterContainers;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
@@ -14,10 +13,8 @@ import io.hamlook.aetheria.utils.compat.DrawContext;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
 import io.hamlook.aetheria.utils.modcompat.NefSlotClickCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
-import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.NBTFormatter;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
-import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.render.HighlightUtils;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
@@ -97,55 +94,6 @@ public final class GuiContainerHook {
     }
 
     //#if MC < 1.21
-    public static void profileInitGui(GuiContainer gui, List<GuiButton> buttonList) {
-        ContainerChest chest = ContainerUtils.getOpenChest(gui);
-        if (chest != null && chest.getLowerChestInventory().getName().equals("View Profile") && !SkyblockData.getEnvironment().isTest()) {
-            buttonList.add(new GuiButton(1000, gui.guiLeft - 200, gui.guiTop, 80, 20, "Parse Profile"));
-        }
-    }
-    //#else
-    //$$ public static void profileInitGui(HandledScreen<?> gui, List<ClickableWidget> buttonList) {
-    //$$     if ("View Profile".equals(ContainerUtils.getContainerName(gui)) && !SkyblockData.getEnvironment().isTest()) {
-    //$$         buttonList.add(ButtonWidget.builder(Text.literal("Parse Profile"), b -> ProfileParser.parse("Diyansh", gui.getScreenHandler())).dimensions(InventoryCompat.getGuiLeft(gui) - 200, InventoryCompat.getGuiTop(gui), 80, 20).build());
-    //$$     }
-    //$$ }
-    //#endif
-
-    //#if MC < 1.21
-    public static boolean profileMouseReleased(GuiContainer gui, int mouseX, int mouseY, GuiButton button) {
-        if (button == null) return false;
-        if (mouseX > GuiScreenUtils.getX(button) && mouseX < GuiScreenUtils.getX(button) + GuiScreenUtils.getW(button) && mouseY > GuiScreenUtils.getY(button) && mouseY < GuiScreenUtils.getY(button) + GuiScreenUtils.getH(button)) {
-            ProfileParser.parse("Diyansh", gui.inventorySlots);
-            return true;
-        }
-        return false;
-    }
-    //#else
-    //$$ public static boolean profileMouseReleased(HandledScreen<?> gui, int mouseX, int mouseY, ClickableWidget button) {
-    //$$     if (button == null) return false;
-    //$$     if (mouseX > GuiScreenUtils.getX(button) && mouseX < GuiScreenUtils.getX(button) + GuiScreenUtils.getW(button) && mouseY > GuiScreenUtils.getY(button) && mouseY < GuiScreenUtils.getY(button) + GuiScreenUtils.getH(button)) {
-    //$$         ProfileParser.parse("Diyansh", gui.getScreenHandler());
-    //$$         return true;
-    //$$     }
-    //$$     return false;
-    //$$ }
-    //#endif
-
-    //#if MC < 1.21
-    public static boolean profileMouseClicked(GuiContainer gui, Slot theSlot, int mouseButton) {
-        if (mouseButton != 0) return false;
-        ContainerChest chest = ContainerUtils.getOpenChest(gui);
-        if (chest == null) return false;
-        String title = ContainerUtils.getTitle(chest);
-        if (theSlot == null || !theSlot.getHasStack()) return false;
-        if (!title.equals(GUI_TITLE)) return false;
-        ItemStack stack = theSlot.getStack();
-        String itemName = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
-        if (!itemName.equals(ITEM_TITLE)) return false;
-        ProfileParser.parseName(stack);
-        return true;
-    }
-
     public static boolean protectItemClick(GuiContainer gui, Slot slot, int slotId, int clickedButton, int clickType) {
         SlotClickEvent event = new SlotClickEvent(gui, slot, slotId, clickedButton, SlotClickEvent.ClickType.fromId(clickType));
         event.post();
@@ -154,18 +102,6 @@ public final class GuiContainerHook {
         return false;
     }
     //#else
-    //$$ public static boolean profileMouseClicked(HandledScreen<?> gui, Slot theSlot, int mouseButton) {
-    //$$     if (mouseButton != 0) return false;
-    //$$     String title = ContainerUtils.getContainerName(gui);
-    //$$     if (title == null || !title.equals(GUI_TITLE)) return false;
-    //$$     if (theSlot == null || !theSlot.hasStack()) return false;
-    //$$     ItemStack stack = theSlot.getStack();
-    //$$     String itemName = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getName())).trim();
-    //$$     if (!itemName.equals(ITEM_TITLE)) return false;
-    //$$     ProfileParser.parseName(stack);
-    //$$     return true;
-    //$$ }
-    //$$
     //$$ public static boolean protectItemClick(HandledScreen<?> gui, Slot slot, int slotId, int clickedButton, int clickType) {
     //$$     SlotClickEvent event = new SlotClickEvent(gui, slot, slotId, clickedButton, SlotClickEvent.ClickType.fromId(clickType));
     //$$     event.post();

@@ -206,4 +206,15 @@ public class Utils {
         }
         return (negative ? "-" : "") + shortNumberFormat(n / 1000.0, iteration + 1);
     }
+
+    public static long parseRawNumber(String raw) {
+        String s = raw.trim().replace(",", "");
+        if (s.isEmpty()) return 0L;
+        char suffix = Character.toUpperCase(s.charAt(s.length() - 1));
+        long multiplier = 1L;
+        if (suffix == 'K') { multiplier = 1_000L;         s = s.substring(0, s.length() - 1); }
+        else if (suffix == 'M') { multiplier = 1_000_000L;     s = s.substring(0, s.length() - 1); }
+        else if (suffix == 'B') { multiplier = 1_000_000_000L; s = s.substring(0, s.length() - 1); }
+        return (long) (Double.parseDouble(s) * multiplier);
+    }
 }

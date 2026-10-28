@@ -10,6 +10,7 @@ plugins {
     id("gg.essential.multi-version")
     id("gg.essential.loom")
     id("dev.architectury.architectury-pack200")
+    kotlin("plugin.lombok") version "2.0.10"
 }
 
 // Constants:
@@ -28,6 +29,9 @@ loom {
             property("mixin.debug", "true")
             if (target.isForge) {
                 programArgs("--tweakClass", "org.spongepowered.asm.launch.MixinTweaker")
+            }
+            if (target == ProjectTarget.MAIN) {
+                property("fabric.dli.main", "io.hamlook.aetheria.dev.UsernameLaunchWrapper")
             }
             if (SystemUtils.IS_OS_MAC_OSX) {
                 vmArgs.remove("-XstartOnFirstThread")
@@ -96,6 +100,7 @@ fun excludeBuildPaths(buildPathsFile: File, sourceSet: Provider<SourceSet>) {
         logger.warn("buildpaths-excluded.txt not found: ${buildPathsFile.path} — no files excluded")
     }
 }
+
 val buildPathsFile = file("buildpaths-excluded.txt")
 excludeBuildPaths(buildPathsFile, sourceSets.main)
 excludeBuildPaths(buildPathsFile, sourceSets.test)
@@ -169,6 +174,7 @@ dependencies {
     if (target.isFabric) {
         runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.1")
     }
+    testImplementation(kotlin("test"))
 }
 
 // Tasks:
@@ -205,7 +211,12 @@ tasks.processResources {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     filesMatching(listOf("mcmod.info", "mixins.$modidStr.json")) {
-        expand("version" to versionStr, "mcversion" to target.minecraftVersion.versionName, "modid" to modidStr, "basePackage" to baseGroupStr)
+        expand(
+            "version" to versionStr,
+            "mcversion" to target.minecraftVersion.versionName,
+            "modid" to modidStr,
+            "basePackage" to baseGroupStr
+        )
     }
 
     rename("accesstransformer.cfg", "META-INF/${modidStr}_at.cfg")

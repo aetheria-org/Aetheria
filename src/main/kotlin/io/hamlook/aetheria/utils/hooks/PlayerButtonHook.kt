@@ -6,7 +6,6 @@ import io.hamlook.aetheria.core.features.chat.PlayerButtonsConfig
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour
 import io.hamlook.aetheria.events.ASMGuiOpenEvent
 import io.hamlook.aetheria.features.chat.PlayerNameButtonListener
-import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.chat.ChatUtils
 import io.hamlook.aetheria.utils.compat.DrawContextUtils
@@ -244,8 +243,6 @@ object PlayerButtonHook {
             MenuAction.Special.VIEW_PROFILE -> {
                 if (ATHRConfig.feature == null || ATHRConfig.feature.chat.playerButtons.useIngameViewProfile) {
                     sendCommand(action, name)
-                } else {
-                    ATHRConfig.screenToOpen = ProfileViewerGUI(name)
                 }
             }
 

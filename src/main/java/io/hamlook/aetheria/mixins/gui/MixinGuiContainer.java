@@ -82,35 +82,7 @@ public abstract class MixinGuiContainer extends GuiScreen {
     }
     //#endif
 
-    //#if MC < 1.21
-    @Inject(method = "initGui", at = @At("RETURN"))
-    public void ATHR$profileInitGui(CallbackInfo ci) {
-        GuiContainerHook.profileInitGui((GuiContainer) (Object) this, this.buttonList);
-    }
-    //#else
-    //$$ @Inject(method = "init", at = @At("RETURN"))
-    //$$ public void ATHR$profileInitGui(CallbackInfo ci) {
-    //$$     GuiContainerHook.profileInitGui((HandledScreen)(Object)this, (java.util.List<ClickableWidget>)(Object)this.children());
-    //$$ }
-    //#endif
 
-    //#if MC < 1.21
-    @Inject(method = "mouseReleased", at = @At("HEAD"))
-    public void ATHR$profileMouseReleased(int mouseX, int mouseY, int state, CallbackInfo ci) {
-        GuiContainerHook.profileMouseReleased((GuiContainer) (Object) this, mouseX, mouseY, this.aetheria$button);
-    }
-    //#else
-    //$$ @Inject(method = "mouseReleased(DDI)Z", at = @At("HEAD"))
-    //$$ public void ATHR$profileMouseReleased(double mouseX, double mouseY, int state, CallbackInfoReturnable<Boolean> cir) {
-    //$$     GuiContainerHook.profileMouseReleased((HandledScreen)(Object)this, (int) mouseX, (int) mouseY, (ClickableWidget)this.aetheria$button);
-    //$$ }
-    //#endif
-
-    //#if MC < 1.21
-    @Inject(method = "mouseClicked", at = @At("HEAD"))
-    public void ATHR$profileMouseClicked(int mouseX, int mouseY, int mouseButton, CallbackInfo ci) {
-        GuiContainerHook.profileMouseClicked((GuiContainer) (Object) this, this.theSlot, mouseButton);
-    }
 
     @Inject(method = "handleMouseClick", at = @At("HEAD"), cancellable = true)
     private void ATHR$protectItemClick(Slot slot, int slotId, int clickedButton, int clickType, CallbackInfo ci) {
@@ -142,5 +114,4 @@ public abstract class MixinGuiContainer extends GuiScreen {
             ci.cancel();
         }
     }
-    //#endif
 }

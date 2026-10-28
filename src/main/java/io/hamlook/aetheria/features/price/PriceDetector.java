@@ -13,10 +13,8 @@ import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.price.vars.AuctionEntry;
 import io.hamlook.aetheria.features.price.vars.BazaarEntry;
-import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.features.price.vars.PriceData;
 import io.hamlook.aetheria.features.price.vars.PriceType;
-import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
@@ -34,15 +32,8 @@ import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagByte;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagDouble;
-import net.minecraft.nbt.NBTTagFloat;
-import net.minecraft.nbt.NBTTagInt;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagLong;
-import net.minecraft.nbt.NBTTagShort;
-import net.minecraft.nbt.NBTTagString;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -297,7 +288,7 @@ public class PriceDetector {
                 ItemStack stack = slot.getStack();
                 if (!ItemUtils.isSkyblockItem(stack)) continue;
 
-                List<String> lore = ProfileParser.getLore(stack);
+                List<String> lore = ItemUtils.getLore(stack);
                 String buyPrice = "", sellPrice = "";
 
                 for (String s : lore) {
@@ -330,19 +321,19 @@ public class PriceDetector {
             ItemStack iSellStack = iSell.getStack();
             if (buy == null || sell == null || iBuyStack == null || iSellStack == null) return false;
 
-            List<String> oBuyLore = ProfileParser.getLore(buy);
+            List<String> oBuyLore = ItemUtils.getLore(buy);
             String oBuyPrice = parseOrderPrice(oBuyLore, "Top Orders");
             if (oBuyPrice == null) return false;
 
-            List<String> oSellLore = ProfileParser.getLore(sell);
+            List<String> oSellLore = ItemUtils.getLore(sell);
             String oSellPrice = parseOrderPrice(oSellLore, "Top Offers");
             if (oSellPrice == null) return false;
 
             String iBuyPrice = "", iSellPrice = "";
-            for (String s : ProfileParser.getLore(iBuyStack)) {
+            for (String s : ItemUtils.getLore(iBuyStack)) {
                 if (s.startsWith("Price per unit:") || s.startsWith("Price pet unit:")) iBuyPrice = extractPrice(s);
             }
-            for (String s : ProfileParser.getLore(iSellStack)) {
+            for (String s : ItemUtils.getLore(iSellStack)) {
                 if (s.startsWith("Price per unit:") || s.startsWith("Price pet unit:")) iSellPrice = extractPrice(s);
             }
             if (iBuyPrice.isEmpty() || iSellPrice.isEmpty()) return false;

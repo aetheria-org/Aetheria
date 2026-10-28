@@ -3,7 +3,6 @@ package io.hamlook.aetheria.features.misc.itemList;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.hamlook.aetheria.Aetheria;
-import io.hamlook.aetheria.features.profile.data.ItemData;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
@@ -362,17 +361,4 @@ public class ItemRegistry {
         skullTextureCache = map;
     }
 
-    public static SkyblockItem getWithItemData(ItemData data) {
-        if (data == null || data.skyblockID == null) return null;
-        SkyblockItem base = getItem(data.skyblockID, data.displayName);
-        if (base == null) return null;
-        SkyblockItem item = base.clone();
-        if (data.lore != null && !data.lore.isEmpty()) item.baseLore = data.lore;
-        item.enchanted = data.enchanted;
-        if (data.displayName != null && !data.displayName.isEmpty()) item.displayName = data.displayName;
-        if (data.amount > 0) {
-            item.amount = data.amount;
-        }
-        return item;
-    }
 }

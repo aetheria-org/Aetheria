@@ -8,7 +8,6 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 import io.hamlook.aetheria.events.ASMGuiOpenEvent;
-import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
@@ -73,7 +72,7 @@ public class ElectionUtils {
         if (stack == null) return;
         String title = ItemUtils.getDisplayName(stack);
         String colorToCheck = title.substring(0, 2);
-        List<String> lore = ProfileParser.getLoreColored(stack);
+        List<String> lore = ItemUtils.getLoreColored(stack);
         List<String> perks = new ArrayList<>();
 
         for (String line : lore) {

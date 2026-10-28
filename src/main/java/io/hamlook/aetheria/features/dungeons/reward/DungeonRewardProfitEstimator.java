@@ -6,7 +6,6 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.features.price.PriceMap;
-import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
@@ -79,7 +78,7 @@ public class DungeonRewardProfitEstimator {
                             chestPrice = 0;
                         }else {
                             cost = cost.replaceAll("[^0-9,]", "");
-                            chestPrice = ProfileParser.parseRawNumber(cost);
+                            chestPrice = Utils.parseRawNumber(cost);
                         }
                     }
                 }

@@ -22,7 +22,7 @@ import io.hamlook.aetheria.features.diana.party.DianaPartyConnector;
 import io.hamlook.aetheria.features.dungeons.caseopening.CitManager;
 import io.hamlook.aetheria.features.farming.visitors.VisitorShoppingList;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
-import io.hamlook.aetheria.features.profile.GuiWaiter;
+import io.hamlook.aetheria.utils.GuiWaiter;
 import io.hamlook.aetheria.features.trackers.TrackerManager;
 import io.hamlook.aetheria.init.EventRegistrar;
 import io.hamlook.aetheria.repo.ATHRRepo;

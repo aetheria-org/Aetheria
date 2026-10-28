@@ -59,6 +59,28 @@ public class ItemUtils {
         return Collections.unmodifiableList(NbtCompat.getLoreLines(item));
     }
 
+    public static List<String> getLore(ItemStack stack) {
+        List<String> lore = new ArrayList<>();
+        if (stack == null || !stack.hasTagCompound()) return lore;
+        NBTTagCompound display = stack.getTagCompound().getCompoundTag("display");
+        if (!display.hasKey("Lore", 9)) return lore;
+        NBTTagList loreList = display.getTagList("Lore", 8);
+        for (int i = 0; i < loreList.tagCount(); i++)
+            lore.add(ColorUtils.stripColor(loreList.getStringTagAt(i)).trim());
+        return lore;
+    }
+
+    public static List<String> getLoreColored(ItemStack stack) {
+        List<String> lore = new ArrayList<>();
+        if (stack == null || !stack.hasTagCompound()) return lore;
+        NBTTagCompound display = stack.getTagCompound().getCompoundTag("display");
+        if (!display.hasKey("Lore", 9)) return lore;
+        NBTTagList loreList = display.getTagList("Lore", 8);
+        for (int i = 0; i < loreList.tagCount(); i++)
+            lore.add(loreList.getStringTagAt(i));
+        return lore;
+    }
+
     private static List<String> loadLoreStripped(ItemStack item) {
         List<String> lines = getLoreLines(item);
         if (lines.isEmpty()) return lines;

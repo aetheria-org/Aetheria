@@ -1,12 +1,10 @@
-package io.hamlook.aetheria.features.profile;
+package io.hamlook.aetheria.utils;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.TickPhase;
-import io.hamlook.aetheria.utils.ColorUtils;
-import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
@@ -71,7 +69,6 @@ public class GuiWaiter {
 
     public static void waitForUserAction(String expectedTitle, int ignoreWindowId, Consumer<ContainerChest> callback) {
         Aetheria.logger.info("[GuiWaiter] Highlighted a slot. Waiting for user to click and reload '" + expectedTitle + "'...");
-        WaiterLogs.addLog("[GuiWaiter] Highlighted a slot. Waiting for user to click and reload '" + expectedTitle + "'...");
         PendingWait wait = new PendingWait(expectedTitle, 2, -1, callback, null, null, ignoreWindowId);
         wait.maxPollTicks = 400;
         INSTANCE.queue.addFirst(wait);
@@ -88,7 +85,6 @@ public class GuiWaiter {
         if (container == null) {
             if (returnTitle != null && onReturn != null) {
                 Aetheria.logger.info("[GuiWaiter] Paged GUI was empty, returning directly to: '" + returnTitle + "'");
-                WaiterLogs.addLog("[GuiWaiter] Paged GUI was empty, returning directly to: '" + returnTitle + "'");
                 queue.addFirst(new PendingWait(returnTitle, 2, -1, onReturn, null, null, -1));
             }
             return;
@@ -115,14 +111,12 @@ public class GuiWaiter {
         } else {
             int actualBackSlot = resolveSlot(container, backSlot);
             Aetheria.logger.info("[GuiWaiter] Paged GUI: last page reached, clicking back (slot " + actualBackSlot + ")");
-            WaiterLogs.addLog("[GuiWaiter] Paged GUI: last page reached, clicking back (slot " + actualBackSlot + ")");
             if (actualBackSlot >= 0) {
                 InventoryCompat.windowClick(container.windowId, actualBackSlot, 0, 0, MinecraftCompat.getLocalPlayer());
                 //ATHRMod.logger.info("[GuiWaiter] Page GUI: clicked on slot " + actualBackSlot + " | " + container.windowId);
             }
             if (returnTitle != null && onReturn != null) {
                 Aetheria.logger.info("[GuiWaiter] Queuing return wait for: '" + returnTitle + "'");
-                WaiterLogs.addLog("[GuiWaiter] Queuing return wait for: '" + returnTitle + "'");
                 queue.addFirst(new PendingWait(returnTitle, 2, -1, onReturn, null, null, container.windowId));
             }
         }
@@ -153,7 +147,6 @@ public class GuiWaiter {
         if (container == null) {
             if (returnTitle != null && onReturn != null) {
                 Aetheria.logger.info("[GuiWaiter] Manual Paged GUI was empty, returning directly to: '" + returnTitle + "'");
-                WaiterLogs.addLog("[GuiWaiter] Manual Paged GUI was empty, returning directly to: '" + returnTitle + "'");
                 queue.addFirst(new PendingWait(returnTitle, 2, -1, onReturn, null, null, -1));
             }
             return;
@@ -180,7 +173,6 @@ public class GuiWaiter {
         } else {
             int actualBackSlot = resolveSlot(container, backSlot);
             Aetheria.logger.info("[GuiWaiter] Manual Paged GUI: last page reached, waiting for user to click back (slot " + actualBackSlot + ")");
-            WaiterLogs.addLog("[GuiWaiter] Manual Paged GUI: last page reached, waiting for user to click back (slot " + actualBackSlot + ")");
 
             if (returnTitle != null && onReturn != null) {
                 PendingWait returnWait = new PendingWait(returnTitle, 2, -1, onReturn, null, null, container.windowId);
@@ -212,7 +204,6 @@ public class GuiWaiter {
 
         if ((lowerMsg.contains("is empty") || lowerMsg.contains("empty!")) && !lowerMsg.contains(": ")) {
             Aetheria.logger.info("[GuiWaiter] Intercepted empty container chat: '" + msg + "'. Aborting wait for '" + head.expectedTitle + "'");
-            WaiterLogs.addLog("[GuiWaiter] Intercepted empty container chat: '" + msg + "'. Aborting wait for '" + head.expectedTitle + "'");
 
             queue.poll(); // Remove the stalled wait from the queue
             head.callback.accept(null); // Safely pass null
@@ -241,7 +232,6 @@ public class GuiWaiter {
                 // Re-click pressSlot every 100 ticks (attempts at 100, 200, 300, 400, 500)
                 if (head.pressSlot > 0 && head.pollTicks % 100 == 0 && head.pollTicks <= 500) {
                     Aetheria.logger.info("[GuiWaiter] Retry " + (head.pollTicks / 100) + "/5 for '" + head.expectedTitle + "'");
-                    WaiterLogs.addLog("[GuiWaiter] Retry " + (head.pollTicks / 100) + "/5 for '" + head.expectedTitle + "'");
                     Minecraft mc = MinecraftCompat.getMinecraft();
                     ContainerChest current = getOpenChest("View Profile", -1);
                     if (current != null) {
@@ -253,14 +243,10 @@ public class GuiWaiter {
                     String current = getCurrentTitle();
                     Aetheria.logger.info("[GuiWaiter] Still waiting for '" + head.expectedTitle
                             + "' — current screen title: '" + current + "' (" + head.pollTicks + " ticks)");
-                    WaiterLogs.addLog("[GuiWaiter] Still waiting for '" + head.expectedTitle
-                            + "' — current screen title: '" + current + "' (" + head.pollTicks + " ticks)");
                 }
                 if (head.pollTicks >= 520) {
                     Aetheria.logger.info("[GuiWaiter] TIMEOUT waiting for '" + head.expectedTitle + "' — cancelling remaining queue (" + queue.size() + " items)");
-                    WaiterLogs.addLog("[GuiWaiter] TIMEOUT waiting for '" + head.expectedTitle + "' — cancelling remaining queue (" + queue.size() + " items)");
                     queue.clear();
-                    ProfileParser.parsing = false;
                 }
                 return;
             }
