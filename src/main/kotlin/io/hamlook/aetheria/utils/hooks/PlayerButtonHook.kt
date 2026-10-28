@@ -1,19 +1,22 @@
 package io.hamlook.aetheria.utils.hooks
 
+import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.core.features.chat.PlayerButtonsConfig
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour
+import io.hamlook.aetheria.events.ASMGuiOpenEvent
 import io.hamlook.aetheria.features.chat.PlayerNameButtonListener
 import io.hamlook.aetheria.features.profile.viewer.ui.ProfileViewerGUI
+import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.chat.ChatUtils
 import io.hamlook.aetheria.utils.compat.DrawContextUtils
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import io.hamlook.aetheria.utils.compat.MouseCompat
 import io.hamlook.aetheria.utils.compat.TextCompat
+import io.hamlook.aetheria.utils.render.MarqueeUtils
 import io.hamlook.aetheria.utils.render.RenderUtils
 import net.minecraft.client.gui.FontRenderer
 import net.minecraft.client.gui.GuiTextField
-import net.minecraft.util.IChatComponent
 import org.lwjgl.input.Keyboard
 //#if MC < 1.21
 //#else
@@ -22,23 +25,37 @@ import org.lwjgl.input.Keyboard
 import kotlin.math.max
 import kotlin.math.min
 
+@RegisterEvents
 object PlayerButtonHook {
 
-    private val MENU_LABELS = arrayOf(
-        "Whisper",
-        "View Profile",
-        "Auction House",
-        "Party Invite",
-        "Add Friend",
-        "Ignore",
-        "Visit Island",
-        "Visit Garden"
-    )
-    private const val MENU_PASTE_INDEX = 0
-    private const val MENU_VIEW_PROFILE_INDEX = 1
+    private enum class MenuAction(val label: String, val command: String?, val special: Special?) {
+        WHISPER("Whisper", "/msg {player}", Special.MESSAGE),
+        VIEW_PROFILE("View Profile", "/viewprofile {player}", Special.VIEW_PROFILE),
+        AUCTION_HOUSE("Auction House", "/ah {player}", null),
+        PARTY_INVITE("Party Invite", "/p invite {player}", null),
+        ADD_FRIEND("Add Friend", "/f add {player}", null),
+        IGNORE("Ignore", "/ignore add {player}", null),
+        VISIT_ISLAND("Visit Island", "/visit {player}", null),
+        VISIT_GARDEN("Visit Garden", "/visitgarden {player}", null);
+
+        enum class Special { MESSAGE, VIEW_PROFILE }
+    }
+
+    private class MenuLayout(screenWidth: Int, screenHeight: Int) {
+        val left = menuLeft(screenWidth)
+        val top = menuTop(screenHeight)
+        val headerHeight = MENU_HEADER_H
+        val rowHeight = MENU_ROW_H
+        val height = headerHeight + MenuAction.entries.size * rowHeight + 4
+        val cogLeft = left + MENU_WIDTH - headerHeight
+
+        fun rowTop(index: Int) = top + headerHeight + 2 + index * rowHeight
+    }
+
     private const val MENU_ROW_H = 14
     private const val MENU_HEADER_H = 14
     private const val MENU_WIDTH = 110
+    private const val MENU_Z = 300f
 
     @JvmStatic
     var menuPlayer: String? = null
@@ -60,10 +77,16 @@ object PlayerButtonHook {
     @JvmStatic
     fun closeMenu() {
         menuPlayer = null
+        ChatHook.clearHover()
+    }
+
+    @HandleEvent
+    fun onGuiOpen(event: ASMGuiOpenEvent) {
+        closeMenu()
     }
 
     @JvmStatic
-    fun menuHeight(): Int = MENU_HEADER_H + MENU_LABELS.size * MENU_ROW_H + 4
+    fun menuHeight(): Int = MENU_HEADER_H + MenuAction.entries.size * MENU_ROW_H + 4
 
     @JvmStatic
     fun menuLeft(screenWidth: Int): Int = max(2, min(menuX, screenWidth - MENU_WIDTH - 2))
@@ -92,10 +115,11 @@ object PlayerButtonHook {
     fun drawMenu(mouseX: Int, mouseY: Int, screenWidth: Int, screenHeight: Int, fr: FontRenderer) {
         val player = menuPlayer ?: return
 
-        val bx = menuLeft(screenWidth)
-        val by = menuTop(screenHeight)
-        val boxH = menuHeight()
-        val cogX = cogLeft(screenWidth)
+        val layout = MenuLayout(screenWidth, screenHeight)
+        val bx = layout.left
+        val by = layout.top
+        val boxH = layout.height
+        val cogX = layout.cogLeft
 
         val bg = menuBackgroundColor()
         val bgAlpha = (bg ushr 24) and 0xFF
@@ -103,34 +127,44 @@ object PlayerButtonHook {
         val accent = menuAccentColor()
         val hoverColor = (accent and 0x00FFFFFF) or 0x80000000.toInt()
 
-        RenderUtils.drawGradientRect(0, bx, by, bx + MENU_WIDTH, by + boxH, bg, bgFade)
-        DrawContextUtils.fill(bx, by, bx + MENU_WIDTH, by + MENU_HEADER_H, accent)
-        DrawContextUtils.drawTextWithShadow(
-            fr, player,
-            bx + (MENU_WIDTH - DrawContextUtils.getStringWidth(fr, player)) / 2,
-            by + 3,
-            0xFFFFFFFF.toInt()
-        )
+        //#if MC >= 1.21
+        //$$ DrawContextUtils.flushIfPresent()
+        //#endif
+        DrawContextUtils.pushPop {
+            DrawContextUtils.translate(0f, 0f, MENU_Z)
 
-        val cogHovered = mouseX in cogX..bx + MENU_WIDTH && mouseY in by until by + MENU_HEADER_H
-        if (cogHovered) DrawContextUtils.fill(cogX, by, bx + MENU_WIDTH, by + MENU_HEADER_H, hoverColor)
-        DrawContextUtils.drawTextWithShadow(
-            fr, "\u2699",
-            cogX + MENU_HEADER_H / 2 - DrawContextUtils.getStringWidth(fr, "\u2699") / 2,
-            by + 3,
-            0xFFFFFFFF.toInt()
-        )
-
-        for (i in MENU_LABELS.indices) {
-            val ry = by + MENU_HEADER_H + 2 + i * MENU_ROW_H
-            val hovered = mouseX in bx..bx + MENU_WIDTH && mouseY in ry until ry + MENU_ROW_H
-            if (hovered) DrawContextUtils.fill(bx + 1, ry, bx + MENU_WIDTH - 1, ry + MENU_ROW_H, hoverColor)
-            DrawContextUtils.drawTextWithShadow(
-                fr, MENU_LABELS[i],
-                bx + 6,
-                ry + 3,
-                if (hovered) 0xFFFFFFFF.toInt() else 0xFFB5BAC1.toInt()
+            RenderUtils.drawGradientRect(0, bx, by, bx + MENU_WIDTH, by + boxH, bg, bgFade)
+            DrawContextUtils.fill(bx, by, bx + MENU_WIDTH, by + MENU_HEADER_H, accent)
+            MarqueeUtils.drawCentered(
+                fr,
+                player,
+                bx + (MENU_WIDTH - MENU_HEADER_H) / 2,
+                by + 3,
+                MENU_WIDTH - MENU_HEADER_H - 4,
+                0xFFFFFFFF.toInt(),
+                true
             )
+
+            val cogHovered = mouseX in cogX..bx + MENU_WIDTH && mouseY in by until by + MENU_HEADER_H
+            if (cogHovered) DrawContextUtils.fill(cogX, by, bx + MENU_WIDTH, by + MENU_HEADER_H, hoverColor)
+            DrawContextUtils.drawTextWithShadow(
+                fr, "\u2699",
+                cogX + MENU_HEADER_H / 2 - DrawContextUtils.getStringWidth(fr, "\u2699") / 2,
+                by + 3,
+                0xFFFFFFFF.toInt()
+            )
+
+            for (i in MenuAction.entries.indices) {
+                val ry = layout.rowTop(i)
+                val hovered = mouseX in bx..bx + MENU_WIDTH && mouseY in ry until ry + MENU_ROW_H
+                if (hovered) DrawContextUtils.fill(bx + 1, ry, bx + MENU_WIDTH - 1, ry + MENU_ROW_H, hoverColor)
+                DrawContextUtils.drawTextWithShadow(
+                    fr, MenuAction.entries[i].label,
+                    bx + 6,
+                    ry + 3,
+                    if (hovered) 0xFFFFFFFF.toInt() else 0xFFB5BAC1.toInt()
+                )
+            }
         }
     }
 
@@ -158,17 +192,18 @@ object PlayerButtonHook {
     ): Boolean {
         if (menuPlayer != null) {
             if (mouseButton == 0) {
-                val bx = menuLeft(screenWidth)
-                val by = menuTop(screenHeight)
-                val cogX = cogLeft(screenWidth)
+                val layout = MenuLayout(screenWidth, screenHeight)
+                val bx = layout.left
+                val by = layout.top
+                val cogX = layout.cogLeft
 
-                if (mouseX in cogX..bx + MENU_WIDTH && mouseY in by until by + MENU_HEADER_H) {
+                if (mouseX in cogX..bx + MENU_WIDTH && mouseY in by until by + layout.headerHeight) {
                     ATHRConfig.openSubcategory("Chat Utils", "playerButtons")
                 } else {
-                    for (i in MENU_LABELS.indices) {
-                        val ry = by + MENU_HEADER_H + 2 + i * MENU_ROW_H
+                    for (i in MenuAction.entries.indices) {
+                        val ry = layout.rowTop(i)
                         if (mouseX in bx..bx + MENU_WIDTH && mouseY in ry until ry + MENU_ROW_H) {
-                            executeAction(i, menuPlayer!!, inputField)
+                            executeAction(MenuAction.entries[i], menuPlayer!!, inputField)
                             break
                         }
                     }
@@ -199,131 +234,27 @@ object PlayerButtonHook {
         return true
     }
 
-    private fun executeAction(index: Int, name: String, inputField: GuiTextField) {
-        when (index) {
-            MENU_VIEW_PROFILE_INDEX -> {
+    private fun executeAction(action: MenuAction, name: String, inputField: GuiTextField) {
+        when (action.special) {
+            MenuAction.Special.MESSAGE -> {
+                inputField.text = action.command!!.replace("{player}", name)
+                inputField.isFocused = true
+            }
+
+            MenuAction.Special.VIEW_PROFILE -> {
                 if (ATHRConfig.feature == null || ATHRConfig.feature.chat.playerButtons.useIngameViewProfile) {
-                    sendCommand(index, name)
+                    sendCommand(action, name)
                 } else {
                     ATHRConfig.screenToOpen = ProfileViewerGUI(name)
                 }
             }
 
-            MENU_PASTE_INDEX -> {
-                inputField.text = commandFor(index, name)
-                inputField.isFocused = true
-            }
-
-            else -> sendCommand(index, name)
+            null -> sendCommand(action, name)
         }
     }
 
-    private fun sendCommand(index: Int, name: String) {
-        val cmd = commandFor(index, name) ?: return
-        ChatUtils.sendChatCommand(cmd)
-    }
-
-    @JvmStatic
-    fun commandFor(index: Int, name: String): String? {
-        return when (index) {
-            0 -> "/msg $name"
-            1 -> "/viewprofile $name"
-            2 -> "/ah $name"
-            3 -> "/p invite $name"
-            4 -> "/f add $name"
-            5 -> "/ignore add $name"
-            6 -> "/visit $name"
-            7 -> "/visitgarden $name"
-            else -> null
-        }
-    }
-
-    @JvmStatic
-    fun wrapIgn(root: IChatComponent, ign: String): Boolean {
-        val siblings = root.siblings
-        for (i in siblings.indices) {
-            val sib = siblings[i]
-            val sibText = TextCompat.getUnformattedTextForChat(sib)
-
-            val idx = sibText.indexOf(ign, ignoreCase = true)
-            if (idx != -1) {
-                val namePrefix = activeFormatState(sibText, idx)
-                val afterPrefix = activeFormatState(sibText, idx + ign.length)
-
-                val before = sibText.substring(0, idx)
-                val name = namePrefix + sibText.substring(idx, idx + ign.length)
-                val after = afterPrefix + sibText.substring(idx + ign.length)
-
-                val baseStyle = TextCompat.getChatStyle(sib)
-
-                val beforeComp = TextCompat.createText(before)
-                TextCompat.setChatStyle(beforeComp, TextCompat.createDeepCopy(baseStyle))
-
-                val nameComp = TextCompat.createText(name)
-                var nameStyle = TextCompat.createDeepCopy(baseStyle)
-                nameStyle = TextCompat.setUnderlined(nameStyle, true)
-                nameStyle = TextCompat.setClickSuggestCommand(nameStyle, PlayerNameButtonListener.MARKER_PREFIX + ign)
-                nameStyle = TextCompat.setHoverShowText(nameStyle, "\u00a7eClick for player options")
-                TextCompat.setChatStyle(nameComp, nameStyle)
-
-                val afterComp = TextCompat.createText(after)
-                TextCompat.setChatStyle(afterComp, TextCompat.createDeepCopy(baseStyle))
-                for (child in TextCompat.getSiblings(sib)) {
-                    TextCompat.appendSibling(afterComp, child)
-                }
-
-                siblings[i] = beforeComp
-                siblings.add(i + 1, nameComp)
-                siblings.add(i + 2, afterComp)
-                return true
-            }
-
-            if (wrapIgn(sib, ign)) return true
-        }
-        return false
-    }
-
-    private fun activeFormatState(text: String, endExclusive: Int): String {
-        var color: Char? = null
-        var bold = false
-        var italic = false
-        var underline = false
-        var strikethrough = false
-        var obfuscated = false
-
-        val limit = min(endExclusive, text.length) - 1
-        var i = 0
-        while (i < limit) {
-            if (text[i] != '\u00a7') {
-                i++; continue
-            }
-            when (val code = Character.toLowerCase(text[i + 1])) {
-                'r' -> {
-                    color = null; bold = false; italic = false; underline = false; strikethrough = false; obfuscated =
-                        false
-                }
-
-                in "0123456789abcdef" -> {
-                    color = code; bold = false; italic = false; underline = false; strikethrough = false; obfuscated =
-                        false
-                }
-
-                'l' -> bold = true
-                'o' -> italic = true
-                'n' -> underline = true
-                'm' -> strikethrough = true
-                'k' -> obfuscated = true
-            }
-            i += 2
-        }
-
-        return buildString {
-            if (color != null) append('\u00a7').append(color)
-            if (bold) append("\u00a7l")
-            if (strikethrough) append("\u00a7m")
-            if (underline) append("\u00a7n")
-            if (italic) append("\u00a7o")
-            if (obfuscated) append("\u00a7k")
-        }
+    private fun sendCommand(action: MenuAction, name: String) {
+        val command = action.command ?: return
+        ChatUtils.sendChatCommand(command.replace("{player}", name))
     }
 }

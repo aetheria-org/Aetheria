@@ -70,7 +70,7 @@ object ChatLineInitHook {
         lineString: IChatComponent, existingPlayer: NetworkPlayerInfo?, lastFullMsg: IChatComponent?
     ): PlayerDetectionResult {
         val config = ATHRConfig.feature
-        if (config == null || !config.chat.chatHeads) {
+        if (config == null || !config.chat.heads.chatHeads) {
             return PlayerDetectionResult(false, null, null)
         }
 
@@ -106,7 +106,7 @@ object ChatLineInitHook {
                 if (info != null) {
                     //#if MC < 1.16
                     val sameAsLast =
-                        ChatUtilsState.lastDetectedPlayer != null && info.gameProfile == ChatUtilsState.lastDetectedPlayer!!.gameProfile && config.chat.hideHeadOnConsecutive
+                        ChatUtilsState.lastDetectedPlayer != null && info.gameProfile == ChatUtilsState.lastDetectedPlayer!!.gameProfile && config.chat.heads.hideHeadOnConsecutive
 
                     val playerInfo = if (sameAsLast) null else info
                     ChatUtilsState.lastDetectedPlayer = info
@@ -133,7 +133,7 @@ object ChatLineInitHook {
     //$$ fun isConsecutiveHidden(info: PlayerListEntry?): Boolean {
     //$$     val config = ATHRConfig.feature ?: return false
     //$$     val last = ChatUtilsState.lastDetectedPlayer
-    //$$     val hidden = config.chat.hideHeadOnConsecutive && info != null && last != null &&
+    //$$     val hidden = config.chat.heads.hideHeadOnConsecutive && info != null && last != null &&
     //$$         info.getProfile()?.id == last.getProfile()?.id
     //$$     ChatUtilsState.lastDetectedPlayer = info
     //$$     return hidden

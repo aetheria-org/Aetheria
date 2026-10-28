@@ -5,13 +5,11 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.chat.ChatUtils.ChatTextMatch;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.ChatStyle;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
-
-import java.util.List;
-import java.util.Locale;
 
 /**
  * Turns the sender's name in player / party / guild / whisper chat lines into
@@ -40,103 +38,27 @@ public class PlayerNameButtonListener {
         if (ign == null) return;
 
         event.message = ChatUtils.ensureSiblings(event.message);
-        int before = TextCompat.getSiblings(event.message).size();
-        boolean wrapped = wrapIgn(event.message, ign);
+        String sender = ign;
+        ChatUtils.replaceFirst(event.message, sender, true, 0, match -> playerName(match, sender));
     }
 
-    /**
-     * Walks the component tree and replaces the first occurrence of ign's text
-     * with three siblings: the text before it, the name itself (now clickable),
-     * and the text after it. Mutates in-place so any existing ClickEvents /
-     * HoverEvents on other siblings (or on ign's own trailing children) survive.
-     */
-    private boolean wrapIgn(IChatComponent root, String ign) {
-        List<IChatComponent> siblings = root.getSiblings();
-        for (int i = 0; i < siblings.size(); i++) {
-            IChatComponent sib = siblings.get(i);
-            if (!TextCompat.getSiblings(sib).isEmpty()) {
-                if (wrapIgn(sib, ign)) return true;
-                continue;
-            }
-            String sibText = TextCompat.getUnformattedTextForChat(sib);
-
-            int idx = sibText.toLowerCase(Locale.ROOT).indexOf(ign.toLowerCase(Locale.ROOT));
-            if (idx != -1) {
-                // Every split-off sibling gets an implicit §r appended after its text by
-                // getFormattedText(), so any inline colour code sitting in "before" would
-                // otherwise be wiped out before "name" ever renders. Re-assert whatever
-                // colour/format was active at each cut point explicitly.
-                String namePrefix = activeFormatState(sibText, idx);
-                String afterPrefix = activeFormatState(sibText, idx + ign.length());
-
-                String before = sibText.substring(0, idx);
-                String name = namePrefix + sibText.substring(idx, idx + ign.length());
-                String after = afterPrefix + sibText.substring(idx + ign.length());
-
-                ChatStyle baseStyle = sib.getChatStyle();
-
-                IChatComponent beforeComp = TextCompat.createText(before);
-                TextCompat.setChatStyle(beforeComp, TextCompat.createDeepCopy(baseStyle));
-
-                IChatComponent nameComp = TextCompat.createText(name);
-                ChatStyle nameStyle = TextCompat.createDeepCopy(baseStyle);
-                TextCompat.setUnderlined(nameComp, true);
-                nameStyle = TextCompat.setClickSuggestCommand(nameStyle, MARKER_PREFIX + ign);
-                nameStyle = TextCompat.setHoverShowText(nameStyle, "§eClick for player options");
-                TextCompat.setChatStyle(nameComp, nameStyle);
-
-                IChatComponent afterComp = TextCompat.createText(after);
-                TextCompat.setChatStyle(afterComp, TextCompat.createDeepCopy(baseStyle));
-                for (IChatComponent child : sib.getSiblings()) {
-                    TextCompat.appendSibling(afterComp, child);
-                }
-
-                siblings.set(i, beforeComp);
-                siblings.add(i + 1, nameComp);
-                siblings.add(i + 2, afterComp);
-                return true;
-            }
-
-            if (wrapIgn(sib, ign)) return true;
-        }
-        return false;
+    private static IChatComponent playerName(ChatTextMatch match, String ign) {
+        IChatComponent name = TextCompat.fromFormatted(
+                match.formatAtStart() + match.matchText(), match.baseStyle());
+        applyClickableLeaves(name, ign);
+        return name;
     }
 
-    /**
-     * Scans {@code text[0, endExclusive)} for legacy §-codes and returns the
-     * resolved colour/format state as a literal code prefix (e.g. "§7" or
-     * "§7§l"), mirroring vanilla's rule that a colour code resets bold /
-     * italic / underline / strikethrough / obfuscated.
-     */
-    private static String activeFormatState(String text, int endExclusive) {
-        Character color = null;
-        boolean bold = false, italic = false, underline = false, strikethrough = false, obfuscated = false;
-
-        int limit = Math.min(endExclusive, text.length()) - 1;
-        for (int i = 0; i < limit; i++) {
-            if (text.charAt(i) != '§') continue;
-            char code = Character.toLowerCase(text.charAt(i + 1));
-            if (code == 'r') {
-                color = null;
-                bold = italic = underline = strikethrough = obfuscated = false;
-            } else if ("0123456789abcdef".indexOf(code) != -1) {
-                color = code;
-                bold = italic = underline = strikethrough = obfuscated = false;
-            } else if (code == 'l') bold = true;
-            else if (code == 'o') italic = true;
-            else if (code == 'n') underline = true;
-            else if (code == 'm') strikethrough = true;
-            else if (code == 'k') obfuscated = true;
-            i++;
+    private static void applyClickableLeaves(IChatComponent component, String ign) {
+        if (TextCompat.getSiblings(component).isEmpty()) {
+            ChatStyle style = TextCompat.createDeepCopy(TextCompat.getChatStyle(component));
+            style = TextCompat.setClickSuggestCommand(style, MARKER_PREFIX + ign);
+            style = TextCompat.setHoverShowText(style, "§eClick for player options");
+            TextCompat.setChatStyle(component, style);
+            return;
         }
-
-        StringBuilder sb = new StringBuilder();
-        if (color != null) sb.append('§').append(color);
-        if (bold) sb.append("§l");
-        if (strikethrough) sb.append("§m");
-        if (underline) sb.append("§n");
-        if (italic) sb.append("§o");
-        if (obfuscated) sb.append("§k");
-        return sb.toString();
+        for (IChatComponent child : TextCompat.getSiblings(component)) {
+            applyClickableLeaves(child, ign);
+        }
     }
 }

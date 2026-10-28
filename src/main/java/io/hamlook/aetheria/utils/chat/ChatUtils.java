@@ -6,25 +6,30 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiChat;
+import net.minecraft.util.ChatStyle;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 public class ChatUtils {
 
+    public static final String COLOR_CODES = "0123456789abcdef";
+    public static final String FORMATTING_CODES = COLOR_CODES + "klmnor";
+    public static final Pattern PLAYER_MSG_STRIPPED = Pattern.compile("^(?:\\[\\d+\\]\\s*)?" + "(?:\\S\\s+)?" + "(?:\\[[^\\]]*\\]\\s*)?" + "(\\w{1,16})" + "[^\\w:]*" + ":\\s*" + "(.+)$");
     private static final ScheduledExecutorService PARTY_MSG_EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "ATHR-PartyMsg");
         t.setDaemon(true);
         return t;
     });
-
-    public static final Pattern PLAYER_MSG_STRIPPED = Pattern.compile("^(?:\\[\\d+\\]\\s*)?" + "(?:\\S\\s+)?" + "(?:\\[[^\\]]*\\]\\s*)?" + "(\\w{1,16})" + "[^\\w:]*" + ":\\s*" + "(.+)$");
     private static final Pattern PARTY_MSG = Pattern.compile("^Party > (?:\\[[^]]*])?\\s*(\\w{1,16}):\\s*(.+)$");
     private static final Pattern GUILD_MSG = Pattern.compile("^Guild > (?:\\[[^]]*])?\\s*(\\w{1,16}):\\s*(.+)$");
     private static final Pattern MSG_RECEIVED = Pattern.compile("^§.From (?:§.\\[[^\\]]*\\] )?§.(\\w{1,16}) §.to Me§.: §.(.+)§r$");
@@ -145,12 +150,131 @@ public class ChatUtils {
         return m.matches() ? m.group(2).trim() : null;
     }
 
+    public static boolean isFormattingCode(char c) {
+        return FORMATTING_CODES.indexOf(Character.toLowerCase(c)) != -1;
+    }
+
+    public static Match findFirst(String text, String needle, boolean ignoreCase, int startIndex) {
+        if (text == null || needle == null || needle.isEmpty()) return null;
+        String haystack = ignoreCase ? text.toLowerCase(Locale.ROOT) : text;
+        String target = ignoreCase ? needle.toLowerCase(Locale.ROOT) : needle;
+        int start = Math.max(0, Math.min(startIndex, haystack.length()));
+        int index = haystack.indexOf(target, start);
+        return index < 0 ? null : split(text, index, index + needle.length());
+    }
+
+    public static Match split(String text, int start, int end) {
+        String before = text.substring(0, start);
+        String match = text.substring(start, end);
+        String after = text.substring(end);
+        return new Match(before, match, after, formatStateAt(text, start), formatStateAt(text, end));
+    }
+
+    public static String formatStateAt(String text, int endExclusive) {
+        Character color = null;
+        boolean bold = false, italic = false, underline = false, strike = false, obfuscated = false;
+
+        int limit = Math.min(endExclusive, text.length()) - 1;
+        for (int i = 0; i < limit; i++) {
+            if (text.charAt(i) != '§') continue;
+            char code = Character.toLowerCase(text.charAt(i + 1));
+            if (code == 'r') {
+                color = null;
+                bold = italic = underline = strike = obfuscated = false;
+            } else if (COLOR_CODES.indexOf(code) != -1) {
+                color = code;
+                bold = italic = underline = strike = obfuscated = false;
+            } else if (code == 'l') bold = true;
+            else if (code == 'o') italic = true;
+            else if (code == 'n') underline = true;
+            else if (code == 'm') strike = true;
+            else if (code == 'k') obfuscated = true;
+            i++;
+        }
+
+        StringBuilder out = new StringBuilder();
+        if (color != null) out.append('§').append(color);
+        if (bold) out.append("§l");
+        if (italic) out.append("§o");
+        if (underline) out.append("§n");
+        if (obfuscated) out.append("§k");
+        if (strike) out.append("§m");
+        return out.toString();
+    }
+
+    public static boolean replaceFirst(IChatComponent root, String needle, boolean ignoreCase, int minFlatIndex, Function<ChatTextMatch, IChatComponent> replacement) {
+        if (root == null || needle == null || needle.isEmpty()) return false;
+        return replaceFirstIn(TextCompat.getSiblings(root), needle, ignoreCase, Math.max(0, minFlatIndex), new int[]{0}, replacement);
+    }
+
+    private static boolean replaceFirstIn(List<IChatComponent> siblings, String needle, boolean ignoreCase, int minFlatIndex, int[] flatOffset, Function<ChatTextMatch, IChatComponent> replacement) {
+        for (int i = 0; i < siblings.size(); i++) {
+            IChatComponent sibling = siblings.get(i);
+            String own = TextCompat.getUnformattedTextForChat(sibling);
+            int localStart = Math.max(0, minFlatIndex - flatOffset[0]);
+            Match match = findFirst(own, needle, ignoreCase, localStart);
+            if (match != null) {
+                splitSibling(siblings, i, sibling, match, replacement);
+                return true;
+            }
+            flatOffset[0] += own.length();
+            if (replaceFirstIn(TextCompat.getSiblings(sibling), needle, ignoreCase, minFlatIndex, flatOffset, replacement)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void splitSibling(List<IChatComponent> siblings, int index, IChatComponent original, Match match, Function<ChatTextMatch, IChatComponent> replacement) {
+        ChatStyle base = TextCompat.createDeepCopy(TextCompat.getChatStyle(original));
+
+        IChatComponent before = TextCompat.fromFormatted(match.before, base);
+        IChatComponent middle = replacement.apply(new ChatTextMatch(match, original));
+        IChatComponent after = TextCompat.fromFormatted(match.formatAtEnd + match.after, base);
+
+        for (IChatComponent child : TextCompat.getSiblings(original)) {
+            TextCompat.appendSibling(after, child);
+        }
+
+        siblings.set(index, before);
+        siblings.add(index + 1, middle);
+        siblings.add(index + 2, after);
+    }
+
+    public static String flattenText(IChatComponent root) {
+        StringBuilder out = new StringBuilder();
+        out.append(TextCompat.getUnformattedTextForChat(root));
+        for (IChatComponent child : TextCompat.getSiblings(root)) {
+            appendFlat(child, out);
+        }
+        return out.toString();
+    }
+
+    private static void appendFlat(IChatComponent component, StringBuilder out) {
+        out.append(TextCompat.getUnformattedTextForChat(component));
+        for (IChatComponent child : TextCompat.getSiblings(component)) {
+            appendFlat(child, out);
+        }
+    }
+
     public static IChatComponent ensureSiblings(IChatComponent component) {
-        if (TextCompat.getSiblings(component).isEmpty()) {
+        List<IChatComponent> siblings = TextCompat.getSiblings(component);
+        String own = TextCompat.getUnformattedTextForChat(component);
+        if (siblings.isEmpty()) {
             IChatComponent root = TextCompat.createText("");
-            IChatComponent child = TextCompat.createText(TextCompat.getUnformattedTextForChat(component));
+            IChatComponent child = TextCompat.createText(own);
             TextCompat.setChatStyle(child, TextCompat.createDeepCopy(TextCompat.getChatStyle(component)));
             TextCompat.appendSibling(root, child);
+            return root;
+        }
+        if (!own.isEmpty()) {
+            IChatComponent root = TextCompat.createText("");
+            IChatComponent child = TextCompat.createText(own);
+            TextCompat.setChatStyle(child, TextCompat.createDeepCopy(TextCompat.getChatStyle(component)));
+            TextCompat.appendSibling(root, child);
+            for (IChatComponent sibling : siblings) {
+                TextCompat.appendSibling(root, sibling);
+            }
             return root;
         }
         //#if MC < 1.21
@@ -194,5 +318,43 @@ public class ChatUtils {
 
     public static void sendDonateMessage(String message) {
         sendChatCommand("/dc " + message);
+    }
+
+    public static final class Match {
+        public final String before;
+        public final String match;
+        public final String after;
+        public final String formatAtStart;
+        public final String formatAtEnd;
+
+        private Match(String before, String match, String after, String formatAtStart, String formatAtEnd) {
+            this.before = before;
+            this.match = match;
+            this.after = after;
+            this.formatAtStart = formatAtStart;
+            this.formatAtEnd = formatAtEnd;
+        }
+    }
+
+    public static final class ChatTextMatch {
+        private final Match split;
+        private final IChatComponent source;
+
+        ChatTextMatch(Match split, IChatComponent source) {
+            this.split = split;
+            this.source = source;
+        }
+
+        public String matchText() {
+            return split.match;
+        }
+
+        public String formatAtStart() {
+            return split.formatAtStart;
+        }
+
+        public ChatStyle baseStyle() {
+            return TextCompat.createDeepCopy(TextCompat.getChatStyle(source));
+        }
     }
 }

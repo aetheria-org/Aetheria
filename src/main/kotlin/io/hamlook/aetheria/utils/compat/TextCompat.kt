@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.utils.compat
 
 import io.hamlook.aetheria.utils.ColorUtils
+import io.hamlook.aetheria.utils.chat.ChatUtils
 import io.hamlook.aetheria.utils.render.ChromaTextRenderer
 import net.minecraft.client.gui.ChatLine
 //#if MC < 1.16
@@ -50,11 +51,22 @@ object TextCompat {
         //$$ parseFormattingCodes(text)
         //#endif
 
+    @JvmStatic
+    fun fromFormatted(text: String, baseStyle: ChatStyle): IChatComponent =
+        //#if MC < 1.16
+        ChatComponentText(text).setChatStyle(baseStyle)
+        //#else
+        //$$ parseFormattingCodes(text, baseStyle)
+        //#endif
+
     //#if MC < 1.16
     //#else
-    //$$ private fun parseFormattingCodes(text: String): MutableText {
+    //$$ private fun parseFormattingCodes(text: String): MutableText =
+    //$$     parseFormattingCodes(text, Style.EMPTY)
+    //$$
+    //$$ private fun parseFormattingCodes(text: String, baseStyle: Style): MutableText {
     //$$     val out = Text.empty()
-    //$$     parseInto(out, text, Style.EMPTY)
+    //$$     parseInto(out, text, baseStyle)
     //$$     return out
     //$$ }
     //$$
@@ -86,8 +98,17 @@ object TextCompat {
     //$$                 cur.append(c).append(text[i + 1])
     //$$             } else if (fmt == Formatting.RESET) {
     //$$                 style = Style.EMPTY
-    //$$             } else if ("0123456789abcdef".indexOf(code) != -1) {
-    //$$                 style = Style.EMPTY.withColor(fmt).withClickEvent(style.clickEvent).withHoverEvent(style.hoverEvent)
+    //$$                     .withClickEvent(style.clickEvent)
+    //$$                     .withHoverEvent(style.hoverEvent)
+    //$$                     .withInsertion(style.insertion)
+    //$$                     .withFont(style.font)
+    //$$             } else if (ChatUtils.COLOR_CODES.indexOf(code) != -1) {
+    //$$                 style = Style.EMPTY
+    //$$                     .withColor(fmt)
+    //$$                     .withClickEvent(style.clickEvent)
+    //$$                     .withHoverEvent(style.hoverEvent)
+    //$$                     .withInsertion(style.insertion)
+    //$$                     .withFont(style.font)
     //$$             } else {
     //$$                 style = style.withFormatting(fmt)
     //$$             }
@@ -415,7 +436,7 @@ object TextCompat {
         //#elseif MC < 1.21
         //$$ component.contents
         //#else
-        //$$ component.string
+        //$$ (component.content as? PlainTextContent)?.string() ?: ""
         //#endif
 
     @JvmStatic
@@ -729,10 +750,10 @@ object TextCompat {
     fun setColor(style: ChatStyle, color: EnumChatFormatting): ChatStyle {
         //#if MC < 1.16
         style.color = color
-        //#else
-        //$$ style.withColor(Formatting.byColorIndex(color.ordinal))
-        //#endif
         return style
+        //#else
+        //$$ return style.withColor(Formatting.byColorIndex(color.ordinal))
+        //#endif
     }
 
     @JvmStatic

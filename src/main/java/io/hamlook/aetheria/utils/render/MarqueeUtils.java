@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.utils.render;
 
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import net.minecraft.client.gui.FontRenderer;
 
@@ -27,8 +28,19 @@ public final class MarqueeUtils {
         int start = firstVisible(text, ends, offset);
         int end = lastVisible(text, ends, offset + windowWidth, start);
         if (end <= start) return;
-        String slice = activeCodes(text, start) + text.substring(start, end);
+        String slice = ChatUtils.formatStateAt(text, start) + text.substring(start, end);
         DrawContextUtils.drawText(font, slice, x + ends[start] - offset, y, color, shadow);
+    }
+
+    public static void drawCentered(FontRenderer font, String text, int centerX, int y,
+                                    int windowWidth, int color, boolean shadow) {
+        if (text == null || text.isEmpty() || windowWidth <= 0) return;
+        int textWidth = DrawContextUtils.getStringWidth(font, text);
+        if (textWidth <= windowWidth) {
+            DrawContextUtils.drawText(font, text, centerX - textWidth / 2, y, color, shadow);
+            return;
+        }
+        draw(font, text, centerX - windowWidth / 2, y, windowWidth, color, shadow);
     }
 
     private static int offsetFor(int textWidth, int windowWidth) {
@@ -82,39 +94,4 @@ public final class MarqueeUtils {
         return i;
     }
 
-    private static String activeCodes(String text, int index) {
-        char color = 0;
-        boolean obfuscated = false;
-        boolean bold = false;
-        boolean strike = false;
-        boolean underline = false;
-        boolean italic = false;
-        for (int i = 0; i + 1 < index; i++) {
-            if (text.charAt(i) != '§') continue;
-            char code = Character.toLowerCase(text.charAt(i + 1));
-            switch (code) {
-                case 'k': obfuscated = true; break;
-                case 'l': bold = true; break;
-                case 'm': strike = true; break;
-                case 'n': underline = true; break;
-                case 'o': italic = true; break;
-                case 'r':
-                    color = 0;
-                    obfuscated = bold = strike = underline = italic = false;
-                    break;
-                default:
-                    color = code;
-                    obfuscated = bold = strike = underline = italic = false;
-                    break;
-            }
-        }
-        StringBuilder out = new StringBuilder();
-        if (color != 0) out.append('§').append(color);
-        if (obfuscated) out.append("§k");
-        if (bold) out.append("§l");
-        if (strike) out.append("§m");
-        if (underline) out.append("§n");
-        if (italic) out.append("§o");
-        return out.toString();
-    }
 }

@@ -10,18 +10,10 @@ import net.minecraft.util.IChatComponent;
  */
 public final class ChatUtilsState {
 
-    private ChatUtilsState() {}
-
-    /** The full IChatComponent currently being processed by setChatLine. */
     public static IChatComponent currentFullMessage = null;
-
-    /**
-     * The last full message we assigned a head to, used to suppress
-     * re-detection when the same original message creates multiple
-     * wrapped ChatLines (e.g. word-wrap splits).
-     */
     public static IChatComponent lastFullMessage = null;
-
-    /** The last player whose head we drew — used for hideHeadOnConsecutive. */
     public static NetworkPlayerInfo lastDetectedPlayer = null;
+
+    private ChatUtilsState() {
+    }
 }

@@ -26,6 +26,7 @@ io.hamlook.aetheria.mixins.core.MixinAbstractClientPlayer.java
 
 io.hamlook.aetheria.mixins.core.MixinItem.java
 
+
 # FontRenderer text mixins: targets (renderStringAtPos/renderChar/drawString
 # overloads) do not exist on TextRenderer — injections warn-and-skip (emoji) or
 # fail at apply (chroma), and §z/flow-chroma has no modern expression yet (see

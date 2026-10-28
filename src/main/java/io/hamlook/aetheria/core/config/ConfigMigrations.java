@@ -3,6 +3,7 @@ package io.hamlook.aetheria.core.config;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.core.config.migrations.ChatSubcategories;
 import io.hamlook.aetheria.core.config.migrations.EnchantParserNested;
 
 import java.util.Arrays;
@@ -15,7 +16,8 @@ public final class ConfigMigrations {
     public static final String VERSION_KEY = "configVersion";
 
     private static final List<ConfigMigrationHandler> STEPS = Collections.unmodifiableList(Arrays.asList(
-            new EnchantParserNested()      // v1
+            new EnchantParserNested(),      // v1
+            new ChatSubcategories()         // v2
     ));
 
     public static final int CURRENT = STEPS.size();

@@ -48,25 +48,25 @@ object ChatCompactHandler {
     fun applyTimestamp(original: IChatComponent): IChatComponent {
         val cfg = ATHRConfig.feature?.chat ?: return original
         //#if MC < 1.16
-        if (!cfg.timestampsEnabled) return original
+        if (!cfg.timestamps.timestampsEnabled) return original
         val src = original
         //#else
         //$$ val src = TextCompat.parseLegacyLiterals(original)
-        //$$ if (!cfg.timestampsEnabled) return src
+        //$$ if (!cfg.timestamps.timestampsEnabled) return src
         //#endif
         val plain = TextCompat.getUnformattedText(src).trim()
         if (plain.isEmpty()) return src
         if (TIMESTAMP_REGEX.containsMatchIn(plain)) return src
 
         val pattern = when {
-            cfg.timestamp24Hour && cfg.timestampShowSeconds -> "HH:mm:ss"
-            cfg.timestamp24Hour                            -> "HH:mm"
-            cfg.timestampShowSeconds                       -> "hh:mm:ss a"
+            cfg.timestamps.timestamp24Hour && cfg.timestamps.timestampShowSeconds -> "HH:mm:ss"
+            cfg.timestamps.timestamp24Hour                            -> "HH:mm"
+            cfg.timestamps.timestampShowSeconds                       -> "hh:mm:ss a"
             else                                           -> "hh:mm a"
         }
 
         val time = LocalDateTime.now().format(DateTimeFormatter.ofPattern(pattern))
-        val bracket = if (cfg.timestampStyle == 0) "[$time] " else "<$time> "
+        val bracket = if (cfg.timestamps.timestampStyle == 0) "[$time] " else "<$time> "
 
         val wrapper = ChatComponentIgnored(EnumChatFormatting.GRAY.toString() + bracket + EnumChatFormatting.RESET)
         TextCompat.appendSibling(wrapper.wrapped, src)
@@ -81,7 +81,7 @@ object ChatCompactHandler {
         drawnChatLines: MutableList<ChatLine>
     ) {
         val cfg = ATHRConfig.feature?.chat ?: return
-        if (!cfg.compactingEnabled || refresh) return
+        if (!cfg.compacting.compactingEnabled || refresh) return
 
         val clear = cleanColor(TextCompat.getFormattedTextWithResets(component)).trim()
         if (clear.isEmpty() || isDivider(clear)) return
@@ -97,13 +97,13 @@ object ChatCompactHandler {
             return
         }
 
-        val expireSec = cfg.expireTimeSeconds
+        val expireSec = cfg.compacting.expireTimeSeconds
         if (expireSec != -1 && (now - entry.lastSeenMessageMillis) > expireSec * 1000L) {
             chatMessageMap[hash] = ChatEntry(1, now)
             return
         }
 
-        val removed = deleteMessageByHash(hash, chatLines, drawnChatLines, cfg.consecutiveOnly)
+        val removed = deleteMessageByHash(hash, chatLines, drawnChatLines, cfg.compacting.consecutiveOnly)
         if (!removed) {
             chatMessageMap[hash] = ChatEntry(1, now)
             return
@@ -138,7 +138,7 @@ object ChatCompactHandler {
 
     @JvmStatic
     fun cleanupExpired() {
-        val expireSec = ATHRConfig.feature?.chat?.expireTimeSeconds ?: return
+        val expireSec = ATHRConfig.feature?.chat?.compacting?.expireTimeSeconds ?: return
         if (expireSec == -1) return
 
         val now = System.currentTimeMillis()

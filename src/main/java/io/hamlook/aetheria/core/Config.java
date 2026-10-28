@@ -76,7 +76,7 @@ public class Config {
     public final NetworkConfig network = new NetworkConfig();
 
     @Expose
-    @Category(name = "Chat Utils", desc = "Chat compacting, timestamps, chat heads, copy & visual tweaks")
+    @Category(name = "Chat", desc = "Chat compacting, timestamps, chat heads, copy & visual tweaks")
     public final ChatConfig chat = new ChatConfig();
 
     @Expose

@@ -6,11 +6,10 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.repo.PlayerTagRepo;
 import io.hamlook.aetheria.repo.data.PlayerTagData;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.chat.ChatUtils.ChatTextMatch;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
-
-import java.util.List;
 
 @RegisterEvents
 public class PlayerTagListener {
@@ -33,60 +32,16 @@ public class PlayerTagListener {
         IChatComponent tagComp = buildTagComponent(entry);
         if (tagComp == null) return;
 
-        // Inject into the existing component tree — preserves all ClickEvents
         event.message = ChatUtils.ensureSiblings(event.message);
-        int tagBefore = TextCompat.getSiblings(event.message).size();
-        boolean injected = injectAfterIgn(event.message, ign, tagComp);
+        ChatUtils.replaceFirst(event.message, ign, true, 0,
+                match -> tagReplacement(match, tagComp));
     }
 
-    /**
-     * Walks the component tree and inserts tagComp right after the sibling
-     * whose unformatted text contains the IGN. Mutates in-place so the
-     * original ClickEvents on all other siblings are untouched.
-     */
-    private boolean injectAfterIgn(IChatComponent root, String ign, IChatComponent tagComp) {
-        List<IChatComponent> siblings = TextCompat.getSiblings(root);
-        for (int i = 0; i < siblings.size(); i++) {
-            IChatComponent sib = siblings.get(i);
-            if (!TextCompat.getSiblings(sib).isEmpty()) {
-                if (injectAfterIgn(sib, ign, tagComp)) return true;
-                continue;
-            }
-            String sibText = TextCompat.getUnformattedTextForChat(sib);
-
-            int idx = ignEndIndex(sibText, ign);
-            if (idx != -1) {
-                String before = sibText.substring(0, idx);
-                String after = sibText.substring(idx);
-
-                IChatComponent beforeComp = TextCompat.createText(before);
-                TextCompat.setChatStyle(beforeComp, TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
-
-                IChatComponent afterComp = TextCompat.createText(after);
-                TextCompat.setChatStyle(afterComp, TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
-
-                // Re-attach sib's own children to afterComp
-                for (IChatComponent child : TextCompat.getSiblings(sib)) {
-                    TextCompat.appendSibling(afterComp, child);
-                }
-
-                siblings.set(i, beforeComp);
-                siblings.add(i + 1, tagComp);
-                siblings.add(i + 2, afterComp);
-                return true;
-            }
-
-            if (injectAfterIgn(sib, ign, tagComp)) return true;
-        }
-        return false;
-    }
-
-    /**
-     * Returns the index just after ign inside text (case-insensitive), or -1.
-     */
-    private int ignEndIndex(String text, String ign) {
-        int idx = text.toLowerCase().indexOf(ign.toLowerCase());
-        return idx == -1 ? -1 : idx + ign.length();
+    private static IChatComponent tagReplacement(ChatTextMatch match, IChatComponent tagComp) {
+        IChatComponent name = TextCompat.fromFormatted(
+                match.formatAtStart() + match.matchText(), match.baseStyle());
+        TextCompat.appendSibling(name, tagComp);
+        return name;
     }
 
     /**

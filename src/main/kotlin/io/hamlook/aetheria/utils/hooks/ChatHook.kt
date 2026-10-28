@@ -3,15 +3,17 @@ package io.hamlook.aetheria.utils.hooks
 import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.features.chat.ChatLineHook
 import io.hamlook.aetheria.features.chat.GuiChatHook
+import io.hamlook.aetheria.features.chat.PlayerNameButtonListener
 import io.hamlook.aetheria.utils.compat.DrawContextUtils
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import io.hamlook.aetheria.utils.compat.TextCompat
+import io.hamlook.aetheria.utils.chat.ChatHoverUnderline
 import net.minecraft.client.gui.ChatLine
 import net.minecraft.client.gui.GuiChat
-//#if MC < 1.21
-//#else
+import net.minecraft.util.IChatComponent
+//#if MC >= 1.21
 //$$ import net.minecraft.client.gui.DrawContext
 //$$ import net.minecraft.client.gui.PlayerSkinDrawer
 //$$ import net.minecraft.client.gui.hud.ChatHudLine.Visible
@@ -30,10 +32,22 @@ object ChatHook {
     @JvmStatic
     var animationStart: Long = 0L
 
+    private var hoveredNameClickValue: String? = null
+
+    @JvmStatic
+    fun clearHover() {
+        hoveredLine = null
+        hoveredVisible = null
+        hoveredNameClickValue = null
+    }
+
+    @JvmStatic
+    fun getHoveredNameClickValue(): String? = hoveredNameClickValue
+
     @JvmStatic
     fun applyAnimation(updateCounter: Int) {
         val config = ATHRConfig.feature ?: return
-        if (!config.chat.animatedChat || animationStart == 0L) return
+        if (!config.chat.appearance.animatedChat || animationStart == 0L) return
 
         val speed = 20.0
         //#if MC < 1.21
@@ -55,18 +69,25 @@ object ChatHook {
     ) {
         hoveredLine = null
         renderLine = null
+        hoveredNameClickValue = null
         val config = ATHRConfig.feature ?: return
-        if (!config.chat.chatCopyEnabled) return
+        if (!config.chat.copy.chatCopyEnabled && !config.chat.playerButtons.enabled) return
         if (MinecraftCompat.getCurrentScreen() !is GuiChat) return
         val screen = MinecraftCompat.getCurrentScreen() as? GuiChatHook ?: return
         if (!screen.`athr$isTypingMode`()) return
         hoveredLine = getHoveredChatLine(drawnChatLines, scrollPos, chatScale, lineCount, mouseX, mouseY)
+
+        //#if MC < 1.21
+        val leaf = MinecraftCompat.getIngameGui().chatGUI.getChatComponent(mouseX, mouseY)
+        val click = leaf?.let { TextCompat.getClickValue(TextCompat.getChatStyle(it)) }
+        hoveredNameClickValue = click?.takeIf { it.startsWith(PlayerNameButtonListener.MARKER_PREFIX) }
+        //#endif
     }
 
     @JvmStatic
     fun shouldResetAnimation(refresh: Boolean): Boolean {
         val config = ATHRConfig.feature ?: return false
-        if (config.chat.animatedChat && !refresh) {
+        if (config.chat.appearance.animatedChat && !refresh) {
             animationStart = System.currentTimeMillis()
             return true
         }
@@ -83,11 +104,11 @@ object ChatHook {
     fun getBackgroundColor(left: Int, top: Int, right: Int, bottom: Int, color: Int, chatOpen: Boolean): Int {
         val config = ATHRConfig.feature ?: return color
 
-        val newRight = if (config.chat.chatHeads) right + 10 else right
-        val opacity = config.chat.chatBackgroundOpacity
+        val newRight = if (config.chat.heads.chatHeads) right + 10 else right
+        val opacity = config.chat.appearance.chatBackgroundOpacity
         var newColor = scaleChatAlpha(color, opacity)
 
-        if (config.chat.chatCopyEnabled && chatOpen && hoveredLine != null && renderLine == hoveredLine) {
+        if (config.chat.copy.chatCopyEnabled && chatOpen && hoveredLine != null && renderLine == hoveredLine) {
             newColor = if (opacity < 100) 0x22AAAACC else 0x60AAAACC
         }
 
@@ -101,35 +122,46 @@ object ChatHook {
         x: Float, y: Float, color: Int, renderLine: ChatLine?
     ): Float {
         val config = ATHRConfig.feature ?: return x
-        if (!config.chat.chatHeads) return x
         if (renderLine !is ChatLineHook) return x
 
-        val hook = renderLine as ChatLineHook
-        val info = hook.`athr$getPlayerInfo`() ?: run {
-            if (hook.`athr$hasDetected`() || config.chat.offsetNonPlayerMessages) {
-                return x + 10f
+        var textX = x
+        if (config.chat.heads.chatHeads) {
+            val hook = renderLine as ChatLineHook
+            val info = hook.`athr$getPlayerInfo`()
+            if (info == null) {
+                if (hook.`athr$hasDetected`() || config.chat.heads.offsetNonPlayerMessages) {
+                    textX = x + 10f
+                }
+            } else {
+                val alpha = (color shr 24) and 0xFF
+                val headAlpha = if (alpha == 0) 1.0f else alpha / 255f
+
+                GlStateManagerCompat.enableBlend()
+                GlStateManagerCompat.enableAlpha()
+                GlStateManagerCompat.enableTexture2D()
+                GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0)
+                GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, headAlpha)
+
+                DrawContextUtils.drawScaledCustomSizeModalRect(
+                    info.locationSkin, x.toInt(), (y - 1f).toInt(), 8f, 8f, 8, 8, 8f, 8f, 64f, 64f
+                )
+                DrawContextUtils.drawScaledCustomSizeModalRect(
+                    info.locationSkin, x.toInt(), (y - 1f).toInt(), 40f, 8f, 8, 8, 8f, 8f, 64f, 64f
+                )
+
+                GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f)
+                textX = x + 10f
             }
-            return x
         }
 
-        val alpha = (color shr 24) and 0xFF
-        val headAlpha = if (alpha == 0) 1.0f else alpha / 255f
+        return textX
+    }
 
-        GlStateManagerCompat.enableBlend()
-        GlStateManagerCompat.enableAlpha()
-        GlStateManagerCompat.enableTexture2D()
-        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0)
-        GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, headAlpha)
-
-        DrawContextUtils.drawScaledCustomSizeModalRect(
-            info.locationSkin, x.toInt(), (y - 1f).toInt(), 8f, 8f, 8, 8, 8f, 8f, 64f, 64f
-        )
-        DrawContextUtils.drawScaledCustomSizeModalRect(
-            info.locationSkin, x.toInt(), (y - 1f).toInt(), 40f, 8f, 8, 8, 8f, 8f, 64f, 64f
-        )
-
-        GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f)
-        return x + 10f
+    @JvmStatic
+    fun lineFormattedText(text: String, component: IChatComponent, line: ChatLine?): String {
+        val clickValue = hoveredNameClickValue
+        if (clickValue == null || line == null || line != hoveredLine) return text
+        return ChatHoverUnderline.apply(text, component, clickValue)
     }
     //#else
     //$$ @JvmStatic
@@ -137,12 +169,12 @@ object ChatHook {
     //$$     context: DrawContext, x: Float, y: Float, color: Int, renderLine: Any?
     //$$ ): Float {
     //$$     val config = ATHRConfig.feature ?: return x
-    //$$     if (!config.chat.chatHeads) return x
+    //$$     if (!config.chat.heads.chatHeads) return x
     //$$     if (renderLine !is ChatLineHook) return x
     //$$
     //$$     val parent = renderLine.`athr$getParentLine`() as? ChatLineHook ?: return x
     //$$     val info = parent.`athr$getPlayerInfo`() ?: run {
-    //$$         if (parent.`athr$isHeadHidden`() || config.chat.offsetNonPlayerMessages) {
+    //$$         if (parent.`athr$isHeadHidden`() || config.chat.heads.offsetNonPlayerMessages) {
     //$$             return x + 10f
     //$$         }
     //$$         return x
@@ -167,11 +199,11 @@ object ChatHook {
     //$$ fun getBackgroundColor(context: DrawContext, left: Int, top: Int, right: Int, bottom: Int, color: Int, chatOpen: Boolean): Int {
     //$$     val config = ATHRConfig.feature ?: return color
     //$$
-    //$$     val newRight = if (config.chat.chatHeads) right + 10 else right
-    //$$     val opacity = config.chat.chatBackgroundOpacity
+    //$$     val newRight = if (config.chat.heads.chatHeads) right + 10 else right
+    //$$     val opacity = config.chat.appearance.chatBackgroundOpacity
     //$$     var newColor = scaleChatAlpha(color, opacity)
     //$$
-    //$$     if (config.chat.chatCopyEnabled && chatOpen && hoveredVisible != null && renderVisible === hoveredVisible) {
+    //$$     if (config.chat.copy.chatCopyEnabled && chatOpen && hoveredVisible != null && renderVisible === hoveredVisible) {
     //$$         newColor = if (opacity < 100) 0x22AAAACC else 0x60AAAACC
     //$$     }
     //$$
@@ -183,7 +215,7 @@ object ChatHook {
     @JvmStatic
     fun offsetClickX(mouseX: Int): Int {
         val config = ATHRConfig.feature ?: return mouseX
-        return if (config.chat.chatHeads) mouseX - 10 else mouseX
+        return if (config.chat.heads.chatHeads) mouseX - 10 else mouseX
     }
 
     @JvmStatic
@@ -220,7 +252,7 @@ object ChatHook {
     @JvmStatic
     fun copyChatLine(line: ChatLine, formatted: Boolean, useFullMsg: Boolean): String? {
         val config = ATHRConfig.feature ?: return null
-        if (!config.chat.chatCopyEnabled) return null
+        if (!config.chat.copy.chatCopyEnabled) return null
 
         return if (useFullMsg) {
             //#if MC < 1.21
@@ -248,8 +280,9 @@ object ChatHook {
     //$$     hoveredLine = null
     //$$     hoveredVisible = null
     //$$     renderVisible = null
+    //$$     hoveredNameClickValue = null
     //$$     val config = ATHRConfig.feature ?: return
-    //$$     if (!config.chat.chatCopyEnabled) return
+    //$$     if (!config.chat.copy.chatCopyEnabled && !config.chat.playerButtons.enabled) return
     //$$     if (MinecraftCompat.getCurrentScreen() !is ChatScreen) return
     //$$     val screen = MinecraftCompat.getCurrentScreen() as? GuiChatHook ?: return
     //$$     if (!screen.`athr$isTypingMode`()) return
@@ -263,6 +296,12 @@ object ChatHook {
     //$$         hoveredVisible = visibles[index]
     //$$         val hook = visibles[index] as? ChatLineHook
     //$$         if (hook != null) hoveredLine = hook.`athr$getParentLine`()
+    //$$         val style = MinecraftCompat.getIngameGui().chatHud
+    //$$             .getTextStyleAt(mouseX.toDouble(), mouseY.toDouble())
+    //$$         val click = style?.clickEvent?.value
+    //$$         hoveredNameClickValue = click?.takeIf {
+    //$$             it.startsWith(PlayerNameButtonListener.MARKER_PREFIX)
+    //$$         }
     //$$     }
     //$$ }
     //$$

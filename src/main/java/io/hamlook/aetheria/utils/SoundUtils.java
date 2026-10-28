@@ -20,16 +20,22 @@ public class SoundUtils {
 
     public static void playSound(String sound, float volume, float pitch) {
         try {
-            String modern = SoundCompat.getModernSoundName(sound);
+            String soundName =
+                    //#if MC < 1.16
+                    sound
+                    //#else
+                    //$$ SoundCompat.getModernSoundName(sound)
+                    //#endif
+                    ;
             //#if FORGE
-            ISound s = new PositionedSound(new ResourceLocation(modern)) {{
+            ISound s = new PositionedSound(new ResourceLocation(soundName)) {{
                 repeat = false;
                 repeatDelay = 0;
                 attenuationType = ISound.AttenuationType.NONE;
             }};
             MinecraftCompat.getMinecraft().getSoundHandler().playSound(s);
             //#else
-            //$$ String clean = modern.replaceAll("[^a-z0-9/._-]", "");
+            //$$ String clean = soundName.replaceAll("[^a-z0-9/._-]", "");
             //$$ SoundEvent event = SoundEvent.of(TextCompat.createResourceLocation(clean));
             //$$ MinecraftClient.getInstance().getSoundManager().play(PositionedSoundInstance.master(event, pitch, volume));
             //#endif

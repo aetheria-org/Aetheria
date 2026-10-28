@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.core;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -12,6 +13,8 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 public final class LogBridge {
+
+    private static boolean locationFailureLogged;
 
     private LogBridge() {
     }
@@ -30,15 +33,57 @@ public final class LogBridge {
     }
 
     private static String codeSourceTime() {
+        URL location = null;
         try {
-            URL location = LogBridge.class.getProtectionDomain().getCodeSource().getLocation();
-            File file = new File(location.toURI());
+            location = LogBridge.class.getProtectionDomain().getCodeSource().getLocation();
+            File file = locationFile(location);
+            if (file == null || !file.exists()) {
+                logLocationFailure(location, null);
+                return "unknown";
+            }
             long modified = file.isDirectory() ? newestModified(file) : file.lastModified();
             if (modified <= 0L) return "unknown";
-            return new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(new Date(modified));
-        } catch (URISyntaxException | SecurityException | IllegalArgumentException e) {
+            String time = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(new Date(modified));
+            return file.isDirectory() ? time : time + " (" + humanSize(file.length()) + ")";
+        } catch (SecurityException | IllegalArgumentException e) {
+            logLocationFailure(location, e);
             return "unknown";
         }
+    }
+
+    private static File locationFile(URL location) {
+        if (location == null) return null;
+        String spec = location.toString();
+        if (spec.startsWith("jar:")) {
+            int end = spec.indexOf("!/");
+            spec = end >= 0 ? spec.substring(4, end) : spec.substring(4);
+        }
+        Throwable failure = null;
+        try {
+            return new File(new URI(spec));
+        } catch (URISyntaxException | IllegalArgumentException e) {
+            failure = e;
+        }
+        try {
+            return new File(new URI(spec.replace(" ", "%20")));
+        } catch (URISyntaxException | IllegalArgumentException retry) {
+            if (failure != null) retry.addSuppressed(failure);
+            logLocationFailure(location, retry);
+            return null;
+        }
+    }
+
+    private static void logLocationFailure(URL location, Throwable error) {
+        if (locationFailureLogged) return;
+        locationFailureLogged = true;
+        org.apache.logging.log4j.LogManager.getLogger("Aetheria")
+                .warn("[ATHR] Could not read the build time from " + location, error);
+    }
+
+    private static String humanSize(long bytes) {
+        if (bytes < 1024L) return bytes + " B";
+        if (bytes < 1024L * 1024L) return String.format(Locale.ROOT, "%.1f KB", bytes / 1024.0);
+        return String.format(Locale.ROOT, "%.1f MB", bytes / (1024.0 * 1024.0));
     }
 
     private static long newestModified(File dir) {

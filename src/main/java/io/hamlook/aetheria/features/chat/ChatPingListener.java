@@ -7,14 +7,13 @@ import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.chat.ChatUtils.ChatTextMatch;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
-
-import java.util.List;
 
 @RegisterEvents
 public class ChatPingListener {
@@ -66,102 +65,37 @@ public class ChatPingListener {
         SoundUtils.playSound(SOUNDS[cfg.chatPingSound], cfg.chatPingVolume, cfg.chatPingPitch);
 
         EnumChatFormatting color = COLORS[cfg.chatPingColor];
-        if (color != null) {
-            event.message = ChatUtils.ensureSiblings(event.message);
-            int before = TextCompat.getSiblings(event.message).size();
-            highlightName(event.message, name, color);
+        if (color == null) return;
+
+        String flat = ChatUtils.flattenText(event.message);
+        int colon = flat.indexOf(':');
+        if (colon < 0) return;
+
+        event.message = ChatUtils.ensureSiblings(event.message);
+        ChatUtils.replaceFirst(event.message, name, true, colon + 1,
+                match -> pingName(match, color));
+    }
+
+    private static IChatComponent pingName(ChatTextMatch match, EnumChatFormatting color) {
+        IChatComponent name =
+                //#if MC < 1.16
+                TextCompat.fromFormatted(match.matchText(), match.baseStyle())
+                //#else
+                //$$ TextCompat.fromFormatted(match.formatAtStart() + match.matchText(), match.baseStyle())
+                //#endif
+                ;
+        applyColorLeaves(name, color);
+        return name;
+    }
+
+    private static void applyColorLeaves(IChatComponent component, EnumChatFormatting color) {
+        if (TextCompat.getSiblings(component).isEmpty()) {
+            TextCompat.setChatStyle(component,
+                    TextCompat.setColor(TextCompat.createDeepCopy(TextCompat.getChatStyle(component)), color));
+            return;
         }
-    }
-
-    private static String getLastFormatCode(String text) {
-        for (int i = text.length() - 2; i >= 0; i--) {
-            if (text.charAt(i) == '§') {
-                return text.substring(i, i + 2);
-            }
-        }
-        return "";
-    }
-
-    private void highlightName(IChatComponent component, String name, EnumChatFormatting color) {
-        highlightName(component, name, color, new boolean[]{false});
-    }
-
-    private void highlightName(IChatComponent component, String name, EnumChatFormatting color, boolean[] pastColon) {
-        List<IChatComponent> siblings = TextCompat.getSiblings(component);
-        int nameLen = name.length();
-        for (int i = 0; i < siblings.size(); i++) {
-            IChatComponent sib = siblings.get(i);
-            if (!TextCompat.getSiblings(sib).isEmpty()) {
-                if (TextCompat.getUnformattedTextForChat(sib).indexOf(':') != -1) pastColon[0] = true;
-                highlightName(sib, name, color, pastColon);
-                continue;
-            }
-            String text = TextCompat.getUnformattedTextForChat(sib);
-            String lower = text.toLowerCase();
-
-            int colonPos = lower.indexOf(':');
-            int namePos = lower.indexOf(name);
-
-            if (namePos == -1) {
-                if (colonPos != -1) pastColon[0] = true;
-                highlightName(sib, name, color, pastColon);
-                continue;
-            }
-
-            boolean colonBeforeName = colonPos != -1 && colonPos < namePos;
-
-            if (!pastColon[0] && !colonBeforeName) {
-                if (colonPos != -1 && namePos < colonPos) {
-                    int after = lower.indexOf(name, colonPos + 1);
-                    if (after != -1) {
-                        namePos = after;
-                        pastColon[0] = true;
-                    } else {
-                        pastColon[0] = true;
-                        highlightName(sib, name, color, pastColon);
-                        continue;
-                    }
-                } else {
-                    if (colonPos != -1) pastColon[0] = true;
-                    highlightName(sib, name, color, pastColon);
-                    continue;
-                }
-            }
-
-            if (colonPos != -1) pastColon[0] = true;
-
-            String before = text.substring(0, namePos);
-            String match = text.substring(namePos, namePos + nameLen);
-            String after = text.substring(namePos + nameLen);
-
-            if (!before.isEmpty()) {
-                IChatComponent beforeComp = TextCompat.fromFormatted(before);
-                TextCompat.setChatStyle(beforeComp, TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
-                siblings.set(i, beforeComp);
-                i++;
-            }
-
-            IChatComponent nameComp = TextCompat.fromFormatted(match);
-            TextCompat.setChatStyle(nameComp, TextCompat.setColor(TextCompat.getChatStyle(nameComp), color));
-            if (before.isEmpty()) {
-                siblings.set(i, nameComp);
-            } else {
-                siblings.add(i, nameComp);
-            }
-            i++;
-
-            if (!after.isEmpty()) {
-                if (!after.startsWith("§")) {
-                    after = getLastFormatCode(before) + after;
-                }
-                IChatComponent afterComp = TextCompat.fromFormatted(after);
-                TextCompat.setChatStyle(afterComp, TextCompat.createDeepCopy(TextCompat.getChatStyle(sib)));
-                for (IChatComponent child : TextCompat.getSiblings(sib)) {
-                    TextCompat.appendSibling(afterComp, child);
-                }
-                siblings.add(i, afterComp);
-                i--;
-            }
+        for (IChatComponent child : TextCompat.getSiblings(component)) {
+            applyColorLeaves(child, color);
         }
     }
 }

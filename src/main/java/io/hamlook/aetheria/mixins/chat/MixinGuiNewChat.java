@@ -29,6 +29,7 @@ import net.minecraft.util.IChatComponent;
 //$$ import net.minecraft.network.message.MessageSignatureData;
 //$$ import net.minecraft.text.OrderedText;
 //$$ import net.minecraft.text.Text;
+//$$ import io.hamlook.aetheria.utils.chat.ChatHoverUnderline;
 //$$ import org.spongepowered.asm.mixin.Unique;
 //#endif
 import org.spongepowered.asm.mixin.Final;
@@ -137,6 +138,13 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
     private ChatLine athr$captureRenderLine(ChatLine line) {
         ChatHook.setRenderLine(line);
         return line;
+    }
+
+    @ModifyVariable(method = "drawChat", at = @At("STORE"), ordinal = 0)
+    private String athr$underlineHoveredName(String text) {
+        ChatLine line = ChatHook.getRenderLine();
+        if (line == null) return text;
+        return ChatHook.lineFormattedText(text, line.getChatComponent(), line);
     }
 
     @Redirect(
@@ -306,10 +314,11 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 //$$             at = @At(value = "INVOKE",
 //$$                      target = "Lnet/minecraft/client/gui/DrawContext;drawTextWithShadow(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/text/OrderedText;III)I")
 //$$     )
-//$$     private int athr$redirectDrawString(DrawContext context, TextRenderer textRenderer, OrderedText text, int x, int y, int color) {
-//$$         float drawX = ChatHook.drawChatHead(context, (float) x, (float) y, color, ChatHook.getRenderVisible());
-//$$         return context.drawTextWithShadow(textRenderer, text, (int) drawX, y, color);
-//$$     }
+    //$$     private int athr$redirectDrawString(DrawContext context, TextRenderer textRenderer, OrderedText text, int x, int y, int color) {
+    //$$         float drawX = ChatHook.drawChatHead(context, (float) x, (float) y, color, ChatHook.getRenderVisible());
+    //$$         OrderedText rendered = ChatHoverUnderline.apply(text);
+    //$$         return context.drawTextWithShadow(textRenderer, rendered, (int) drawX, y, color);
+    //$$     }
 //$$
 //$$     @ModifyVariable(method = "getTextStyleAt", at = @At("HEAD"), ordinal = 0, argsOnly = true)
 //$$     private double athr$offsetClickX(double mouseX) {

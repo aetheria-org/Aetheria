@@ -242,24 +242,26 @@ public abstract class Overlay {
     private static boolean blendWasEnabled;
     private static int meshQuads;
 
+    // Modern only: the mesh path batches every quad into one Tessellator draw.
+    // 1.8.9 draws each quad directly in emitQuad and leaves these empty.
     private static void beginMesh() {
         //#if MC < 1.16
         //#else
         //$$ DrawContextUtils.flushIfPresent();
-        meshBuilder = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_COLOR);
-        meshQuads = 0;
-        blendWasEnabled = GL11.glIsEnabled(GL11.GL_BLEND);
-        GlStateManagerCompat.enableBlend();
-        GlStateManagerCompat.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
+        //$$ meshBuilder = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_COLOR);
+        //$$ meshQuads = 0;
+        //$$ blendWasEnabled = GL11.glIsEnabled(GL11.GL_BLEND);
+        //$$ GlStateManagerCompat.enableBlend();
+        //$$ GlStateManagerCompat.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
         //#endif
     }
 
     private static void endMesh() {
         //#if MC < 1.16
         //#else
-        if (meshQuads > 0) meshBuilder.draw();
-        meshBuilder = null;
-        if (!blendWasEnabled) GlStateManagerCompat.disableBlend();
+        //$$ if (meshQuads > 0) meshBuilder.draw();
+        //$$ meshBuilder = null;
+        //$$ if (!blendWasEnabled) GlStateManagerCompat.disableBlend();
         //#endif
     }
 
@@ -267,13 +269,13 @@ public abstract class Overlay {
         //#if MC < 1.16
         DrawContextUtils.fill(x1, y1, x2, y2, color);
         //#else
-        if (x2 <= x1 || y2 <= y1) return;
-        int a = (color >>> 24) & 0xFF, r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
-        meshBuilder.pos(x1, y1, 0).color(r, g, b, a).endVertex();
-        meshBuilder.pos(x1, y2, 0).color(r, g, b, a).endVertex();
-        meshBuilder.pos(x2, y2, 0).color(r, g, b, a).endVertex();
-        meshBuilder.pos(x2, y1, 0).color(r, g, b, a).endVertex();
-        meshQuads++;
+        //$$ if (x2 <= x1 || y2 <= y1) return;
+        //$$ int a = (color >>> 24) & 0xFF, r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
+        //$$ meshBuilder.pos(x1, y1, 0).color(r, g, b, a).endVertex();
+        //$$ meshBuilder.pos(x1, y2, 0).color(r, g, b, a).endVertex();
+        //$$ meshBuilder.pos(x2, y2, 0).color(r, g, b, a).endVertex();
+        //$$ meshBuilder.pos(x2, y1, 0).color(r, g, b, a).endVertex();
+        //$$ meshQuads++;
         //#endif
     }
 
