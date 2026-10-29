@@ -59,23 +59,33 @@ public class EmojiManager {
     public static void startInitialisation() {
         if(!NetworkGuard.githubAllowed()) return;
         boolean update = RepoHandler.isUpdateNeeded(ATHRRepo.KEY_EMOJIS) || spritesCorrupted();
+        boolean customSheetUpdated = true;
         if(update){
-            downloadSheetsParallel();
+            customSheetUpdated = downloadSheetsParallel();
         }
         loadSpritesFromFile();
         registerEmojis();
-        if(update){
+        // Keep the manifest version pending if the custom sheet could not be
+        // fetched and saved. Otherwise a transient network failure would mark
+        // the update as complete and leave the old custom.png cached forever.
+        if(update && customSheetUpdated){
             RepoHandler.saveVersion(ATHRRepo.KEY_EMOJIS);
         }
     }
 
-    private static void downloadSheetsParallel() {
+    private static boolean downloadSheetsParallel() {
         CountDownLatch latch = new CountDownLatch(EMOJI_THEMES.length);
+        AtomicBoolean customSheetUpdated = new AtomicBoolean(false);
         for(String theme : EMOJI_THEMES){
             ThreadUtils.run(() -> {
                 try {
-                    downloadSheet(theme);
-                    Aetheria.logger.info("[EMOJI] Downloaded Sheet for " + theme);
+                    boolean downloaded = downloadSheet(theme);
+                    if (EmojiLinks.CUSTOM_SHEET.equals(theme)) {
+                        customSheetUpdated.set(downloaded);
+                    }
+                    if (downloaded) {
+                        Aetheria.logger.info("[EMOJI] Downloaded Sheet for " + theme);
+                    }
                 } finally {
                     latch.countDown();
                 }
@@ -91,6 +101,7 @@ public class EmojiManager {
             if (size > max) max = size;
         }
         if (max > 0) EmojiLinks.SHEET_SIZE = max;
+        return customSheetUpdated.get();
     }
 
     private static void registerEmojis() {
@@ -281,21 +292,23 @@ public class EmojiManager {
         }
     }
 
-    private static void downloadSheet(String sheet) {
+    private static boolean downloadSheet(String sheet) {
         String urlSuffix = EmojiLinks.sheetToURL(sheet);
         try {
             BufferedImage image = HttpClient.fetchImage(EmojiLinks.getSpriteURL(urlSuffix));
-            if (image.getWidth() < 32) return;
+            if (image.getWidth() < 32 || image.getHeight() < 32) return false;
             File path = EmojiLinks.getSpriteFile(sheet);
             if (StorageManager.saveAtomicImage(path, image)) {
                 sheetSizes.put(sheet, image.getWidth());
                 Aetheria.logger.info("[EMOJI] Successfully downloaded Sheet for " + sheet + " (" + image.getWidth() + " px)");
+                return true;
             } else {
                 Aetheria.logger.warning("[EMOJI] Failed to save downloaded Sheet " + sheet + " to " + path.getPath());
             }
         } catch (Exception e) {
             Aetheria.logger.warning("[EMOJI] Error Downloading " + sheet + " from url: " + urlSuffix + " — " + e.getMessage());
         }
+        return false;
     }
 
     private static boolean spritesCorrupted() {
@@ -304,7 +317,7 @@ public class EmojiManager {
             if (!file.exists()) return true;
             try {
                 BufferedImage img = ImageIO.read(file);
-                if (img == null || img.getWidth() < 32) return true;
+                if (img == null || img.getWidth() < 32 || img.getHeight() < 32) return true;
             } catch (IOException e) {
                 return true;
             }
