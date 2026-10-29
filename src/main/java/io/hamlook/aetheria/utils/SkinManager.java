@@ -4,8 +4,9 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.util.ResourceLocation;
 
@@ -13,6 +14,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +25,10 @@ public class SkinManager {
     private static final Map<String, ResourceLocation> loadedSkins = new ConcurrentHashMap<>();
     private static final Set<String> fetching = new HashSet<>();
     private static final Set<String> sessionUpdated = new HashSet<>();
+
+    private static ResourceLocation skinTexture(String username) {
+        return TextCompat.createResourceLocation("aetheria", "skins/" + username.toLowerCase(Locale.ROOT));
+    }
 
     public static ResourceLocation getSkin(String username) {
         if (loadedSkins.containsKey(username)) {
@@ -54,9 +60,10 @@ public class SkinManager {
                     BufferedImage finalImg = ImageIO.read(skinFile);
                     if (finalImg != null) {
                         Minecraft.getMinecraft().addScheduledTask(() -> {
-                            DynamicTexture dynTex = new DynamicTexture(finalImg);
-                            ResourceLocation loc = Minecraft.getMinecraft().getTextureManager().getDynamicTextureLocation("skin_" + username, dynTex);
-                            loadedSkins.put(username, loc);
+                            ResourceLocation loc = skinTexture(username);
+                            if (TextureCompat.uploadTexture(loc, finalImg)) {
+                                loadedSkins.put(username, loc);
+                            }
                         });
                     }
                 }

@@ -346,7 +346,8 @@ public class StorageListener {
         if (!StorageManager.isStorageChest()) return;
 
         int keyCode = KeyboardCompat.getEventKey();
-        if (KeybindCompat.inventoryKeyMatches(keyCode) && StorageManager.isSearchFocused()) {
+        if (KeybindCompat.consumeInventoryKey(keyCode, StorageManager.isSearchFocused(),
+                () -> StorageManager.handleKeyTyped(KeyboardCompat.getEventCharacter(), keyCode))) {
             event.cancel();
             return;
         }

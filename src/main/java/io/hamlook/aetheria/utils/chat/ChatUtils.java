@@ -150,6 +150,58 @@ public class ChatUtils {
         return m.matches() ? m.group(2).trim() : null;
     }
 
+    public enum MessageType {
+        PLAYER, PARTY, GUILD, MSG_RECEIVED, MSG_SENT, DONATE;
+
+        static final MessageType[] VALUES = values();
+    }
+
+    public static final class Message {
+        public final MessageType type;
+        /** author, except MSG_SENT where it is the recipient. */
+        public final String sender;
+        public final String body;
+
+        private Message(MessageType type, String sender, String body) {
+            this.type = type;
+            this.sender = sender;
+            this.body = body;
+        }
+    }
+
+    // first type that matches, in the order every chat feature used before
+    public static Message findMessage(String plain) {
+        for (MessageType type : MessageType.VALUES) {
+            String sender = senderOf(type, plain);
+            if (sender != null) return new Message(type, sender, bodyOf(type, plain));
+        }
+        return null;
+    }
+
+    private static String senderOf(MessageType type, String plain) {
+        switch (type) {
+            case PLAYER: return getPlayerMessageSender(plain);
+            case PARTY: return getPartySender(plain);
+            case GUILD: return getGuildSender(plain);
+            case MSG_RECEIVED: return getMsgReceivedSender(plain);
+            case MSG_SENT: return getMsgSentRecipient(plain);
+            case DONATE: return getDonateSender(plain);
+            default: return null;
+        }
+    }
+
+    private static String bodyOf(MessageType type, String plain) {
+        switch (type) {
+            case PLAYER: return getPlayerMessageBody(plain);
+            case PARTY: return getPartyBody(plain);
+            case GUILD: return getGuildBody(plain);
+            case MSG_RECEIVED: return getMsgReceivedBody(plain);
+            case MSG_SENT: return getMsgSentBody(plain);
+            case DONATE: return getDonateBody(plain);
+            default: return null;
+        }
+    }
+
     public static boolean isFormattingCode(char c) {
         return FORMATTING_CODES.indexOf(Character.toLowerCase(c)) != -1;
     }

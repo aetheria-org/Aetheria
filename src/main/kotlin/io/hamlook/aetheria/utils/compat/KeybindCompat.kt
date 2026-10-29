@@ -42,6 +42,15 @@ object KeybindCompat {
         //$$ keyCode == InputUtil.fromTranslationKey(MinecraftCompat.getMinecraft().options.inventoryKey.boundKeyTranslationKey).code
         //#endif
 
+    // true when the inventory key was consumed; the caller cancels the event, keeping
+    // the key away from vanilla, which would close the container on it
+    @JvmStatic
+    fun consumeInventoryKey(keyCode: Int, focused: Boolean, typist: Runnable): Boolean {
+        if (!inventoryKeyMatches(keyCode) || !focused) return false
+        typist.run()
+        return true
+    }
+
     @JvmStatic
     fun createKeyBinding(description: String, code: Int, category: String): KeyBinding =
         //#if FORGE

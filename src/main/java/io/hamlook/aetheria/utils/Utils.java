@@ -191,20 +191,45 @@ public class Utils {
     }
 
     private static final char[] SUFFIXES = {'\0', 'k', 'M', 'B', 'T'};
+    private static final int DEFAULT_DECIMALS = 2;
+
+    public static String shortNumberFormat(double num) {
+        return shortNumberFormat(num, 0, DEFAULT_DECIMALS);
+    }
+
     public static String shortNumberFormat(double num, int iteration) {
+        return shortNumberFormat(num, iteration, DEFAULT_DECIMALS);
+    }
+
+    public static String shortNumberFormat(double num, int iteration, int decimals) {
         boolean negative = num < 0;
         double n = Math.abs(num);
+        int index = Math.min(iteration, SUFFIXES.length - 1);
 
-        if (n < 1000) {
-            if (iteration == 0) {
+        if (n < 1000 || index == SUFFIXES.length - 1) {
+            if (index == 0) {
                 return String.valueOf((int) n);
             }
-            double d = ((long) (n * 10)) / 10.0;
-            boolean isRound = (d * 10) % 10 == 0;
-            String number = isRound || d > 9.99 ? String.valueOf((int) d) : String.valueOf(d);
-            return number + SUFFIXES[iteration];
+            return formatScaled(n, decimals) + SUFFIXES[index];
         }
-        return (negative ? "-" : "") + shortNumberFormat(n / 1000.0, iteration + 1);
+        return (negative ? "-" : "") + shortNumberFormat(n / 1000.0, index + 1, decimals);
+    }
+
+    private static String formatScaled(double value, int decimals) {
+        if (decimals <= 0) return String.valueOf(Math.round(value));
+
+        long factor = 1L;
+        for (int i = 0; i < decimals; i++) factor *= 10L;
+
+        long scaled = Math.round(value * factor);
+        long whole = scaled / factor;
+        long fraction = scaled % factor;
+        if (fraction == 0L) return String.valueOf(whole);
+
+        String digits = String.valueOf(factor + fraction).substring(1);
+        int end = digits.length();
+        while (end > 0 && digits.charAt(end - 1) == '0') end--;
+        return whole + "." + digits.substring(0, end);
     }
 
     public static long parseRawNumber(String raw) {

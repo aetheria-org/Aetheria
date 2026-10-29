@@ -2,14 +2,15 @@ package io.hamlook.aetheria.features.chat;
 
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.core.features.chat.PlayerButtonsConfig;
 import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils.ChatTextMatch;
 import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.util.ChatStyle;
 import net.minecraft.util.IChatComponent;
-import net.minecraft.util.StringUtils;
 
 /**
  * Turns the sender's name in player / party / guild / whisper chat lines into
@@ -25,20 +26,16 @@ public class PlayerNameButtonListener {
 
     @HandleEvent(priority = HandleEvent.LOWEST, receiveCancelled = true)
     public void onChat(ASMChatEvent event) {
-        if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.playerButtons.enabled) return;
+        if (ATHRConfig.feature == null) return;
+        PlayerButtonsConfig cfg = ATHRConfig.feature.chat.playerButtons;
+        if (!cfg.enabled) return;
+        if (cfg.onlyInSkyblock && !SkyblockData.isOnSkyblock()) return;
 
-        String plain = StringUtils.stripControlCodes(TextCompat.getFormattedTextWithResets(event.message));
-
-        String ign = ChatUtils.getPlayerMessageSender(plain);
-        if (ign == null) ign = ChatUtils.getPartySender(plain);
-        if (ign == null) ign = ChatUtils.getGuildSender(plain);
-        if (ign == null) ign = ChatUtils.getMsgReceivedSender(plain);
-        if (ign == null) ign = ChatUtils.getMsgSentRecipient(plain);
-        if (ign == null) ign = ChatUtils.getDonateSender(plain);
-        if (ign == null) return;
+        ChatUtils.Message m = event.parsed();
+        if (m == null || !cfg.allows(m.type)) return;
 
         event.message = ChatUtils.ensureSiblings(event.message);
-        String sender = ign;
+        String sender = m.sender;
         ChatUtils.replaceFirst(event.message, sender, true, 0, match -> playerName(match, sender));
     }
 

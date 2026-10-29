@@ -48,6 +48,9 @@ public abstract class MixinGuiContainer extends GuiScreen {
     //#if MC < 1.21
     @Shadow
     private Slot theSlot;
+    //#else
+    //$$ @Shadow
+    //$$ protected Slot focusedSlot;
     //#endif
 
     //#if MC < 1.21
@@ -93,7 +96,12 @@ public abstract class MixinGuiContainer extends GuiScreen {
 
     @Inject(method = "keyTyped", at = @At("HEAD"), cancellable = true)
     private void ATHR$protectItemKey(char typedChar, int keyCode, CallbackInfo ci) {
-        if (GuiContainerHook.protectItemKey(this.theSlot, keyCode)) {
+        //#if MC < 1.21
+        Slot hovered = this.theSlot;
+        //#else
+        //$$ Slot hovered = this.focusedSlot;
+        //#endif
+        if (GuiContainerHook.protectItemKey(hovered, keyCode)) {
             ci.cancel();
         }
     }

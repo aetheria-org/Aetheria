@@ -12,6 +12,7 @@ import io.hamlook.aetheria.utils.compat.DrawContextUtils
 import io.hamlook.aetheria.utils.compat.MinecraftCompat
 import io.hamlook.aetheria.utils.compat.MouseCompat
 import io.hamlook.aetheria.utils.compat.TextCompat
+import io.hamlook.aetheria.utils.data.SkyblockData
 import io.hamlook.aetheria.utils.render.MarqueeUtils
 import io.hamlook.aetheria.utils.render.RenderUtils
 import net.minecraft.client.gui.FontRenderer
@@ -27,25 +28,29 @@ import kotlin.math.min
 @RegisterEvents
 object PlayerButtonHook {
 
-    private enum class MenuAction(val label: String, val command: String?, val special: Special?) {
-        WHISPER("Whisper", "/msg {player}", Special.MESSAGE),
-        VIEW_PROFILE("View Profile", "/viewprofile {player}", Special.VIEW_PROFILE),
-        AUCTION_HOUSE("Auction House", "/ah {player}", null),
-        PARTY_INVITE("Party Invite", "/p invite {player}", null),
-        ADD_FRIEND("Add Friend", "/f add {player}", null),
-        IGNORE("Ignore", "/ignore add {player}", null),
-        VISIT_ISLAND("Visit Island", "/visit {player}", null),
-        VISIT_GARDEN("Visit Garden", "/visitgarden {player}", null);
+    private enum class MenuAction(val label: String, val command: String?, val special: Special?, val skyblockOnly: Boolean) {
+        WHISPER("Whisper", "/msg {player}", Special.MESSAGE, false),
+        VIEW_PROFILE("View Profile", "/viewprofile {player}", Special.VIEW_PROFILE, true),
+        AUCTION_HOUSE("Auction House", "/ah {player}", null, true),
+        PARTY_INVITE("Party Invite", "/p invite {player}", null, false),
+        ADD_FRIEND("Add Friend", "/f add {player}", null, false),
+        IGNORE("Ignore", "/ignore add {player}", null, false),
+        VISIT_ISLAND("Visit Island", "/visit {player}", null, true),
+        VISIT_GARDEN("Visit Garden", "/visitgarden {player}", null, true);
 
         enum class Special { MESSAGE, VIEW_PROFILE }
     }
 
+    private fun visibleActions(): List<MenuAction> =
+        MenuAction.entries.filter { action -> !action.skyblockOnly || SkyblockData.isOnSkyblock() }
+
     private class MenuLayout(screenWidth: Int, screenHeight: Int) {
+        val actions = visibleActions()
         val left = menuLeft(screenWidth)
         val top = menuTop(screenHeight)
         val headerHeight = MENU_HEADER_H
         val rowHeight = MENU_ROW_H
-        val height = headerHeight + MenuAction.entries.size * rowHeight + 4
+        val height = headerHeight + actions.size * rowHeight + 4
         val cogLeft = left + MENU_WIDTH - headerHeight
 
         fun rowTop(index: Int) = top + headerHeight + 2 + index * rowHeight
@@ -85,7 +90,7 @@ object PlayerButtonHook {
     }
 
     @JvmStatic
-    fun menuHeight(): Int = MENU_HEADER_H + MenuAction.entries.size * MENU_ROW_H + 4
+    fun menuHeight(): Int = MENU_HEADER_H + visibleActions().size * MENU_ROW_H + 4
 
     @JvmStatic
     fun menuLeft(screenWidth: Int): Int = max(2, min(menuX, screenWidth - MENU_WIDTH - 2))
@@ -153,12 +158,12 @@ object PlayerButtonHook {
                 0xFFFFFFFF.toInt()
             )
 
-            for (i in MenuAction.entries.indices) {
+            for (i in layout.actions.indices) {
                 val ry = layout.rowTop(i)
                 val hovered = mouseX in bx..bx + MENU_WIDTH && mouseY in ry until ry + MENU_ROW_H
                 if (hovered) DrawContextUtils.fill(bx + 1, ry, bx + MENU_WIDTH - 1, ry + MENU_ROW_H, hoverColor)
                 DrawContextUtils.drawTextWithShadow(
-                    fr, MenuAction.entries[i].label,
+                    fr, layout.actions[i].label,
                     bx + 6,
                     ry + 3,
                     if (hovered) 0xFFFFFFFF.toInt() else 0xFFB5BAC1.toInt()
@@ -197,22 +202,18 @@ object PlayerButtonHook {
                 val cogX = layout.cogLeft
 
                 if (mouseX in cogX..bx + MENU_WIDTH && mouseY in by until by + layout.headerHeight) {
-                    ATHRConfig.openSubcategory("Chat Utils", "playerButtons")
-                } else {
-                    for (i in MenuAction.entries.indices) {
-                        val ry = layout.rowTop(i)
-                        if (mouseX in bx..bx + MENU_WIDTH && mouseY in ry until ry + MENU_ROW_H) {
-                            executeAction(MenuAction.entries[i], menuPlayer!!, inputField)
-                            break
-                        }
-                    }
+                    ATHRConfig.openSubcategory("Chat", "playerButtons")
+                    menuPlayer = null
+                } else if (!clickRow(layout, mouseX, mouseY, inputField) && !insideMenu(layout, mouseX, mouseY)) {
+                    menuPlayer = null
                 }
             }
-            menuPlayer = null
             return true
         }
 
-        if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.playerButtons.enabled) return false
+        val cfg = ATHRConfig.feature?.chat?.playerButtons ?: return false
+        if (!cfg.enabled) return false
+        if (cfg.onlyInSkyblock && !SkyblockData.isOnSkyblock()) return false
         if (mouseButton != 0) return false
 
         //#if MC < 1.16
@@ -233,6 +234,32 @@ object PlayerButtonHook {
         return true
     }
 
+    // true while the cursor is over the menu box, so chat hover effects stay off it
+    @JvmStatic
+    fun isMouseOverMenu(mouseX: Int, mouseY: Int, screenWidth: Int, screenHeight: Int): Boolean {
+        if (menuPlayer == null) return false
+        val left = menuLeft(screenWidth)
+        val top = menuTop(screenHeight)
+        return mouseX in left until left + MENU_WIDTH && mouseY in top until top + menuHeight()
+    }
+
+    private fun insideMenu(layout: MenuLayout, mouseX: Int, mouseY: Int): Boolean =
+        mouseX in layout.left until layout.left + MENU_WIDTH &&
+            mouseY in layout.top until layout.top + layout.height
+
+    private fun clickRow(layout: MenuLayout, mouseX: Int, mouseY: Int, inputField: GuiTextField): Boolean {
+        val player = menuPlayer ?: return false
+        for (i in layout.actions.indices) {
+            val ry = layout.rowTop(i)
+            if (mouseX in layout.left..layout.left + MENU_WIDTH && mouseY in ry until ry + MENU_ROW_H) {
+                executeAction(layout.actions[i], player, inputField)
+                menuPlayer = null
+                return true
+            }
+        }
+        return false
+    }
+
     private fun executeAction(action: MenuAction, name: String, inputField: GuiTextField) {
         when (action.special) {
             MenuAction.Special.MESSAGE -> {
@@ -240,11 +267,7 @@ object PlayerButtonHook {
                 inputField.isFocused = true
             }
 
-            MenuAction.Special.VIEW_PROFILE -> {
-                if (ATHRConfig.feature == null || ATHRConfig.feature.chat.playerButtons.useIngameViewProfile) {
-                    sendCommand(action, name)
-                }
-            }
+            MenuAction.Special.VIEW_PROFILE -> sendCommand(action, name)
 
             null -> sendCommand(action, name)
         }

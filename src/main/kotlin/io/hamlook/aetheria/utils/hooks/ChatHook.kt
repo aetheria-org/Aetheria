@@ -75,6 +75,11 @@ object ChatHook {
         if (MinecraftCompat.getCurrentScreen() !is GuiChat) return
         val screen = MinecraftCompat.getCurrentScreen() as? GuiChatHook ?: return
         if (!screen.`athr$isTypingMode`()) return
+        // keep hover effects off the chat while the player menu sits under the cursor
+        if (PlayerButtonHook.isMouseOverMenu(
+                mouseX / GuiScreenUtils.getScaleFactor(),
+                GuiScreenUtils.getScaledWindowHeight() - mouseY / GuiScreenUtils.getScaleFactor(),
+                GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight())) return
         hoveredLine = getHoveredChatLine(drawnChatLines, scrollPos, chatScale, lineCount, mouseX, mouseY)
 
         //#if MC < 1.21
@@ -286,6 +291,8 @@ object ChatHook {
     //$$     if (MinecraftCompat.getCurrentScreen() !is ChatScreen) return
     //$$     val screen = MinecraftCompat.getCurrentScreen() as? GuiChatHook ?: return
     //$$     if (!screen.`athr$isTypingMode`()) return
+    //$$     if (PlayerButtonHook.isMouseOverMenu(mouseX, mouseY,
+    //$$             GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight())) return
     //$$     if (mouseX < -4 || mouseX > TextCompat.floor(chatWidthModern() / chatScale)) return
     //$$     val lineHeight = chatLineHeightModern()
     //$$     val y = ((GuiScreenUtils.getScaledWindowHeight() - mouseY) - 40.0) / (chatScale * lineHeight)

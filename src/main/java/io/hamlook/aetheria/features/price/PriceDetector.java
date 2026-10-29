@@ -288,7 +288,7 @@ public class PriceDetector {
                 ItemStack stack = slot.getStack();
                 if (!ItemUtils.isSkyblockItem(stack)) continue;
 
-                List<String> lore = ItemUtils.getLore(stack);
+                List<String> lore = ItemUtils.getLoreLinesWithoutColor(stack);
                 String buyPrice = "", sellPrice = "";
 
                 for (String s : lore) {
@@ -321,19 +321,19 @@ public class PriceDetector {
             ItemStack iSellStack = iSell.getStack();
             if (buy == null || sell == null || iBuyStack == null || iSellStack == null) return false;
 
-            List<String> oBuyLore = ItemUtils.getLore(buy);
+            List<String> oBuyLore = ItemUtils.getLoreLinesWithoutColor(buy);
             String oBuyPrice = parseOrderPrice(oBuyLore, "Top Orders");
             if (oBuyPrice == null) return false;
 
-            List<String> oSellLore = ItemUtils.getLore(sell);
+            List<String> oSellLore = ItemUtils.getLoreLinesWithoutColor(sell);
             String oSellPrice = parseOrderPrice(oSellLore, "Top Offers");
             if (oSellPrice == null) return false;
 
             String iBuyPrice = "", iSellPrice = "";
-            for (String s : ItemUtils.getLore(iBuyStack)) {
+            for (String s : ItemUtils.getLoreLinesWithoutColor(iBuyStack)) {
                 if (s.startsWith("Price per unit:") || s.startsWith("Price pet unit:")) iBuyPrice = extractPrice(s);
             }
-            for (String s : ItemUtils.getLore(iSellStack)) {
+            for (String s : ItemUtils.getLoreLinesWithoutColor(iSellStack)) {
                 if (s.startsWith("Price per unit:") || s.startsWith("Price pet unit:")) iSellPrice = extractPrice(s);
             }
             if (iBuyPrice.isEmpty() || iSellPrice.isEmpty()) return false;

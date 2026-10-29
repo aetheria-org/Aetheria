@@ -9,22 +9,16 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils.ChatTextMatch;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.IChatComponent;
-import net.minecraft.util.StringUtils;
 
 @RegisterEvents
 public class PlayerTagListener {
 
     @HandleEvent(priority = HandleEvent.LOWEST, receiveCancelled = true)
     public void onChat(ASMChatEvent event) {
-        String plain = StringUtils.stripControlCodes(TextCompat.getFormattedText(event.message));
+        ChatUtils.Message m = event.parsed();
+        if (m == null) return;
 
-        String ign = ChatUtils.getPlayerMessageSender(plain);
-        if (ign == null) ign = ChatUtils.getPartySender(plain);
-        if (ign == null) ign = ChatUtils.getGuildSender(plain);
-        if (ign == null) ign = ChatUtils.getMsgReceivedSender(plain);
-        if (ign == null) ign = ChatUtils.getMsgSentRecipient(plain);
-        if (ign == null) ign = ChatUtils.getDonateSender(plain);
-        if (ign == null) return;
+        String ign = m.sender;
 
         PlayerTagData.Entry entry = PlayerTagRepo.getTag(ign);
         if (entry == null) return;

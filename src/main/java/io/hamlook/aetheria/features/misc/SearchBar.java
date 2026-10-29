@@ -360,7 +360,8 @@ public class SearchBar {
 
         int keyCode = KeybindHelper.getEventKeyCode();
 
-        if (searchBar != null && searchBar.isFocused() && KeybindCompat.inventoryKeyMatches(keyCode)) {
+        if (KeybindCompat.consumeInventoryKey(keyCode, searchBar != null && searchBar.isFocused(),
+                () -> typeIntoSearchBar(keyCode))) {
             event.cancel();
             return;
         }
@@ -409,6 +410,13 @@ public class SearchBar {
         if (!KeybindHelper.isEscapeKey(keyCode) && GuiScreenUtils.typeTextField(searchBar, typedChar, keyCode)) {
             searchText = searchBar.getText();
             event.cancel();
+        }
+    }
+
+    private void typeIntoSearchBar(int keyCode) {
+        char typedChar = KeybindHelper.getEventCharacter();
+        if (GuiScreenUtils.typeTextField(searchBar, typedChar, keyCode)) {
+            searchText = searchBar.getText();
         }
     }
 

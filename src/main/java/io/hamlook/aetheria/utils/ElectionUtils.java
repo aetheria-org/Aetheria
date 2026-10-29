@@ -72,7 +72,7 @@ public class ElectionUtils {
         if (stack == null) return;
         String title = ItemUtils.getDisplayName(stack);
         String colorToCheck = title.substring(0, 2);
-        List<String> lore = ItemUtils.getLoreColored(stack);
+        List<String> lore = ItemUtils.getLoreLines(stack);
         List<String> perks = new ArrayList<>();
 
         for (String line : lore) {

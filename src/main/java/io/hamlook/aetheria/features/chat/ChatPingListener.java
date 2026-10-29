@@ -10,10 +10,8 @@ import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils.ChatTextMatch;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
-import net.minecraft.client.Minecraft;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
-import net.minecraft.util.StringUtils;
 
 @RegisterEvents
 public class ChatPingListener {
@@ -28,39 +26,23 @@ public class ChatPingListener {
         ChatPingConfig cfg = ATHRConfig.feature.chat.chatPingConfig;
         if (!cfg.chatPing) return;
 
-        Minecraft mc = MinecraftCompat.getMinecraft();
         if (MinecraftCompat.getLocalPlayer() == null) return;
 
         String name = TextCompat.getUnformattedText(MinecraftCompat.getLocalPlayer().getName()).toLowerCase();
-        String stripped = StringUtils.stripControlCodes(TextCompat.getFormattedTextWithResets(event.message));
+        String plain = event.plain();
 
-        int colonIdx = stripped.indexOf(':');
+        int colonIdx = plain.indexOf(':');
         if (colonIdx != -1) {
-            String beforeColon = stripped.substring(0, colonIdx);
+            String beforeColon = plain.substring(0, colonIdx);
             if (beforeColon.toLowerCase().contains(name + "'s parrot")) {
                 return;
             }
         }
 
-        String body = ChatUtils.getPlayerMessageBody(stripped);
-
-        if (body == null && cfg.chatPingAllMessages) {
-            body = ChatUtils.getPartyBody(stripped);
-        }
-        if (body == null && cfg.chatPingAllMessages) {
-            body = ChatUtils.getGuildBody(stripped);
-        }
-        if (body == null && cfg.chatPingAllMessages) {
-            body = ChatUtils.getMsgReceivedBody(stripped);
-        }
-        if (body == null && cfg.chatPingAllMessages) {
-            body = ChatUtils.getMsgSentBody(stripped);
-        }
-        if (body == null && cfg.chatPingAllMessages) {
-            body = ChatUtils.getDonateBody(stripped);
-        }
-
-        if (body == null || !body.toLowerCase().contains(name)) return;
+        ChatUtils.Message m = event.parsed();
+        if (m == null) return;
+        if (m.type != ChatUtils.MessageType.PLAYER && !cfg.chatPingAllMessages) return;
+        if (m.body == null || !m.body.toLowerCase().contains(name)) return;
 
         SoundUtils.playSound(SOUNDS[cfg.chatPingSound], cfg.chatPingVolume, cfg.chatPingPitch);
 
