@@ -1,0 +1,43 @@
+<idea-plugin>
+    <id>io.hamlook.aetheria.multiversion</id>
+    <name>Aetheria Multi-Version</name>
+    <vendor>Aetheria</vendor>
+    <description>Code variants and multi-version Gradle checks for EGT projects.</description>
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.java</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <completion.contributor language="any"
+                                implementationClass="io.hamlook.aetheria.idea.CompatClassCompletionContributor"/>
+        <toolWindow id="Aetheria Versions" anchor="right"
+                    factoryClass="io.hamlook.aetheria.idea.ProblemToolWindowFactory"/>
+        <iw.actionProvider implementation="io.hamlook.aetheria.idea.GlobalProblemsInspectionWidgetActionProvider"/>
+    </extensions>
+    <applicationListeners>
+        <listener class="io.hamlook.aetheria.idea.VariantChangeTipListener"
+                  topic="com.intellij.openapi.editor.event.EditorFactoryListener"/>
+    </applicationListeners>
+    <actions>
+        <group id="Aetheria.VersionActions" text="Aetheria Versions" popup="true">
+            <action id="Aetheria.OpenFileVariant" class="io.hamlook.aetheria.idea.SwitchVariantAction"
+                    text="Open File Variant" description="Open the preprocessed Java or Kotlin file for a Minecraft target"/>
+            <action id="Aetheria.GenerateFromVariant" class="io.hamlook.aetheria.idea.GenerateFromVariantAction"
+                    text="Generate from Variant" description="Replace selected source with code from a target variant"/>
+            <separator/>
+            <action id="Aetheria.CheckAllVersions" class="io.hamlook.aetheria.idea.CheckAllVersionsAction"
+                    text="Check All Minecraft Versions" description="Compile every configured version target"/>
+        </group>
+        <action id="Aetheria.CheckAllVersions.Toolbar" class="io.hamlook.aetheria.idea.CheckAllVersionsAction"
+                text="Check All Minecraft Versions" description="Compile every configured version target">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        <group id="Aetheria.EditorPopup" text="Aetheria Versions" popup="true">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <reference ref="Aetheria.OpenFileVariant"/>
+            <reference ref="Aetheria.GenerateFromVariant"/>
+            <separator/>
+            <reference ref="Aetheria.CheckAllVersions"/>
+        </group>
+    </actions>
+</idea-plugin>
