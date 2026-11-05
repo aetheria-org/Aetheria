@@ -11,6 +11,7 @@ import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
+import io.hamlook.aetheria.utils.render.RectBatch;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.player.EntityPlayer;
@@ -27,8 +28,6 @@ public class DungeonMapRenderer {
             0xFFFFA135, // orange
             0xFFFF5A5A  // red
     };
-
-    private static final DungeonMapGrid.RoomState[] ICON_STATES = {DungeonMapGrid.RoomState.GREEN, DungeonMapGrid.RoomState.CLEARED, DungeonMapGrid.RoomState.FAILED, DungeonMapGrid.RoomState.UNOPENED};
 
     private static long lastRegionLogMs = 0;
 
@@ -47,32 +46,7 @@ public class DungeonMapRenderer {
         GlStateManagerCompat.translate(centerX - gridW * scale / 2f, centerY - gridH * scale / 2f, 0f);
         GlStateManagerCompat.scale(scale, scale, 1f);
 
-        for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
-            DungeonMapGrid.RoomOffset off = entry.getKey();
-            DungeonMapGrid.RoomCell cell = entry.getValue();
-            int rx = (int) grid.gridToPixelX(off.x);
-            int ry = (int) grid.gridToPixelZ(off.y);
-
-            DrawContextUtils.fill(rx, ry, rx + roomSize, ry + roomSize, cell.color | 0xFF000000);
-
-            int doorOffset = Math.max(0, (roomSize - 6) / 2);
-
-            if (cell.down.type == DungeonMapGrid.ConnectionType.ROOM_DIVIDER) {
-                DrawContextUtils.fill(rx, ry + roomSize, rx + roomSize, ry + roomSize + connSize, cell.down.color | 0xFF000000);
-            } else if (cell.down.type == DungeonMapGrid.ConnectionType.CORRIDOR) {
-                DrawContextUtils.fill(rx + doorOffset, ry + roomSize, rx + doorOffset + 6, ry + roomSize + connSize, cell.down.color | 0xFF000000);
-            }
-
-            if (cell.right.type == DungeonMapGrid.ConnectionType.ROOM_DIVIDER) {
-                DrawContextUtils.fill(rx + roomSize, ry, rx + roomSize + connSize, ry + roomSize, cell.right.color | 0xFF000000);
-            } else if (cell.right.type == DungeonMapGrid.ConnectionType.CORRIDOR) {
-                DrawContextUtils.fill(rx + roomSize, ry + doorOffset, rx + roomSize + connSize, ry + doorOffset + 6, cell.right.color | 0xFF000000);
-            }
-        }
-
-        for (DungeonMapGrid.Junction j : grid.getJunctions()) {
-            DrawContextUtils.fill(j.px, j.py, j.px + connSize, j.py + connSize, j.color | 0xFF000000);
-        }
+        drawRoomGeometry(grid, roomSize, connSize);
 
         //#if MC < 1.16
         //#else
@@ -80,7 +54,7 @@ public class DungeonMapRenderer {
         //#endif
 
         int checkmarkStyle = cfg.rooms.mapCheckmark;
-        int checkmarkSize = checkmarkStyle == 0 ? 8 : 10;
+        int checkmarkSize = checkmarkStyle == 1 ? 10 : 8;
 
         if (ATHRConfig.feature.debug.dungeonRoomDebug && System.currentTimeMillis() - lastRegionLogMs > 5000) {
             lastRegionLogMs = System.currentTimeMillis();
@@ -104,26 +78,7 @@ public class DungeonMapRenderer {
                 + " split=" + cfg.rooms.splitRoomMarkers + " checkmark=" + cfg.rooms.mapCheckmark);
         }
 
-        for (DungeonMapGrid.RoomState state : ICON_STATES) {
-            ResourceLocation icon = getCheckmark(state, checkmarkStyle);
-            if (icon == null) continue;
-            if (cfg.rooms.splitRoomMarkers) {
-                for (DungeonMapGrid.RoomRegion region : grid.getRegions()) {
-                    if (region.state != state) continue;
-                    int rx = (int) grid.gridToPixelX(region.tickCell.x);
-                    int ry = (int) grid.gridToPixelZ(region.tickCell.y);
-                    RenderUtils.renderMapCheckmark(icon, rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize);
-                }
-            } else {
-                for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
-                    DungeonMapGrid.RoomCell cell = entry.getValue();
-                    if (cell.state != state) continue;
-                    int rx = (int) grid.gridToPixelX(entry.getKey().x);
-                    int ry = (int) grid.gridToPixelZ(entry.getKey().y);
-                    RenderUtils.renderMapCheckmark(icon, rx + (roomSize - checkmarkSize) / 2f, ry + (roomSize - checkmarkSize) / 2f, checkmarkSize);
-                }
-            }
-        }
+        drawCheckmarks(grid, roomSize, checkmarkSize, checkmarkStyle, cfg.rooms.splitRoomMarkers);
 
         if (showVisitedRoomNames && visitedRooms != null) {
             float invScale = 1f / Math.max(scale, 0.01f);
@@ -133,24 +88,17 @@ public class DungeonMapRenderer {
             for (DungeonRoom room : visitedRooms) {
                 float px = grid.worldToPixelX(room.center.getX());
                 float py = grid.worldToPixelZ(room.center.getZ());
-                DungeonMapGrid.RoomState state;
-                if (split) {
-                    DungeonMapGrid.RoomRegion region = findRoomRegion(grid, room);
-                    if (region != null) {
-                        if (!renderedRegions.add(region)) continue;
-                        state = region.state;
-                        if (region.hasRowAnchor) {
-                            px = grid.gridToPixelX((region.nameRowMinX + region.nameRowMaxX) / 2f) + roomHalf;
-                            py = grid.gridToPixelZ(region.nameRowY) + roomHalf;
-                        } else {
-                            px = grid.gridToPixelX((region.minX + region.maxX) / 2f) + roomHalf;
-                            py = grid.gridToPixelZ((region.minY + region.maxY) / 2f) + roomHalf;
-                        }
+                DungeonMapGrid.RoomRegion region = split ? findRoomRegion(grid, room) : null;
+                if (region != null && !renderedRegions.add(region)) continue;
+                DungeonMapGrid.RoomState state = grid.stateForRoom(region, room.center.getX(), room.center.getZ());
+                if (region != null) {
+                    if (region.hasRowAnchor) {
+                        px = grid.gridToPixelX((region.nameRowMinX + region.nameRowMaxX) / 2f) + roomHalf;
+                        py = grid.gridToPixelZ(region.nameRowY) + roomHalf;
                     } else {
-                        state = grid.stateAtWorld(room.center.getX(), room.center.getZ());
+                        px = grid.gridToPixelX((region.minX + region.maxX) / 2f) + roomHalf;
+                        py = grid.gridToPixelZ((region.minY + region.maxY) / 2f) + roomHalf;
                     }
-                } else {
-                    state = grid.stateAtWorld(room.center.getX(), room.center.getZ());
                 }
                 int color = colorText ? labelColor(state) : 0xFFFFFFFF;
                 RenderUtils.renderRoomName(px, py, cfg.rooms.roomnameSize * NAME_TEXT_SCALE * invScale, room.alias, color);
@@ -246,7 +194,64 @@ public class DungeonMapRenderer {
     }
 
     private static DungeonMapGrid.RoomRegion findRoomRegion(DungeonMapGrid grid, DungeonRoom room) {
-        return grid.regionAtPixel(grid.worldToPixelX(room.center.getX()), grid.worldToPixelZ(room.center.getZ()));
+        return grid.regionForRoom(room.center.getX(), room.center.getZ());
+    }
+
+    private static void drawRoomGeometry(DungeonMapGrid grid, int roomSize, int connSize) {
+        RectBatch.begin();
+        try {
+            for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
+                int rx = (int) grid.gridToPixelX(entry.getKey().x);
+                int ry = (int) grid.gridToPixelZ(entry.getKey().y);
+                DungeonMapGrid.RoomCell cell = entry.getValue();
+
+                RectBatch.rect(rx, ry, rx + roomSize, ry + roomSize, cell.color | 0xFF000000);
+                drawConnector(cell.down, true, rx, ry + roomSize, roomSize, connSize);
+                drawConnector(cell.right, false, rx + roomSize, ry, roomSize, connSize);
+            }
+            for (DungeonMapGrid.Junction junction : grid.getJunctions()) {
+                RectBatch.rect(junction.px, junction.py, junction.px + connSize, junction.py + connSize, junction.color | 0xFF000000);
+            }
+        } finally {
+            RectBatch.end();
+        }
+    }
+
+    private static void drawConnector(DungeonMapGrid.RoomConnection connection, boolean vertical,
+            int x, int y, int roomSize, int connSize) {
+        int argb = connection.color | 0xFF000000;
+
+        if (connection.type == DungeonMapGrid.ConnectionType.ROOM_DIVIDER) {
+            if (vertical) RectBatch.rect(x, y, x + roomSize, y + connSize, argb);
+            else RectBatch.rect(x, y, x + connSize, y + roomSize, argb);
+            return;
+        }
+        if (connection.type != DungeonMapGrid.ConnectionType.CORRIDOR) return;
+
+        int doorOffset = Math.max(0, (roomSize - 6) / 2);
+        if (vertical) RectBatch.rect(x + doorOffset, y, x + doorOffset + 6, y + connSize, argb);
+        else RectBatch.rect(x, y + doorOffset, x + connSize, y + doorOffset + 6, argb);
+    }
+
+    private static void drawCheckmarks(DungeonMapGrid grid, int roomSize, int checkmarkSize, int style, boolean split) {
+        if (split) {
+            for (DungeonMapGrid.RoomRegion region : grid.getRegions()) {
+                drawCheckmark(grid, region.tickCell.x, region.tickCell.y, region.state, roomSize, checkmarkSize, style);
+            }
+            return;
+        }
+        for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : grid.getRooms().entrySet()) {
+            drawCheckmark(grid, entry.getKey().x, entry.getKey().y, entry.getValue().state, roomSize, checkmarkSize, style);
+        }
+    }
+
+    private static void drawCheckmark(DungeonMapGrid grid, int gridX, int gridZ, DungeonMapGrid.RoomState state,
+            int roomSize, int checkmarkSize, int style) {
+        ResourceLocation icon = getCheckmark(state, style);
+        if (icon == null) return;
+
+        float offset = (roomSize - checkmarkSize) / 2f;
+        RenderUtils.renderMapCheckmark(icon, grid.gridToPixelX(gridX) + offset, grid.gridToPixelZ(gridZ) + offset, checkmarkSize);
     }
 
     private static ResourceLocation getCheckmark(DungeonMapGrid.RoomState state, int style) {

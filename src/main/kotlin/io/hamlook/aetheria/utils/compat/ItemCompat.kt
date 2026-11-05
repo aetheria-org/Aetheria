@@ -1,4 +1,6 @@
 package io.hamlook.aetheria.utils.compat
+
+import com.mojang.authlib.GameProfile
 //#if MC < 1.16
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.init.Items
@@ -18,6 +20,7 @@ import net.minecraft.item.ItemStack
 //$$ import net.minecraft.registry.Registries
 //$$ import net.minecraft.util.Identifier
 //$$ import net.minecraft.component.DataComponentTypes
+//$$ import net.minecraft.component.type.ProfileComponent
 //$$ import net.minecraft.text.Text
 //#endif
 
@@ -111,6 +114,64 @@ fun createPlayerHeadStack(size: Int = 1): ItemStack =
     //#else
     //$$ ItemStack(Items.PLAYER_HEAD, size)
     //#endif
+
+// head skin data, legacy keeps it in SkullOwner nbt, modern in the profile component
+class SkullProfile(
+    @JvmField val textureValue: String,
+    @JvmField val profileId: String,
+    @JvmField val profileName: String,
+    @JvmField val signature: String
+)
+
+fun ItemStack?.skullProfile(): SkullProfile? {
+    if (this == null) return null
+    //#if MC < 1.21
+    val tag = NbtCompat.getTagCompound(this) ?: return null
+    if (!NbtCompat.hasKey(tag, "SkullOwner")) return null
+    val owner = NbtCompat.getCompound(tag, "SkullOwner")
+    val textures = NbtCompat.getTagList(NbtCompat.getCompound(owner, "Properties"), "textures", NbtCompat.TAG_COMPOUND)
+    if (NbtCompat.tagCount(textures) == 0) return null
+    val entry = NbtCompat.getCompoundAt(textures, 0)
+    if (!NbtCompat.hasKey(entry, "Value")) return null
+    val value = NbtCompat.getString(entry, "Value")
+    if (value.isEmpty()) return null
+    return SkullProfile(
+        value,
+        if (NbtCompat.hasKey(owner, "Id")) NbtCompat.getString(owner, "Id") else "",
+        if (NbtCompat.hasKey(owner, "Name")) NbtCompat.getString(owner, "Name") else "",
+        if (NbtCompat.hasKey(entry, "Signature")) NbtCompat.getString(entry, "Signature") else ""
+    )
+    //#else
+    //$$ val component = this.get(DataComponentTypes.PROFILE) ?: return null
+    //$$ val game = component.gameProfile()
+    //$$ val texture = game.properties.get("textures").firstOrNull() ?: return null
+    //$$ if (texture.value.isEmpty()) return null
+    //$$ return SkullProfile(texture.value, game.id.toString(), game.name, texture.signature ?: "")
+    //#endif
+}
+
+fun ItemStack.setSkullProfile(profile: GameProfile): ItemStack {
+    //#if MC < 1.21
+    val texture = profile.properties.get("textures").firstOrNull()
+    val entry = NbtCompat.createCompound()
+    NbtCompat.setString(entry, "Value", texture?.value ?: "")
+    NbtCompat.setString(entry, "Signature", texture?.signature ?: "")
+    val textures = NbtCompat.createList()
+    NbtCompat.appendTag(textures, entry)
+    val properties = NbtCompat.createCompound()
+    NbtCompat.setTagList(properties, "textures", textures)
+    val owner = NbtCompat.createCompound()
+    NbtCompat.setString(owner, "Id", profile.id.toString())
+    NbtCompat.setString(owner, "Name", profile.name)
+    NbtCompat.setTag(owner, "Properties", properties)
+    val tag = NbtCompat.createCompound()
+    NbtCompat.setTag(tag, "SkullOwner", owner)
+    NbtCompat.setTagCompound(this, tag)
+    //#else
+    //$$ this.set(DataComponentTypes.PROFILE, ProfileComponent(profile))
+    //#endif
+    return this
+}
 
 @JvmOverloads
 fun createFishStack(metadata: Int, size: Int = 1): ItemStack =

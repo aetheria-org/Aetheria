@@ -162,8 +162,7 @@ public class BossHighlight {
                 raw = "200:255:255:255:255";
                 break;
         }
-        int argb = ChromaColour.specialToChromaRGB(raw);
-        return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+        return ChromaColour.specialToColor(raw);
     }
 
     private enum BossType {BONZO, SCARF, SCARF_MINION, PROFESSOR, PROFESSOR_GUARDIAN}

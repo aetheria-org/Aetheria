@@ -306,6 +306,6 @@ public class TrevorSolver {
             argb = ChromaColour.specialToChromaRGB(special);
         } catch (Exception ignored) {
         }
-        return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+        return ChromaColour.toColor(argb);
     }
 }

@@ -26,8 +26,7 @@ public class BlockOverlay {
 
         event.cancel();
 
-        int argb = ChromaColour.specialToChromaRGB(ATHRConfig.feature.qol.blockSelection.blockSelectionColor);
-        Color color = new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+        Color color = ChromaColour.specialToColor(ATHRConfig.feature.qol.blockSelection.blockSelectionColor);
 
         BlockPos pos = BlockCompat.getHitBlockPos(event.target);
         AxisAlignedBB aabb = BlockCompat.getSelectionAABB(pos);

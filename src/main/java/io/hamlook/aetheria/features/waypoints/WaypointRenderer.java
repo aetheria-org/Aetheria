@@ -23,7 +23,7 @@ public class WaypointRenderer {
     private static int bracketCloseW = -1;
 
     private Color argbToColor(int argb) {
-        return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+        return ChromaColour.toColor(argb);
     }
 
     private int resolveColor(String chromaField, int fallback) {
@@ -48,14 +48,12 @@ public class WaypointRenderer {
         if (target == null) return;
 
         // ESP boxes
-        WorldRenderUtils.beginWorldRender(2f);
         if (state.setupMode) {
             for (WaypointPoint wp : state.loadedGroup.waypoints)
                 WorldRenderUtils.drawEspBox(wp.x, wp.y, wp.z, boxColor(), true);
         } else {
             WorldRenderUtils.drawEspBox(target.x, target.y, target.z, boxColor(), true);
         }
-        WorldRenderUtils.endWorldRender();
 
         // Tracer
         WorldRenderUtils.drawTracer(new Vec3(target.x + 0.5, target.y + 0.5, target.z + 0.5), event.partialTicks, tracerColor());

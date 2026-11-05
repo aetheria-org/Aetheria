@@ -95,8 +95,7 @@ public class BloodMobHighlight {
     }
 
     private Color getColor() {
-        int argb = ChromaColour.specialToChromaRGB(ATHRConfig.feature.dungeons.bloodMobColor);
-        return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+        return ChromaColour.specialToColor(ATHRConfig.feature.dungeons.bloodMobColor);
     }
 
     private boolean isDying(EntityLivingBase entity) {

@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.dungeons.rooms;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
+import io.hamlook.aetheria.features.dungeons.rooms.secret.SecretTracker;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.data.SkyblockData;
@@ -97,14 +98,14 @@ public class DungeonRoomOverlay extends Overlay {
                 out.add(EnumChatFormatting.YELLOW + "✎  " + EnumChatFormatting.WHITE + currentRoomNotes);
             }
 
-            if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled && DungeonRoomDetector.originBlock != null) {
-                int sc = DungeonRoomDetector.displayedSecretCount;
-                if (sc > 0) {
-                    out.add(EnumChatFormatting.GREEN + "✦  " + EnumChatFormatting.WHITE + sc + " secret(s) loaded");
-                } else if (sc == 0) {
-                    out.add(EnumChatFormatting.RED + "✦  " + EnumChatFormatting.WHITE + "No secrets for this room");
-                } else {
-                    out.add(EnumChatFormatting.GRAY + "✦  " + EnumChatFormatting.WHITE + "Searching...");
+            if (ATHRConfig.feature.dungeons.secrets.enabled && DungeonRoomDetector.originBlock != null) {
+                int total = SecretTracker.total();
+                if (SecretTracker.allSecretsCleared()) {
+                    out.add(EnumChatFormatting.GREEN + "✦  " + EnumChatFormatting.WHITE + "All secrets found");
+                } else if (total > 0) {
+                    int found = SecretTracker.found();
+                    EnumChatFormatting prefix = found >= total ? EnumChatFormatting.GREEN : EnumChatFormatting.YELLOW;
+                    out.add(prefix + "✦  " + EnumChatFormatting.WHITE + found + "/" + total + " secrets");
                 }
             }
         }
@@ -128,21 +129,6 @@ public class DungeonRoomOverlay extends Overlay {
                 return EnumChatFormatting.YELLOW.toString();
             default:
                 return EnumChatFormatting.GREEN.toString();
-        }
-    }
-
-    private String getRotationColor(int rotation) {
-        switch (rotation) {
-            case 0:
-                return EnumChatFormatting.GREEN.toString();
-            case 90:
-                return EnumChatFormatting.YELLOW.toString();
-            case 180:
-                return EnumChatFormatting.RED.toString();
-            case 270:
-                return EnumChatFormatting.AQUA.toString();
-            default:
-                return EnumChatFormatting.WHITE.toString();
         }
     }
 }

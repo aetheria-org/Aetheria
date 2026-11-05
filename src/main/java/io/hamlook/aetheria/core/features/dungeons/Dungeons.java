@@ -40,8 +40,8 @@ public class Dungeons {
     public CaseOpeningConfig caseOpening = new CaseOpeningConfig();
 
     @Expose
-    @Category(name = "Secret Finder", desc = "Secret finder with  secret ESP, and display options")
-    public DungeonSecretFinderConfig dungeonSecretFinder = new DungeonSecretFinderConfig();
+    @Category(name = "Secrets", desc = "Secret waypoints and solid highlights for levers and essence")
+    public SecretsConfig secrets = new SecretsConfig();
 
     @Expose
     @Category(name = "Dungeon Map", desc = "Custom Dungeon Map display overlay")

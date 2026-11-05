@@ -59,6 +59,14 @@ public class ChromaColour {
         return (255 - speed) / 254f * (MAX_CHROMA_SECS - MIN_CHROMA_SECS) + MIN_CHROMA_SECS;
     }
 
+    public static Color specialToColor(String special) {
+        return toColor(specialToChromaRGB(special));
+    }
+
+    public static Color toColor(int argb) {
+        return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+    }
+
     public static int specialToChromaRGB(String special) {
         if (startTime < 0) startTime = System.currentTimeMillis();
         Integer cached = STATIC_ARGB.get(special);

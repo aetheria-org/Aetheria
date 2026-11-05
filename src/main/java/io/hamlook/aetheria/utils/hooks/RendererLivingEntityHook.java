@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.utils.hooks;
 
+import io.hamlook.aetheria.api.event.AetheriaEventBus;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
 import io.hamlook.aetheria.features.qol.DamageNameplates;
@@ -41,6 +42,8 @@ public class RendererLivingEntityHook {
      * Called via @Inject after renderLayers() invoke.
      */
     public static void fireRenderEntityModelEvent(EntityLivingBase entity, float partialTicks, ModelBase mainModel) {
+        if (!AetheriaEventBus.INSTANCE.hasListeners(RenderEntityModelEvent.class)) return;
+
         //#if MC < 1.21
         float limbSwing = entity.limbSwing - entity.limbSwingAmount * (1.0F - partialTicks);
         float limbSwingAmount = entity.prevLimbSwingAmount + (entity.limbSwingAmount - entity.prevLimbSwingAmount) * partialTicks;

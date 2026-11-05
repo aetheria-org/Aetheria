@@ -9,9 +9,8 @@ import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import io.hamlook.aetheria.utils.compat.TessellatorCompat;
-import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
+import io.hamlook.aetheria.utils.render.RectBatch;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
@@ -53,25 +52,25 @@ public abstract class Overlay {
 
     private static void drawRoundedRectRaw(int x, int y, int w, int h, int r, int color) {
         r = Math.min(r, Math.min(w - x, h - y) / 2);
-        beginMesh();
+        RectBatch.begin();
         try {
             if (r <= 0) {
-                emitQuad(x, y, w, h, color);
+                RectBatch.rect(x, y, w, h, color);
             } else {
-                emitQuad(x + r, y, w - r, h, color);
-                emitQuad(x, y + r, x + r, h - r, color);
-                emitQuad(w - r, y + r, w, h - r, color);
+                RectBatch.rect(x + r, y, w - r, h, color);
+                RectBatch.rect(x, y + r, x + r, h - r, color);
+                RectBatch.rect(w - r, y + r, w, h - r, color);
 
                 for (int i = 0; i < r; i++) {
                     int cut = cornerCut(r, i);
-                    emitQuad(x + i, y + cut, x + i + 1, y + r, color);
-                    emitQuad(w - i - 1, y + cut, w - i, y + r, color);
-                    emitQuad(x + i, h - r, x + i + 1, h - cut, color);
-                    emitQuad(w - i - 1, h - r, w - i, h - cut, color);
+                    RectBatch.rect(x + i, y + cut, x + i + 1, y + r, color);
+                    RectBatch.rect(w - i - 1, y + cut, w - i, y + r, color);
+                    RectBatch.rect(x + i, h - r, x + i + 1, h - cut, color);
+                    RectBatch.rect(w - i - 1, h - r, w - i, h - cut, color);
                 }
             }
         } finally {
-            endMesh();
+            RectBatch.end();
         }
     }
 
@@ -90,15 +89,15 @@ public abstract class Overlay {
         int width = w - x;
         int height = h - y;
 
-        beginMesh();
+        RectBatch.begin();
         try {
             if (width - 2 * r > 0) {
-                emitQuad(x + r, y, w - r, y + t, color);
-                emitQuad(x + r, h - t, w - r, h, color);
+                RectBatch.rect(x + r, y, w - r, y + t, color);
+                RectBatch.rect(x + r, h - t, w - r, h, color);
             }
             if (height - 2 * r > 0) {
-                emitQuad(x, y + r, x + t, h - r, color);
-                emitQuad(w - t, y + r, w, h - r, color);
+                RectBatch.rect(x, y + r, x + t, h - r, color);
+                RectBatch.rect(w - t, y + r, w, h - r, color);
             }
             if (r > 0) {
                 int ri = Math.max(r - t, 0);
@@ -109,18 +108,18 @@ public abstract class Overlay {
                     int cr = x + width - 1 - i;
                     if (i >= t && innerW > 0) {
                         int ci = cornerCut(ri, i - t);
-                        emitQuad(cl, y + co, cl + 1, y + t + ci, color);
-                        emitQuad(cl, h - t - ci, cl + 1, h - co, color);
-                        emitQuad(cr, y + co, cr + 1, y + t + ci, color);
-                        emitQuad(cr, h - t - ci, cr + 1, h - co, color);
+                        RectBatch.rect(cl, y + co, cl + 1, y + t + ci, color);
+                        RectBatch.rect(cl, h - t - ci, cl + 1, h - co, color);
+                        RectBatch.rect(cr, y + co, cr + 1, y + t + ci, color);
+                        RectBatch.rect(cr, h - t - ci, cr + 1, h - co, color);
                     } else {
-                        emitQuad(cl, y + co, cl + 1, h - co, color);
-                        emitQuad(cr, y + co, cr + 1, h - co, color);
+                        RectBatch.rect(cl, y + co, cl + 1, h - co, color);
+                        RectBatch.rect(cr, y + co, cr + 1, h - co, color);
                     }
                 }
             }
         } finally {
-            endMesh();
+            RectBatch.end();
         }
     }
 
@@ -150,17 +149,17 @@ public abstract class Overlay {
             int sx = x * ss, sy = y * ss, sw = w * ss, sh = h * ss;
             int sr = Math.min(r * ss, Math.min(sw - sx, sh - sy) / 2);
             int width = sw - sx;
-            beginMesh();
+            RectBatch.begin();
             try {
                 for (int i = 0; i < width; i++) {
                     int top = sy + Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
                     int bot = sh - Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
                     if (top < bot) {
-                        emitQuad(sx + i, top, sx + i + 1, bot, ChromaColour.applyChromaShift(base, (sx + i) / (float) ss, 0, mode, size));
+                        RectBatch.rect(sx + i, top, sx + i + 1, bot, ChromaColour.applyChromaShift(base, (sx + i) / (float) ss, 0, mode, size));
                     }
                 }
             } finally {
-                endMesh();
+                RectBatch.end();
             }
         });
     }
@@ -190,16 +189,16 @@ public abstract class Overlay {
         if (t <= 0) return;
         r = Math.min(r, Math.min(w - x, h - y) / 2);
         int width = w - x;
-        beginMesh();
+        RectBatch.begin();
         try {
             if (r <= 0) {
                 for (int i = 0; i < width; i++) {
                     int color = colorForColumn.applyAsInt(x + i);
                     if (i < t || i >= width - t) {
-                        emitQuad(x + i, y, x + i + 1, h, color);
+                        RectBatch.rect(x + i, y, x + i + 1, h, color);
                     } else {
-                        emitQuad(x + i, y, x + i + 1, y + t, color);
-                        emitQuad(x + i, h - t, x + i + 1, h, color);
+                        RectBatch.rect(x + i, y, x + i + 1, y + t, color);
+                        RectBatch.rect(x + i, h - t, x + i + 1, h, color);
                     }
                 }
                 return;
@@ -214,69 +213,28 @@ public abstract class Overlay {
                 int colorR = colorForColumn.applyAsInt(cr);
                 if (i >= t && innerW > 0) {
                     int ci = cornerCut(ri, i - t);
-                    emitQuad(cl, y + co, cl + 1, y + t + ci, colorL);
-                    emitQuad(cl, h - t - ci, cl + 1, h - co, colorL);
-                    emitQuad(cr, y + co, cr + 1, y + t + ci, colorR);
-                    emitQuad(cr, h - t - ci, cr + 1, h - co, colorR);
+                    RectBatch.rect(cl, y + co, cl + 1, y + t + ci, colorL);
+                    RectBatch.rect(cl, h - t - ci, cl + 1, h - co, colorL);
+                    RectBatch.rect(cr, y + co, cr + 1, y + t + ci, colorR);
+                    RectBatch.rect(cr, h - t - ci, cr + 1, h - co, colorR);
                 } else {
-                    emitQuad(cl, y + co, cl + 1, h - co, colorL);
-                    emitQuad(cr, y + co, cr + 1, h - co, colorR);
+                    RectBatch.rect(cl, y + co, cl + 1, h - co, colorL);
+                    RectBatch.rect(cr, y + co, cr + 1, h - co, colorR);
                 }
             }
             for (int i = r; i < width - r; i++) {
                 int color = colorForColumn.applyAsInt(x + i);
-                emitQuad(x + i, y, x + i + 1, y + t, color);
-                emitQuad(x + i, h - t, x + i + 1, h, color);
+                RectBatch.rect(x + i, y, x + i + 1, y + t, color);
+                RectBatch.rect(x + i, h - t, x + i + 1, h, color);
             }
         } finally {
-            endMesh();
+            RectBatch.end();
         }
     }
 
     private static int cornerCut(int r, int d) {
         if (r <= 0 || d >= r) return 0;
         return (int) Math.round(r - Math.sqrt(Math.max(0.0, (double) r * r - (double) (r - d - 1) * (r - d - 1))));
-    }
-
-    private static VertexBuilder meshBuilder;
-    private static boolean blendWasEnabled;
-    private static int meshQuads;
-
-    // Modern only: the mesh path batches every quad into one Tessellator draw.
-    // 1.8.9 draws each quad directly in emitQuad and leaves these empty.
-    private static void beginMesh() {
-        //#if MC < 1.16
-        //#else
-        //$$ DrawContextUtils.flushIfPresent();
-        //$$ meshBuilder = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_COLOR);
-        //$$ meshQuads = 0;
-        //$$ blendWasEnabled = GL11.glIsEnabled(GL11.GL_BLEND);
-        //$$ GlStateManagerCompat.enableBlend();
-        //$$ GlStateManagerCompat.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
-        //#endif
-    }
-
-    private static void endMesh() {
-        //#if MC < 1.16
-        //#else
-        //$$ if (meshQuads > 0) meshBuilder.draw();
-        //$$ meshBuilder = null;
-        //$$ if (!blendWasEnabled) GlStateManagerCompat.disableBlend();
-        //#endif
-    }
-
-    private static void emitQuad(int x1, int y1, int x2, int y2, int color) {
-        //#if MC < 1.16
-        DrawContextUtils.fill(x1, y1, x2, y2, color);
-        //#else
-        //$$ if (x2 <= x1 || y2 <= y1) return;
-        //$$ int a = (color >>> 24) & 0xFF, r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
-        //$$ meshBuilder.pos(x1, y1, 0).color(r, g, b, a).endVertex();
-        //$$ meshBuilder.pos(x1, y2, 0).color(r, g, b, a).endVertex();
-        //$$ meshBuilder.pos(x2, y2, 0).color(r, g, b, a).endVertex();
-        //$$ meshBuilder.pos(x2, y1, 0).color(r, g, b, a).endVertex();
-        //$$ meshQuads++;
-        //#endif
     }
 
     public int getOverlayWidth() {

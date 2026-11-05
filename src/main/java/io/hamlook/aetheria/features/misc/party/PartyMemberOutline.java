@@ -59,7 +59,6 @@ public class PartyMemberOutline {
     }
 
     private Color getColor() {
-        int argb = ChromaColour.specialToChromaRGB(ATHRConfig.feature.misc.partyMemberOutline.outlineColor);
-        return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+        return ChromaColour.specialToColor(ATHRConfig.feature.misc.partyMemberOutline.outlineColor);
     }
 }

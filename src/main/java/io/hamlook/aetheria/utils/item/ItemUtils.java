@@ -6,15 +6,12 @@ import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import io.hamlook.aetheria.utils.compat.NbtCompat;
+import io.hamlook.aetheria.utils.compat.SkullProfile;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-//#if MC > 1.21
-//$$ import net.minecraft.component.DataComponentTypes;
-//$$ import net.minecraft.component.type.ProfileComponent;
-//#endif
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -148,20 +145,9 @@ public class ItemUtils {
     }
 
     public static @Nullable SkullIdentity skullIdentity(@Nullable ItemStack item) {
-        if (ItemCompatKt.isEmptyCompat(item)) return null;
-        NBTTagCompound tag = NbtCompat.getTagCompound(item);
-        if (tag == null || !NbtCompat.hasKey(tag, "SkullOwner")) return null;
-        NBTTagCompound skullOwner = NbtCompat.getCompound(tag, "SkullOwner");
-        NBTTagList textures = NbtCompat.getTagList(NbtCompat.getCompound(skullOwner, "Properties"), "textures", NbtCompat.TAG_COMPOUND);
-        if (NbtCompat.tagCount(textures) == 0) return null;
-        NBTTagCompound entry = NbtCompat.getCompoundAt(textures, 0);
-        if (!NbtCompat.hasKey(entry, "Value")) return null;
-        String value = NbtCompat.getString(entry, "Value");
-        if (value.isEmpty()) return null;
-        String signature = NbtCompat.hasKey(entry, "Signature") ? NbtCompat.getString(entry, "Signature") : "";
-        String id = NbtCompat.hasKey(skullOwner, "Id") ? NbtCompat.getString(skullOwner, "Id") : "";
-        String name = NbtCompat.hasKey(skullOwner, "Name") ? NbtCompat.getString(skullOwner, "Name") : "";
-        return SkullIdentity.of(value, id, name, signature);
+        SkullProfile profile = ItemCompatKt.skullProfile(item);
+        if (profile == null) return null;
+        return SkullIdentity.of(profile.textureValue, profile.profileId, profile.profileName, profile.signature);
     }
 
     private static final Map<String, SkullIdentity> SKULL_IDENTITIES = new ConcurrentHashMap<>();
@@ -182,24 +168,7 @@ public class ItemUtils {
         SkullIdentity identity = skullIdentity(textureValue);
         if (identity == null) return null;
         ItemStack skull = ItemCompatKt.createPlayerHeadStack();
-        //#if MC < 1.21
-        NBTTagCompound tag = NbtCompat.createCompound();
-        NBTTagCompound skullOwner = NbtCompat.createCompound();
-        NbtCompat.setString(skullOwner, "Id", identity.profile.getId().toString());
-        NbtCompat.setString(skullOwner, "Name", identity.profileName);
-        NBTTagCompound properties = NbtCompat.createCompound();
-        NBTTagList textures = NbtCompat.createList();
-        NBTTagCompound textureTag = NbtCompat.createCompound();
-        NbtCompat.setString(textureTag, "Value", identity.textureValue);
-        NbtCompat.setString(textureTag, "Signature", identity.signature);
-        NbtCompat.appendTag(textures, textureTag);
-        NbtCompat.setTagList(properties, "textures", textures);
-        NbtCompat.setTag(skullOwner, "Properties", properties);
-        NbtCompat.setTag(tag, "SkullOwner", skullOwner);
-        NbtCompat.setTagCompound(skull, tag);
-        //#else
-        //$$ skull.set(DataComponentTypes.PROFILE, new ProfileComponent(identity.profile));
-        //#endif
+        ItemCompatKt.setSkullProfile(skull, identity.profile);
         return skull;
     }
 

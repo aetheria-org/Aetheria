@@ -21,6 +21,7 @@ import io.hamlook.aetheria.core.features.storage.Storage;
 import io.hamlook.aetheria.core.features.waypoints.Waypoints;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
 import io.hamlook.aetheria.features.capes.CapeManager;
+import io.hamlook.aetheria.features.dungeons.rooms.secret.SecretChime;
 import io.hamlook.aetheria.utils.UrlOpener;
 
 public class Config {
@@ -135,6 +136,7 @@ public class Config {
             case "openPristineEditor": ATHRConfig.openPristineEditor(); break;
             case "resetPristineTracker": ATHRConfig.resetPristineTracker(); break;
             case "openDungeonBreakerEditor": ATHRConfig.openDungeonBreakerEditor(); break;
+            case "testSecretChime": SecretChime.playTest(); break;
             case "editDungeonMapPos": ATHRConfig.openDungeonMapEditor(); break;
             case "openTrophyFishEditor": ATHRConfig.openTrophyFishEditor(); break;
             case "openDungeonRoomOverlayEditor": ATHRConfig.openDungeonRoomOverlayEditor(); break;

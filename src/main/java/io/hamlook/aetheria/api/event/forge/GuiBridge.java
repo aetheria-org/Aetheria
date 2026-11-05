@@ -1,12 +1,16 @@
 package io.hamlook.aetheria.api.event.forge;
 
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.DrawContext;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 //#if FORGE
+import net.minecraft.entity.Entity;
+import net.minecraft.network.play.client.C02PacketUseEntity;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
@@ -23,6 +27,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 //$$ import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 //$$ import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 //$$ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+//$$ import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 //$$ import net.fabricmc.fabric.api.event.player.UseItemCallback;
 //$$ import net.minecraft.client.gui.Element;
 //$$ import net.minecraft.client.gui.screen.Screen;
@@ -145,6 +150,16 @@ public class GuiBridge {
         new ASMPlayerInteractEvent(event.action.ordinal(), event.pos).post();
     }
 
+    // 1.8.9 has no entity interact event, every use entity packet is a click on one
+    @HandleEvent
+    public void onPacketSend(PacketEvent.Send event) {
+        if (!(event.packet instanceof C02PacketUseEntity)) return;
+        if (MinecraftCompat.getLocalWorld() == null) return;
+        Entity entity = ((C02PacketUseEntity) event.packet).getEntityFromWorld(MinecraftCompat.getLocalWorld());
+        if (entity == null) return;
+        new ASMPlayerInteractEvent(ASMPlayerInteractEvent.INTERACT_ENTITY, entity.getPosition(), entity).post();
+    }
+
     @SubscribeEvent
     public void onLivingDeath(LivingDeathEvent event) {
         new ASMLivingDeathEvent(event.entity).post();
@@ -176,7 +191,11 @@ public class GuiBridge {
     //$$         return ActionResult.PASS;
     //$$     });
     //$$     AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
-    //$$         new ASMPlayerInteractEvent(3, entity.getBlockPos()).post();
+    //$$         new ASMPlayerInteractEvent(ASMPlayerInteractEvent.INTERACT_ENTITY, entity.getBlockPos(), entity).post();
+    //$$         return ActionResult.PASS;
+    //$$     });
+    //$$     UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+    //$$         new ASMPlayerInteractEvent(ASMPlayerInteractEvent.INTERACT_ENTITY, entity.getBlockPos(), entity).post();
     //$$         return ActionResult.PASS;
     //$$     });
     //$$     ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {

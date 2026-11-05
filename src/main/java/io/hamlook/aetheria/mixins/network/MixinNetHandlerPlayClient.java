@@ -1,8 +1,14 @@
 package io.hamlook.aetheria.mixins.network;
 
 import io.hamlook.aetheria.events.PacketEvent;
+import io.hamlook.aetheria.events.ItemPickupEvent;
+import io.hamlook.aetheria.api.event.AetheriaEventBus;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.item.ItemPickupCapture;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.network.Packet;
+import net.minecraft.network.play.server.S0DPacketCollectItem;
 import net.minecraft.network.play.server.S03PacketTimeUpdate;
 import net.minecraft.network.play.server.S22PacketMultiBlockChange;
 import net.minecraft.network.play.server.S23PacketBlockChange;
@@ -63,6 +69,15 @@ public class MixinNetHandlerPlayClient {
     @Inject(method = "handleMultiBlockChange", at = @At("HEAD"))
     private void ATHR$onMultiBlockChange(S22PacketMultiBlockChange packet, CallbackInfo ci) {
         new PacketEvent.Receive(packet).post();
+    }
+
+    @Inject(method = "handleCollectItem", at = @At("HEAD"))
+    public void ATHR$handleCollectItem(S0DPacketCollectItem packetIn, CallbackInfo ci) {
+        if (!Minecraft.getMinecraft().isCallingFromMinecraftThread()) return;
+        new PacketEvent.Receive(packetIn).post();
+        if (!AetheriaEventBus.INSTANCE.hasListeners(ItemPickupEvent.class)) return;
+        ItemPickupEvent event = ItemPickupCapture.capture(packetIn, MinecraftCompat.getLocalWorld());
+        if (event != null) event.post();
     }
 
     @Inject(method = "handleSoundEffect", at = @At("HEAD"))

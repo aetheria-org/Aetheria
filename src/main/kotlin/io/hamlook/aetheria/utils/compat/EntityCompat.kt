@@ -176,6 +176,30 @@ object EntityCompat {
         //#endif
 
     @JvmStatic
+    fun getPrevPosX(entity: Entity): Double =
+        //#if MC < 1.21
+        entity.lastTickPosX
+        //#else
+        //$$ entity.prevX
+        //#endif
+
+    @JvmStatic
+    fun getPrevPosY(entity: Entity): Double =
+        //#if MC < 1.21
+        entity.lastTickPosY
+        //#else
+        //$$ entity.prevY
+        //#endif
+
+    @JvmStatic
+    fun getPrevPosZ(entity: Entity): Double =
+        //#if MC < 1.21
+        entity.lastTickPosZ
+        //#else
+        //$$ entity.prevZ
+        //#endif
+
+    @JvmStatic
     fun getPosX(entity: Entity): Double =
         //#if MC < 1.16
         entity.posX
@@ -213,6 +237,14 @@ object EntityCompat {
         entity.rotationPitch
         //#else
         //$$ entity.getPitch()
+        //#endif
+
+    @JvmStatic
+    fun getEntityId(entity: Entity): Int =
+        //#if MC < 1.16
+        entity.getEntityId()
+        //#else
+        //$$ entity.getId()
         //#endif
 
     @JvmStatic
@@ -329,5 +361,13 @@ object EntityCompat {
         world.getEntitiesWithinAABB(EntityLivingBase::class.java, box)
         //#else
         //$$ world.getEntitiesByType(TypeFilter.instanceOf<Entity, LivingEntity>(LivingEntity::class.java), box) { true }
+        //#endif
+
+    @JvmStatic
+    fun getEntitiesInBox(world: WorldClient, box: AxisAlignedBB): List<Entity> =
+        //#if MC < 1.17
+        world.getEntitiesWithinAABB(Entity::class.java, box)
+        //#else
+        //$$ world.getEntitiesByType(TypeFilter.instanceOf<Entity, Entity>(Entity::class.java), box) { true }
         //#endif
 }

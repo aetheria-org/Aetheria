@@ -5,15 +5,21 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.dungeons.DungeonMapConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.DungeonRoomEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapGrid;
 import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonMapRenderer;
 import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonPlayerTracker;
 import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomDetector;
+import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomOverlay;
+import io.hamlook.aetheria.features.dungeons.rooms.secret.SecretRoom;
+import io.hamlook.aetheria.features.dungeons.rooms.secret.SecretTracker;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
-import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
+import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
@@ -33,7 +39,6 @@ import net.minecraft.world.storage.MapData;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @RegisterEvents
 public class DungeonMapOverlay extends Overlay {
@@ -43,10 +48,12 @@ public class DungeonMapOverlay extends Overlay {
     private static DungeonMapOverlay instance;
     public static DungeonPlayerTracker playerTracker = new DungeonPlayerTracker();
     private DungeonMapGrid cachedGrid = null;
-    private byte[] lastMapColors = null;
+    private byte[] lastAttemptColors = null;
+    private static final String ENTRANCE_ROOM = "Entrance Room";
     /**
      * Frozen map<->world calibration, captured once the entrance room's world
-     * position is known (detector latch) and never re-derived afterwards: the
+     * position is known (detector latch while standing in the Entrance Room)
+     * and never re-derived afterwards: the
      * server's dungeon map keeps a fixed pixel<->world mapping for the whole
      * run, so recalculating from freshly parsed geometry (whose raster-first
      * anchor can relocate as rooms are drawn) would offset entity-based self
@@ -64,17 +71,9 @@ public class DungeonMapOverlay extends Overlay {
     private double entranceCenterZ = 0;
     private int lastPopulateTick = -40;
 
-    public static boolean isMapCalibrated() {
-        return instance != null && instance.mapCalibrated;
-    }
-
     public DungeonMapOverlay() {
         super(128, 128);
         instance = this;
-    }
-
-    public static void clearPlayers() {
-        if (instance != null) playerTracker.clear();
     }
 
     public static MapData getDungeonMap(EntityPlayerSP player) {
@@ -92,7 +91,7 @@ public class DungeonMapOverlay extends Overlay {
 
     public void resetRunState() {
         cachedGrid = null;
-        lastMapColors = null;
+        lastAttemptColors = null;
         playerTracker.clear();
         DungeonRoomDetector.getVisitedRooms().clear();
         dungeonRunEnded = false;
@@ -114,6 +113,41 @@ public class DungeonMapOverlay extends Overlay {
     @HandleEvent
     public void onUnload(ASMWorldUnloadEvent e) {
         resetRunState();
+    }
+
+    // keeps the grid alive when the map overlay is off, so secrets and future events can read it
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.START) return;
+        if (ATHRConfig.feature == null) return;
+        if (!SkyblockData.isInDungeon() || dungeonRunEnded) return;
+        if (DungeonStats.isInBossFight()) return;
+        EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
+        if (player == null || player.ticksExisted % 20 != 0) return;
+        updateCachedGrid(player);
+        postRoomState();
+    }
+
+    // green tick means the room is done, white means mobs are done but secrets can remain
+    private void postRoomState() {
+        // before calibration the world origin tracks the player, so a room centre maps nowhere useful
+        if (!mapCalibrated) return;
+
+        SecretRoom room = SecretTracker.current();
+        if (room == null || !room.hasBounds()) return;
+
+        DungeonMapGrid grid = getCachedGrid();
+        if (grid == null) return;
+
+        DungeonMapConfig cfg = ATHRConfig.feature.dungeons.dungeonMapConfig;
+        DungeonMapGrid.RoomState state = grid.stateForRoom(
+                room.centerX(), room.centerZ(), cfg.rooms.splitRoomMarkers);
+        if (state == null) return;
+
+        boolean allSecretsCleared = state == DungeonMapGrid.RoomState.GREEN;
+        boolean cleared = allSecretsCleared || state == DungeonMapGrid.RoomState.CLEARED;
+
+        new DungeonRoomEvent(cleared, allSecretsCleared).post();
     }
 
     @Override
@@ -210,39 +244,34 @@ public class DungeonMapOverlay extends Overlay {
         return (cachedGrid != null && cachedGrid.isValid()) ? cachedGrid : null;
     }
 
-    private void updateCachedGrid(EntityPlayerSP player) {
+    public void updateCachedGrid(EntityPlayerSP player) {
         MapData info = getDungeonMap(player);
         if (info == null) return;
-        if (!Arrays.equals(info.colors, lastMapColors)) {
-            lastMapColors = Arrays.copyOf(info.colors, info.colors.length);
+        if (!Arrays.equals(info.colors, lastAttemptColors)) {
+            lastAttemptColors = Arrays.copyOf(info.colors, info.colors.length);
             // Reparses seed this run's captured entrance-corner anchor so the grid
             // coordinate frame is identical every parse; only the very first valid
             // parse (entrance-only map) locates the anchor by raster scan.
-            cachedGrid = anchorStartX >= 0
+            DungeonMapGrid parsed = anchorStartX >= 0
                     ? DungeonMapGrid.parse(info, ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.cellSizeBlocks, anchorStartX, anchorStartY)
                     : DungeonMapGrid.parse(info, ATHRConfig.feature.dungeons.dungeonMapConfig.appearance.cellSizeBlocks);
-            if (cachedGrid.isValid()) {
+            // partial map can parse invalid, keep the last good grid instead of blanking
+            if (parsed.isValid()) {
+                cachedGrid = parsed;
                 if (anchorStartX < 0) {
-                    anchorStartX = cachedGrid.getStartPixelX();
-                    anchorStartY = cachedGrid.getStartPixelY();
+                    anchorStartX = parsed.getStartPixelX();
+                    anchorStartY = parsed.getStartPixelY();
                 }
-                int maxPixelX = 128;
-                int maxPixelY = 128;
-                for (Map.Entry<DungeonMapGrid.RoomOffset, DungeonMapGrid.RoomCell> entry : cachedGrid.getRooms().entrySet()) {
-                    int rx = (int) cachedGrid.gridToPixelX(entry.getKey().x) + cachedGrid.getRoomPixelSize() + cachedGrid.getConnectorPixelSize();
-                    int ry = (int) cachedGrid.gridToPixelZ(entry.getKey().y) + cachedGrid.getRoomPixelSize() + cachedGrid.getConnectorPixelSize();
-                    if (rx > maxPixelX) maxPixelX = rx;
-                    if (ry > maxPixelY) maxPixelY = ry;
-                }
-                lastW = maxPixelX;
-                lastH = maxPixelY;
+                lastW = parsed.getGridPixelWidth();
+                lastH = parsed.getGridPixelHeight();
             }
         }
         // Calibration runs on every call with a valid grid, not just on reparse:
         // the block scanner can become ready while the map bytes are stable, and
         // a reparse-only latch would never fire. One-shot per run.
         if (cachedGrid != null && cachedGrid.isValid()) {
-            if (!mapCalibrated && DungeonRoomDetector.roomBoundsValid && DungeonRoomDetector.originBlock != null) {
+            if (!mapCalibrated && inEntranceRoom()
+                    && DungeonRoomDetector.roomBoundsValid && DungeonRoomDetector.originBlock != null) {
                 entranceCenterX = (DungeonRoomDetector.roomMinX + DungeonRoomDetector.roomMaxX) / 2.0 + 0.5;
                 entranceCenterZ = (DungeonRoomDetector.roomMinZ + DungeonRoomDetector.roomMaxZ) / 2.0 + 0.5;
                 calibOriginX = cachedGrid.entrancePixelCenterX / cachedGrid.blockToPixel - (float) entranceCenterX;
@@ -259,6 +288,13 @@ public class DungeonMapOverlay extends Overlay {
                 cachedGrid.worldOriginZ = cachedGrid.entrancePixelCenterZ / cachedGrid.blockToPixel - (float) EntityCompat.getPosZ(player);
             }
         }
+    }
+
+    // the detector's bounds are whichever room you stand in, so calibrating anywhere else ties the
+    // entrance pixel to that room's world centre and shifts every name and self-marker by a cell
+    private static boolean inEntranceRoom() {
+        String name = DungeonRoomOverlay.currentRoomName;
+        return name != null && ENTRANCE_ROOM.equals(ColorUtils.stripColor(name).trim());
     }
 
     @Override

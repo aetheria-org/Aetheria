@@ -447,7 +447,6 @@ public final class RenderUtils {
 
     public static void renderRoomName(float pixelX, float pixelZ, float scale, String name, int color) {
         if (name == null || name.isEmpty()) return;
-        Minecraft mc = MinecraftCompat.getMinecraft();
         String[] words = name.split(" ");
         if (words.length == 0) return;
         int fontHeight = DrawContextUtils.getFontHeight(MinecraftCompat.getFontRenderer()) + 1;

@@ -13,6 +13,7 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Vec3;
 //#if MC < 1.21
+import net.minecraft.client.renderer.GlStateManager;
 //#else
 //$$ import net.minecraft.client.font.TextRenderer;
 //$$ import net.minecraft.client.render.LightmapTextureManager;
@@ -31,8 +32,6 @@ import java.util.Collections;
 import java.util.List;
 
 public final class WorldRenderUtils {
-
-    private static final double[][] BOX_EDGES = {{0, 0, 0, 1, 0, 0}, {0, 0, 1, 1, 0, 1}, {0, 0, 0, 0, 0, 1}, {1, 0, 0, 1, 0, 1}, {0, 1, 0, 1, 1, 0}, {0, 1, 1, 1, 1, 1}, {0, 1, 0, 0, 1, 1}, {1, 1, 0, 1, 1, 1}, {0, 0, 0, 0, 1, 0}, {1, 0, 0, 1, 1, 0}, {0, 0, 1, 0, 1, 1}, {1, 0, 1, 1, 1, 1}};
 
     private WorldRenderUtils() {
     }
@@ -95,17 +94,42 @@ public final class WorldRenderUtils {
     //#endif
 
     public static void beginWorldRender(float lineWidth) {
+        beginWorldDraw(true, false);
+        GL11.glLineWidth(lineWidth);
+    }
+
+    public static void endWorldRender() {
+        endWorldDraw();
+    }
+
+    public static void beginWorldDraw(boolean xray, boolean writeDepth) {
+        //#if MC < 1.21
+        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
+        //#endif
         GlStateManagerCompat.disableTexture2D();
         GlStateManagerCompat.disableLighting();
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlStateManagerCompat.disableDepth();
-        GlStateManagerCompat.depthMask(false);
-        GL11.glLineWidth(lineWidth);
         GlStateManagerCompat.disableCull();
+        if (xray) {
+            GlStateManagerCompat.disableDepth();
+            GlStateManagerCompat.depthMask(false);
+            return;
+        }
+        GlStateManagerCompat.enableDepth();
+        GlStateManagerCompat.depthMask(writeDepth);
     }
 
-    public static void endWorldRender() {
+    public static void beginWorldFill(boolean xray) {
+        beginWorldDraw(xray, true);
+        if (xray) return;
+        GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
+        GL11.glPolygonOffset(-1f, -1f);
+    }
+
+    public static void endWorldDraw() {
+        GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+        GlStateManagerCompat.depthFunc(GL11.GL_LESS);
         GlStateManagerCompat.depthMask(true);
         GlStateManagerCompat.enableDepth();
         GlStateManagerCompat.disableBlend();
@@ -114,16 +138,9 @@ public final class WorldRenderUtils {
         GlStateManagerCompat.enableCull();
         GL11.glLineWidth(1f);
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
-    }
-
-    public static void restoreWorldState() {
-        GlStateManagerCompat.depthFunc(GL11.GL_LESS);
-        GlStateManagerCompat.depthMask(true);
-        GlStateManagerCompat.disableBlend();
-        GlStateManagerCompat.enableDepth();
-        GlStateManagerCompat.enableTexture2D();
-        GlStateManagerCompat.enableCull();
-        GL11.glLineWidth(1f);
+        //#if MC < 1.21
+        GL11.glPopAttrib();
+        //#endif
     }
 
     private static void addBoxLines(VertexBuilder vb, double x0, double y0, double z0, double x1, double y1, double z1, int r, int g, int b, int a) {
@@ -192,32 +209,15 @@ public final class WorldRenderUtils {
     //  Public API
 
     public static void drawEspBox(double x, double y, double z, Color color) {
-        drawEspBox(x, y, z, color, false);
+        drawEspBox(x, y, z, color, false, 2f);
     }
 
     public static void drawEspBox(double x, double y, double z, Color color, boolean xray) {
-        drawEspBox(x, y, z, color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, color.getAlpha() / 255f, xray);
+        drawEspBox(x, y, z, color, xray, 2f);
     }
 
-    public static void drawEspBox(double x, double y, double z, float r, float g, float b, float a) {
-        drawEspBox(x, y, z, r, g, b, a, false);
-    }
-
-    public static void drawEspBox(double x, double y, double z, float r, float g, float b, float a, boolean xray) {
-        //#if MC < 1.21
-        //#else
-        //$$ Box espBox = new Box(x, y, z, x + 1, y + 1, z + 1);
-        //$$ Color espColor = new Color((int) (r * 255), (int) (g * 255), (int) (b * 255), (int) (a * 255));
-        //$$ if (drawSelectionBoxModern(espBox, espColor, xray)) return;
-        //#endif
-        double[] v = viewerPos();
-        int ri = (int) (r * 255), gi = (int) (g * 255), bi = (int) (b * 255), ai = (int) (a * 255);
-        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINES, TessellatorCompat.POSITION_COLOR);
-        for (double[] e : BOX_EDGES) {
-            vb.pos(x + e[0] - v[0], y + e[1] - v[1], z + e[2] - v[2]).color(ri, gi, bi, ai).endVertex();
-            vb.pos(x + e[3] - v[0], y + e[4] - v[1], z + e[5] - v[2]).color(ri, gi, bi, ai).endVertex();
-        }
-        vb.draw();
+    public static void drawEspBox(double x, double y, double z, Color color, boolean xray, float lineWidth) {
+        drawEspBoxes(Collections.singletonList(new AxisAlignedBB(x, y, z, x + 1, y + 1, z + 1)), color, xray, lineWidth);
     }
 
     public static void drawTracer(Vec3 target, float partialTicks, Color color) {
@@ -234,21 +234,15 @@ public final class WorldRenderUtils {
         Vec3 eyes = EntityCompat.getEyePosition(MinecraftCompat.getLocalPlayer(), partialTicks);
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue(), a = color.getAlpha();
 
-        //#if MC < 1.21
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        //#endif
         beginWorldRender(lineWidth);
-
-        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINES, TessellatorCompat.POSITION_COLOR);
-        vb.pos(eyes.xCoord - v[0], eyes.yCoord - v[1], eyes.zCoord - v[2]).color(r, g, b, a).endVertex();
-        vb.pos(target.xCoord - v[0], target.yCoord - v[1], target.zCoord - v[2]).color(r, g, b, a).endVertex();
-        vb.draw();
-
-        endWorldRender();
-        //#if MC < 1.21
-        GL11.glPopAttrib();
-        //#endif
-        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        try {
+            VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINES, TessellatorCompat.POSITION_COLOR);
+            vb.pos(eyes.xCoord - v[0], eyes.yCoord - v[1], eyes.zCoord - v[2]).color(r, g, b, a).endVertex();
+            vb.pos(target.xCoord - v[0], target.yCoord - v[1], target.zCoord - v[2]).color(r, g, b, a).endVertex();
+            vb.draw();
+        } finally {
+            endWorldRender();
+        }
     }
 
     //#if MC >= 1.21
@@ -304,7 +298,7 @@ public final class WorldRenderUtils {
     public static void beginBillboard(double x, double y, double z, float scale) {
         //#if MC < 1.21
         double[] v = viewerPos();
-        GL11.glPushMatrix();
+        GlStateManager.pushMatrix();
         GL11.glTranslated(x - v[0], y - v[1], z - v[2]);
         GL11.glRotatef(-MinecraftCompat.getViewerYaw(), 0f, 1f, 0f);
         GL11.glRotatef(MinecraftCompat.getViewerPitch(), 1f, 0f, 0f);
@@ -322,7 +316,7 @@ public final class WorldRenderUtils {
 
     public static void endBillboard() {
         //#if MC < 1.21
-        GL11.glPopMatrix();
+        GlStateManager.popMatrix();
         //#else
         //$$ if (worldMatrices != null) worldMatrices.pop();
         //#endif
@@ -402,125 +396,140 @@ public static void drawBillboardText(String text, float x, float y, int color, b
         double[] v = viewerPos();
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue(), a = color.getAlpha();
 
-        //#if MC < 1.21
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        //#endif
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthFunc(GL11.GL_LEQUAL);
-        GL11.glDepthMask(false);
+        beginWorldDraw(false, false);
+        GlStateManagerCompat.depthFunc(GL11.GL_LEQUAL);
         GL11.glLineWidth(lineWidth);
         //#if MC < 1.21
         GL11.glPushMatrix();
         //#endif
 
-        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINES, TessellatorCompat.POSITION_COLOR);
-        addBoxLines(vb, aabb.minX - v[0], aabb.minY - v[1], aabb.minZ - v[2], aabb.maxX - v[0], aabb.maxY - v[1], aabb.maxZ - v[2], r, g, b, a);
-        vb.draw();
-
-        //#if MC < 1.21
-        GL11.glPopMatrix();
-        GL11.glPopAttrib();
-        //#else
-        //$$ restoreWorldState();
-        //#endif
-        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        try {
+            VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINES, TessellatorCompat.POSITION_COLOR);
+            addBoxLines(vb, aabb.minX - v[0], aabb.minY - v[1], aabb.minZ - v[2], aabb.maxX - v[0], aabb.maxY - v[1], aabb.maxZ - v[2], r, g, b, a);
+            vb.draw();
+        } finally {
+            //#if MC < 1.21
+            GL11.glPopMatrix();
+            //#endif
+            endWorldDraw();
+        }
     }
 
     public static void drawEspBoxes(List<AxisAlignedBB> boxes, Color color) {
+        drawEspBoxes(boxes, color, true, 2.5f);
+    }
+
+    public static void drawEspBoxes(List<AxisAlignedBB> boxes, Color color, boolean xray, float lineWidth) {
         if (boxes.isEmpty()) return;
         //#if MC >= 1.21
-        //$$ if (drawEspBoxesModern(boxes, color)) return;
+        //$$ if (drawEspBoxesModern(boxes, color, xray)) return;
         //#endif
         double[] v = viewerPos();
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue(), a = color.getAlpha();
 
-        //#if MC < 1.21
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        //#endif
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthMask(false);
-        GL11.glLineWidth(2.5f);
-        GL11.glDisable(GL11.GL_CULL_FACE);
+        beginWorldDraw(xray, false);
+        GL11.glLineWidth(lineWidth);
         //#if MC < 1.21
         GL11.glPushMatrix();
         GL11.glTranslated(-v[0], -v[1], -v[2]);
         //#endif
 
-        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINES, TessellatorCompat.POSITION_COLOR);
-        for (AxisAlignedBB bb : boxes) {
-            addBoxLines(vb, bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ, r, g, b, a);
+        try {
+            VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.LINES, TessellatorCompat.POSITION_COLOR);
+            for (AxisAlignedBB bb : boxes) {
+                addBoxLines(vb, bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ, r, g, b, a);
+            }
+            vb.draw();
+        } finally {
+            //#if MC < 1.21
+            GL11.glPopMatrix();
+            //#endif
+            endWorldDraw();
         }
-        vb.draw();
-
-        //#if MC < 1.21
-        GL11.glPopMatrix();
-        GL11.glPopAttrib();
-        //#else
-        //$$ restoreWorldState();
-        //#endif
-        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
     }
 
     public static void drawFilledBlocks(List<AxisAlignedBB> blocks, Color color) {
-        drawFilledBlocks(blocks, color, false);
+        drawFilledBlocks(blocks, color, false, false);
     }
 
     public static void drawFilledBlocks(List<AxisAlignedBB> blocks, Color color, boolean solid) {
+        drawFilledBlocks(blocks, color, solid, false);
+    }
+
+    public static void drawFilledBlocks(List<AxisAlignedBB> blocks, Color color, boolean solid, boolean xray) {
         //#if MC < 1.21
         //#else
-        //$$ if (drawFilledBlocksModern(blocks, color, solid)) return;
+        //$$ if (drawFilledBlocksModern(blocks, color, solid, xray)) return;
         //#endif
         if (blocks == null || blocks.isEmpty() || MinecraftCompat.getMinecraft().getRenderManager() == null) return;
         double[] v = viewerPos();
         int r = color.getRed(), g = color.getGreen(), b = color.getBlue(), a = solid ? 255 : color.getAlpha();
         double eps = 0.002;
 
-        //#if MC < 1.21
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        //#endif
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        if (!solid) {
-            GL11.glEnable(GL11.GL_BLEND);
-            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        }
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthMask(true);
-        GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
-        GL11.glPolygonOffset(-1f, -1f);
-        GL11.glDisable(GL11.GL_CULL_FACE);
+        beginWorldFill(xray);
         //#if MC < 1.21
         GL11.glPushMatrix();
         GL11.glTranslated(-v[0], -v[1], -v[2]);
         //#endif
 
-        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_COLOR);
-        //#if MC < 1.21
-        double ox = 0, oy = 0, oz = 0;
-        //#else
-        //$$ double ox = -v[0], oy = -v[1], oz = -v[2];
-        //#endif
-        for (AxisAlignedBB aabb : blocks) {
-            addBoxQuads(vb, aabb.minX - eps + ox, aabb.minY - eps + oy, aabb.minZ - eps + oz, aabb.maxX + eps + ox, aabb.maxY + eps + oy, aabb.maxZ + eps + oz, r, g, b, a);
+        try {
+            VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_COLOR);
+            //#if MC < 1.21
+            double ox = 0, oy = 0, oz = 0;
+            //#else
+            //$$ double ox = -v[0], oy = -v[1], oz = -v[2];
+            //#endif
+            for (AxisAlignedBB aabb : blocks) {
+                addBoxQuads(vb, aabb.minX - eps + ox, aabb.minY - eps + oy, aabb.minZ - eps + oz, aabb.maxX + eps + ox, aabb.maxY + eps + oy, aabb.maxZ + eps + oz, r, g, b, a);
+            }
+            vb.draw();
+        } finally {
+            //#if MC < 1.21
+            GL11.glPopMatrix();
+            //#endif
+            endWorldDraw();
         }
-        vb.draw();
+    }
+
+    public static void drawBlockQuads(BlockPos pos, float[] vertices, Color color, boolean throughWalls) {
+        if (vertices.length == 0) return;
 
         //#if MC < 1.21
-        GL11.glPopMatrix();
-        GL11.glPopAttrib();
+        double[] v = viewerPos();
+        int r = color.getRed(), g = color.getGreen(), b = color.getBlue(), a = color.getAlpha();
+
+        beginWorldFill(throughWalls);
+        pushMatrix();
+        translate(pos.getX() - v[0], pos.getY() - v[1], pos.getZ() - v[2]);
+        try {
+            VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_COLOR);
+            for (int i = 0; i + 2 < vertices.length; i += 3) {
+                vb.pos(vertices[i], vertices[i + 1], vertices[i + 2]).color(r, g, b, a).endVertex();
+            }
+            vb.draw();
+        } finally {
+            popMatrix();
+            endWorldDraw();
+        }
         //#else
-        //$$ GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
-        //$$ restoreWorldState();
+        //$$ if (worldMatrices == null || worldConsumers == null) return;
+        //$$ float r = color.getRed() / 255f, g = color.getGreen() / 255f, b = color.getBlue() / 255f;
+        //$$ float a = color.getAlpha() / 255f;
+        //$$ VertexConsumer vc = worldConsumers.getBuffer(throughWalls
+        //$$         ? AsmRenderLayers.ESP_QUADS : RenderLayer.getDebugFilledBox());
+        //$$ double[] v = viewerPos();
+        //$$ worldMatrices.push();
+        //$$ try {
+        //$$     worldMatrices.translate((float) (pos.getX() - v[0]), (float) (pos.getY() - v[1]), (float) (pos.getZ() - v[2]));
+        //$$     MatrixStack.Entry entry = worldMatrices.peek();
+        //$$     for (int i = 0; i + 2 < vertices.length; i += 3) {
+        //$$         vc.vertex(entry, vertices[i], vertices[i + 1], vertices[i + 2]).color(r, g, b, a);
+        //$$     }
+        //$$ } finally {
+        //$$     worldMatrices.pop();
+        //$$ }
+        //$$ if (throughWalls) drawXrayLayer(AsmRenderLayers.ESP_QUADS);
         //#endif
-        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
     }
 
     public static void drawFilledBlock(AxisAlignedBB aabb, Color color) {
@@ -629,25 +638,25 @@ public static void drawBillboardText(String text, float x, float y, int color, b
     //$$     return true;
     //$$ }
     //$$
-    //$$ private static boolean drawEspBoxesModern(List<Box> boxes, Color color) {
+    //$$ private static boolean drawEspBoxesModern(List<Box> boxes, Color color, boolean xray) {
     //$$     if (worldMatrices == null || worldConsumers == null) return false;
     //$$     double[] v = viewerPos();
     //$$     float r = color.getRed() / 255f, g = color.getGreen() / 255f, b = color.getBlue() / 255f, a = color.getAlpha() / 255f;
     //$$     worldMatrices.push();
     //$$     try {
     //$$         worldMatrices.translate((float) -v[0], (float) -v[1], (float) -v[2]);
-    //$$         VertexConsumer vc = worldConsumers.getBuffer(AsmRenderLayers.ESP_LINES);
+    //$$         VertexConsumer vc = worldConsumers.getBuffer(xray ? AsmRenderLayers.ESP_LINES : RenderLayer.getLines());
     //$$         for (Box box : boxes) {
     //$$             WorldRenderer.drawBox(worldMatrices, vc, box, r, g, b, a);
     //$$         }
     //$$     } finally {
     //$$         worldMatrices.pop();
     //$$     }
-    //$$     drawXrayLayer(AsmRenderLayers.ESP_LINES);
+    //$$     if (xray) drawXrayLayer(AsmRenderLayers.ESP_LINES);
     //$$     return true;
     //$$ }
     //$$
-    //$$ private static boolean drawFilledBlocksModern(List<Box> blocks, Color color, boolean solid) {
+    //$$ private static boolean drawFilledBlocksModern(List<Box> blocks, Color color, boolean solid, boolean xray) {
     //$$     if (worldMatrices == null || worldConsumers == null) return false;
     //$$     if (blocks == null || blocks.isEmpty()) return false;
     //$$     float r = color.getRed() / 255f, g = color.getGreen() / 255f;
@@ -657,7 +666,7 @@ public static void drawBillboardText(String text, float x, float y, int color, b
     //$$     worldMatrices.push();
     //$$     try {
     //$$         worldMatrices.translate((float) -v[0], (float) -v[1], (float) -v[2]);
-    //$$         VertexConsumer vc = worldConsumers.getBuffer(RenderLayer.getDebugFilledBox());
+    //$$         VertexConsumer vc = worldConsumers.getBuffer(xray ? AsmRenderLayers.ESP_QUADS : RenderLayer.getDebugFilledBox());
     //$$         for (Box box : blocks) {
     //$$             WorldRenderer.renderFilledBox(worldMatrices, vc,
     //$$                     box.minX - eps, box.minY - eps, box.minZ - eps,
@@ -666,9 +675,24 @@ public static void drawBillboardText(String text, float x, float y, int color, b
     //$$     } finally {
     //$$         worldMatrices.pop();
     //$$     }
+    //$$     if (xray) drawXrayLayer(AsmRenderLayers.ESP_QUADS);
     //$$     return true;
     //$$ }
     //#endif
+
+    public static final class Beam {
+        private final double x;
+        private final double y;
+        private final double z;
+        private final double height;
+
+        public Beam(double x, double y, double z, double height) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.height = height;
+        }
+    }
 
     /**
      * Draws a vanilla-style beacon beam spanning the block column {@code x..x+1},
@@ -676,7 +700,16 @@ public static void drawBillboardText(String text, float x, float y, int color, b
      * beam is occluded by terrain and never renders through blocks.
      */
     public static void drawBeaconBeam(double x, double y, double z, Color color, float partialTicks, double height) {
+        drawBeaconBeams(Collections.singletonList(new Beam(x, y, z, height)), color, partialTicks);
+    }
+
+    public static void drawBeaconBeams(List<Beam> beams, Color color, float partialTicks) {
+        if (beams.isEmpty()) return;
         if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getMinecraft().getRenderManager() == null) return;
+        //#if MC < 1.21
+        //#else
+        //$$ if (worldMatrices == null || worldConsumers == null) return;
+        //#endif
         double[] v = viewerPos();
 
         pushMatrix();
@@ -703,14 +736,16 @@ public static void drawBillboardText(String text, float x, float y, int color, b
         float r = color.getRed() / 255f, g = color.getGreen() / 255f, b = color.getBlue() / 255f;
 
         //#if MC < 1.21
-        VertexBuilder vb;
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_TEX_COLOR);
         //#else
-        //$$ if (worldMatrices == null || worldConsumers == null) return;
         //$$ RenderLayer beamLayer = RenderLayer.getBeaconBeam(Resources.BEACON_BEAM, false);
         //$$ VertexConsumer beamVc = worldConsumers.getBuffer(beamLayer);
         //$$ MatrixStack.Entry beamEntry = worldMatrices.peek();
         //$$ int beamLight = LightmapTextureManager.MAX_LIGHT_COORDINATE;
         //#endif
+
+        for (Beam beam : beams) {
+        double x = beam.x, y = beam.y, z = beam.z, height = beam.height;
 
         // Inner rotating core
         double angle = time * 0.025 * -1.5;
@@ -726,7 +761,6 @@ public static void drawBillboardText(String text, float x, float y, int color, b
         double v1 = height * 2.5 + v0;
 
         //#if MC < 1.21
-        vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_TEX_COLOR);
         vb.pos(x + d4, y + height, z + d5).tex(1.0, v1).color(r, g, b, 1f).endVertex();
         vb.pos(x + d4, y, z + d5).tex(1.0, v0).color(r, g, b, 1f).endVertex();
         vb.pos(x + d6, y, z + d7).tex(0.0, v0).color(r, g, b, 1f).endVertex();
@@ -743,7 +777,6 @@ public static void drawBillboardText(String text, float x, float y, int color, b
         vb.pos(x + d8, y, z + d9).tex(1.0, v0).color(r, g, b, 1f).endVertex();
         vb.pos(x + d4, y, z + d5).tex(0.0, v0).color(r, g, b, 1f).endVertex();
         vb.pos(x + d4, y + height, z + d5).tex(0.0, v1).color(r, g, b, 1f).endVertex();
-        vb.draw();
         //#else
         //$$ beamVertex(beamVc, beamEntry, x + d4, y + height, z + d5, 1.0, v1, r, g, b, 1f, 0f, 0f, 1f, beamLight);
         //$$ beamVertex(beamVc, beamEntry, x + d4, y, z + d5, 1.0, v0, r, g, b, 1f, 0f, 0f, 1f, beamLight);
@@ -769,7 +802,6 @@ public static void drawBillboardText(String text, float x, float y, int color, b
         float sa = 0.25f;
 
         //#if MC < 1.21
-        vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_TEX_COLOR);
         vb.pos(x + 0.2, y + height, z + 0.2).tex(1.0, s1).color(r, g, b, sa).endVertex();
         vb.pos(x + 0.2, y, z + 0.2).tex(1.0, s0).color(r, g, b, sa).endVertex();
         vb.pos(x + 0.8, y, z + 0.2).tex(0.0, s0).color(r, g, b, sa).endVertex();
@@ -786,7 +818,6 @@ public static void drawBillboardText(String text, float x, float y, int color, b
         vb.pos(x + 0.2, y, z + 0.8).tex(1.0, s0).color(r, g, b, sa).endVertex();
         vb.pos(x + 0.2, y, z + 0.2).tex(0.0, s0).color(r, g, b, sa).endVertex();
         vb.pos(x + 0.2, y + height, z + 0.2).tex(0.0, s1).color(r, g, b, sa).endVertex();
-        vb.draw();
         //#else
         //$$ beamVertex(beamVc, beamEntry, x + 0.2, y + height, z + 0.2, 1.0, s1, r, g, b, sa, 0f, 0f, -1f, beamLight);
         //$$ beamVertex(beamVc, beamEntry, x + 0.2, y, z + 0.2, 1.0, s0, r, g, b, sa, 0f, 0f, -1f, beamLight);
@@ -804,6 +835,12 @@ public static void drawBillboardText(String text, float x, float y, int color, b
         //$$ beamVertex(beamVc, beamEntry, x + 0.2, y, z + 0.8, 1.0, s0, r, g, b, sa, -1f, 0f, 0f, beamLight);
         //$$ beamVertex(beamVc, beamEntry, x + 0.2, y, z + 0.2, 0.0, s0, r, g, b, sa, -1f, 0f, 0f, beamLight);
         //$$ beamVertex(beamVc, beamEntry, x + 0.2, y + height, z + 0.2, 0.0, s1, r, g, b, sa, -1f, 0f, 0f, beamLight);
+        //#endif
+        }
+
+        //#if MC < 1.21
+        vb.draw();
+        //#else
         //$$ drawLayer(beamLayer);
         //#endif
 

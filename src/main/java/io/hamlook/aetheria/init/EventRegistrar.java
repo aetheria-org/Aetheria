@@ -30,6 +30,8 @@ public class EventRegistrar {
 
     private static final List<Object> REGISTERED_EVENT_INSTANCES = new ArrayList<>();
 
+    private static boolean registered;
+
     public static List<Object> getRegisteredEventInstances() {
         return Collections.unmodifiableList(REGISTERED_EVENT_INSTANCES);
     }
@@ -46,6 +48,7 @@ public class EventRegistrar {
         for (Object instance : REGISTERED_EVENT_INSTANCES) {
             EventBusCompat.unregister(instance);
         }
+        registered = false;
     }
     public static void reloadAllListeners() {
         for (Object instance : REGISTERED_EVENT_INSTANCES) {
@@ -61,6 +64,8 @@ public class EventRegistrar {
      * four registration paths on it.
      */
     public static void registerAll() {
+        if (registered) return;
+        registered = true;
         List<String> classNames = ClasspathScanner.findClassNames(EventRegistrar.class, BASE_PACKAGE);
         List<Class<?>> classes = ClasspathScanner.loadClasses(classNames, EventRegistrar.class.getClassLoader());
         for (Class<?> clazz : classes) {
