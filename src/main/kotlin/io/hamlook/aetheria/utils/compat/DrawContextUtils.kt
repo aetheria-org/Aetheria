@@ -3,7 +3,6 @@ package io.hamlook.aetheria.utils.compat
 //$$ import net.minecraft.client.gui.DrawContext
 //$$ import org.joml.Matrix4f
 //$$ import org.joml.Quaternionf
-//$$ import org.lwjgl.opengl.GL11
 //#endif
 import net.minecraft.client.gui.FontRenderer
 import net.minecraft.client.renderer.GlStateManager
@@ -418,23 +417,13 @@ object DrawContextUtils {
     //#endif
 
     @JvmStatic
-    fun enableScissor(x: Int, y: Int, width: Int, height: Int) {
+    fun enableScissor(x: Int, y: Int, width: Int, height: Int) =
         //#if MC < 1.21
         drawContext.enableScissor(x, y, width, height)
         //#else
-        //$$ GL11.glEnable(GL11.GL_SCISSOR_TEST)
-        //$$ val factor = GuiScreenUtils.getScaleFactor()
-        //$$ val displayHeight = GuiScreenUtils.getDisplayHeight()
-        //$$ GL11.glScissor(x * factor, displayHeight - (y + height) * factor, width * factor, height * factor)
+        //$$ drawContext.enableScissor(x, y, x + width, y + height)
         //#endif
-    }
 
     @JvmStatic
-    fun disableScissor() {
-        //#if MC < 1.21
-        drawContext.disableScissor()
-        //#else
-        //$$ GL11.glDisable(GL11.GL_SCISSOR_TEST)
-        //#endif
-    }
+    fun disableScissor() = drawContext.disableScissor()
 }

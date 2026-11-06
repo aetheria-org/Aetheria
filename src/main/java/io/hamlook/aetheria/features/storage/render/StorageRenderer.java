@@ -17,7 +17,6 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.LinkedHashMap;
@@ -37,6 +36,7 @@ public class StorageRenderer {
     private static final int NINE_SLICE_SIZE = 18;
     private static final int SLOT_SIZE = 18;
     private static final int SLOTS_PER_ROW = 9;
+    private static final int TITLE_HEIGHT = 18;
 
     private ResourceLocation getContainerBg() {
         return Resources.storageBackground(ATHRConfig.feature.storage.overlayStyle);
@@ -230,9 +230,8 @@ public class StorageRenderer {
         }
 
         int rows = (int) Math.ceil(container.slotCount / 9.0);
-        int titleHeight = 18;
         int bottomPadding = 4;
-        int height = titleHeight + (rows * 18) + bottomPadding + 8;
+        int height = TITLE_HEIGHT + (rows * 18) + bottomPadding + 8;
 
         containerHeightCache.put(cacheKey, height);
         return height;
@@ -354,13 +353,11 @@ public class StorageRenderer {
 
         scrollOffset += (scrollTarget - scrollOffset) * SCROLL_LENGTH;
 
-        int scaleFactor = ResolutionUtils.getFactor();
         int inset = NINE_SLICE_CORNER;
 
         int scissorScreenTop = boxY + inset;
         int scissorScreenBottom = boxY + storageAreaH - inset;
-        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GlStateManagerCompat.scissor((boxX + inset) * scaleFactor, (GuiScreenUtils.getDisplayHeight() - scissorScreenBottom * scaleFactor), (boxW - inset * 2) * scaleFactor, (scissorScreenBottom - scissorScreenTop) * scaleFactor);
+        DrawContextUtils.enableScissor(boxX + inset, scissorScreenTop, boxW - inset * 2, scissorScreenBottom - scissorScreenTop);
 
         String activeId = StorageManager.getActiveContainerId();
         boolean dimMode = ATHRConfig.feature.storage.activeContainerStyle == 0 && activeId != null;
@@ -370,12 +367,13 @@ public class StorageRenderer {
 
         // Single pass: draw containers + dim overlay in one loop
         for (int i = 0; i < filteredContainers.size(); i++) {
+            if (!cachedLayouts[i].isVisible) continue;
             SContainer container = filteredContainers.get(i);
             boolean isActive = container.id.equals(activeId);
             drawContainer(i, mouseX, mouseY, fr, isActive, dimMode);
         }
 
-        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        DrawContextUtils.disableScissor();
 
         renderScrollbar();
         renderPlayerInventory(mouseX, mouseY);
@@ -728,7 +726,7 @@ public class StorageRenderer {
 
     private void drawContainerTitle(SContainer container, ContainerLayout info, FontRenderer fr, boolean isActive, boolean dimMode) {
         String title = buildContainerTitle(container, isActive, dimMode);
-        TextRenderUtils.drawCenteredStringScaleAware(title, info.x + info.width / 2, info.y + 4, Color.WHITE.getRGB(), 1f, false);
+        TextRenderUtils.drawCenteredStringScaleAware(title, info.x + info.width / 2, info.y + TITLE_HEIGHT / 2f, Color.WHITE.getRGB(), 1f, false);
     }
 
     private String buildContainerTitle(SContainer container, boolean isActive, boolean dimMode) {
@@ -756,7 +754,7 @@ public class StorageRenderer {
     private void drawContainerSlots(SContainer container, ContainerLayout info, int mouseX, int mouseY) {
         int gridWidth = SLOT_SIZE * SLOTS_PER_ROW;
         int startX = info.x + (info.width - gridWidth) / 2;
-        int startY = info.y + 18;
+        int startY = info.y + TITLE_HEIGHT;
 
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.disableLighting();
@@ -846,7 +844,7 @@ public class StorageRenderer {
     private boolean checkActiveContainerSlotHover(net.minecraft.inventory.Slot slot, int mouseX, int mouseY, ContainerLayout pos) {
         int gridWidth = SLOT_SIZE * SLOTS_PER_ROW;
         int startX = pos.x + (containerW - gridWidth) / 2;
-        int startY = pos.y + 18;
+        int startY = pos.y + TITLE_HEIGHT;
 
         int slotIndex = slot.getSlotIndex();
         int storageSlotIndex = slotIndex - 9;

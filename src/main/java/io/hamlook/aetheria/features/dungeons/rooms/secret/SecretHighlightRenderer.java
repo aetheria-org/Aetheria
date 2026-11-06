@@ -9,6 +9,7 @@ import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.EntityRenderUtils;
 import io.hamlook.aetheria.utils.render.SolidRender;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
@@ -251,6 +252,7 @@ public final class SecretHighlightRenderer {
                     secret.pos().getX() + 0.5, secret.pos().getY() + 0.5, secret.pos().getZ() + 0.5);
             for (Entity entity : EntityCompat.getEntitiesInBox(world, box)) {
                 if (!(entity instanceof EntityItem) || EntityCompat.isDead(entity)) continue;
+                if (!isSecretDrop((EntityItem) entity)) continue;
 
                 double x = EntityCompat.getPosX(entity);
                 double y = EntityCompat.getPosY(entity);
@@ -262,6 +264,11 @@ public final class SecretHighlightRenderer {
             }
         }
         return found != null ? found : Collections.emptySet();
+    }
+
+    // internal ids only, same source as pickup so a drop highlights exactly when it would count
+    private static boolean isSecretDrop(EntityItem item) {
+        return SecretCollector.isSecretItemId(ItemUtils.getInternalName(item.getEntityItem()));
     }
 
     private static Color color(String configColor) {

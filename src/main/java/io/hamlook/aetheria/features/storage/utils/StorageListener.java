@@ -388,7 +388,11 @@ public class StorageListener {
         GlStateManagerCompat.disableFog();
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        //#if MC < 1.21
         RenderUtils.drawGradientRect(0, 0, 0, width, height, -1072689136, -804253680);
+        //#else
+        //$$ RenderUtils.drawGradientRect(0, 0, 0, width, height, 0x40000000, 0x40000000);
+        //#endif
         GlStateManagerCompat.disableBlend();
 
         int[] mouse = KeybindHelper.getMouseCoords(width, height);

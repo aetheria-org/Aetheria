@@ -21,7 +21,6 @@ import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.net.HttpURLConnection;
@@ -1278,7 +1277,7 @@ public class ChatUI extends AetheriaBaseScreen {
         List<ChatLine> lines = selectedChannel.messageHistory;
         int contentWidth = Math.max(60, areaW - PADDING * 2 - AVATAR_SIZE - 8);
 
-        enableScissor(areaX, areaY, areaW, areaH);
+        DrawContextUtils.enableScissor(areaX, areaY, areaW, areaH);
 
         int cursorBottom = contentBottom + scrollPixels;
         int total = 0;
@@ -1309,7 +1308,7 @@ public class ChatUI extends AetheriaBaseScreen {
             cursorBottom = top - gap;
         }
 
-        disableScissor();
+        DrawContextUtils.disableScissor();
 
         int maxScroll = Math.max(0, total + MESSAGE_BOTTOM_PAD - areaH);
         if (jumpToMessageId != null) {
@@ -2507,16 +2506,6 @@ public class ChatUI extends AetheriaBaseScreen {
     private ChatMessage findByDiscordId(String discordId) {
         if (discordId == null || selectedChannel == null) return null;
         return selectedChannel.byDiscordID.get(discordId);
-    }
-
-    private void enableScissor(int x, int y, int w, int h) {
-        int scale = GuiScreenUtils.getScaleFactor();
-        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GlStateManagerCompat.scissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + h) * scale, w * scale, h * scale);
-    }
-
-    private void disableScissor() {
-        GL11.glDisable(GL11.GL_SCISSOR_TEST);
     }
 
     private static class ClickRect {

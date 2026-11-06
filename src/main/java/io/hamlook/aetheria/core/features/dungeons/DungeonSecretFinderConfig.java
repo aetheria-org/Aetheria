@@ -141,7 +141,7 @@ public class DungeonSecretFinderConfig {
         @Expose
         @ConfigOption(name = "Item Horizontal Range", desc = "§c§lDo not change. §rHorizontal reach (blocks) in which picking up a dropped secret item counts as the secret; tuned for dropped items.")
         @ConfigEditorSliderAnnotation(minValue = 0.5f, maxValue = 12.0f, minStep = 0.5f)
-        public double itemHorizontalRange = 6.0;
+        public double itemHorizontalRange = 7.5;
 
         @Expose
         @ConfigOption(name = "Item Vertical Range", desc = "§c§lDo not change. §rHow far below the secret block a picked-up item may be; dropped items can fall far.")

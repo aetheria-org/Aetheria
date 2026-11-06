@@ -43,7 +43,7 @@ public class RenderBridge {
 
     @SubscribeEvent
     public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.TEXT) return;
+        if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
         new ASMRenderOverlayEvent(
             new DrawContext(),
             GuiScreenUtils.getScaledWindowWidth(),

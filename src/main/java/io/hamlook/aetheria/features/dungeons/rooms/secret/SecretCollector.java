@@ -69,6 +69,11 @@ public class SecretCollector {
             "DUNGEON_DECOY", "DEFUSE_KIT", "SPIRIT_LEAP", "DUNGEON_CHEST_KEY",
             "INFLATABLE_JERRY", "TREASURE_TALISMAN", "TRAINING_WEIGHTS", "SECRET_DYE")));
 
+    // one place so pickup and highlight stay in sync
+    static boolean isSecretItemId(String id) {
+        return SECRET_ITEM_IDS.contains(id);
+    }
+
     private static final List<Pending> pending = new ArrayList<>();
     private static final Map<SecretWaypoint, EntityArmorStand> essenceStands = new HashMap<>();
     private static int periodicTickCounter;
