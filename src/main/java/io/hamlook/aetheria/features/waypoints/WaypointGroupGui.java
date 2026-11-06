@@ -1,25 +1,20 @@
 package io.hamlook.aetheria.features.waypoints;
 
-import com.google.gson.Gson;
-import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElement;
+import io.hamlook.aetheria.features.waypoints.text.WaypointText;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.util.EnumChatFormatting;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
-import java.lang.reflect.Type;
 import java.util.*;
-import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class WaypointGroupGui extends GuiElement {
 
@@ -48,70 +43,6 @@ public class WaypointGroupGui extends GuiElement {
     private boolean createOpen = false;
 
     private int pw, ph, px, py;
-
-    static String exportSoopy(WaypointGroup g) {
-        List<Map<String, Object>> list = new ArrayList<>();
-        for (WaypointPoint wp : g.waypoints) {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("x", wp.x);
-            m.put("y", wp.y);
-            m.put("z", wp.z);
-            m.put("r", 0);
-            m.put("g", 1);
-            m.put("b", 0);
-            Map<String, Object> opts = new LinkedHashMap<>();
-            opts.put("name", wp.name != null ? wp.name : "");
-            m.put("options", opts);
-            list.add(m);
-        }
-        return new GsonBuilder().create().toJson(list);
-    }
-
-    static List<WaypointPoint> parseSoopy(String json) {
-        try {
-            if (json.startsWith("[")) {
-                Type type = new TypeToken<List<Map<String, Object>>>() {
-                }.getType();
-                List<Map<String, Object>> raw = new Gson().fromJson(json, type);
-                List<WaypointPoint> wps = new ArrayList<>();
-                for (int i = 0; i < raw.size(); i++) {
-                    Map<String, Object> m = raw.get(i);
-                    double x = toD(m.get("x")), y = toD(m.get("y")), z = toD(m.get("z"));
-                    String name = String.valueOf(i + 1);
-                    if (m.containsKey("options")) {
-                        @SuppressWarnings("unchecked") Map<String, Object> opts = (Map<String, Object>) m.get("options");
-                        if (opts != null && opts.containsKey("name")) name = String.valueOf(opts.get("name"));
-                    }
-                    wps.add(new WaypointPoint(x, y, z, name));
-                }
-                wps.sort((a, b) -> {
-                    try {
-                        return Integer.compare(Integer.parseInt(a.name), Integer.parseInt(b.name));
-                    } catch (NumberFormatException e) {
-                        return 0;
-                    }
-                });
-                return wps;
-            }
-            if (json.matches("(?s).*\\d.*")) {
-                List<WaypointPoint> wps = new ArrayList<>();
-                String[] rows = json.split("[\\r\\n]+");
-                for (int i = 0; i < rows.length; i++) {
-                    String[] parts = rows[i].trim().split("\\s+");
-                    if (parts.length >= 3)
-                        wps.add(new WaypointPoint(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), String.valueOf(i + 1)));
-                }
-                return wps.isEmpty() ? null : wps;
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
-    }
-
-    private static double toD(Object o) {
-        if (o instanceof Number) return ((Number) o).doubleValue();
-        return Double.parseDouble(String.valueOf(o));
-    }
 
     private void updatePanel() {
         int screenW = GuiScreenUtils.getScaledWindowWidth();
@@ -162,7 +93,6 @@ public class WaypointGroupGui extends GuiElement {
 
     @Override
     public void render() {
-        Minecraft mc = MinecraftCompat.getMinecraft();
         FontRenderer fr = MinecraftCompat.getFontRenderer();
         updatePanel();
         int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
@@ -218,7 +148,7 @@ public class WaypointGroupGui extends GuiElement {
 
         if (importOpen) {
             int ifW = pw - PAD * 2 - BTN_W - 8;
-            importField = ensureGenericField(importField, 2, px + PAD, curY, ifW, fr);
+            importField = ensureGenericField(importField, px + PAD, curY, ifW, fr);
             GuiScreenUtils.setX(importField, px + PAD);
             GuiScreenUtils.setY(importField, curY);
             GuiScreenUtils.setW(importField, ifW);
@@ -234,7 +164,7 @@ public class WaypointGroupGui extends GuiElement {
 
         if (createOpen) {
             int cfW = pw - PAD * 2 - BTN_W - 8;
-            createField = ensureGenericField(createField, 3, px + PAD, curY, cfW, fr);
+            createField = ensureGenericField(createField, px + PAD, curY, cfW, fr);
             GuiScreenUtils.setX(createField, px + PAD);
             GuiScreenUtils.setY(createField, curY);
             GuiScreenUtils.setW(createField, cfW);
@@ -361,7 +291,6 @@ public class WaypointGroupGui extends GuiElement {
         }
         if (!pressed || button != 0) return false;
 
-        Minecraft mc = MinecraftCompat.getMinecraft();
         updatePanel();
         WaypointState state = WaypointState.getInstance();
         WaypointStorage storage = WaypointStorage.getInstance();
@@ -444,7 +373,7 @@ public class WaypointGroupGui extends GuiElement {
                     return true;
                 }
                 if (inBounds(mouseX, mouseY, expX, btnY, BTN_W, BTN_H)) {
-                    ClipboardCompat.setClipboard(exportSoopy(gr.g));
+                    ClipboardCompat.setClipboard(WaypointText.write(gr.g));
                     return true;
                 }
                 if (inBounds(mouseX, mouseY, delX, btnY, BTN_W, BTN_H)) {
@@ -488,9 +417,9 @@ public class WaypointGroupGui extends GuiElement {
                 AddRow ar = (AddRow) item;
                 int rx = px + PAD + INDENT, rw = pw - PAD - INDENT - PAD;
                 if (inBounds(mouseX, mouseY, rx, ar.y, rw, WP_H)) {
-                    double bx = Math.floor(EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()));
-                    double by = Math.floor(EntityCompat.getPosY(MinecraftCompat.getLocalPlayer())) - 1;
-                    double bz = Math.floor(EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()));
+                    double bx = Math.floor(EntityCompat.getPosX(MinecraftCompat.getLocalPlayerOrError()));
+                    double by = Math.floor(EntityCompat.getPosY(MinecraftCompat.getLocalPlayerOrError())) - 1;
+                    double bz = Math.floor(EntityCompat.getPosZ(MinecraftCompat.getLocalPlayerOrError()));
                     ar.g.waypoints.add(new WaypointPoint(bx, by, bz, String.valueOf(ar.g.waypoints.size() + 1)));
                     storage.markDirty();
                     storage.saveIfDirty();
@@ -551,13 +480,16 @@ public class WaypointGroupGui extends GuiElement {
         if (importField == null) return;
         String name = importField.getText().trim().toLowerCase();
         if (name.isEmpty()) return;
-        String clip = ClipboardCompat.getClipboard();
-        if (clip == null || clip.trim().isEmpty()) return;
-        List<WaypointPoint> wps = parseSoopy(clip.trim());
-        if (wps == null || wps.isEmpty()) return;
+        WaypointText.Result result = WaypointText.read(ClipboardCompat.getClipboard());
+        if (result.isFailed()) {
+            if (result.isMatched())
+                ChatUtils.sendMessage(WaypointCommand.PREFIX + "§cCould not import: " + result.getError());
+            return;
+        }
         WaypointGroup g = storage.getGroup(name);
         if (g == null) g = new WaypointGroup(name);
-        g.waypoints = wps;
+        g.waypoints = result.getGroup().waypoints;
+        if (g.description == null || g.description.isEmpty()) g.description = result.getGroup().description;
         storage.putGroup(g);
         storage.saveIfDirty();
         importOpen = false;
@@ -611,7 +543,7 @@ public class WaypointGroupGui extends GuiElement {
         }
     }
 
-    private GuiTextField ensureGenericField(GuiTextField existing, int id, int x, int y, int w, FontRenderer fr) {
+    private GuiTextField ensureGenericField(GuiTextField existing, int x, int y, int w, FontRenderer fr) {
         if (existing != null) return existing;
         GuiTextField f = GuiScreenUtils.createTextField(fr, x, y, w, WaypointGroupGui.SF_H);
         GuiScreenUtils.setTextFieldMaxLength(f, 64);
@@ -633,7 +565,6 @@ public class WaypointGroupGui extends GuiElement {
     }
 
     private boolean isHovered(int x, int y, int w, int h) {
-        Minecraft mc = MinecraftCompat.getMinecraft();
         int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
         int mx = mouse[0], my = mouse[1];
         return inBounds(mx, my, x, y, w, h);

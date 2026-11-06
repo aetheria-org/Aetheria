@@ -4,26 +4,23 @@ import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.command.brigadier.CommandCategory;
 import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.features.waypoints.text.WaypointText;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.ClipboardCompat;
 import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextCompat;
-import net.minecraft.client.Minecraft;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 @RegisterEvents
 public class WaypointCommand {
 
-    public static final String PREFIX = "§3[ATHRW]§b ";
-    private static final Minecraft mc = MinecraftCompat.getMinecraft();
-    private static final List<String> SUBCOMMANDS = Arrays.asList("list", "load", "unload", "setup", "reset", "skip", "unskip", "skipto", "enable", "disable", "create", "delete", "add", "insert", "remove", "rename", "export", "import", "range", "time", "save", "info", "manage", "guide");
+    public static final String PREFIX = "§3[ASM]§b ";
 
     @HandleEvent
     public void onCommandRegistration(CommandRegistrationEvent event) {
@@ -205,7 +202,7 @@ public class WaypointCommand {
                             return;
                         }
                         String wpName = args.length >= 3 ? args[2] : String.valueOf(idx);
-                        double bx = Math.floor(EntityCompat.getPosX(MinecraftCompat.getLocalPlayer())), by = Math.floor(EntityCompat.getPosY(MinecraftCompat.getLocalPlayer())) - 1, bz = Math.floor(EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()));
+                        double bx = Math.floor(EntityCompat.getPosX(MinecraftCompat.getLocalPlayerOrError())), by = Math.floor(EntityCompat.getPosY(MinecraftCompat.getLocalPlayerOrError())) - 1, bz = Math.floor(EntityCompat.getPosZ(MinecraftCompat.getLocalPlayerOrError()));
                         state.loadedGroup.waypoints.add(idx - 1, new WaypointPoint(bx, by, bz, wpName));
                         renumberNumericNames(state.loadedGroup, idx);
                         storage.markDirty();
@@ -245,8 +242,9 @@ public class WaypointCommand {
                             error("Group not found: " + args[1]);
                             return;
                         }
-                        ClipboardCompat.setClipboard(exportSoopy(g));
-                        success("Copied group '" + g.name + "' to clipboard");
+                        boolean legacy = args.length > 2 && "legacy".equalsIgnoreCase(args[2]);
+                        ClipboardCompat.setClipboard(legacy ? WaypointText.writeSoopy(g) : WaypointText.write(g));
+                        success("Copied &e" + g.waypoints.size() + " &awaypoints of &e" + g.name + " &ato clipboard &7(" + (legacy ? "soopy" : "aetheria") + ")");
                         break;
                     }
 
@@ -257,21 +255,24 @@ public class WaypointCommand {
                         }
                         String name = args[1].toLowerCase();
                         String clip = ClipboardCompat.getClipboard();
-                        if (clip == null || clip.trim().isEmpty()) {
+                        if (clip.trim().isEmpty()) {
                             error("Clipboard is empty");
                             return;
                         }
-                        List<WaypointPoint> wps = parseSoopy(clip.trim());
-                        if (wps == null) {
-                            error("Could not parse clipboard as soopy waypoints");
+                        WaypointText.Result result = WaypointText.read(clip);
+                        if (result.isFailed()) {
+                            error("Could not import: " + result.getError());
                             return;
                         }
                         WaypointGroup g = storage.getGroup(name);
                         if (g == null) g = new WaypointGroup(name);
-                        g.waypoints = wps;
+                        g.waypoints = result.getGroup().waypoints;
+                        if (g.description == null || g.description.isEmpty())
+                            g.description = result.getGroup().description;
                         storage.putGroup(g);
                         storage.saveIfDirty();
-                        success("Imported &e" + wps.size() + " &awaypoints into &e" + name);
+                        String skipped = result.getSkipped() > 0 ? " &7(" + result.getSkipped() + " skipped)" : "";
+                        success("Imported &e" + g.waypoints.size() + " &awaypoints into &e" + name + skipped);
                         break;
                     }
 
@@ -417,7 +418,7 @@ public class WaypointCommand {
     }
 
     private void addWaypoint(WaypointGroup group, String name) {
-        double bx = Math.floor(EntityCompat.getPosX(MinecraftCompat.getLocalPlayer())), by = Math.floor(EntityCompat.getPosY(MinecraftCompat.getLocalPlayer())) - 1, bz = Math.floor(EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()));
+        double bx = Math.floor(EntityCompat.getPosX(MinecraftCompat.getLocalPlayerOrError())), by = Math.floor(EntityCompat.getPosY(MinecraftCompat.getLocalPlayerOrError())) - 1, bz = Math.floor(EntityCompat.getPosZ(MinecraftCompat.getLocalPlayerOrError()));
         addWaypointAt(group, bx, by, bz, name);
     }
 
@@ -446,14 +447,6 @@ public class WaypointCommand {
             } catch (NumberFormatException ignored) {
             }
         }
-    }
-
-    private String exportSoopy(WaypointGroup group) {
-        return WaypointGroupGui.exportSoopy(group);
-    }
-
-    private List<WaypointPoint> parseSoopy(String json) {
-        return WaypointGroupGui.parseSoopy(json);
     }
 
     private void header(String text) {
