@@ -8,12 +8,11 @@ import java.io.File;
 
 public class EmojiLinks {
 
-    private static final String BASE_URL = "https://raw.githubusercontent.com/iamcal/emoji-data/master/";
-    private static final String CUSTOM_BASE_URL = "https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/refs/heads/main/emojis/";
+    private static final String BASE_URL = "https://raw.githubusercontent.com/aetheria-org/Aetheria-REPO/refs/heads/main/emojis/";
 
     private static final String BASE_RESOURCE = "aetheria";
     public static final int SHEET_RESOLUTION = 32;
-    public static int SHEET_SIZE = 2108;
+    public static final int SHEET_CELL = SHEET_RESOLUTION + 2;
 
     public static final String GOOGLE_URL = "sheet_google_";
     public static final String IOS_URL = "sheet_apple_";
@@ -29,6 +28,8 @@ public class EmojiLinks {
     public static final String IOS_SHEET = "ios.png";
     public static final String DISCORD_SHEET = "discord.png";
     public static final String CUSTOM_SHEET = "custom.png";
+    public static final String[] DEFAULT_SHEETS = {DISCORD_SHEET, GOOGLE_SHEET, IOS_SHEET};
+    public static final String[] ALL_SHEETS = {DISCORD_SHEET, GOOGLE_SHEET, IOS_SHEET, CUSTOM_SHEET};
 
     public static String sheetToURL(String sheet){
         if (CUSTOM_SHEET.equals(sheet)) return CUSTOM_SHEET;
@@ -55,10 +56,10 @@ public class EmojiLinks {
     }
 
     public static String getCustomEmojiJSON() {
-        return CUSTOM_BASE_URL + "emojis.json";
+        return BASE_URL + "emojis.json";
     }
 
     public static String getCustomSpriteURL() {
-        return CUSTOM_BASE_URL + "emojis.png";
+        return BASE_URL + "emojis.png";
     }
 }

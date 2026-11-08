@@ -305,12 +305,22 @@ object DrawContextUtils {
     fun drawItemInSlot(fr: FontRenderer, item: ItemStack, x: Int, y: Int) =
         drawContext.drawItemInSlot(fr, item, x, y)
 
+    /**
+     * Draws the ([uWidth] x [vHeight]) source region at ([u], [v]) into the
+     * ([width] x [height]) rect at ([x], [y]). Source coords are pixels of a
+     * [tileWidth] x [tileHeight] texture.
+     *
+     * The order is vanilla's (`Gui.drawScaledCustomSizeModalRect`): source
+     * region first, destination rect second. It is not the dest-first shape of
+     * `drawTexture`, so callers can be migrated by adding the texture argument
+     * alone.
+     */
     @JvmStatic
     fun drawScaledCustomSizeModalRect(
         texture: ResourceLocation,
         x: Int, y: Int, u: Float, v: Float,
+        uWidth: Int, vHeight: Int,
         width: Int, height: Int,
-        textureWidth: Float, textureHeight: Float,
         tileWidth: Float, tileHeight: Float
     ) {
         //#if MC < 1.21
@@ -321,16 +331,16 @@ object DrawContextUtils {
         val worldRenderer = tessellator.worldRenderer
         worldRenderer.begin(7, net.minecraft.client.renderer.vertex.DefaultVertexFormats.POSITION_TEX)
         worldRenderer.pos(x.toDouble(), (y + height).toDouble(), 0.0)
-            .tex((u * f).toDouble(), ((v + textureHeight) * g).toDouble()).endVertex()
+            .tex((u * f).toDouble(), ((v + vHeight) * g).toDouble()).endVertex()
         worldRenderer.pos((x + width).toDouble(), (y + height).toDouble(), 0.0)
-            .tex(((u + textureWidth) * f).toDouble(), ((v + textureHeight) * g).toDouble()).endVertex()
+            .tex(((u + uWidth) * f).toDouble(), ((v + vHeight) * g).toDouble()).endVertex()
         worldRenderer.pos((x + width).toDouble(), y.toDouble(), 0.0)
-            .tex(((u + textureWidth) * f).toDouble(), (v * g).toDouble()).endVertex()
+            .tex(((u + uWidth) * f).toDouble(), (v * g).toDouble()).endVertex()
         worldRenderer.pos(x.toDouble(), y.toDouble(), 0.0)
             .tex((u * f).toDouble(), (v * g).toDouble()).endVertex()
         tessellator.draw()
         //#else
-        //$$ drawContext.drawTexture(texture, x, y, width, height, u, v, textureWidth.toInt(), textureHeight.toInt(), tileWidth.toInt(), tileHeight.toInt())
+        //$$ drawContext.drawTexture(texture, x, y, width, height, u, v, uWidth, vHeight, tileWidth.toInt(), tileHeight.toInt())
         //#endif
     }
 

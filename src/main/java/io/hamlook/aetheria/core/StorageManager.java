@@ -21,6 +21,7 @@ import io.hamlook.aetheria.features.scoreboard.MaxwellPowerSync;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.features.waypoints.WaypointStorage;
 import io.hamlook.aetheria.utils.NameUtils;
+import io.hamlook.aetheria.utils.image.PngInfo;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -389,9 +390,8 @@ public enum StorageManager {
         }
 
         try {
-            BufferedImage check = ImageIO.read(tmp);
-            if (check == null || check.getWidth() != image.getWidth() || check.getHeight() != image.getHeight()) {
-                throw new Exception("read-back mismatch (" + (check == null ? "null" : check.getWidth() + "x" + check.getHeight()) + ")");
+            if (!PngInfo.matches(tmp, image.getWidth(), image.getHeight())) {
+                throw new Exception("read-back mismatch");
             }
         } catch (Exception e) {
             Aetheria.logger.severe("[ATHR] Refusing to commit " + tmp.getName() + " — write verification failed: " + e.getMessage());

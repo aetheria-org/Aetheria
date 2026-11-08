@@ -12,6 +12,7 @@ import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.util.StringUtils;
 import net.minecraft.util.Vec3;
+import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.List;
@@ -126,6 +127,9 @@ public class WaypointRenderer {
 
         WorldRenderUtils.beginBillboard(wx, wy, wz, scale);
 
+        //#if MC < 1.21
+        boolean lightingWasOn = GL11.glIsEnabled(GL11.GL_LIGHTING);
+        //#endif
         GlStateManagerCompat.disableLighting();
         GlStateManagerCompat.disableDepth();
 
@@ -137,7 +141,9 @@ public class WaypointRenderer {
         WorldRenderUtils.drawBillboardText("]", bx + bracketOpenW + distNumW, 10f, 0xAAAAAA, false);
 
         GlStateManagerCompat.enableDepth();
-        GlStateManagerCompat.enableLighting();
+        //#if MC < 1.21
+        if (lightingWasOn) GlStateManagerCompat.enableLighting();
+        //#endif
         WorldRenderUtils.endBillboard();
     }
 

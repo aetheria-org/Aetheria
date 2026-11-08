@@ -581,6 +581,7 @@ public static void drawBillboardText(String text, float x, float y, int color, b
     //$$     } finally {
     //$$         worldMatrices.pop();
     //$$     }
+    //$$     GlStateManagerCompat.color(1f, 1f, 1f, 1f);
     //$$     drawXrayLayer(AsmRenderLayers.ESP_QUADS);
     //$$     return true;
     //$$ }
@@ -612,6 +613,7 @@ public static void drawBillboardText(String text, float x, float y, int color, b
     //$$     } finally {
     //$$         worldMatrices.pop();
     //$$     }
+    //$$     GlStateManagerCompat.color(1f, 1f, 1f, 1f);
     //$$     return true;
     //$$ }
     //#endif
@@ -716,6 +718,7 @@ public static void drawBillboardText(String text, float x, float y, int color, b
         translate(-v[0], -v[1], -v[2]);
 
         //#if MC < 1.21
+        boolean lightingWasOn = GL11.glIsEnabled(GL11.GL_LIGHTING);
         MinecraftCompat.getMinecraft().getTextureManager().bindTexture(Resources.BEACON_BEAM);
         GL11.glTexParameterf(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
         //#endif
@@ -847,7 +850,10 @@ public static void drawBillboardText(String text, float x, float y, int color, b
         GlStateManagerCompat.depthMask(true);
         GlStateManagerCompat.disableBlend();
         GlStateManagerCompat.enableCull();
-        GlStateManagerCompat.enableLighting();
+        GlStateManagerCompat.depthFunc(GL11.GL_LESS);
+        //#if MC < 1.21
+        if (lightingWasOn) GlStateManagerCompat.enableLighting();
+        //#endif
         popMatrix();
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
     }

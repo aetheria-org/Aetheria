@@ -5,6 +5,7 @@ import io.hamlook.aetheria.Aetheria;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -56,18 +57,22 @@ public class HttpClient {
     /** Same as {@link #fetchImage(String)} but with an explicit User-Agent (for backends that expect a fixed one). */
     public static BufferedImage fetchImage(String url, String userAgent) throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        conn.setRequestMethod("GET");
-        conn.setConnectTimeout(IMAGE_TIMEOUT_MS);
-        conn.setReadTimeout(IMAGE_TIMEOUT_MS);
-        conn.setRequestProperty("User-Agent", userAgent);
+        try {
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(IMAGE_TIMEOUT_MS);
+            conn.setReadTimeout(IMAGE_TIMEOUT_MS);
+            conn.setRequestProperty("User-Agent", userAgent);
 
-        int code = conn.getResponseCode();
-        if (code < 200 || code >= 300) throw new RuntimeException("HTTP " + code);
+            int code = conn.getResponseCode();
+            if (code < 200 || code >= 300) throw new RuntimeException("HTTP " + code);
 
-        try (java.io.InputStream in = conn.getInputStream()) {
-            BufferedImage img = ImageIO.read(in);
-            if (img == null) throw new RuntimeException("Undecodable image body from " + url);
-            return img;
+            try (InputStream in = conn.getInputStream()) {
+                BufferedImage img = ImageIO.read(in);
+                if (img == null) throw new RuntimeException("Undecodable image body from " + url);
+                return img;
+            }
+        } finally {
+            conn.disconnect();
         }
     }
 

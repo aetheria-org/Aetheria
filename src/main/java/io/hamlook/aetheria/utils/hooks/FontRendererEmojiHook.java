@@ -69,7 +69,7 @@ public class FontRendererEmojiHook {
 
                 String key = text.substring(cursor + 1, end);
                 float size = fr.FONT_HEIGHT;
-                if (EmojiManager.exists(key) && RenderUtils.drawEmoji(key, cursorX, y, size)) {
+                if (EmojiManager.canRender(key) && RenderUtils.drawEmoji(key, cursorX, y, size)) {
                     cursorX += size + 1;
                 } else {
                     cursorX = drawPlain(fr, text.substring(cursor, end + 1), cursorX, y, color, dropShadow);
@@ -118,7 +118,7 @@ public class FontRendererEmojiHook {
     //$$
     //$$             String key = text.substring(cursor + 1, end);
     //$$             float size = fr.fontHeight;
-    //$$             if (EmojiManager.exists(key) && RenderUtils.drawEmoji(key, cursorX, y, size)) {
+    //$$             if (EmojiManager.canRender(key) && RenderUtils.drawEmoji(key, cursorX, y, size)) {
     //$$                 cursorX += size + 1;
     //$$             } else {
     //$$                 cursorX = drawPlainModern(fr, text.substring(cursor, end + 1), cursorX, y, color, dropShadow);
@@ -228,7 +228,7 @@ public class FontRendererEmojiHook {
     //$$         cursorX = drawStyledSegment(fr, run.text.substring(lastEnd, cursor), run.style, cursorX, y, color, shadow);
     //$$         String key = run.text.substring(cursor + 1, end);
     //$$         float size = fr.fontHeight;
-    //$$         if (EmojiManager.exists(key) && RenderUtils.drawEmoji(key, cursorX, y, size)) {
+    //$$         if (EmojiManager.canRender(key) && RenderUtils.drawEmoji(key, cursorX, y, size)) {
     //$$             cursorX += size + 1;
     //$$         } else {
     //$$             cursorX = drawStyledSegment(fr, run.text.substring(cursor, end + 1), run.style, cursorX, y, color, shadow);
@@ -269,7 +269,7 @@ public class FontRendererEmojiHook {
     //$$                 int end = shortcodeEnd(run.text, cursor);
     //$$                 width += segmentWidth(fr, run.text.substring(lastEnd, cursor), run.style);
     //$$                 String key = run.text.substring(cursor + 1, end);
-    //$$                 if (EmojiManager.exists(key)) {
+    //$$                 if (EmojiManager.canRender(key)) {
     //$$                     width += fr.fontHeight + 1;
     //$$                 } else {
     //$$                     width += segmentWidth(fr, run.text.substring(cursor, end + 1), run.style);

@@ -160,6 +160,11 @@ public final class RenderUtils {
     }
 
     public static void drawFilledCylinder(double radius, double height, int steps, float r, float g, float b, float a) {
+        //#if MC < 1.21
+        boolean lightingWasOn = GL11.glIsEnabled(GL11.GL_LIGHTING);
+        //#endif
+        // Unlit draw: caller lighting would replace the flat color with the material ambient.
+        GlStateManagerCompat.disableLighting();
         GlStateManagerCompat.disableTexture2D();
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
@@ -184,12 +189,20 @@ public final class RenderUtils {
 
         if (cull) GL11.glEnable(GL11.GL_CULL_FACE);
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        //#if MC < 1.21
+        if (lightingWasOn) GlStateManagerCompat.enableLighting();
+        //#endif
         GlStateManagerCompat.enableDepth();
         GlStateManagerCompat.disableBlend();
         GlStateManagerCompat.enableTexture2D();
     }
 
     public static void drawWorldCircle(double radius, int steps, float lineWidth, float r, float g, float b, float a) {
+        //#if MC < 1.21
+        boolean lightingWasOn = GL11.glIsEnabled(GL11.GL_LIGHTING);
+        //#endif
+        // Unlit draw: caller lighting would replace the flat color with the material ambient.
+        GlStateManagerCompat.disableLighting();
         GlStateManagerCompat.disableTexture2D();
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
@@ -205,6 +218,9 @@ public final class RenderUtils {
         vb.draw();
 
         GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        //#if MC < 1.21
+        if (lightingWasOn) GlStateManagerCompat.enableLighting();
+        //#endif
         GlStateManagerCompat.enableDepth();
         GlStateManagerCompat.disableBlend();
         GlStateManagerCompat.enableTexture2D();
@@ -323,11 +339,14 @@ public final class RenderUtils {
     // size x size square. Returns false (drawing nothing) if the emoji isn't
     // known/loaded yet, so callers can fall back to rendering the raw text.
     public static boolean drawEmoji(String nameOrAlias, float x, float y, float size) {
+        if (!EmojiManager.canRender(nameOrAlias)) return false;
         EmojiManager.Emoji emoji = EmojiManager.getEmoji(nameOrAlias);
         if (emoji != null) {
-            String sheetName = EmojiManager.EMOJI_THEMES[ATHRConfig.feature.chat.emojiConfig.emojiTheme];
-            ResourceLocation texture = EmojiLinks.getSpriteResource(sheetName);
+            String sheetName = EmojiManager.themeSheet();
+            if (sheetName == null) return false;
             int sheetW = EmojiManager.getSheetWidth(sheetName);
+            if (sheetW <= 0) return false;
+            ResourceLocation texture = EmojiLinks.getSpriteResource(sheetName);
 
             GlStateManagerCompat.pushMatrix();
             GlStateManagerCompat.color(1f, 1f, 1f, 1f);
@@ -344,10 +363,7 @@ public final class RenderUtils {
         CustomEmoji customEmoji = EmojiManager.getCustomEmoji(nameOrAlias);
         if (customEmoji != null) {
             int sheetW = EmojiManager.getSheetWidth(EmojiLinks.CUSTOM_SHEET);
-            if (sheetW <= 0 || customEmoji.sprites.isEmpty()) {
-                Aetheria.logger.info("[EMOJI] Cannot render custom emoji :" + nameOrAlias + ": — sheetW=" + sheetW + ", sprites=" + customEmoji.sprites.size());
-                return false;
-            }
+            if (sheetW <= 0 || customEmoji.sprites.isEmpty()) return false;
 
             int frameIndex = 0;
             if (customEmoji.animated && customEmoji.frametime > 0) {

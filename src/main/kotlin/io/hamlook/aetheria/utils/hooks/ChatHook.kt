@@ -148,10 +148,10 @@ object ChatHook {
                 GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, headAlpha)
 
                 DrawContextUtils.drawScaledCustomSizeModalRect(
-                    info.locationSkin, x.toInt(), (y - 1f).toInt(), 8f, 8f, 8, 8, 8f, 8f, 64f, 64f
+                    info.locationSkin, x.toInt(), (y - 1f).toInt(), 8f, 8f, 8, 8, 8, 8, 64f, 64f
                 )
                 DrawContextUtils.drawScaledCustomSizeModalRect(
-                    info.locationSkin, x.toInt(), (y - 1f).toInt(), 40f, 8f, 8, 8, 8f, 8f, 64f, 64f
+                    info.locationSkin, x.toInt(), (y - 1f).toInt(), 40f, 8f, 8, 8, 8, 8, 64f, 64f
                 )
 
                 GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f)
