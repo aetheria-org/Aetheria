@@ -3,9 +3,12 @@ package io.hamlook.aetheria.features.mining;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.core.features.mining.BalConfig;
 import io.hamlook.aetheria.events.*;
+import io.hamlook.aetheria.features.mining.bal.BalAlertOverlay;
 import io.hamlook.aetheria.features.misc.PerformanceHUD;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.compat.BlockCompat;
 import io.hamlook.aetheria.utils.compat.EntityCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -31,6 +34,11 @@ public class MiningApi {
     private static final long INIT_SOUND_TIMEOUT_MS = 200;
     private static final long CLICK_WINDOW_MS = 1000;
     private static final double MAX_BREAK_DISTANCE = 7.0;
+    private static final long BAL_DEATH_DELAY_MS = 5000L;
+    private static final long BAL_WARN_30_MS = 30000L;
+    private static final long BAL_WARN_10_MS = 10000L;
+    private static final String BAL_DEATH_TEXT = "The boss looks weak and tired and retreats into the lava";
+    private static final String BAL_SPAWN_TEXT = "The ground starts to shake and the lava bubbles";
 
     private static final ConcurrentHashMap<BlockPos, Long> recentClickedBlocks = new ConcurrentHashMap<>();
     private static final ConcurrentLinkedQueue<MinedBlock> surroundingMinedBlocks = new ConcurrentLinkedQueue<>();
@@ -38,6 +46,12 @@ public class MiningApi {
     private static BlockPos lastClickedPos = null;
     private static long lastClicked = 0;
     private static BlockPos lastLoggedClickPos = null;
+
+    private static long balDeathAtMs = 0;
+    private static long balRespawnAtMs = 0;
+    private static boolean balAlertFired = false;
+    private static boolean balWarn30Fired = false;
+    private static boolean balWarn10Fired = false;
 
     private static long lastInitSound = 0;
     private static BlockPos initBlockPos = null;
@@ -208,9 +222,12 @@ public class MiningApi {
     @HandleEvent
     public void onTick(ASMTickEvent event) {
         if (event.phase != TickPhase.END) return;
-        if (!isMiningArea()) return;
 
         long now = System.currentTimeMillis();
+        tickBal(now);
+
+        if (!isMiningArea()) return;
+
         recentClickedBlocks.entrySet().removeIf(e -> now - e.getValue() > CLICK_EXPIRE_MS);
         surroundingMinedBlocks.removeIf(b -> now - b.time > MINED_EXPIRE_MS);
         cleanupSpamCooldown(now);
@@ -234,6 +251,7 @@ public class MiningApi {
         lastClickedPos = null;
         lastLoggedClickPos = null;
         resetOreEvent();
+        clearBalTimer();
         currentAreaOreBlocks = EnumSet.noneOf(OreBlock.class);
         debugLog("State reset on world unload");
     }
@@ -250,6 +268,99 @@ public class MiningApi {
         event.addData("ignoreInit: " + ignoreInit);
         event.addData("lastInitSound: " + (System.currentTimeMillis() - lastInitSound) + "ms ago");
         event.addData("currentAreaOreBlocks: " + currentAreaOreBlocks.size());
+        event.addData("Bal respawn: " + (hasBalTimer() ? formatBalClock(getBalRemainingMs()) : "none"));
+    }
+
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
+        BalConfig cfg = balConfig();
+        if (cfg == null || !cfg.enabled) return;
+        if (!ChatUtils.isFromServer(event)) return;
+        if (SkyblockData.getCurrentLocation() != SkyblockData.Location.CRYSTAL_HOLLOWS) return;
+        if (event.parsed() != null) return;
+
+        String message = event.plain();
+
+        if (message.contains(BAL_DEATH_TEXT)) {
+            balDeathAtMs = System.currentTimeMillis() + BAL_DEATH_DELAY_MS;
+            return;
+        }
+        if (cfg.clearOnSpawn && message.contains(BAL_SPAWN_TEXT)) {
+            clearBalTimer();
+        }
+    }
+
+    private static void tickBal(long now) {
+        BalConfig cfg = balConfig();
+        if (cfg == null || !cfg.enabled) return;
+        if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null) return;
+        if (SkyblockData.getCurrentLocation() != SkyblockData.Location.CRYSTAL_HOLLOWS) return;
+
+        if (balDeathAtMs != 0) {
+            if (now < balDeathAtMs) return;
+            balDeathAtMs = 0;
+            balRespawnAtMs = now + cfg.respawnMinutes * 60_000L;
+            balAlertFired = false;
+            balWarn30Fired = false;
+            balWarn10Fired = false;
+            ChatUtils.sendMessage("§b[ASM] §eBal defeated! §7Respawns in §f" + formatBalClock(balRespawnAtMs - now));
+            return;
+        }
+
+        if (balRespawnAtMs == 0) return;
+
+        long remaining = balRespawnAtMs - now;
+        if (remaining <= 0) {
+            clearBalTimer();
+            return;
+        }
+
+        if (!balAlertFired && remaining <= cfg.alertBeforeSeconds * 1000L) {
+            balAlertFired = true;
+            BalAlertOverlay.trigger("§c§lBAL RESPAWN! §r§f" + formatBalClock(remaining), cfg);
+            if (cfg.chatMessage) {
+                ChatUtils.sendMessage("§b[ASM] §eBal respawns in §f" + formatBalClock(remaining) + "§e!");
+            }
+        }
+        if (!balWarn30Fired && remaining <= BAL_WARN_30_MS) {
+            balWarn30Fired = true;
+            ChatUtils.sendMessage("§b[ASM] §eBal respawns in §c30s§e!");
+            BalAlertOverlay.playAlertSound(cfg.alertSound);
+        }
+        if (!balWarn10Fired && remaining <= BAL_WARN_10_MS) {
+            balWarn10Fired = true;
+            ChatUtils.sendMessage("§b[ASM] §eBal respawns in §c10s§e!");
+            BalAlertOverlay.playAlertSound(cfg.alertSound);
+        }
+    }
+
+    public static boolean hasBalTimer() {
+        return balRespawnAtMs != 0;
+    }
+
+    public static long getBalRemainingMs() {
+        if (balRespawnAtMs == 0) return 0;
+        return Math.max(0L, balRespawnAtMs - System.currentTimeMillis());
+    }
+
+    public static String formatBalClock(long ms) {
+        long totalSeconds = Math.max(0L, ms) / 1000;
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
+        return minutes + ":" + String.format("%02d", seconds);
+    }
+
+    private static void clearBalTimer() {
+        balDeathAtMs = 0;
+        balRespawnAtMs = 0;
+        balAlertFired = false;
+        balWarn30Fired = false;
+        balWarn10Fired = false;
+    }
+
+    private static BalConfig balConfig() {
+        if (ATHRConfig.feature == null) return null;
+        return ATHRConfig.feature.mining.bal;
     }
 
     private static void resetOreEvent() {

@@ -29,6 +29,9 @@ public final class SecretTracker {
     // every room seen this run, so walking back in reuses its waypoints and collected state
     private static final Map<String, SecretRoom> rooms = new ConcurrentHashMap<>();
 
+    private static final Set<String> clearedAnnounced = ConcurrentHashMap.newKeySet();
+    private static final Set<String> secretsAnnounced = ConcurrentHashMap.newKeySet();
+
     private static volatile SecretRoom current;
     private static volatile int found;
     private static volatile int total;
@@ -44,10 +47,13 @@ public final class SecretTracker {
     public static void onRoomChanged(String name, String key) {
         if (key == null) return;
         JsonObject json = locations();
-        SecretRoom room = rooms.get(key);
-        if (room == null) {
-            room = new SecretRoom(key, load(name, json), expectedSecrets(name));
-            if (json != null) rooms.put(key, room);
+        SecretRoom room;
+        synchronized (rooms) {
+            room = rooms.get(key);
+            if (room == null) {
+                room = new SecretRoom(key, load(name, json), expectedSecrets(name));
+                if (json != null) rooms.put(key, room);
+            }
         }
         if (DungeonRoomDetector.roomBoundsValid) {
             room.setBounds(DungeonRoomDetector.roomMinX, DungeonRoomDetector.roomMinZ,
@@ -89,6 +95,8 @@ public final class SecretTracker {
 
     public static void clear() {
         rooms.clear();
+        clearedAnnounced.clear();
+        secretsAnnounced.clear();
         current = null;
         outsideTicks = 0;
         lastX = Double.NaN;
@@ -119,10 +127,15 @@ public final class SecretTracker {
     }
 
     // latest map reading wins, so a wrong tick corrects itself instead of sticking
-    public static void markRoomState(boolean allSecretsCleared) {
-        SecretRoom room = current;
-        if (room == null) return;
+    public static boolean updateSecretsCleared(SecretRoom room, boolean allSecretsCleared) {
+        if (room == null) return false;
         room.setAllSecretsCleared(allSecretsCleared);
+        return allSecretsCleared && secretsAnnounced.add(room.key());
+    }
+
+    public static boolean updateCleared(SecretRoom room, boolean cleared) {
+        if (room == null) return false;
+        return cleared && clearedAnnounced.add(room.key());
     }
 
     public static CounterResult acceptCounters(int foundCount, int totalCount) {

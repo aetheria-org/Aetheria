@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.scoreboard;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.features.mining.MiningApi;
 import io.hamlook.aetheria.features.mining.fetchur.FetchurData;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
@@ -68,6 +69,8 @@ public class CustomScoreboard extends Overlay {
     private static final int LINE_COPPER       = 26;
     private static final int LINE_PLOT_NUMBER  = 27;
     private static final int LINE_CLEANUP      = 28;
+    private static final int LINE_BAL          = 29;
+    private static final int LINE_BOOSTERS     = 30;
 
     private static final String LOC_SYMBOL_NORMAL = "⏣";
     private static final String LOC_SYMBOL_RIFT   = "ф";
@@ -434,6 +437,21 @@ public class CustomScoreboard extends Overlay {
                     break;
                 case LINE_CLEANUP:
                     if (cleanupRaw != null) { lines.add(cleanupRaw); rawIndex.add(-1); }
+                    break;
+                case LINE_BAL:
+                    if (SkyblockData.getCurrentLocation() == SkyblockData.Location.CRYSTAL_HOLLOWS
+                            && MiningApi.hasBalTimer()) {
+                        lines.add("§cBal Respawn: §f" + MiningApi.formatBalClock(MiningApi.getBalRemainingMs()));
+                        rawIndex.add(-1);
+                    }
+                    break;
+                case LINE_BOOSTERS:
+                    if (SkyblockData.isOnSkyblock()) {
+                        for (String booster : TablistParser.readBoosters()) {
+                            lines.add(booster);
+                            rawIndex.add(-1);
+                        }
+                    }
                     break;
                 case LINE_SLAYER:
                     if (!inDungeon)

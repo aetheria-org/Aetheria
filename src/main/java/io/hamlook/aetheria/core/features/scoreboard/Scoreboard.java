@@ -26,8 +26,8 @@ public class Scoreboard {
                     .exampleText();
             maxLineId = example.length - 1;
         } catch (Exception e) {
-            Aetheria.logger.log(Level.SEVERE, "[ATHR] could not read scoreboard exampleText; assuming 28 lines", e);
-            maxLineId = 28;
+            Aetheria.logger.log(Level.SEVERE, "[ATHR] could not read scoreboard exampleText; assuming 30 lines", e);
+            maxLineId = 30;
         }
         return maxLineId;
     }
@@ -126,15 +126,17 @@ public class Scoreboard {
             "§8─────────────────",
             "§fCopper: §c359,485,574",
             "§aPlot §7- §b20",
-            "§fCleanup: §a75%"
+            "§fCleanup: §a75%",
+            "§cBal Respawn: §f4:12",                                                                                           // 29 BAL
+            "§6§l2x §a§lSkill EXP §7(§e59m 43s§7)"                                                                             // 30 BOOSTERS
 
     })
     public List<Integer> scoreboardLines = new ArrayList<>(Arrays.asList(
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26, 27, 28
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26, 27, 28, 29, 30
     ));
 
     @Expose
-    public int scoreboardLinesSeen = 28;
+    public int scoreboardLinesSeen = 30;
 
     @Expose
     @ConfigOption(name = "Unknown Lines Warning", desc = "Show a chat warning when the scoreboard contains a line the mod doesn't recognise.\n§eReporting these in the Discord helps get them added!")

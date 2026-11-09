@@ -32,6 +32,12 @@ public final class RenderUtils {
     private static final ResourceLocation SEARCH_BAR_TEX_GOLD = Resources.SEARCH_BAR_TEX_GOLD;
     private static final Map<ResourceLocation, Boolean> RESOURCE_CACHE = new HashMap<>();
 
+    private static final long ALERT_FADE_IN_MS = 250L;
+    private static final long ALERT_FADE_OUT_MS = 450L;
+    private static final long ALERT_PULSE_PERIOD_MS = 600L;
+    private static final float ALERT_CENTER_Y_RATIO = 0.44f;
+    private static final int ALERT_LINE_GAP = 4;
+
     private RenderUtils() {
     }
 
@@ -308,6 +314,60 @@ public final class RenderUtils {
         GlStateManagerCompat.disableBlend();
         GlStateManagerCompat.enableAlpha();
         GlStateManagerCompat.enableTexture2D();
+    }
+
+    public static void drawAlertText(int scaledWidth, int scaledHeight, String main, String sub,
+                                     long activeUntilMs, long displayMs, float scale, boolean animate) {
+        String mainText = main == null ? "" : main;
+        String subText = sub == null ? "" : sub;
+        float mainScale = Math.max(1f, scale);
+        float subScale = Math.max(0.75f, mainScale * 0.5f);
+
+        long windowMs = Math.max(1L, displayMs);
+        long remainingMs = Math.max(0L, activeUntilMs - System.currentTimeMillis());
+        float elapsed = windowMs - Math.min(windowMs, remainingMs);
+        float envelope = Math.min(1f, elapsed / ALERT_FADE_IN_MS)
+                * Math.min(1f, (float) remainingMs / ALERT_FADE_OUT_MS);
+        double phase = (elapsed % ALERT_PULSE_PERIOD_MS) / (double) ALERT_PULSE_PERIOD_MS;
+        float pulse = 0.4f + 0.6f * (float) Math.abs(Math.sin(phase * Math.PI));
+        float mainAlpha = animate ? clamp01(envelope * pulse) : 1f;
+        float subAlpha = animate ? clamp01(envelope) : 1f;
+
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
+        float blockH = fr.FONT_HEIGHT * mainScale + ALERT_LINE_GAP + fr.FONT_HEIGHT * subScale;
+        float yMain = scaledHeight * ALERT_CENTER_Y_RATIO - blockH / 2f;
+        float xMain = (scaledWidth - fr.getStringWidth(mainText) * mainScale) / 2f;
+        float xSub = (scaledWidth - fr.getStringWidth(subText) * subScale) / 2f;
+
+        boolean blended = mainAlpha < 1f || subAlpha < 1f;
+        if (blended) {
+            GlStateManagerCompat.enableBlend();
+            GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        }
+
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(xMain, yMain, 0);
+        GlStateManagerCompat.scale(mainScale, mainScale, 1);
+        DrawContextUtils.drawTextWithShadow(fr, mainText, 0, 0, alphaArgb(mainAlpha));
+        GlStateManagerCompat.popMatrix();
+
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(xSub, yMain + fr.FONT_HEIGHT * mainScale + ALERT_LINE_GAP, 0);
+        GlStateManagerCompat.scale(subScale, subScale, 1);
+        DrawContextUtils.drawTextWithShadow(fr, subText, 0, 0, alphaArgb(subAlpha));
+        GlStateManagerCompat.popMatrix();
+
+        if (blended) {
+            GlStateManagerCompat.disableBlend();
+        }
+    }
+
+    private static float clamp01(float value) {
+        return Math.max(0f, Math.min(1f, value));
+    }
+
+    private static int alphaArgb(float value) {
+        return ((int) (clamp01(value) * 255f)) << 24 | 0xFFFFFF;
     }
 
     public static void drawLine(int x1, int y1, int x2, int y2, int color, float lineWidth) {

@@ -1,17 +1,20 @@
 package io.hamlook.aetheria.events;
 
 import io.hamlook.aetheria.api.event.AetheriaEvent;
-import lombok.Getter;
+import io.hamlook.aetheria.features.dungeons.rooms.secret.SecretRoom;
 
-@Getter
 public class DungeonRoomEvent extends AetheriaEvent {
 
-    private final boolean cleared;
-    private final boolean allSecretsCleared;
-
-    public DungeonRoomEvent(boolean cleared, boolean allSecretsCleared) {
-        this.cleared = cleared;
-        this.allSecretsCleared = allSecretsCleared;
+    public enum Type {
+        ROOM_CLEARED,
+        SECRETS_CLEARED
     }
 
+    public final SecretRoom room;
+    public final Type type;
+
+    public DungeonRoomEvent(SecretRoom room, Type type) {
+        this.room = room;
+        this.type = type;
+    }
 }

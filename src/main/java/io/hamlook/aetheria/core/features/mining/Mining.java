@@ -41,4 +41,8 @@ public class Mining {
     @Expose
     @Category(name = "Powder Mining Chat", desc = "Hide powder mining chest reward messages from chat")
     public PowderMiningChatFilterConfig powderMiningChat = new PowderMiningChatFilterConfig();
+
+    @Expose
+    @Category(name = "Bal Alert", desc = "Alerts when Bal is defeated and tracks its respawn timer in the Crystal Hollows")
+    public BalConfig bal = new BalConfig();
 }

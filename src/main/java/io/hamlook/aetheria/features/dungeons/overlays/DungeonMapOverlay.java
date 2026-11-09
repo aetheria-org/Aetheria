@@ -147,7 +147,15 @@ public class DungeonMapOverlay extends Overlay {
         boolean allSecretsCleared = state == DungeonMapGrid.RoomState.GREEN;
         boolean cleared = allSecretsCleared || state == DungeonMapGrid.RoomState.CLEARED;
 
-        new DungeonRoomEvent(cleared, allSecretsCleared).post();
+        boolean roomClearedFired = SecretTracker.updateCleared(room, cleared);
+        boolean secretsFired = SecretTracker.updateSecretsCleared(room, allSecretsCleared);
+
+        if (roomClearedFired) {
+            new DungeonRoomEvent(room, DungeonRoomEvent.Type.ROOM_CLEARED).post();
+        }
+        if (secretsFired) {
+            new DungeonRoomEvent(room, DungeonRoomEvent.Type.SECRETS_CLEARED).post();
+        }
     }
 
     @Override

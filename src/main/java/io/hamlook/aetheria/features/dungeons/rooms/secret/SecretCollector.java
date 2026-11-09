@@ -217,11 +217,6 @@ public class SecretCollector {
     }
 
     @HandleEvent
-    public void onRoomState(DungeonRoomEvent event) {
-        SecretTracker.markRoomState(event.isAllSecretsCleared());
-    }
-
-    @HandleEvent
     public void onPlayerInteract(ASMPlayerInteractEvent event) {
         if (event.action == ASMPlayerInteractEvent.INTERACT_ENTITY) {
             armEssence(event.entity);

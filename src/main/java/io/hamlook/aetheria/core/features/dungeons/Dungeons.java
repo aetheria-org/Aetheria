@@ -56,6 +56,10 @@ public class Dungeons {
     public DungeonLeapConfig leapConfig = new DungeonLeapConfig();
 
     @Expose
+    @Category(name = "Alerts", desc = "Dungeon clear alerts")
+    public AlertsConfig alerts = new AlertsConfig();
+
+    @Expose
     @ConfigOption(name = "Hide Blessing Messages", desc = "Hides the 'DUNGEON BUFF! ... found a Blessing of ...' chat spam in dungeons")
     @ConfigEditorBoolean
     public boolean hideBlessingMessages = false;

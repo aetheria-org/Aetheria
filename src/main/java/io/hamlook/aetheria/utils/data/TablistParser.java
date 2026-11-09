@@ -87,8 +87,9 @@ public class TablistParser {
         return PLAYER_ORDERING.sortedCopy(MinecraftCompat.getPlayerListEntries());
     }
 
+    private static String footerRawCache;
     private static String footerTextCache;
-    private static int footerTextCacheTick = -1;
+    private static int footerCacheTick = -1;
 
     public static IChatComponent getTabFooter() {
         Minecraft mc = clientWithPlayer();
@@ -96,19 +97,43 @@ public class TablistParser {
         return ((GuiPlayerTabOverlayAccessor) mc.ingameGUI.getTabList()).ATHR$getFooter();
     }
 
-    public static String getTabFooterText() {
+    private static void refreshFooterCache() {
         Minecraft mc = clientWithPlayer();
         if (mc == null) {
+            footerRawCache = null;
             footerTextCache = null;
-            footerTextCacheTick = -1;
-            return null;
+            footerCacheTick = -1;
+            return;
         }
         int tick = MinecraftCompat.getLocalPlayer().ticksExisted;
-        if (tick == footerTextCacheTick) return footerTextCache;
-        footerTextCacheTick = tick;
+        if (tick == footerCacheTick) return;
+        footerCacheTick = tick;
         IChatComponent footer = getTabFooter();
-        footerTextCache = footer == null ? null : ColorUtils.stripColor(TextCompat.getFormattedTextWithResets(footer));
+        footerRawCache = footer == null ? null : TextCompat.getFormattedTextWithResets(footer);
+        footerTextCache = footerRawCache == null ? null : ColorUtils.stripColor(footerRawCache);
+    }
+
+    public static String getTabFooterText() {
+        refreshFooterCache();
         return footerTextCache;
+    }
+
+    private static String getTabFooterRaw() {
+        refreshFooterCache();
+        return footerRawCache;
+    }
+
+    public static List<String> readBoosters() {
+        String text = getTabFooterRaw();
+        if (text == null) return Collections.emptyList();
+        List<String> boosters = new ArrayList<>();
+        for (String line : text.split("\n")) {
+            String raw = line.trim();
+            if (ColorUtils.stripColor(raw).trim().startsWith("2x ")) {
+                boosters.add(raw);
+            }
+        }
+        return boosters;
     }
 
     private static Minecraft clientWithPlayer() {
