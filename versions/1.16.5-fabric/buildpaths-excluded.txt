@@ -1,15 +1,12 @@
-# Forge-only files excluded from Fabric compilation
-# These files depend on Forge APIs (ClientCommandHandler, ICommand, Loader, ClientRegistry)
 
 io.hamlook.aetheria.command.brigadier.BrigadierCommand.kt
 io.hamlook.aetheria.core.hotswap.HotswapSupportImpl.java
 
-# Mixin files excluded from preprocessing — the preprocessor classpath only has the
-# Minecraft jar (no Mixin library), so CallbackInfo/@Inject/@Redirect can't resolve.
-# Mixins must be completely rewritten per-version anyway (different targets, signatures).
-
 io.hamlook.aetheria.mixins.accessors.FontRendererAccessor.java
 io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor.java
+io.hamlook.aetheria.mixins.bugfixes.MixinBowDrawFix.java
+io.hamlook.aetheria.mixins.bugfixes.MixinMiningProgressFix.java
+io.hamlook.aetheria.mixins.bugfixes.MixinReequipAnimationFix.java
 io.hamlook.aetheria.mixins.chat.MixinChatLine.java
 io.hamlook.aetheria.mixins.chat.MixinGuiChat.java
 io.hamlook.aetheria.mixins.chat.MixinGuiNewChat.java

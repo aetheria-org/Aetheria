@@ -1,1 +1,6 @@
+# Forge's GuiUtils moved packages in 1.16 and is not remapped by the chain.
 io.hamlook.aetheria.mixins.gui.MixinTooltipScale.java
+
+io.hamlook.aetheria.mixins.bugfixes.MixinBowDrawFix.java
+io.hamlook.aetheria.mixins.bugfixes.MixinMiningProgressFix.java
+io.hamlook.aetheria.mixins.bugfixes.MixinReequipAnimationFix.java

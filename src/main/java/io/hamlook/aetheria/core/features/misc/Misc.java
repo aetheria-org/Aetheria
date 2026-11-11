@@ -129,6 +129,10 @@ public class Misc {
     @Category(name = "Ghost Tracker", desc = "Settings for Ghost Tracker overlay")
     public GhostTrackerConfig ghostTrackerConfig = new GhostTrackerConfig();
 
+    @Expose
+    @Category(name = "Bug Fixes", desc = "Fixes for vanilla bugs that cancel the current item action")
+    public BugFixesConfig bugFixes = new BugFixesConfig();
+
 //    @Expose
 //    @Category(name = "Party Member Outline", desc = "Highlight your party members with a colored outline while they're visible on screen (not through walls)")
     public PartyMemberOutlineConfig partyMemberOutline = new PartyMemberOutlineConfig();

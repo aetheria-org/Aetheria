@@ -14,6 +14,11 @@ public class Mining {
     public boolean commissionHighlight = true;
 
     @Expose
+    @ConfigOption(name = "Mining Progress Fix", desc = "Keeps block-breaking progress when the held drill's data updates (fuel, durability)")
+    @ConfigEditorBoolean
+    public boolean miningProgressFix = true;
+
+    @Expose
     @Category(name = "Gold Tracker", desc = "Tracks gold ingot and enchanted gold drops")
     public GoldTrackerConfig goldTracker = new GoldTrackerConfig();
 

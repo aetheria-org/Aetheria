@@ -252,4 +252,16 @@ public class ItemUtils {
         if (ItemCompatKt.isEmptyCompat(item)) return null;
         return CachedItemData.of(item).nbt.get(item, ItemUtils::loadNbtData).uuid;
     }
+
+    public static boolean isSameTool(@Nullable ItemStack first, @Nullable ItemStack second) {
+        if (first == null || second == null) return false;
+        if (ItemCompatKt.isEmptyCompat(first) || ItemCompatKt.isEmptyCompat(second)) return false;
+        if (first.getItem() != second.getItem()) return false;
+        String firstId = getInternalName(first);
+        if (firstId.isEmpty() || !firstId.equals(getInternalName(second))) return false;
+        String firstUuid = getItemUuid(first);
+        String secondUuid = getItemUuid(second);
+        if (firstUuid == null || secondUuid == null) return false;
+        return firstUuid.equals(secondUuid);
+    }
 }
