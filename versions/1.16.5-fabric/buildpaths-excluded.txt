@@ -34,3 +34,4 @@ io.hamlook.aetheria.mixins.renderer.MixinRender.java
 io.hamlook.aetheria.mixins.renderer.MixinRenderItem.java
 io.hamlook.aetheria.mixins.renderer.MixinRendererLivingEntity.java
 io.hamlook.aetheria.mixins.renderer.MixinRenderPlayer.java
+io.hamlook.aetheria.mixins.gui.MixinTooltipScale.java

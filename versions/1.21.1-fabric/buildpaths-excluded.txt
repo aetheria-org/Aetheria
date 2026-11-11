@@ -24,6 +24,7 @@ io.hamlook.aetheria.mixins.accessors.FontRendererAccessor.java
 io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor.java
 io.hamlook.aetheria.mixins.core.MixinAbstractClientPlayer.java
 io.hamlook.aetheria.mixins.core.MixinItem.java
+io.hamlook.aetheria.mixins.gui.MixinTooltipScale.java
 
 # FontRenderer text mixins: targets (renderStringAtPos/renderChar/drawString
 # overloads) do not exist on TextRenderer — injections warn-and-skip (emoji) or

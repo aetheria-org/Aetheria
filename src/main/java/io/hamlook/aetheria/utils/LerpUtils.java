@@ -1,6 +1,9 @@
 package io.hamlook.aetheria.utils;
 
 
+import lombok.Getter;
+import lombok.Setter;
+
 public final class LerpUtils {
 
     private static final float SIGMOID_STR = 8;
@@ -31,8 +34,10 @@ public final class LerpUtils {
 
     public static final class LerpingInteger {
 
+        @Getter
         private int timeSpent;
         private long lastMillis;
+        @Setter
         private int timeToReachTarget;
         private int targetValue;
         private int lerpValue;
@@ -68,17 +73,9 @@ public final class LerpUtils {
             }
         }
 
-        public int getTimeSpent() {
-            return timeSpent;
-        }
-
         public void resetTimer() {
             timeSpent = 0;
             lastMillis = System.currentTimeMillis();
-        }
-
-        public void setTimeToReachTarget(int timeToReachTarget) {
-            this.timeToReachTarget = timeToReachTarget;
         }
 
         public int getValue() {
@@ -102,7 +99,8 @@ public final class LerpUtils {
 
     public static final class LerpingFloat {
 
-        private final int timeToReachTarget;
+        @Setter
+        private int timeToReachTarget;
         private int timeSpent;
         private long lastMillis;
         private float targetValue;

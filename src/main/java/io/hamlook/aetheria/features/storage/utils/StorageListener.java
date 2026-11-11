@@ -3,6 +3,7 @@ package io.hamlook.aetheria.features.storage.utils;
 import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.*;
+import io.hamlook.aetheria.features.qol.TooltipHandler;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.features.storage.render.StorageRenderer;
@@ -290,6 +291,8 @@ public class StorageListener {
     private boolean handleScrollInput(ASMMouseEvent event) {
         int dWheel = event.dWheel;
         if (dWheel != 0) {
+            if (TooltipHandler.isScaleKeyHeld()) return false;
+
             // Don't scroll overlay if shift is held (for item moving)
             if (KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) ||
                     KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT)) {
