@@ -15,6 +15,8 @@ io.hamlook.aetheria.mixins.bugfixes.MixinMiningProgressFix.java
 io.hamlook.aetheria.mixins.bugfixes.MixinReequipAnimationFix.java
 io.hamlook.aetheria.mixins.input.MixinMouseHelper.java
 io.hamlook.aetheria.mixins.network.MixinNetHandlerPlayClient.java
+io.hamlook.aetheria.mixins.renderer.MixinItemRenderer.java
+io.hamlook.aetheria.mixins.renderer.MixinEntityLivingBaseSwingDuration.java
 io.hamlook.aetheria.mixins.renderer.MixinRenderItem.java
 io.hamlook.aetheria.mixins.renderer.MixinRender.java
 io.hamlook.aetheria.mixins.renderer.MixinLayerArmorBase.java

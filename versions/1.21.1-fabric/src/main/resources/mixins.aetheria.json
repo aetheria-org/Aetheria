@@ -1,0 +1,11 @@
+{
+  "package": "io.hamlook.aetheria.mixins",
+  "plugin": "io.hamlook.aetheria.init.ASMMixinPlugin",
+  "refmap": "mixins.aetheria.refmap.json",
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_17",
+  "required": false,
+  "injectors": {
+    "maxShiftBy": 2
+  }
+}

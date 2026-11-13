@@ -60,11 +60,6 @@ public class Misc {
     public boolean skillXpDisplay = true;
 
     @Expose
-    @ConfigOption(name = "No Swap Animation", desc = "Removes the item lowering animation when switching hotbar slots")
-    @ConfigEditorBoolean
-    public boolean noItemSwitchAnimation = true;
-
-    @Expose
     @ConfigOption(name = "Show Own Nametag", desc = "Shows your own nametag in third person")
     @ConfigEditorBoolean
     public boolean showOwnNametag = true;

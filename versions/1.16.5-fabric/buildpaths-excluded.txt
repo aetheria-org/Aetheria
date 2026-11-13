@@ -26,6 +26,8 @@ io.hamlook.aetheria.mixins.gui.MixinGuiMainMenu.java
 io.hamlook.aetheria.mixins.gui.MixinGuiScreen.java
 io.hamlook.aetheria.mixins.input.MixinMouseHelper.java
 io.hamlook.aetheria.mixins.network.MixinNetHandlerPlayClient.java
+io.hamlook.aetheria.mixins.renderer.MixinItemRenderer.java
+io.hamlook.aetheria.mixins.renderer.MixinEntityLivingBaseSwingDuration.java
 io.hamlook.aetheria.mixins.renderer.MixinLayerArmorBase.java
 io.hamlook.aetheria.mixins.renderer.MixinRender.java
 io.hamlook.aetheria.mixins.renderer.MixinRenderItem.java

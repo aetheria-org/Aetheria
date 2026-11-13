@@ -734,6 +734,12 @@ public class ATHRConfig {
         DianaStats.getInstance().reset();
     }
 
+    public static void resetItemAnimations() {
+        if (feature == null) return;
+        feature.cosmetics.itemAnimations.reset();
+        saveConfig();
+    }
+
     public static void openChatFilterUI() {
         if (feature == null) return;
         screenToOpen = new ChatFilterGUI();

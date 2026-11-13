@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.config.migrations.ChatSubcategories;
 import io.hamlook.aetheria.core.config.migrations.EnchantParserNested;
+import io.hamlook.aetheria.core.config.migrations.ItemAnimationsCategory;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,7 +18,8 @@ public final class ConfigMigrations {
 
     private static final List<ConfigMigrationHandler> STEPS = Collections.unmodifiableList(Arrays.asList(
             new EnchantParserNested(),      // v1
-            new ChatSubcategories()         // v2
+            new ChatSubcategories(),        // v2
+            new ItemAnimationsCategory()    // v3
     ));
 
     public static final int CURRENT = STEPS.size();
