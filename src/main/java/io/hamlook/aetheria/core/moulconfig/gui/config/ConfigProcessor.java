@@ -4,6 +4,8 @@
 package io.hamlook.aetheria.core.moulconfig.gui.config;
 
 import com.google.gson.annotations.Expose;
+import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.*;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
 
@@ -64,6 +66,11 @@ public class ConfigProcessor {
     private static void processSubcategoryOptions(Object subObj, ProcessedSubcategory sub, Object config) {
         for (Field subField : subObj.getClass().getDeclaredFields()) {
             if (subField.isAnnotationPresent(Category.class)) {
+                if (!subField.isAnnotationPresent(Expose.class)) {
+                    Aetheria.logger.warning("Nested @Category field '" + subField.getName() + "' in " + subObj.getClass().getSimpleName() + " has no @Expose, skipping it.");
+                    continue;
+                }
+
                 Object subSubObj;
                 try { subSubObj = subField.get(subObj); } catch (Exception e) { continue; }
 
@@ -78,6 +85,9 @@ public class ConfigProcessor {
             if (!subField.isAnnotationPresent(ConfigOption.class)) continue;
             ConfigOption opt = subField.getAnnotation(ConfigOption.class);
             ProcessedOption option = new ProcessedOption(opt.name(), opt.desc(), opt.subcategoryId(), subField, subObj);
+            if (subField.isAnnotationPresent(ConfigAccordionId.class)) {
+                option.accordionId = subField.getAnnotation(ConfigAccordionId.class).id();
+            }
             GuiOptionEditor editor = buildEditor(option, subField, config);
             if (editor == null) continue;
             option.editor = editor;
@@ -175,8 +185,12 @@ public class ConfigProcessor {
                     field.set(container, ((Number) value).intValue());
                 else
                     field.set(container, value);
+                ATHRConfig.markConfigDirty();
                 return true;
-            } catch (Exception e) { e.printStackTrace(); return false; }
+            } catch (Exception e) {
+                Aetheria.logger.warning("Failed to set config field '" + field.getName() + "': " + e.getMessage());
+                return false;
+            }
         }
     }
 }

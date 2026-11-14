@@ -15,7 +15,8 @@ public class GuiOptionEditorText extends GuiOptionEditor {
 
     public GuiOptionEditorText(ConfigProcessor.ProcessedOption option) {
         super(option);
-        textField = new GuiElementTextField((String) option.get(), 0);
+        Object value = option.get();
+        textField = new GuiElementTextField(value instanceof String ? (String) value : "", 0);
     }
 
     @Override
@@ -64,6 +65,11 @@ public class GuiOptionEditorText extends GuiOptionEditor {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean capturesEscape() {
+        return textField.getFocus();
     }
 
     @Override

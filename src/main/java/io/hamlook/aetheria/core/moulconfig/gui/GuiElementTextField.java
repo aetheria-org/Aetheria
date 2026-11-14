@@ -49,6 +49,7 @@ public class GuiElementTextField {
     }
 
     public GuiElementTextField(String initialText, int sizeX, int sizeY, int options) {
+        if (initialText == null) initialText = "";
         textField.setFocused(true);
         GuiScreenUtils.setTextFieldCanLoseFocus(textField, false);
         GuiScreenUtils.setTextFieldMaxLength(textField, 999);
@@ -76,6 +77,7 @@ public class GuiElementTextField {
     }
 
     public void setText(String text) {
+        if (text == null) text = "";
         if (textField.getText() == null || !textField.getText().equals(text)) textField.setText(text);
     }
 
@@ -167,6 +169,11 @@ public class GuiElementTextField {
 
     public void keyTyped(char typedChar, int keyCode) {
         if (!focus) return;
+
+        if (KeybindHelper.isEscapeKey(keyCode)) {
+            unfocus();
+            return;
+        }
 
         if ((options & MULTILINE) != 0) {
             if (KeybindHelper.isEnterKey(keyCode)) {

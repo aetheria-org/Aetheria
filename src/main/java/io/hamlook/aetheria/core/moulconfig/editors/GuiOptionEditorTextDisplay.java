@@ -10,7 +10,7 @@ import java.util.List;
 
 public class GuiOptionEditorTextDisplay extends GuiOptionEditor {
 
-    private static int HEIGHT = 60;
+    private int height = 60;
     private final String text;
 
     public GuiOptionEditorTextDisplay(ConfigProcessor.ProcessedOption option,String text) {
@@ -20,16 +20,25 @@ public class GuiOptionEditorTextDisplay extends GuiOptionEditor {
 
     @Override
     public int getHeight() {
-        return HEIGHT;
+        return height;
     }
 
     @Override
     public void render(int x, int y, int width) {
-        RenderUtils.drawFloatingRectDark(x, y, width, HEIGHT, true);
+        RenderUtils.drawFloatingRectDark(x, y, width, height, true);
 
-        String text = this.text;
+        List<String> texts = wrap(Math.max(1, (int) (width * 0.9)));
+        int fontHeight = MinecraftCompat.getFontRenderer().FONT_HEIGHT;
+        height = Math.max(height, 10 + fontHeight * texts.size());
+        int totalTextHeight = fontHeight * texts.size();
+        int startY = y + (height - totalTextHeight) / 2;
+        for (int i = 0; i < texts.size(); i++) {
+            TextRenderUtils.drawStringScaleAware(texts.get(i), x + 5, startY + fontHeight * i, 1f, false);
+        }
+    }
+
+    private List<String> wrap(int maxLineWidth) {
         List<String> texts = new ArrayList<>();
-        int maxLineWidth = (int) (width * 0.9);
         String activeFormatting = "";
         String remaining = text;
         while (!remaining.isEmpty()) {
@@ -65,14 +74,7 @@ public class GuiOptionEditorTextDisplay extends GuiOptionEditor {
             }
             activeFormatting = fmtBuilder.toString();
         }
-        int fontHeight = MinecraftCompat.getFontRenderer().FONT_HEIGHT;
-        HEIGHT = Math.max(HEIGHT, (10 + fontHeight * texts.size()));
-        int totalTextHeight = fontHeight * texts.size();
-        int startY = y + (HEIGHT - totalTextHeight) / 2;
-        for (int i = 0; i < texts.size(); i++) {
-            String s = texts.get(i);
-            TextRenderUtils.drawStringScaleAware(s, x + 5, startY + fontHeight * i, 1f, false);
-        }
+        return texts;
     }
 
     @Override

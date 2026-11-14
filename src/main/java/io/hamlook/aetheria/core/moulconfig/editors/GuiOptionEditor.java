@@ -26,7 +26,11 @@ public abstract class GuiOptionEditor {
         FontRenderer fr = MinecraftCompat.getFontRenderer();
         RenderUtils.drawFloatingRectDark(x, y, width, height, true);
         TextRenderUtils.drawStringCenteredScaledMaxWidth(option.name, fr, x + width / 6, y + 13, true, width / 3 - 10, 0xc0c0c0);
+        renderDescription(x, y, width);
+    }
 
+    protected void renderDescription(int x, int y, int width) {
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         int maxLines = 5;
         float scale = 1;
         int lineCount = DrawContextUtils.wrapFormattedText(fr, option.desc, width * 2 / 3 - 10).size();
@@ -61,6 +65,10 @@ public abstract class GuiOptionEditor {
     }
 
     public abstract boolean keyboardInput();
+
+    public boolean capturesEscape() {
+        return false;
+    }
 
     public boolean keyboardInput(char typedChar, int keyCode) {
         return keyboardInput();

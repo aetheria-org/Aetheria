@@ -7,6 +7,7 @@ import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import net.minecraft.client.gui.FontRenderer;
 
 public class GuiOptionEditorAccordion extends GuiOptionEditor {
 
@@ -17,11 +18,6 @@ public class GuiOptionEditorAccordion extends GuiOptionEditor {
         super(option);
         this.accordionToggled = (boolean) option.get();
         this.accordionId = accordionId;
-    }
-
-    @Override
-    public int getHeight() {
-        return 20;
     }
 
     public int getAccordionId() {
@@ -55,7 +51,9 @@ public class GuiOptionEditorAccordion extends GuiOptionEditor {
         GlStateManagerCompat.enableTexture2D();
         GlStateManagerCompat.disableBlend();
 
-        TextRenderUtils.drawStringScaledMaxWidth(option.name, MinecraftCompat.getFontRenderer(), x + 18, y + 6, false, width - 10, 0xc0c0c0);
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
+        TextRenderUtils.drawStringScaledMaxWidth(option.name, fr, x + 18, y + 13, true, width / 3 - 18, 0xc0c0c0);
+        renderDescription(x, y, width);
     }
 
     @Override

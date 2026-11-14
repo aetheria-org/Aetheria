@@ -3,7 +3,10 @@
 
 package io.hamlook.aetheria.core.moulconfig.editors;
 
+import io.hamlook.aetheria.Aetheria;
+
 import java.awt.*;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ChromaColour {
@@ -14,6 +17,8 @@ public class ChromaColour {
     public static long startTime = -1;
 
     private static final ConcurrentHashMap<String, int[]> DECOMPOSED = new ConcurrentHashMap<>();
+    private static final Set<String> WARNED_MALFORMED = ConcurrentHashMap.newKeySet();
+    private static final int[] FALLBACK = {0, 0, 0, 255, 0};
     private static final ConcurrentHashMap<String, Integer> STATIC_ARGB = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, float[]> CHROMA_BASE = new ConcurrentHashMap<>();
 
@@ -37,13 +42,29 @@ public class ChromaColour {
     private static int[] decompose(String csv) {
         int[] cached = DECOMPOSED.get(csv);
         if (cached != null) return cached;
+        int[] arr = FALLBACK;
         String[] split = csv.split(":");
-        int[] arr = new int[split.length];
-        for (int i = 0; i < split.length; i++) {
-            arr[i] = Integer.parseInt(split[split.length - 1 - i], RADIX);
+        if (split.length == 5) {
+            try {
+                int[] parsed = new int[5];
+                for (int i = 0; i < split.length; i++) {
+                    parsed[i] = Integer.parseInt(split[split.length - 1 - i], RADIX);
+                }
+                arr = parsed;
+            } catch (NumberFormatException e) {
+                warnMalformed(csv, e);
+            }
+        } else {
+            warnMalformed(csv, null);
         }
         DECOMPOSED.put(csv, arr);
         return arr;
+    }
+
+    private static void warnMalformed(String csv, NumberFormatException e) {
+        if (WARNED_MALFORMED.add(csv)) {
+            Aetheria.logger.warning("Ignoring malformed chroma colour \"" + csv + "\"" + (e != null ? ": " + e.getMessage() : ""));
+        }
     }
 
     public static int specialToSimpleRGB(String special) {

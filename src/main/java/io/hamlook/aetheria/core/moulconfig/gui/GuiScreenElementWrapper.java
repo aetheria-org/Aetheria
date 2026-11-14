@@ -54,9 +54,19 @@ public class GuiScreenElementWrapper extends AetheriaBaseScreen {
     //$$ }
     //#endif
 
+    //#if MC >= 1.21
+    //$$ @Override
+    //$$ protected boolean onBeforeVanillaKeys(char typedChar, int keyCode, int modifiers) {
+    //$$     return KeybindHelper.isEscapeKey(keyCode) && element.capturesEscape() && element.keyboardInput(typedChar, keyCode);
+    //$$ }
+    //#endif
+
     //#if MC < 1.21
     @Override
     public void handleKeyboardInput() throws IOException {
+        if (KeybindHelper.isEscapeKey(KeybindHelper.getEventKeyCode()) && element.capturesEscape()) {
+            if (element.keyboardInput()) return;
+        }
         super.handleKeyboardInput();
         element.keyboardInput();
     }

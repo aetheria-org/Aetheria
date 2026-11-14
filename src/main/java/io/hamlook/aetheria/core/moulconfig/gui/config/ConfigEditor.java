@@ -40,7 +40,6 @@ public class ConfigEditor extends GuiElement {
     private static final long SEARCH_REPEAT_RATE_MS = 50;
     private static final int TREE_INDENT = 14;
     private static final int BASE_INDENT = 6;
-    public static ConfigEditor editor = new ConfigEditor(ATHRConfig.feature);
     private final long openedMillis;
     private final LerpingInteger optionsScroll = new LerpingInteger(0, 150);
     private final LerpingInteger categoryScroll = new LerpingInteger(0, 150);
@@ -50,6 +49,7 @@ public class ConfigEditor extends GuiElement {
     private final LerpingInteger minimumSearchSize = new LerpingInteger(0, 150);
     private final GuiElementTextField searchField = new GuiElementTextField("", 0, 20, 0);
     private final List<String> selectedSubcategoryPath = new ArrayList<>();
+    private final List<String> anchorSubcategoryPath = new ArrayList<>();
     private final Map<String, Set<List<String>>> expandedSubcategoryPaths = new HashMap<>();
     private final Set<String> categoriesWithTreeOpen = new HashSet<>();
     private final HashMap<ConfigProcessor.ProcessedOption, List<String>> optionSubcategoryPath = new HashMap<>();
@@ -119,7 +119,6 @@ public class ConfigEditor extends GuiElement {
             }
         }
 
-        editor = this;
     }
 
     public ConfigEditor(Object config, String categoryOpen, String search) {
@@ -139,7 +138,7 @@ public class ConfigEditor extends GuiElement {
     public void openSubcategory(String categoryName, String... subcategoryFieldPath) {
         for (Map.Entry<String, ConfigProcessor.ProcessedCategory> entry : processedConfig.entrySet()) {
             if (entry.getValue().name.equalsIgnoreCase(categoryName)) {
-                toggleTreePath(entry.getKey(), Arrays.asList(subcategoryFieldPath));
+                selectSubcategory(entry.getKey(), Arrays.asList(subcategoryFieldPath));
                 return;
             }
         }
@@ -207,24 +206,45 @@ public class ConfigEditor extends GuiElement {
         return newMap;
     }
 
-    private int forEachOption(ConfigProcessor.ProcessedCategory cat, int startY, int innerLeft, int innerRight, int innerTop, int innerBottom, int innerPadding, int optionWidthDefault, OptionCallback callback) {
-        int y = startY;
+    private static final class VisibleOption {
+        private final ConfigProcessor.ProcessedOption option;
+        private final int accordionDepth;
+
+        private VisibleOption(ConfigProcessor.ProcessedOption option, int accordionDepth) {
+            this.option = option;
+            this.accordionDepth = accordionDepth;
+        }
+    }
+
+    private List<VisibleOption> visibleOptions(ConfigProcessor.ProcessedCategory cat) {
+        List<VisibleOption> visible = new ArrayList<>();
         HashMap<Integer, Integer> activeAccordions = new HashMap<>();
         for (ConfigProcessor.ProcessedOption option : getOptionsInCategory(cat).values()) {
-            int optionWidth = optionWidthDefault;
-            if (option.accordionId >= 0) {
-                if (!activeAccordions.containsKey(option.accordionId)) continue;
-                optionWidth = optionWidthDefault - (2 * innerPadding) * (activeAccordions.get(option.accordionId) + 1);
-            }
-            GuiOptionEditor editor = option.editor;
-            if (editor == null) continue;
-            if (editor instanceof GuiOptionEditorAccordion) {
-                GuiOptionEditorAccordion accordion = (GuiOptionEditorAccordion) editor;
-                if (accordion.getToggled()) {
-                    int accordionDepth = option.accordionId >= 0 ? activeAccordions.get(option.accordionId) + 1 : 0;
+            if (option.accordionId >= 0 && !activeAccordions.containsKey(option.accordionId)) continue;
+
+            int accordionDepth = option.accordionId >= 0 ? activeAccordions.get(option.accordionId) + 1 : 0;
+            visible.add(new VisibleOption(option, accordionDepth));
+
+            if (option.editor instanceof GuiOptionEditorAccordion) {
+                GuiOptionEditorAccordion accordion = (GuiOptionEditorAccordion) option.editor;
+                if (accordion.getToggled() || searchedOptions != null) {
                     activeAccordions.put(accordion.getAccordionId(), accordionDepth);
                 }
             }
+        }
+        return visible;
+    }
+
+    private int forEachOption(ConfigProcessor.ProcessedCategory cat, int startY, int innerLeft, int innerRight, int innerTop, int innerBottom, int innerPadding, int optionWidthDefault, OptionCallback callback) {
+        int y = startY;
+        for (VisibleOption visible : visibleOptions(cat)) {
+            ConfigProcessor.ProcessedOption option = visible.option;
+            int optionWidth = option.accordionId >= 0
+                    ? optionWidthDefault - (2 * innerPadding) * visible.accordionDepth
+                    : optionWidthDefault;
+            GuiOptionEditor editor = option.editor;
+            if (editor == null) continue;
+
             int optionHeight = editor.getHeight();
             if (innerTop + 5 + y + optionHeight > innerTop + 1 && innerTop + 5 + y < innerBottom - 1) {
                 int x = (innerLeft + innerRight - optionWidth) / 2 - 5;
@@ -246,100 +266,131 @@ public class ConfigEditor extends GuiElement {
         return current;
     }
 
-    private void setSelectedCategory(String category) {
-        selectedCategory = category;
-        selectedSubcategoryPath.clear();
-        optionsScroll.setValue(0);
-
-        // During search, if no direct matches but subcategories have matches, auto-open first matching subcategory
-        if (searchedOptions != null && !searchedOptions.isEmpty()) {
-            ConfigProcessor.ProcessedCategory cat = processedConfig.get(category);
-            if (cat != null) {
-                // Check if there are direct matches in this category
-                boolean hasDirectMatches = cat.options.values().stream()
-                        .anyMatch(opt -> searchedOptions.contains(opt));
-
-                // If no direct matches but category has subcategories, try to find matches inside
-                if (!hasDirectMatches && !cat.subcategories.isEmpty()) {
-                    List<String> matchingPath = findFirstMatchingSubcategoryPath(cat.subcategories, new ArrayList<>());
-                    if (!matchingPath.isEmpty()) {
-                        selectedSubcategoryPath.addAll(matchingPath);
-                        categoriesWithTreeOpen.add(category);
-
-                        // Expand all parent paths to make the match visible
-                        Set<List<String>> expandedPaths = getExpandedPaths(category);
-                        for (int i = 1; i <= matchingPath.size(); i++) {
-                            expandedPaths.add(new ArrayList<>(matchingPath.subList(0, i)));
-                        }
-                    }
-                }
-            }
+    private String breadcrumb(ConfigProcessor.ProcessedCategory cat) {
+        StringBuilder crumb = new StringBuilder(EnumChatFormatting.WHITE + cat.name);
+        LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subs = cat.subcategories;
+        ConfigProcessor.ProcessedSubcategory current;
+        for (String key : selectedSubcategoryPath) {
+            current = subs.get(key);
+            if (current == null) break;
+            crumb.append(EnumChatFormatting.DARK_GRAY).append(" › ").append(EnumChatFormatting.WHITE).append(current.name);
+            subs = current.subcategories;
         }
+        return crumb.toString();
     }
 
-    /**
-     * Recursively finds the first subcategory path that contains matching search options.
-     * Returns an empty list if no matches found.
-     */
-    private List<String> findFirstMatchingSubcategoryPath(LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subs, List<String> currentPath) {
-        for (Map.Entry<String, ConfigProcessor.ProcessedSubcategory> subEntry : subs.entrySet()) {
-            ConfigProcessor.ProcessedSubcategory sub = subEntry.getValue();
-            List<String> path = new ArrayList<>(currentPath);
-            path.add(subEntry.getKey());
+    private void setSelectedCategory(String category) {
+        selectedCategory = category;
+        anchorSubcategoryPath.clear();
+        selectedSubcategoryPath.clear();
+        optionsScroll.setValue(0);
+        selectedSubcategoryPath.addAll(resolveVisiblePath(category, anchorSubcategoryPath));
+    }
 
-            // Check if this subcategory has any matching options
-            boolean hasMatch = sub.options.values().stream()
-                    .anyMatch(opt -> searchedOptions.contains(opt));
+    private void clickRootCategory(String catKey) {
+        if (catKey.equals(selectedCategory) && categoriesWithTreeOpen.contains(catKey)) {
+            categoriesWithTreeOpen.remove(catKey);
+            getExpandedPaths(catKey).clear();
+            anchorSubcategoryPath.clear();
+            selectedSubcategoryPath.clear();
+        } else {
+            selectedCategory = catKey;
+            anchorSubcategoryPath.clear();
+            categoriesWithTreeOpen.add(catKey);
+            selectedSubcategoryPath.clear();
+            selectedSubcategoryPath.addAll(resolveVisiblePath(catKey, anchorSubcategoryPath));
+        }
+        optionsScroll.setValue(0);
+    }
 
-            if (hasMatch) {
-                return path;
+    private void clickSubcategory(String catKey, List<String> path) {
+        selectedCategory = catKey;
+        if (path.equals(anchorSubcategoryPath)) {
+            if (isPathExpanded(getExpandedPaths(catKey), parentPathOf(path), lastOf(path))) {
+                collapsePath(catKey, path);
+                selectedSubcategoryPath.clear();
+                selectedSubcategoryPath.addAll(path);
+            } else {
+                expandPath(catKey, path);
+                selectedSubcategoryPath.clear();
+                selectedSubcategoryPath.addAll(resolveVisiblePath(catKey, path));
             }
+        } else if (isAncestorOf(path, anchorSubcategoryPath)) {
+            anchorSubcategoryPath.clear();
+            anchorSubcategoryPath.addAll(path);
+            collapsePath(catKey, path);
+            selectedSubcategoryPath.clear();
+            selectedSubcategoryPath.addAll(path);
+        } else {
+            anchorSubcategoryPath.clear();
+            anchorSubcategoryPath.addAll(path);
+            expandPath(catKey, path);
+            selectedSubcategoryPath.clear();
+            selectedSubcategoryPath.addAll(resolveVisiblePath(catKey, path));
+        }
+        optionsScroll.setValue(0);
+    }
 
-            // Recursively search nested subcategories
-            if (!sub.subcategories.isEmpty()) {
-                List<String> nestedMatch = findFirstMatchingSubcategoryPath(sub.subcategories, path);
-                if (!nestedMatch.isEmpty()) {
-                    return nestedMatch;
-                }
+    private void selectSubcategory(String catKey, List<String> path) {
+        selectedCategory = catKey;
+        categoriesWithTreeOpen.add(catKey);
+        anchorSubcategoryPath.clear();
+        anchorSubcategoryPath.addAll(path);
+        expandPath(catKey, path);
+        selectedSubcategoryPath.clear();
+        selectedSubcategoryPath.addAll(resolveVisiblePath(catKey, path));
+        optionsScroll.setValue(0);
+    }
+
+    private List<String> resolveVisiblePath(String catKey, List<String> path) {
+        ConfigProcessor.ProcessedCategory cat = processedConfig.get(catKey);
+        if (cat == null) return new ArrayList<>(path);
+        if (path.isEmpty()) {
+            if (isRelevant(cat.options)) return new ArrayList<>();
+            return descendInto(catKey, cat.subcategories, new ArrayList<>());
+        }
+        ConfigProcessor.ProcessedSubcategory node = walkSubPath(cat, path);
+        if (node == null) return new ArrayList<>(path);
+        if (isRelevant(node.options)) return new ArrayList<>(path);
+        return descendInto(catKey, node.subcategories, new ArrayList<>(path));
+    }
+
+    private List<String> descendInto(String catKey, LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subs, List<String> basePath) {
+        for (Map.Entry<String, ConfigProcessor.ProcessedSubcategory> entry : subs.entrySet()) {
+            List<String> childPath = new ArrayList<>(basePath);
+            childPath.add(entry.getKey());
+            ConfigProcessor.ProcessedSubcategory child = entry.getValue();
+            if (isRelevant(child.options)) {
+                expandPath(catKey, childPath);
+                return childPath;
+            }
+            List<String> deeper = descendInto(catKey, child.subcategories, childPath);
+            if (!deeper.isEmpty()) {
+                expandPath(catKey, deeper);
+                return deeper;
             }
         }
-
         return new ArrayList<>();
     }
 
-    private void toggleTreePath(String catKey, List<String> targetPath) {
-        if (targetPath.isEmpty()) {
-            ConfigProcessor.ProcessedCategory cat = processedConfig.get(catKey);
-            boolean hasSubcategories = cat != null && !cat.subcategories.isEmpty();
-
-            if (selectedCategory == null || !selectedCategory.equals(catKey)) {
-                selectedCategory = catKey;
-                selectedSubcategoryPath.clear();
-                if (hasSubcategories) {
-                    categoriesWithTreeOpen.add(catKey);
-                }
-            } else {
-                if (hasSubcategories) {
-                    if (categoriesWithTreeOpen.contains(catKey)) {
-                        categoriesWithTreeOpen.remove(catKey);
-                        selectedSubcategoryPath.clear();
-                    } else {
-                        categoriesWithTreeOpen.add(catKey);
-                    }
-                }
-            }
-        } else {
-            selectedCategory = catKey;
-            selectedSubcategoryPath.clear();
-            selectedSubcategoryPath.addAll(targetPath);
-            categoriesWithTreeOpen.add(catKey);
-
-            Set<List<String>> expandedPaths = getExpandedPaths(catKey);
-            for (int i = 1; i <= targetPath.size(); i++) {
-                expandedPaths.add(new ArrayList<>(targetPath.subList(0, i)));
-            }
+    private boolean isRelevant(LinkedHashMap<String, ConfigProcessor.ProcessedOption> options) {
+        if (searchedOptions == null) return !options.isEmpty();
+        for (ConfigProcessor.ProcessedOption option : options.values()) {
+            if (searchedOptions.contains(option)) return true;
         }
-        optionsScroll.setValue(0);
+        return false;
+    }
+
+    private static List<String> parentPathOf(List<String> path) {
+        return path.subList(0, Math.max(0, path.size() - 1));
+    }
+
+    private static String lastOf(List<String> path) {
+        return path.isEmpty() ? null : path.get(path.size() - 1);
+    }
+
+    private static boolean isAncestorOf(List<String> candidate, List<String> path) {
+        return candidate.size() < path.size() && path.subList(0, candidate.size()).equals(candidate);
     }
 
     public void search() {
@@ -353,47 +404,51 @@ public class ConfigEditor extends GuiElement {
         if (!search.isEmpty()) {
             searchedCategories = new HashSet<>();
             searchedAccordions = new HashMap<>();
+            searchedOptions = matchOptions(search);
 
-            for (String word : search.split(" ")) {
-                if (word.trim().isEmpty()) continue;
+            searchedSubcategories = new HashMap<>();
+            searchedSubSubcategories = new HashMap<>();
+            for (ConfigProcessor.ProcessedOption option : searchedOptions) {
+                ConfigProcessor.ProcessedCategory cat = categoryForOption.get(option);
+                if (cat == null) continue;
 
-                Set<ConfigProcessor.ProcessedOption> options = new HashSet<>();
-                Map<String, Set<ConfigProcessor.ProcessedOption>> map = StringUtils.subMapWithKeysThatAreSuffixes(word, searchOptionMap);
-                map.values().forEach(options::addAll);
+                searchedCategories.add(cat);
+                searchedAccordions.computeIfAbsent(cat, k -> new HashSet<>()).add(option.accordionId);
 
-                if (!options.isEmpty()) {
-                    if (searchedOptions == null) {
-                        searchedOptions = new HashSet<>(options);
-                    } else {
-                        searchedOptions.retainAll(options);
-                    }
-                }
-            }
+                List<String> path = optionSubcategoryPath.get(option);
+                if (path != null && !path.isEmpty()) {
+                    searchedSubcategories.computeIfAbsent(cat, k -> new HashSet<>()).add(path.get(0));
 
-            if (searchedOptions == null) {
-                searchedOptions = new HashSet<>();
-            } else {
-                searchedSubcategories = new HashMap<>();
-                searchedSubSubcategories = new HashMap<>();
-                for (ConfigProcessor.ProcessedOption option : searchedOptions) {
-                    ConfigProcessor.ProcessedCategory cat = categoryForOption.get(option);
-                    if (cat == null) continue;
-
-                    searchedCategories.add(cat);
-                    searchedAccordions.computeIfAbsent(cat, k -> new HashSet<>()).add(option.accordionId);
-
-                    List<String> path = optionSubcategoryPath.get(option);
-                    if (path != null && !path.isEmpty()) {
-                        searchedSubcategories.computeIfAbsent(cat, k -> new HashSet<>()).add(path.get(0));
-
-                        ConfigProcessor.ProcessedSubcategory sub = walkSubPath(cat, path.subList(0, 1));
-                        if (sub != null && path.size() >= 2) {
-                            searchedSubSubcategories.computeIfAbsent(sub, k -> new HashSet<>()).add(path.get(1));
-                        }
+                    ConfigProcessor.ProcessedSubcategory sub = walkSubPath(cat, path.subList(0, 1));
+                    if (sub != null && path.size() >= 2) {
+                        searchedSubSubcategories.computeIfAbsent(sub, k -> new HashSet<>()).add(path.get(1));
                     }
                 }
             }
         }
+
+        if (selectedCategory != null) {
+            selectedSubcategoryPath.clear();
+            selectedSubcategoryPath.addAll(resolveVisiblePath(selectedCategory, anchorSubcategoryPath));
+        }
+    }
+
+    private Set<ConfigProcessor.ProcessedOption> matchOptions(String search) {
+        Set<ConfigProcessor.ProcessedOption> matches = null;
+        for (String word : search.split(" ")) {
+            if (word.trim().isEmpty()) continue;
+
+            Set<ConfigProcessor.ProcessedOption> wordMatches = new HashSet<>();
+            StringUtils.subMapWithKeysThatAreSuffixes(word, searchOptionMap).values().forEach(wordMatches::addAll);
+            if (wordMatches.isEmpty()) return new HashSet<>();
+
+            if (matches == null) {
+                matches = wordMatches;
+            } else {
+                matches.retainAll(wordMatches);
+            }
+        }
+        return matches == null ? new HashSet<>() : matches;
     }
 
     public void render() {
@@ -458,7 +513,6 @@ public class ConfigEditor extends GuiElement {
 
         GlScissorStack.push(0, innerTop + 1, screenW, innerBottom - 1, scaleFactor);
 
-        float catBarSize = 1;
         int catY = -categoryScroll.getValue();
 
         LinkedHashMap<String, ConfigProcessor.ProcessedCategory> currentConfigEditing = getCurrentConfigEditing();
@@ -491,24 +545,17 @@ public class ConfigEditor extends GuiElement {
                 boolean categoryHasSelection = !selectedSubcategoryPath.isEmpty() && isSelectedRoot;
                 catY = renderSubTree(cat.subcategories, cat, paths, 1, catY, y, innerLeft, fr, new ArrayList<>(), categoryHasSelection);
             }
-
-            if (catY > 0) {
-                catBarSize = LerpUtils.clampZeroOne((float) (innerBottom - innerTop - 2) / (catY + 5 + categoryScroll.getValue()));
-            }
         }
-        catY += 5;
+        catY += SIDEBAR_CONTENT_PADDING;
 
-        float catBarStart = categoryScroll.getValue() / (float) (catY + categoryScroll.getValue());
+        float categoryTotal = catY + categoryScroll.getValue();
+        float catBarSize = categoryTotal > 0
+                ? LerpUtils.clampZeroOne((float) (innerBottom - innerTop - 2) / categoryTotal)
+                : 1;
+        float catBarStart = categoryTotal > 0 ? categoryScroll.getValue() / categoryTotal : 0f;
         float catBarEnd = catBarStart + catBarSize;
         if (catBarEnd > 1) {
-            catBarEnd = 1;
-            if (categoryScroll.getTarget() / (float) (catY + categoryScroll.getValue()) + catBarSize < 1) {
-                int target = optionsScroll.getTarget();
-                categoryScroll.setValue((int) Math.ceil((catY + 5 + categoryScroll.getValue()) - catBarSize * (catY + 5 + categoryScroll.getValue())));
-                categoryScroll.setTarget(target);
-            } else {
-                categoryScroll.setValue((int) Math.ceil((catY + 5 + categoryScroll.getValue()) - catBarSize * (catY + 5 + categoryScroll.getValue())));
-            }
+            categoryScroll.setValue((int) Math.ceil(categoryTotal - catBarSize * categoryTotal));
         }
         int catDist = innerBottom - innerTop - 12;
         DrawContextUtils.fill(innerLeft + 2, innerTop + 5, innerLeft + 7, innerBottom - 5, 0xff0d0d0d);
@@ -553,7 +600,8 @@ public class ConfigEditor extends GuiElement {
 
         if (getSelectedCategory() != null && currentConfigEditing.containsKey(getSelectedCategory())) {
             ConfigProcessor.ProcessedCategory cat = currentConfigEditing.get(getSelectedCategory());
-            TextRenderUtils.drawStringScaledMaxWidth(cat.desc, fr, innerLeft + 5, y + 40, true, innerRight - innerLeft - rightStuffLen - 10, 0xb0b0b0);
+            TextRenderUtils.drawStringScaledMaxWidth(breadcrumb(cat), fr, innerLeft + 5, y + 32, false, innerRight - innerLeft - 20, -1);
+            TextRenderUtils.drawStringScaledMaxWidth(cat.desc, fr, innerLeft + 5, y + 43, true, innerRight - innerLeft - rightStuffLen - 10, 0xb0b0b0);
         }
 
         DrawContextUtils.fill(innerLeft, innerTop, innerLeft + 1, innerBottom, 0xff080808);
@@ -579,6 +627,19 @@ public class ConfigEditor extends GuiElement {
             }
         }
 
+        if (searchedOptions != null && searchedOptions.isEmpty()) {
+            TextRenderUtils.drawStringCenteredScaledMaxWidth("No options match \"" + searchField.getText().trim() + "\"",
+                    fr, (innerLeft + innerRight) / 2f, innerTop + 20, false, innerRight - innerLeft - 20, 0xa0a0a0);
+        } else if (searchedOptions == null
+                && getSelectedCategory() != null
+                && currentConfigEditing.containsKey(getSelectedCategory())) {
+            ConfigProcessor.ProcessedCategory cat = currentConfigEditing.get(getSelectedCategory());
+            if (visibleOptions(cat).isEmpty()) {
+                TextRenderUtils.drawStringCenteredScaledMaxWidth("No options here - open a category on the left",
+                        fr, (innerLeft + innerRight) / 2f, innerTop + 20, false, innerRight - innerLeft - 20, 0xa0a0a0);
+            }
+        }
+
         GlScissorStack.pop(scaleFactor);
 
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
@@ -597,11 +658,12 @@ public class ConfigEditor extends GuiElement {
         }
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
 
-        optionsBarStart = optionsScroll.getValue() / (float) (optionY + optionsScroll.getValue());
+        float optionsTotal = optionY + optionsScroll.getValue();
+        optionsBarStart = optionsTotal > 0 ? optionsScroll.getValue() / optionsTotal : 0f;
         optionsBarend = optionsBarStart + barSize;
         if (optionsBarend > 1) {
             optionsBarend = 1;
-            if (optionsScroll.getTarget() / (float) (optionY + optionsScroll.getValue()) + barSize < 1) {
+            if (optionsTotal > 0 && optionsScroll.getTarget() / optionsTotal + barSize < 1) {
                 int target = optionsScroll.getTarget();
                 optionsScroll.setValue((int) Math.ceil((optionY + 5 + optionsScroll.getValue()) - barSize * (optionY + 5 + optionsScroll.getValue())));
                 optionsScroll.setTarget(target);
@@ -649,7 +711,7 @@ public class ConfigEditor extends GuiElement {
         for (Map.Entry<String, ConfigProcessor.ProcessedSubcategory> subEntry : visible) {
             lastItemY = currentCatY;
 
-            boolean inPath = isPathExpanded(expandedPaths, subEntry.getKey(), depth);
+            boolean inPath = isPathExpanded(expandedPaths, parentPath, subEntry.getKey());
             int itemCenterY = y + 70 + currentCatY;
 
             parentPath.add(subEntry.getKey());
@@ -685,11 +747,11 @@ public class ConfigEditor extends GuiElement {
 
         if (!visible.isEmpty()) {
             int trunkStart = parentCenterY + parentHeight / 2 + 3;
-            int trunkEnd = y + 70 + lastItemY + 6;
+            int trunkEnd = y + 70 + lastItemY + 4;
 
             if (subtreeContainsSelection && firstAncestorY != -1) {
                 int cyanStart = trunkStart;
-                int cyanEnd = y + 70 + lastAncestorY + 6;
+                int cyanEnd = y + 70 + lastAncestorY + 4;
                 DrawContextUtils.fill(lineX, cyanStart, lineX + 1, cyanEnd, 0xff00b8b8);
                 if (cyanEnd < trunkEnd) {
                     DrawContextUtils.fill(lineX, cyanEnd, lineX + 1, trunkEnd, 0xff606060);
@@ -770,8 +832,9 @@ public class ConfigEditor extends GuiElement {
 
         int categoryY = -categoryScroll.getValue() + computeCategoryHeight();
         int catDist = innerBottom - innerTop - 12;
-        float catBarStart = categoryScroll.getValue() / (float) (categoryY + categoryScroll.getValue());
-        categoryBarSize = LerpUtils.clampZeroOne((float) (innerBottom - innerTop - 2) / (categoryY + 5 + categoryScroll.getValue()));
+        float categoryTotalM = categoryY + categoryScroll.getValue();
+        float catBarStart = categoryTotalM > 0 ? categoryScroll.getValue() / categoryTotalM : 0f;
+        categoryBarSize = LerpUtils.clampZeroOne((float) (innerBottom - innerTop - 2) / Math.max(1, categoryY + 5 + categoryScroll.getValue()));
         float catBarEnd = catBarStart + categoryBarSize;
         int categoryBarStartY = innerTop + 6 + (int) (catDist * catBarStart);
         int categoryBarEndY = innerTop + 6 + (int) (catDist * catBarEnd);
@@ -841,7 +904,8 @@ public class ConfigEditor extends GuiElement {
                 float catBarSize = catY > 0 ? LerpUtils.clampZeroOne((float) (innerBottom - innerTop - 2) / (catY + newTarget)) : 1;
                 int barMax = (int) Math.floor((catY + newTarget) - catBarSize * (catY + newTarget));
                 if (newTarget > barMax) newTarget = barMax;
-                categoryScroll.setValue(newTarget);
+                categoryScroll.setTarget(newTarget);
+                categoryScroll.resetTimer();
             } else {
                 int newTarget = optionsScroll.getTarget() - dWheel * 30;
                 if (newTarget < 0) newTarget = 0;
@@ -850,19 +914,9 @@ public class ConfigEditor extends GuiElement {
                 int optionY = -newTarget;
                 if (getSelectedCategory() != null && getCurrentConfigEditing().containsKey(getSelectedCategory())) {
                     ConfigProcessor.ProcessedCategory cat = getCurrentConfigEditing().get(getSelectedCategory());
-                    HashMap<Integer, Integer> activeAccordions = new HashMap<>();
-                    for (ConfigProcessor.ProcessedOption option : getOptionsInCategory(cat).values()) {
-                        if (option.accordionId >= 0 && !activeAccordions.containsKey(option.accordionId)) continue;
-
-                        GuiOptionEditor editor = option.editor;
+                    for (VisibleOption visible : visibleOptions(cat)) {
+                        GuiOptionEditor editor = visible.option.editor;
                         if (editor == null) continue;
-                        if (editor instanceof GuiOptionEditorAccordion) {
-                            GuiOptionEditorAccordion accordion = (GuiOptionEditorAccordion) editor;
-                            if (accordion.getToggled()) {
-                                int accordionDepth = option.accordionId >= 0 ? activeAccordions.get(option.accordionId) + 1 : 0;
-                                activeAccordions.put(accordion.getAccordionId(), accordionDepth);
-                            }
-                        }
                         optionY += editor.getHeight() + 5;
                         if (optionY > 0) {
                             barSize = LerpUtils.clampZeroOne((float) (innerBottom - innerTop - 2) / (optionY + 5 + newTarget));
@@ -870,26 +924,27 @@ public class ConfigEditor extends GuiElement {
                     }
                 }
 
-                int barMax = (int) Math.floor((optionY + 5 + newTarget) - barSize * (optionY + 5 + newTarget));
+                int barMax = Math.max(0, (int) Math.floor((optionY + 5 + newTarget) - barSize * (optionY + 5 + newTarget)));
                 if (newTarget > barMax) newTarget = barMax;
-                optionsScroll.setValue(newTarget);
+                optionsScroll.setTarget(newTarget);
                 optionsScroll.resetTimer();
             }
         } else if (lastMousePressed && lastMouseButton == 0) {
             int catY = -categoryScroll.getValue();
+            int treeClickLeft = x + 4 + innerPadding + 8;
+            int treeClickRight = x + 184 - innerPadding;
             for (Map.Entry<String, ConfigProcessor.ProcessedCategory> entry : getCurrentConfigEditing().entrySet()) {
                 if (getSelectedCategory() == null) setSelectedCategory(entry.getKey());
 
                 String ck = entry.getKey();
-                if (mouseY >= y + 70 + catY - 7 && mouseY <= y + 70 + catY + 7 && mouseX >= x + innerPadding + 7 && mouseX <= innerLeft - 10) {
-                    toggleTreePath(ck, Collections.emptyList());
+                if (mouseY >= y + 70 + catY - 7 && mouseY <= y + 70 + catY + 7 && mouseX >= treeClickLeft && mouseX <= treeClickRight) {
+                    clickRootCategory(ck);
                     return true;
                 }
                 catY += 15;
 
-                Set<List<String>> paths = getExpandedPaths(ck);
                 if (categoriesWithTreeOpen.contains(ck)) {
-                    int result = handleSubTreeClick(entry.getValue().subcategories, entry.getValue(), new ArrayList<>(), 1, catY, mouseX, mouseY, y, ck, innerLeft, x, innerPadding);
+                    int result = handleSubTreeClick(entry.getValue().subcategories, entry.getValue(), new ArrayList<>(), 1, catY, mouseX, mouseY, y, ck, treeClickLeft, treeClickRight);
                     if (result == -1) return true;
                     catY = result;
                 }
@@ -937,22 +992,22 @@ public class ConfigEditor extends GuiElement {
         return true;
     }
 
-    private int handleSubTreeClick(LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subs, Object parent, List<String> parentPath, int depth, int catY, int mouseX, int mouseY, int y, String catKey, int innerLeft, int x, int innerPadding) {
+    private int handleSubTreeClick(LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subs, Object parent, List<String> parentPath, int depth, int catY, int mouseX, int mouseY, int y, String catKey, int treeClickLeft, int treeClickRight) {
         List<Map.Entry<String, ConfigProcessor.ProcessedSubcategory>> visible = getVisibleSubcategories(subs, parent, depth);
         Set<List<String>> expandedPaths = getExpandedPaths(catKey);
         for (Map.Entry<String, ConfigProcessor.ProcessedSubcategory> subEntry : visible) {
-            if (mouseY >= y + 70 + catY - 8 && mouseY <= y + 70 + catY + 8 && mouseX >= x + innerPadding + 7 && mouseX <= innerLeft - 10) {
+            if (mouseY >= y + 70 + catY - 6 && mouseY <= y + 70 + catY + 6 && mouseX >= treeClickLeft && mouseX <= treeClickRight) {
                 List<String> targetPath = new ArrayList<>(parentPath);
                 targetPath.add(subEntry.getKey());
-                toggleTreePath(catKey, targetPath);
+                clickSubcategory(catKey, targetPath);
                 return -1;
             }
             catY += 13;
 
-            if (isPathExpanded(expandedPaths, subEntry.getKey(), depth) && !subEntry.getValue().subcategories.isEmpty()) {
+            if (isPathExpanded(expandedPaths, parentPath, subEntry.getKey()) && !subEntry.getValue().subcategories.isEmpty()) {
                 List<String> childPath = new ArrayList<>(parentPath);
                 childPath.add(subEntry.getKey());
-                int result = handleSubTreeClick(subEntry.getValue().subcategories, subEntry.getValue(), childPath, depth + 1, catY, mouseX, mouseY, y, catKey, innerLeft, x, innerPadding);
+                int result = handleSubTreeClick(subEntry.getValue().subcategories, subEntry.getValue(), childPath, depth + 1, catY, mouseX, mouseY, y, catKey, treeClickLeft, treeClickRight);
                 if (result == -1) return -1;
                 catY = result;
             }
@@ -964,27 +1019,42 @@ public class ConfigEditor extends GuiElement {
         return expandedSubcategoryPaths.computeIfAbsent(catKey, k -> new HashSet<>());
     }
 
-    private boolean isPathExpanded(Set<List<String>> paths, String key, int depth) {
-        if (paths == null) return false;
-        for (List<String> path : paths) {
-            if (path.size() >= depth && path.get(depth - 1).equals(key)) return true;
-        }
-        return false;
+    private boolean isPathExpanded(Set<List<String>> paths, List<String> parentPath, String key) {
+        if (paths == null || paths.isEmpty() || key == null) return false;
+        List<String> target = new ArrayList<>(parentPath);
+        target.add(key);
+        return paths.contains(target);
     }
 
-    private int treeSubcategoryCount(LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subs, Object parent, Set<List<String>> expandedPaths, int depth) {
+    private void expandPath(String catKey, List<String> path) {
+        Set<List<String>> paths = getExpandedPaths(catKey);
+        for (int i = 1; i <= path.size(); i++) {
+            paths.add(new ArrayList<>(path.subList(0, i)));
+        }
+    }
+
+    private void collapsePath(String catKey, List<String> path) {
+        Set<List<String>> paths = getExpandedPaths(catKey);
+        paths.removeIf(p -> p.size() >= path.size() && p.subList(0, path.size()).equals(path));
+    }
+
+    private int treeSubcategoryCount(LinkedHashMap<String, ConfigProcessor.ProcessedSubcategory> subs, Object parent, Set<List<String>> expandedPaths, List<String> parentPath, int depth) {
         int count = 0;
         for (Map.Entry<String, ConfigProcessor.ProcessedSubcategory> subEntry : getVisibleSubcategories(subs, parent, depth)) {
             count++;
-            if (isPathExpanded(expandedPaths, subEntry.getKey(), depth) && !subEntry.getValue().subcategories.isEmpty()) {
-                count += treeSubcategoryCount(subEntry.getValue().subcategories, subEntry.getValue(), expandedPaths, depth + 1);
+            if (isPathExpanded(expandedPaths, parentPath, subEntry.getKey()) && !subEntry.getValue().subcategories.isEmpty()) {
+                List<String> childPath = new ArrayList<>(parentPath);
+                childPath.add(subEntry.getKey());
+                count += treeSubcategoryCount(subEntry.getValue().subcategories, subEntry.getValue(), expandedPaths, childPath, depth + 1);
             }
         }
         return count;
     }
 
+    private static final int SIDEBAR_CONTENT_PADDING = 15;
+
     private int computeCategoryHeight() {
-        int h = 5;
+        int h = SIDEBAR_CONTENT_PADDING;
         for (Map.Entry<String, ConfigProcessor.ProcessedCategory> entry : getCurrentConfigEditing().entrySet()) {
             h += 15;
             String catKey = entry.getKey();
@@ -992,7 +1062,7 @@ public class ConfigEditor extends GuiElement {
                 ConfigProcessor.ProcessedCategory cat = processedConfig.get(catKey);
                 if (cat != null) {
                     Set<List<String>> paths = getExpandedPaths(catKey);
-                    h += treeSubcategoryCount(cat.subcategories, cat, paths, 1) * 13;
+                    h += treeSubcategoryCount(cat.subcategories, cat, paths, new ArrayList<>(), 1) * 13;
                 }
             }
         }
@@ -1003,11 +1073,27 @@ public class ConfigEditor extends GuiElement {
         int h = 5;
         if (getSelectedCategory() != null && getCurrentConfigEditing().containsKey(getSelectedCategory())) {
             ConfigProcessor.ProcessedCategory cat = getCurrentConfigEditing().get(getSelectedCategory());
-            for (ConfigProcessor.ProcessedOption option : getOptionsInCategory(cat).values()) {
-                h += option.editor.getHeight() + 5;
+            for (VisibleOption visible : visibleOptions(cat)) {
+                h += visible.option.editor.getHeight() + 5;
             }
         }
         return h;
+    }
+
+    @Override
+    public boolean capturesEscape() {
+        if (searchField.getFocus()) return true;
+
+        String category = getSelectedCategory();
+        if (category == null || !getCurrentConfigEditing().containsKey(category)) return false;
+
+        ConfigProcessor.ProcessedCategory cat = getCurrentConfigEditing().get(category);
+        if (cat == null) return false;
+
+        for (VisibleOption visible : visibleOptions(cat)) {
+            if (visible.option.editor != null && visible.option.editor.capturesEscape()) return true;
+        }
+        return false;
     }
 
     public boolean keyboardInput() {
@@ -1034,6 +1120,15 @@ public class ConfigEditor extends GuiElement {
         int innerPadding = 20 / adjScaleFactor;
         int innerWidth = xSize - 194 - innerPadding * 2;
 
+        boolean searchFocused = searchField.getFocus();
+
+        if (KeybindHelper.isEscapeKey(keyCode)) {
+            if (searchField.getFocus()) {
+                searchField.setFocus(false);
+                return true;
+            }
+        }
+
         if (lastKeyPressed) {
             String old = searchField.getText();
             searchField.keyTyped(lastKeyChar, lastKeyCode);
@@ -1042,21 +1137,11 @@ public class ConfigEditor extends GuiElement {
             if (!searchField.getText().equals(old)) search();
         }
 
-        if (getSelectedCategory() != null && getCurrentConfigEditing().containsKey(getSelectedCategory())) {
+        if (!searchFocused && getSelectedCategory() != null && getCurrentConfigEditing().containsKey(getSelectedCategory())) {
             ConfigProcessor.ProcessedCategory cat = getCurrentConfigEditing().get(getSelectedCategory());
-            HashMap<Integer, Integer> activeAccordions = new HashMap<>();
-            for (ConfigProcessor.ProcessedOption option : getOptionsInCategory(cat).values()) {
-                if (option.accordionId >= 0 && !activeAccordions.containsKey(option.accordionId)) continue;
-
-                GuiOptionEditor editor = option.editor;
+            for (VisibleOption visible : visibleOptions(cat)) {
+                GuiOptionEditor editor = visible.option.editor;
                 if (editor == null) continue;
-                if (editor instanceof GuiOptionEditorAccordion) {
-                    GuiOptionEditorAccordion accordion = (GuiOptionEditorAccordion) editor;
-                    if (accordion.getToggled()) {
-                        int accordionDepth = option.accordionId >= 0 ? activeAccordions.get(option.accordionId) + 1 : 0;
-                        activeAccordions.put(accordion.getAccordionId(), accordionDepth);
-                    }
-                }
                 if (editor.keyboardInput(lastKeyChar, lastKeyCode)) return true;
             }
         }

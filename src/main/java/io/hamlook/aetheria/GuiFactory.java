@@ -45,7 +45,11 @@ public class GuiFactory implements IModGuiFactory {
 
         @Override
         public void handleKeyboardInput() throws IOException {
-            if (KeyboardCompat.getEventKeyState() && KeyboardCompat.getEventKey() == Keyboard.KEY_ESCAPE) {
+            boolean escape = KeyboardCompat.getEventKeyState() && KeyboardCompat.getEventKey() == Keyboard.KEY_ESCAPE;
+            if (escape && element.capturesEscape()) {
+                if (element.keyboardInput()) return;
+            }
+            if (escape) {
                 MinecraftCompat.getMinecraft().displayGuiScreen(parent);
                 return;
             }

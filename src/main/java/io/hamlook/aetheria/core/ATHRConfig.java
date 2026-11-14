@@ -434,7 +434,9 @@ public class ATHRConfig {
     }
 
     public static void openSubcategory(String categoryName, String... subcategoryFieldPath) {
-        ConfigEditor.editor.openSubcategory(categoryName, subcategoryFieldPath);
+        ConfigEditor editor = new ConfigEditor(feature, categoryName);
+        editor.openSubcategory(categoryName, subcategoryFieldPath);
+        screenToOpen = new GuiScreenElementWrapper(editor);
     }
 
     public static void openWaypointGroupGui() {

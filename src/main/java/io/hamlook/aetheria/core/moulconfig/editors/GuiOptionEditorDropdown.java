@@ -20,10 +20,21 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
     public GuiOptionEditorDropdown(ConfigProcessor.ProcessedOption option, String[] values, int selected, boolean useOrdinal) {
         super(option);
-        if (selected >= values.length) selected = values.length;
         this.values = values;
-        this.selected = selected;
+        this.selected = Math.max(0, Math.min(values.length - 1, selected));
         this.useOrdinal = useOrdinal;
+    }
+
+    private int dropdownWidth(int width) {
+        return Math.min(width / 3 - 10, 80);
+    }
+
+    private int dropdownLeft(int x, int width) {
+        return x + width / 6 - dropdownWidth(width) / 2;
+    }
+
+    private int dropdownTop(int y, int height) {
+        return y + height - 7 - 14;
     }
 
     @Override
@@ -34,9 +45,9 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
             int height = getHeight();
 
             FontRenderer fr = MinecraftCompat.getFontRenderer();
-            int dropdownWidth = Math.min(width / 3 - 10, 80);
-            int left = x + width / 6 - dropdownWidth / 2;
-            int top = y + height - 7 - 14;
+            int dropdownWidth = dropdownWidth(width);
+            int left = dropdownLeft(x, width);
+            int top = dropdownTop(y, height);
 
             String selectedString = " - Select - ";
             if (selected >= 0 && selected < values.length) {
@@ -61,9 +72,9 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
             int height = getHeight();
 
             FontRenderer fr = MinecraftCompat.getFontRenderer();
-            int dropdownWidth = Math.min(width / 3 - 10, 80);
-            int left = x + width / 6 - dropdownWidth / 2;
-            int top = y + height - 7 - 14;
+            int dropdownWidth = dropdownWidth(width);
+            int left = dropdownLeft(x, width);
+            int top = dropdownTop(y, height);
 
             int dropdownHeight = 13 + 12 * values.length;
 
@@ -101,11 +112,12 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
         int height = getHeight();
 
-        int left = x + width / 6 - 40;
-        int top = y + height - 7 - 14;
+        int left = dropdownLeft(x, width);
+        int dropdownWidth = dropdownWidth(width);
+        int top = dropdownTop(y, height);
 
         if (pressed && button == 0) {
-            if (mouseX >= left && mouseX <= left + 80 && mouseY >= top && mouseY <= top + 14) {
+            if (mouseX >= left && mouseX <= left + dropdownWidth && mouseY >= top && mouseY <= top + 14) {
                 open = !open;
                 return true;
             }
@@ -123,13 +135,14 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
     public boolean mouseInputOverlay(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
         int height = getHeight();
 
-        int left = x + width / 6 - 40;
-        int top = y + height - 7 - 14;
+        int left = dropdownLeft(x, width);
+        int dropdownWidth = dropdownWidth(width);
+        int top = dropdownTop(y, height);
 
         if (pressed && button == 0) {
-            if (!(mouseX >= left && mouseX <= left + 80 && mouseY >= top && mouseY <= top + 14) && open) {
+            if (!(mouseX >= left && mouseX <= left + dropdownWidth && mouseY >= top && mouseY <= top + 14) && open) {
                 open = false;
-                if (mouseX >= left && mouseX <= left + 80) {
+                if (mouseX >= left && mouseX <= left + dropdownWidth) {
                     int dropdownY = 13;
                     for (int ordinal = 0; ordinal < values.length; ordinal++) {
                         if (mouseY >= top + 3 + dropdownY && mouseY <= top + 3 + dropdownY + 12) {

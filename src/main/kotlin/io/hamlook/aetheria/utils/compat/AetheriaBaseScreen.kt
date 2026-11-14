@@ -115,6 +115,9 @@ abstract class AetheriaBaseScreen : GuiScreen() {
     //$$ protected open fun onMouseClicked(mouseX: Int, mouseY: Int, mouseButton: Int) {}
     //$$
     //$$ final override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+    //$$     if (onBeforeVanillaKeys('\u0000', keyCode, modifiers)) {
+    //$$         return true
+    //$$     }
     //$$     val result = super.keyPressed(keyCode, scanCode, modifiers)
     //$$     try {
     //$$         onKeyTyped('\u0000', keyCode)
@@ -235,4 +238,6 @@ abstract class AetheriaBaseScreen : GuiScreen() {
     protected open fun onInitGui() {}
 
     protected open fun onResizeScreen(w: Int, h: Int) {}
+
+    protected open fun onBeforeVanillaKeys(typedChar: Char, keyCode: Int, modifiers: Int): Boolean = false
 }

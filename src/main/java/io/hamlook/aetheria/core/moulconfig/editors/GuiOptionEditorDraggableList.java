@@ -221,7 +221,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
                     int dropdownY = -1;
                     for (int strIndex : remaining) {
                         if (mouseY < top + dropdownY + 12) {
-                            activeText.add(0, strIndex);
+                            activeText.add(strIndex);
                             if (remaining.size() == 1) dropdownOpen = false;
                             return true;
                         }

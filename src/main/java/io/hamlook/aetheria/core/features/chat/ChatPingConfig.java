@@ -20,7 +20,7 @@ public class ChatPingConfig {
 
     @Expose
     @ConfigOption(name = "Ping Sound", desc = "Sound to play when your name is mentioned")
-    @ConfigEditorDropdown(values = {"note.pling", "random.orb", "random.levelup", "mob.endermen.portal", "random.pop"}, initialIndex = 2)
+    @ConfigEditorDropdown(values = {"note.pling", "random.orb", "random.levelup", "mob.endermen.portal", "random.pop"}, initialIndex = 0)
     public int chatPingSound = 0;
 
     @Expose
@@ -35,6 +35,6 @@ public class ChatPingConfig {
 
     @Expose
     @ConfigOption(name = "Ping Highlight Color", desc = "Color to highlight the message when your name is pinged. None = no highlight.")
-    @ConfigEditorDropdown(values = {"None", "Yellow", "Red", "Aqua", "Green", "Light Purple", "Gold", "White"}, initialIndex = 2)
+    @ConfigEditorDropdown(values = {"None", "Yellow", "Red", "Aqua", "Green", "Light Purple", "Gold", "White"}, initialIndex = 1)
     public int chatPingColor = 1;
 }

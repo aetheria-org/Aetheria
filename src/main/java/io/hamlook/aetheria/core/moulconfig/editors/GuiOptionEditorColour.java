@@ -40,7 +40,8 @@ public class GuiOptionEditorColour extends GuiOptionEditor {
         int r = (argb >> 16) & 0xFF;
         int g = (argb >> 8) & 0xFF;
         int b = argb & 0xFF;
-        GlStateManagerCompat.color(r / 255f, g / 255f, b / 255f, 1);
+        int a = (argb >> 24) & 0xFF;
+        GlStateManagerCompat.color(r / 255f, g / 255f, b / 255f, a / 255f);
         TextureCompat.drawBoundTextured(button_white, x + width / 6 - 24, y + height - 7 - 14, 48, 16, 0, 0, 1, 1);
         GlStateManagerCompat.resetColor();
     }
@@ -78,6 +79,11 @@ public class GuiOptionEditorColour extends GuiOptionEditor {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean capturesEscape() {
+        return colourElement != null && colourElement.capturesEscape();
     }
 
     @Override

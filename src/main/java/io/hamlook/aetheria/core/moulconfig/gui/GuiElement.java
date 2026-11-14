@@ -19,6 +19,10 @@ public abstract class GuiElement {
 
     public abstract boolean keyboardInput();
 
+    public boolean capturesEscape() {
+        return false;
+    }
+
     /**
      * Key-aware variant. Default keeps legacy latch behavior; override where
      * the typed char and key code must come from the event (modern).

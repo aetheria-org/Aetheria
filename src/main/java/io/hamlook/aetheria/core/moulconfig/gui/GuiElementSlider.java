@@ -5,14 +5,11 @@ package io.hamlook.aetheria.core.moulconfig.gui;
 
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.utils.KeybindHelper;
-import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
-import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
-
-import org.lwjgl.opengl.GL11;
+import lombok.Setter;
 
 import java.util.function.Consumer;
 
@@ -23,6 +20,7 @@ public class GuiElementSlider extends GuiElement {
     private static final int HEIGHT = 16;
 
     private final float minValue, maxValue, minStep;
+    @Setter
     private float value;
     private final Consumer<Float> setCallback;
     private boolean clicked = false;
@@ -36,8 +34,6 @@ public class GuiElementSlider extends GuiElement {
         this.value = value;
         this.setCallback = setCallback;
     }
-
-    public void setValue(float value) { this.value = value; }
 
     @Override
     public void render() {
@@ -82,25 +78,32 @@ public class GuiElementSlider extends GuiElement {
 
     @Override
     public boolean mouseInput(int mouseX, int mouseY, int button, boolean pressed) {
-        if (!MouseCompat.isButtonDown(0)) clicked = false;
-
         if (button == 0) {
-            clicked = pressed
-                    && mouseX > x && mouseX < x + width
-                    && mouseY > y && mouseY < y + HEIGHT;
-            if (clicked) {
-                value = snap((mouseX - x) * (maxValue - minValue) / width + minValue);
-                setCallback.accept(value);
+            if (pressed) {
+                clicked = isInside(mouseX, mouseY);
+                if (!clicked) return false;
+                snapTo(mouseX);
                 return true;
             }
+            if (!clicked) return false;
+            clicked = false;
+            snapTo(mouseX);
+            return true;
         }
-
-        if (!pressed && (button == -1 || button == 0) && clicked) {
-            value = snap((mouseX - x) * (maxValue - minValue) / width + minValue);
-            setCallback.accept(value);
+        if (button == -1 && !pressed && clicked && MouseCompat.isButtonDown(0)) {
+            snapTo(mouseX);
             return true;
         }
         return false;
+    }
+
+    private boolean isInside(int mouseX, int mouseY) {
+        return mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + HEIGHT;
+    }
+
+    private void snapTo(int mouseX) {
+        value = snap((mouseX - x) * (maxValue - minValue) / width + minValue);
+        setCallback.accept(value);
     }
 
     @Override

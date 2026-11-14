@@ -26,7 +26,6 @@ public class GuiElementColour extends GuiElement {
     private static final ResourceLocation colour_selector_dot           = Resources.colour_selector_dot;
     private static final ResourceLocation colour_selector_bar           = Resources.colour_selector_bar;
     private static final ResourceLocation colour_selector_bar_alpha     = Resources.colour_selector_bar_alpha;
-    private static final ResourceLocation colour_selector_chroma        = Resources.colour_selector_chroma;
     private static final ResourceLocation colourPickerLocation          = Resources.colourPickerLocation;
     private static final ResourceLocation colourPickerBarValueLocation   = Resources.colourPickerBarValueLocation;
     private static final ResourceLocation colourPickerBarOpacityLocation = Resources.colourPickerBarOpacityLocation;
@@ -162,12 +161,14 @@ public class GuiElementColour extends GuiElement {
         if (chromaSpeed > 0) {
             TextureCompat.drawBoundTextured(colour_selector_bar, x+5+64+valueOffset+opacityOffset+5, y+5, 10, 64, 0, 0, 1, 1);
         } else {
-            TextureCompat.drawBoundTextured(colour_selector_chroma, x+5+64+valueOffset+opacityOffset+5, y+5+27, 10, 10, 0, 0, 1, 1);
+            GlStateManagerCompat.color(0.55f, 0.55f, 0.55f, 1f);
+            TextureCompat.drawBoundTextured(colour_selector_bar, x+5+64+valueOffset+opacityOffset+5, y+5, 10, 64, 0, 0, 1, 1);
+            GlStateManagerCompat.color(1, 1, 1, 1);
         }
 
         if (valueSlider)   DrawContextUtils.fill(x+5+64+5, y+5+64-(int)(64*hsv[2]), x+5+64+valueOffset, y+5+64-(int)(64*hsv[2])+1, 0xFF000000);
         if (opacitySlider) DrawContextUtils.fill(x+5+64+5+valueOffset, y+5+64-c.getAlpha()/4, x+5+64+valueOffset+opacityOffset, y+5+64-c.getAlpha()/4-1, 0xFF000000);
-        if (chromaSpeed > 0) DrawContextUtils.fill(x+5+64+valueOffset+opacityOffset+5, y+5+64-(int)(chromaSpeed/255f*64), x+5+64+valueOffset+opacityOffset+15, y+5+64-(int)(chromaSpeed/255f*64)+1, 0xFF000000);
+        DrawContextUtils.fill(x+5+64+valueOffset+opacityOffset+5, y+5+64-(int)(chromaSpeed/255f*64), x+5+64+valueOffset+opacityOffset+15, y+5+64-(int)(chromaSpeed/255f*64)+1, 0xFF000000);
 
         TextureCompat.uploadTexture(colourPickerLocation, bi);
         GlStateManagerCompat.color(1, 1, 1, 1);
@@ -178,7 +179,7 @@ public class GuiElementColour extends GuiElement {
 
         TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + Math.round(hsv[2]*100), MinecraftCompat.getFontRenderer(), x+5+64+5+5-(Math.round(hsv[2]*100)==100?1:0), y+5+64+5+5, true, 13, -1);
         if (opacitySlider) TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + Math.round(c.getAlpha()/255f*100), MinecraftCompat.getFontRenderer(), x+5+64+5+valueOffset+5, y+5+64+5+5, true, 13, -1);
-        if (chromaSpeed > 0) TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + (int)ChromaColour.getSecondsForSpeed(chromaSpeed) + "s", MinecraftCompat.getFontRenderer(), x+5+64+5+valueOffset+opacityOffset+6, y+5+64+5+5, true, 13, -1);
+        TextRenderUtils.drawStringCenteredScaledMaxWidth(EnumChatFormatting.GRAY + "" + (int)ChromaColour.getSecondsForSpeed(chromaSpeed) + "s", MinecraftCompat.getFontRenderer(), x+5+64+5+valueOffset+opacityOffset+6, y+5+64+5+5, true, 13, -1);
 
         hexField.setSize(48, 10);
         if (!hexField.getFocus()) hexField.setText(Integer.toHexString(c.getRGB() & 0xFFFFFF).toUpperCase());
@@ -200,7 +201,7 @@ public class GuiElementColour extends GuiElement {
         float mxF = mf[0], myF = mf[1];
 
         if ((button == 0 || button == 1) && pressed) {
-            if (mouseX > x+5+8 && mouseX < x+5+56 && mouseY > y+5+64+5 && mouseY < y+5+74) {
+            if (mouseX > x+5+8 && mouseX < x+5+56 && mouseY > y+5+64+5 && mouseY < y+5+64+5+10) {
                 hexField.mouseClicked(mouseX, mouseY, button);
                 clickedComponent = -1;
                 return true;
@@ -223,13 +224,7 @@ public class GuiElementColour extends GuiElement {
                 }
                 int xC = mouseX - (x+5+64+valueOffset+opacityOffset+5);
                 if (xC > 0 && xC < 10) {
-                    int chromaSpeed = ChromaColour.getSpeed(colour);
-                    if (chromaSpeed > 0 && y2 > -5 && y2 <= 69) { clickedComponent = 3; }
-                    else if (chromaSpeed == 0 && mouseY > this.y+5+27 && mouseY < this.y+5+37) {
-                        int cur = ChromaColour.specialToSimpleRGB(colour);
-                        colour = ChromaColour.special(200, new Color(cur, true).getAlpha(), cur);
-                        colourChangedCallback.accept(colour);
-                    }
+                    if (y2 > -5 && y2 <= 69) { clickedComponent = 3; }
                 }
             } else {
                 hexField.unfocus();
@@ -262,6 +257,11 @@ public class GuiElementColour extends GuiElement {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean capturesEscape() {
+        return hexField.getFocus();
     }
 
     @Override

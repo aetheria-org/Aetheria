@@ -3,12 +3,12 @@
 
 package io.hamlook.aetheria.core.moulconfig.editors;
 
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
-import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 
 import java.lang.reflect.Method;
@@ -66,7 +66,8 @@ public class GuiOptionEditorButton extends GuiOptionEditor {
         try {
             Method method = config.getClass().getMethod("executeRunnable", String.class);
             method.invoke(config, id);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            Aetheria.logger.warning("Config button '" + id + "' failed: " + e.getMessage());
         }
     }
 

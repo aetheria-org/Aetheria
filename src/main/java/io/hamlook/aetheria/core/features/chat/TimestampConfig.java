@@ -24,6 +24,6 @@ public class TimestampConfig {
 
     @Expose
     @ConfigOption(name = "Timestamp Style", desc = "Style of the timestamp bracket. 0 = [HH:mm]  1 = <HH:mm>")
-    @ConfigEditorDropdown(values = {"[HH:mm]", "<HH:mm>"}, initialIndex = 1)
+    @ConfigEditorDropdown(values = {"[HH:mm]", "<HH:mm>"}, initialIndex = 0)
     public int timestampStyle = 0;
 }
