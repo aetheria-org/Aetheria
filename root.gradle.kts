@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.hamlook.aetheria"
-version = "1.4.0-alpha"
+version = "2.0.0-alpha"
 
 preprocess {
     strictExtraMappings.set(false)
