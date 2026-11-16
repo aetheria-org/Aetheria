@@ -132,4 +132,9 @@ public class GuiOptionEditorKeybind extends GuiOptionEditor {
         option.set(this.keyCode);
         return true;
     }
+
+    @Override
+    public void resetTransientState() {
+        editingKeycode = false;
+    }
 }

@@ -3,7 +3,6 @@ package io.hamlook.aetheria.features.custommenu.util;
 import io.hamlook.aetheria.OptionsMenu;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
-import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
 import io.hamlook.aetheria.features.custommenu.selector.CMMSelectorGUI;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import net.minecraft.client.gui.GuiScreen;
@@ -16,6 +15,9 @@ public class GuiHelper {
     private static final Map<String, GuiScreen> instanceCache = new HashMap<>();
 
     public static GuiScreen getMenu(String name, GuiScreen parentScreen) {
+        if ("ASM Config".equals(name)) {
+            return new GuiScreenElementWrapper(ATHRConfig.primedConfigEditor());
+        }
         return instanceCache.computeIfAbsent(name, key -> {
             switch (key) {
                 case "Singleplayer Menu":
@@ -35,8 +37,6 @@ public class GuiHelper {
                     // factory opens the screen itself. Null signals already-opened.
                     GuiScreenUtils.openCreateWorldScreen(parentScreen);
                     return null;
-                case "ASM Config":
-                    return new GuiScreenElementWrapper(new ConfigEditor(ATHRConfig.feature));
                 case "ASM Options Menu":
                     return new OptionsMenu();
                 case "CMM Editor":

@@ -40,6 +40,14 @@ public class GuiElementColour extends GuiElement {
     private float wheelAngle = 0, wheelRadius = 0;
     private int clickedComponent = -1;
 
+    private BufferedImage wheelImage;
+    private int wheelValue = -1;
+    private boolean wheelBorderIsZero = false;
+    private BufferedImage valueBarImage;
+    private float valueBarAngle = -1f, valueBarRadius = -1f;
+    private BufferedImage opacityBarImage;
+    private int opacityColour = -1;
+
     private final Consumer<String> colourChangedCallback;
     private final Runnable closeCallback;
     private String colour;
@@ -85,40 +93,59 @@ public class GuiElementColour extends GuiElement {
         Color c = new Color(currentColour, true);
         float[] hsv = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
 
-        // Colour wheel texture
-        BufferedImage bi = new BufferedImage(288, 288, BufferedImage.TYPE_INT_ARGB);
-        float borderRadius = KeyboardCompat.isKeyDown(Keyboard.KEY_N) ? 0 : 0.05f;
-        for (int px = -16; px < 272; px++) {
-            for (int py = -16; py < 272; py++) {
-                float radius = (float) Math.sqrt(((px - 128) * (px - 128) + (py - 128) * (py - 128)) / 16384f);
-                float angle  = (float) Math.toDegrees(Math.atan((128 - px) / (py - 128 + 1E-5)) + Math.PI / 2);
-                if (py < 128) angle += 180;
-                if (radius <= 1) {
-                    bi.setRGB(px + 16, py + 16, Color.getHSBColor(angle / 360f, (float) Math.pow(radius, 1.5f), hsv[2]).getRGB());
-                } else if (radius <= 1 + borderRadius) {
-                    float inv = Math.abs(radius - 1 - borderRadius / 2) / borderRadius * 2;
-                    if (radius > 1 + borderRadius / 2) {
-                        bi.setRGB(px + 16, py + 16, (int)((1 - inv) * 255) << 24);
-                    } else {
-                        Color col = Color.getHSBColor(angle / 360f, 1, hsv[2]);
-                        bi.setRGB(px + 16, py + 16, 0xff000000 | (int)(col.getRed()*inv)<<16 | (int)(col.getGreen()*inv)<<8 | (int)(col.getBlue()*inv));
+        int wheelValueKey = Math.round(hsv[2] * 255);
+        boolean borderIsZero = KeyboardCompat.isKeyDown(Keyboard.KEY_N);
+        if (wheelImage == null || wheelValueKey != wheelValue || borderIsZero != wheelBorderIsZero) {
+            BufferedImage bi = new BufferedImage(288, 288, BufferedImage.TYPE_INT_ARGB);
+            float borderRadius = borderIsZero ? 0 : 0.05f;
+            for (int px = -16; px < 272; px++) {
+                for (int py = -16; py < 272; py++) {
+                    float radius = (float) Math.sqrt(((px - 128) * (px - 128) + (py - 128) * (py - 128)) / 16384f);
+                    float angle  = (float) Math.toDegrees(Math.atan((128 - px) / (py - 128 + 1E-5)) + Math.PI / 2);
+                    if (py < 128) angle += 180;
+                    if (radius <= 1) {
+                        bi.setRGB(px + 16, py + 16, Color.getHSBColor(angle / 360f, (float) Math.pow(radius, 1.5f), hsv[2]).getRGB());
+                    } else if (radius <= 1 + borderRadius) {
+                        float inv = Math.abs(radius - 1 - borderRadius / 2) / borderRadius * 2;
+                        if (radius > 1 + borderRadius / 2) {
+                            bi.setRGB(px + 16, py + 16, (int)((1 - inv) * 255) << 24);
+                        } else {
+                            Color col = Color.getHSBColor(angle / 360f, 1, hsv[2]);
+                            bi.setRGB(px + 16, py + 16, 0xff000000 | (int)(col.getRed()*inv)<<16 | (int)(col.getGreen()*inv)<<8 | (int)(col.getBlue()*inv));
+                        }
                     }
                 }
             }
+            wheelImage = bi;
+            wheelValue = wheelValueKey;
+            wheelBorderIsZero = borderIsZero;
+            TextureCompat.uploadTexture(colourPickerLocation, wheelImage);
         }
 
-        // Value bar
-        BufferedImage biValue = new BufferedImage(10, 64, BufferedImage.TYPE_INT_ARGB);
-        for (int px = 0; px < 10; px++) for (int py = 0; py < 64; py++) {
-            if ((px == 0 || px == 9) && (py == 0 || py == 63)) continue;
-            biValue.setRGB(px, py, Color.getHSBColor(wheelAngle / 360, wheelRadius, (64 - py) / 64f).getRGB());
+        if (valueBarImage == null
+                || Math.abs(valueBarAngle - wheelAngle) > 0.5f
+                || Math.abs(valueBarRadius - wheelRadius) > 0.01f) {
+            BufferedImage biValue = new BufferedImage(10, 64, BufferedImage.TYPE_INT_ARGB);
+            for (int px = 0; px < 10; px++) for (int py = 0; py < 64; py++) {
+                if ((px == 0 || px == 9) && (py == 0 || py == 63)) continue;
+                biValue.setRGB(px, py, Color.getHSBColor(wheelAngle / 360, wheelRadius, (64 - py) / 64f).getRGB());
+            }
+            valueBarImage = biValue;
+            valueBarAngle = wheelAngle;
+            valueBarRadius = wheelRadius;
+            TextureCompat.uploadTexture(colourPickerBarValueLocation, valueBarImage);
         }
 
-        // Opacity bar
-        BufferedImage biOpacity = new BufferedImage(10, 64, BufferedImage.TYPE_INT_ARGB);
-        for (int px = 0; px < 10; px++) for (int py = 0; py < 64; py++) {
-            if ((px == 0 || px == 9) && (py == 0 || py == 63)) continue;
-            biOpacity.setRGB(px, py, (currentColour & 0x00FFFFFF) | (Math.min(255, (64 - py) * 4) << 24));
+        int opacityKey = currentColour & 0x00FFFFFF;
+        if (opacityBarImage == null || opacityKey != opacityColour) {
+            BufferedImage biOpacity = new BufferedImage(10, 64, BufferedImage.TYPE_INT_ARGB);
+            for (int px = 0; px < 10; px++) for (int py = 0; py < 64; py++) {
+                if ((px == 0 || px == 9) && (py == 0 || py == 63)) continue;
+                biOpacity.setRGB(px, py, (currentColour & 0x00FFFFFF) | (Math.min(255, (64 - py) * 4) << 24));
+            }
+            opacityBarImage = biOpacity;
+            opacityColour = opacityKey;
+            TextureCompat.uploadTexture(colourPickerBarOpacityLocation, opacityBarImage);
         }
 
         float selRadius = (float) Math.pow(wheelRadius, 1 / 1.5f) * 32;
@@ -129,7 +156,6 @@ public class GuiElementColour extends GuiElement {
 
         if (valueSlider) {
             valueOffset = 15;
-            TextureCompat.uploadTexture(colourPickerBarValueLocation, biValue);
             GlStateManagerCompat.color(1, 1, 1, 1);
             TextureCompat.drawBoundTextured(colourPickerBarValueLocation, x + 5 + 64 + 5, y + 5, 10, 64, 0, 0, 1, 1);
         }
@@ -138,7 +164,6 @@ public class GuiElementColour extends GuiElement {
             opacityOffset = 15;
             GlStateManagerCompat.color(1, 1, 1, 1);
             TextureCompat.drawBoundTextured(colour_selector_bar_alpha, x + 5 + 64 + 5 + valueOffset, y + 5, 10, 64, 0, 0, 1, 1);
-            TextureCompat.uploadTexture(colourPickerBarOpacityLocation, biOpacity);
             GlStateManagerCompat.color(1, 1, 1, 1);
             TextureCompat.drawBoundTextured(colourPickerBarOpacityLocation, x + 5 + 64 + 5 + valueOffset, y + 5, 10, 64, 0, 0, 1, 1);
         }
@@ -170,7 +195,6 @@ public class GuiElementColour extends GuiElement {
         if (opacitySlider) DrawContextUtils.fill(x+5+64+5+valueOffset, y+5+64-c.getAlpha()/4, x+5+64+valueOffset+opacityOffset, y+5+64-c.getAlpha()/4-1, 0xFF000000);
         DrawContextUtils.fill(x+5+64+valueOffset+opacityOffset+5, y+5+64-(int)(chromaSpeed/255f*64), x+5+64+valueOffset+opacityOffset+15, y+5+64-(int)(chromaSpeed/255f*64)+1, 0xFF000000);
 
-        TextureCompat.uploadTexture(colourPickerLocation, bi);
         GlStateManagerCompat.color(1, 1, 1, 1);
         TextureCompat.drawBoundTextured(colourPickerLocation, x+1, y+1, 72, 72, 0, 0, 1, 1);
 

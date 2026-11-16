@@ -84,4 +84,7 @@ public abstract class GuiOptionEditor {
 
     public void renderOverlay(int x, int y, int width) {
     }
+
+    public void resetTransientState() {
+    }
 }

@@ -69,6 +69,11 @@ public class PlayerButtonsConfig {
         @ConfigOption(name = "Donate Chat", desc = "Player names in donate chat are clickable")
         @ConfigEditorBoolean
         public boolean donate = true;
+
+        @Expose
+        @ConfigOption(name = "Coop Chat", desc = "Player names in coop chat are clickable")
+        @ConfigEditorBoolean
+        public boolean coop = true;
     }
 
     public boolean allows(ChatUtils.MessageType type) {
@@ -80,6 +85,7 @@ public class PlayerButtonsConfig {
             case MSG_RECEIVED: return clickableMessages.whisperReceived;
             case MSG_SENT: return clickableMessages.whisperSent;
             case DONATE: return clickableMessages.donate;
+            case COOP: return clickableMessages.coop;
             default: return false;
         }
     }

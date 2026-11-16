@@ -39,4 +39,9 @@ public class Debug {
     @ConfigOption(name = "Copy NBT Key", desc = "The Key to copy NBT data using Copy NBT Data feature")
     @ConfigEditorKeybind(defaultKey = Keyboard.KEY_RCONTROL)
     public int copyNBTKey = Keyboard.KEY_RCONTROL;
+
+    @Expose
+    @ConfigOption(name = "Remember Config Menu State", desc = "Reopen the config menu where you left off: category, scroll position, open subcategories and accordions. Held until the game closes.")
+    @ConfigEditorBoolean
+    public boolean rememberConfigMenuState = true;
 }

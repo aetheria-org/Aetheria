@@ -103,6 +103,8 @@ public class ATHRConfig {
     public static Config feature;
     public static File configDirectory = new File("config/Aetheria");
     public static GuiScreen screenToOpen = null;
+    private static Config sharedConfigEditorConfig;
+    private static ConfigEditor sharedConfigEditor;
     private static File configFile;
     private static int screenTicks = 0;
     private static boolean waypointManagerKeyWasDown = false;
@@ -421,20 +423,49 @@ public class ATHRConfig {
         RepoHandler.refresh(ATHRRepo.KEY_TAGS);
     }
 
+    private static ConfigEditor getConfigEditor() {
+        if (feature == null || !feature.debug.rememberConfigMenuState) {
+            sharedConfigEditor = null;
+            return new ConfigEditor(feature);
+        }
+        if (sharedConfigEditorConfig != feature) {
+            sharedConfigEditor = null;
+            sharedConfigEditorConfig = feature;
+        }
+        if (sharedConfigEditor == null) {
+            sharedConfigEditor = new ConfigEditor(feature);
+        }
+        return sharedConfigEditor;
+    }
+
+    public static ConfigEditor primedConfigEditor() {
+        ConfigEditor editor = getConfigEditor();
+        editor.resetForOpen();
+        return editor;
+    }
+
+    private static GuiScreen configScreen(String category, String search) {
+        ConfigEditor editor = primedConfigEditor();
+        if (category != null) editor.focusCategory(category);
+        if (search != null) editor.focusSearch(search);
+        return new GuiScreenElementWrapper(editor);
+    }
+
     public static void openGui() {
-        screenToOpen = new GuiScreenElementWrapper(new ConfigEditor(feature));
+        screenToOpen = configScreen(null, null);
     }
 
     public static void openCategory(String categoryName) {
-        screenToOpen = new GuiScreenElementWrapper(new ConfigEditor(feature, categoryName));
+        screenToOpen = configScreen(categoryName, null);
     }
 
     public static void openSearch(String search) {
-        screenToOpen = new GuiScreenElementWrapper(new ConfigEditor(feature, null, search));
+        screenToOpen = configScreen(null, search);
     }
 
     public static void openSubcategory(String categoryName, String... subcategoryFieldPath) {
-        ConfigEditor editor = new ConfigEditor(feature, categoryName);
+        ConfigEditor editor = primedConfigEditor();
+        editor.focusCategory(categoryName);
         editor.openSubcategory(categoryName, subcategoryFieldPath);
         screenToOpen = new GuiScreenElementWrapper(editor);
     }

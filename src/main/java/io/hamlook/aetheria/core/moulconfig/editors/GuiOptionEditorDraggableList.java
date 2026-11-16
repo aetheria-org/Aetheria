@@ -289,4 +289,14 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
     public boolean keyboardInput() {
         return false;
     }
+
+    @Override
+    public void resetTransientState() {
+        currentDragging = -1;
+        dragStartIndex = -1;
+        dragOffsetX = -1;
+        dragOffsetY = -1;
+        dropdownOpen = false;
+        trashHoverTime = -1;
+    }
 }

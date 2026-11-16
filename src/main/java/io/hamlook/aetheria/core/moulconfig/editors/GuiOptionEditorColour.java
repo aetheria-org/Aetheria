@@ -95,4 +95,9 @@ public class GuiOptionEditorColour extends GuiOptionEditor {
     public boolean keyboardInput(char typedChar, int keyCode) {
         return colourElement != null && colourElement.keyboardInput(typedChar, keyCode);
     }
+
+    @Override
+    public void resetTransientState() {
+        colourElement = null;
+    }
 }

@@ -49,7 +49,7 @@ public class ConfigEditor extends GuiElement {
     private static final long SEARCH_REPEAT_RATE_MS = 50;
     private static final int TREE_INDENT = 14;
     private static final int BASE_INDENT = 6;
-    private final long openedMillis;
+    private long openedMillis;
     private final LerpingInteger optionsScroll = new LerpingInteger(0, 150);
     private final LerpingInteger categoryScroll = new LerpingInteger(0, 150);
     private final LinkedHashMap<String, ConfigProcessor.ProcessedCategory> processedConfig;
@@ -83,12 +83,8 @@ public class ConfigEditor extends GuiElement {
     private long searchRepeatLast = 0;
 
     public ConfigEditor(Object config) {
-        this(config, null);
-    }
-
-    public ConfigEditor(Object config, String categoryOpen) {
-        this.openedMillis = System.currentTimeMillis();
-        this.processedConfig = ConfigProcessor.create(config);
+        openedMillis = System.currentTimeMillis();
+        processedConfig = ConfigProcessor.create(config);
 
         for (ConfigProcessor.ProcessedCategory category : processedConfig.values()) {
             for (ConfigProcessor.ProcessedOption option : category.options.values()) {
@@ -102,40 +98,80 @@ public class ConfigEditor extends GuiElement {
             }
             indexSubcategoryOptions(category, category.subcategories, new ArrayList<>());
         }
-
-        if (categoryOpen != null) {
-            for (Map.Entry<String, ConfigProcessor.ProcessedCategory> category : processedConfig.entrySet()) {
-                if (category.getValue().name.equalsIgnoreCase(categoryOpen)) {
-                    selectedCategory = category.getKey();
-                    break;
-                }
-            }
-            if (selectedCategory == null) {
-                for (Map.Entry<String, ConfigProcessor.ProcessedCategory> category : processedConfig.entrySet()) {
-                    if (category.getValue().name.toLowerCase().startsWith(categoryOpen.toLowerCase())) {
-                        selectedCategory = category.getKey();
-                        break;
-                    }
-                }
-            }
-            if (selectedCategory == null) {
-                for (Map.Entry<String, ConfigProcessor.ProcessedCategory> category : processedConfig.entrySet()) {
-                    if (category.getValue().name.toLowerCase().contains(categoryOpen.toLowerCase())) {
-                        selectedCategory = category.getKey();
-                        break;
-                    }
-                }
-            }
-        }
-
     }
 
-    public ConfigEditor(Object config, String categoryOpen, String search) {
-        this(config, categoryOpen);
-        if (search != null && !search.isEmpty()) {
-            searchField.setText(search);
-            search();
-            searchField.setFocus(true);
+    private String resolveCategoryKey(String categoryOpen) {
+        for (Map.Entry<String, ConfigProcessor.ProcessedCategory> category : processedConfig.entrySet()) {
+            if (category.getValue().name.equalsIgnoreCase(categoryOpen)) return category.getKey();
+        }
+        for (Map.Entry<String, ConfigProcessor.ProcessedCategory> category : processedConfig.entrySet()) {
+            if (category.getValue().name.toLowerCase().startsWith(categoryOpen.toLowerCase())) return category.getKey();
+        }
+        for (Map.Entry<String, ConfigProcessor.ProcessedCategory> category : processedConfig.entrySet()) {
+            if (category.getValue().name.toLowerCase().contains(categoryOpen.toLowerCase())) return category.getKey();
+        }
+        return null;
+    }
+
+    private void clearSearch() {
+        searchField.setFocus(false);
+        searchField.setText("");
+        search();
+    }
+
+    public void resetForOpen() {
+        openedMillis = System.currentTimeMillis();
+        clearSearch();
+        resetTransientState();
+    }
+
+    public void focusSearch(String query) {
+        searchField.setText(query);
+        search();
+        searchField.setFocus(true);
+    }
+
+    public void focusCategory(String categoryOpen) {
+        String key = resolveCategoryKey(categoryOpen);
+        if (key == null) return;
+        selectedCategory = key;
+        anchorSubcategoryPath.clear();
+        selectedSubcategoryPath.clear();
+        optionsScroll.setValue(0);
+    }
+
+    private void resetTransientState() {
+        isDraggingOptionsScroll = false;
+        isDraggingCategoryScroll = false;
+        dragScrollStartValue = 0;
+        dragMouseStartY = 0;
+        lastMouseButton = -1;
+        lastMousePressed = false;
+        lastMouseX = 0;
+        lastKeyChar = 0;
+        lastKeyCode = 0;
+        lastKeyPressed = false;
+        searchRepeatKey = 0;
+        resetOptionTransientState(processedConfig);
+    }
+
+    private void resetOptionTransientState(Map<String, ConfigProcessor.ProcessedCategory> categories) {
+        for (ConfigProcessor.ProcessedCategory category : categories.values()) {
+            resetOptionsTransientState(category.options);
+            resetSubcategoriesTransientState(category.subcategories);
+        }
+    }
+
+    private void resetSubcategoriesTransientState(Map<String, ConfigProcessor.ProcessedSubcategory> subcategories) {
+        for (ConfigProcessor.ProcessedSubcategory sub : subcategories.values()) {
+            resetOptionsTransientState(sub.options);
+            resetSubcategoriesTransientState(sub.subcategories);
+        }
+    }
+
+    private void resetOptionsTransientState(Map<String, ConfigProcessor.ProcessedOption> options) {
+        for (ConfigProcessor.ProcessedOption option : options.values()) {
+            if (option.editor != null) option.editor.resetTransientState();
         }
     }
 

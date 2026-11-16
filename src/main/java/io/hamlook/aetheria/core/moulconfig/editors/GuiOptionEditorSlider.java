@@ -145,6 +145,12 @@ public class GuiOptionEditorSlider extends GuiOptionEditor {
         return true;
     }
 
+    @Override
+    public void resetTransientState() {
+        textField.unfocus();
+        slider.resetDragState();
+    }
+
     private float clamp(float value) {
         return Math.max(minValue, Math.min(maxValue, value));
     }

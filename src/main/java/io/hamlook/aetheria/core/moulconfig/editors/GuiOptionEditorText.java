@@ -94,4 +94,9 @@ public class GuiOptionEditorText extends GuiOptionEditor {
         }
         return false;
     }
+
+    @Override
+    public void resetTransientState() {
+        textField.unfocus();
+    }
 }

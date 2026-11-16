@@ -113,4 +113,8 @@ public class GuiElementSlider extends GuiElement {
         raw = Math.max(minValue, Math.min(maxValue, raw));
         return Math.round(raw / minStep) * minStep;
     }
+
+    public void resetDragState() {
+        clicked = false;
+    }
 }

@@ -37,6 +37,7 @@ public class ChatUtils {
     private static final Pattern MSG_RECEIVED_STRIPPED = Pattern.compile("^From (?:\\[[^\\]]*\\] )?(\\w{1,16}) to Me: (.+)$");
     private static final Pattern MSG_SENT_STRIPPED = Pattern.compile("^From Me to (?:\\[[^\\]]*\\] )?(\\w{1,16}): (.+)$");
     private static final Pattern DONATE_MSG = Pattern.compile("^Donate Chat \\(/dc\\) ▶ (?:\\[[^]]*] )?(\\w{1,16}): (.+)$");
+    private static final Pattern COOP_MSG = Pattern.compile("^Coop > (?:\\[[^]]*])?\\s*(\\w{1,16}):\\s*(.+)$");
 
     private ChatUtils() {
     }
@@ -64,7 +65,7 @@ public class ChatUtils {
     }
 
     public static boolean isPlayerChat(String msg) {
-        return isPartyMessage(msg) || isPlayerMessage(msg) || isMsgReceived(msg) || isMsgSent(msg) || isDonateMessage(msg);
+        return isPartyMessage(msg) || isPlayerMessage(msg) || isMsgReceived(msg) || isMsgSent(msg) || isDonateMessage(msg) || isCoopMessage(msg);
     }
 
     public static boolean isMsgReceived(String msg) {
@@ -136,6 +137,20 @@ public class ChatUtils {
         return m.matches() ? m.group(1) : null;
     }
 
+    public static boolean isCoopMessage(String msg) {
+        return COOP_MSG.matcher(msg).matches();
+    }
+
+    public static String getCoopSender(String msg) {
+        Matcher m = COOP_MSG.matcher(msg);
+        return m.matches() ? m.group(1) : null;
+    }
+
+    public static String getCoopBody(String msg) {
+        Matcher m = COOP_MSG.matcher(msg);
+        return m.matches() ? m.group(2).trim() : null;
+    }
+
     public static boolean isDonateMessage(String msg) {
         return DONATE_MSG.matcher(msg).matches();
     }
@@ -151,7 +166,7 @@ public class ChatUtils {
     }
 
     public enum MessageType {
-        PLAYER, PARTY, GUILD, MSG_RECEIVED, MSG_SENT, DONATE;
+        PLAYER, PARTY, GUILD, MSG_RECEIVED, MSG_SENT, DONATE, COOP;
 
         static final MessageType[] VALUES = values();
     }
@@ -186,6 +201,7 @@ public class ChatUtils {
             case MSG_RECEIVED: return getMsgReceivedSender(plain);
             case MSG_SENT: return getMsgSentRecipient(plain);
             case DONATE: return getDonateSender(plain);
+            case COOP: return getCoopSender(plain);
             default: return null;
         }
     }
@@ -198,6 +214,7 @@ public class ChatUtils {
             case MSG_RECEIVED: return getMsgReceivedBody(plain);
             case MSG_SENT: return getMsgSentBody(plain);
             case DONATE: return getDonateBody(plain);
+            case COOP: return getCoopBody(plain);
             default: return null;
         }
     }
