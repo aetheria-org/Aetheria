@@ -5,6 +5,9 @@ package io.hamlook.aetheria.core.moulconfig.gui;
 
 public abstract class GuiElement {
 
+    public void onGuiClosed() {
+    }
+
     public abstract void render();
 
     public abstract boolean mouseInput(int mouseX, int mouseY);

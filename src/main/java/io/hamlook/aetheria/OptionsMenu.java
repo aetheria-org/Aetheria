@@ -5,6 +5,7 @@ import io.hamlook.aetheria.features.capes.ui.CapeSelectorGUI;
 import io.hamlook.aetheria.features.chat.globalchat.ui.ChatUI;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
+import io.hamlook.aetheria.repo.RepoLinks;
 import io.hamlook.aetheria.repo.data.UpdateData;
 import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
@@ -34,13 +35,21 @@ public class OptionsMenu extends AetheriaBaseScreen {
     private static final int BTN_W = 180;
     private static final int BTN_H = 22;
     private static final int BTN_GAP = 6;
-    private static final String[] BTN_LABELS = {"⚙ Config", "Waypoints", "Cape Selector", "Chat Filters", "Global Chat"};
+    private static final String[] BTN_LABELS = {"⚙ Config", "Waypoints & Routes", "Cape Selector", "Chat Filters", "Global Chat"};
 
     // Social icon strip
     private static final int ICON_SIZE = 24;
     private static final int ICON_GAP = 10;
     private static final ResourceLocation[] SOCIAL_ICONS = {Resources.DISCORD, Resources.GITHUB, Resources.MODRINTH, Resources.SKYATLAS};
-    private static final String[] SOCIAL_URLS = {"https://discord.gg/HHf5yqSy9R", "https://github.com/aetheria-org/Aetheria", "https://modrinth.com/mod/aetheriamod","https://skyatlas.lol"};
+
+    private static String socialUrl(int index) {
+        switch (index) {
+            case 0: return RepoLinks.discord();
+            case 1: return RepoLinks.github();
+            case 2: return RepoLinks.modrinth();
+            default: return RepoLinks.skyatlas();
+        }
+    }
 
     private final List<Particle> particles = new ArrayList<>();
     private float globalTime = 0f;
@@ -186,7 +195,7 @@ public class OptionsMenu extends AetheriaBaseScreen {
 
         // Update badge
         if (updateVersion != null && mouseX >= updateButtonX && mouseX <= updateButtonX + updateButtonW && mouseY >= updateButtonY && mouseY <= updateButtonY + updateButtonH) {
-            tryBrowse("https://modrinth.com/mod/aetheriamod");
+            tryBrowse(RepoLinks.modrinth());
             return;
         }
 
@@ -220,10 +229,10 @@ public class OptionsMenu extends AetheriaBaseScreen {
         // Social icons
         int iconBaseX = iconStripX();
         int iconY = height - ICON_SIZE - 8;
-        for (int i = 0; i < SOCIAL_URLS.length; i++) {
+        for (int i = 0; i < SOCIAL_ICONS.length; i++) {
             int ix = iconBaseX + i * (ICON_SIZE + ICON_GAP);
             if (mouseX >= ix && mouseX <= ix + ICON_SIZE && mouseY >= iconY && mouseY <= iconY + ICON_SIZE) {
-                tryBrowse(SOCIAL_URLS[i]);
+                tryBrowse(socialUrl(i));
                 return;
             }
         }

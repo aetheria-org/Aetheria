@@ -11,6 +11,7 @@ import io.hamlook.aetheria.core.moulconfig.editors.GuiOptionEditorAccordion;
 import io.hamlook.aetheria.core.moulconfig.gui.GlScissorStack;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElement;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElementTextField;
+import io.hamlook.aetheria.repo.RepoLinks;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.LerpUtils;
 import io.hamlook.aetheria.utils.LerpUtils.LerpingInteger;
@@ -35,7 +36,15 @@ import static io.hamlook.aetheria.Resources.*;
 
 public class ConfigEditor extends GuiElement {
     private static final ResourceLocation[] socialsIco = new ResourceLocation[]{DISCORD, GITHUB, MODRINTH, SKYATLAS};
-    private static final String[] socialsLink = new String[]{"https://discord.gg/4zKq2RkSZS", "https://github.com/aetheria-org/Aetheria", "https://modrinth.com/mod/aetheriamod", "https://skyatlas.lol"};
+
+    private static String socialUrl(int index) {
+        switch (index) {
+            case 0: return RepoLinks.discord();
+            case 1: return RepoLinks.github();
+            case 2: return RepoLinks.modrinth();
+            default: return RepoLinks.skyatlas();
+        }
+    }
     private static final long SEARCH_REPEAT_DELAY_MS = 500;
     private static final long SEARCH_REPEAT_RATE_MS = 50;
     private static final int TREE_INDENT = 14;
@@ -681,7 +690,7 @@ public class ConfigEditor extends GuiElement {
             TextureCompat.drawBoundTextured(socialsIco[socialIndex], socialLeft, y + 7, 16, 16, 0, 0, 1, 1);
 
             if (mouseX >= socialLeft && mouseX <= socialLeft + 16 && mouseY >= y + 6 && mouseY <= y + 23) {
-                tooltipToDisplay = Lists.newArrayList(EnumChatFormatting.YELLOW + "Go to: " + EnumChatFormatting.RESET + socialsLink[socialIndex]);
+                tooltipToDisplay = Lists.newArrayList(EnumChatFormatting.YELLOW + "Go to: " + EnumChatFormatting.RESET + socialUrl(socialIndex));
             }
         }
 
@@ -950,10 +959,10 @@ public class ConfigEditor extends GuiElement {
                 }
             }
 
-            for (int socialIndex = 0; socialIndex < socialsLink.length; socialIndex++) {
+            for (int socialIndex = 0; socialIndex < socialsIco.length; socialIndex++) {
                 int socialLeft = x + xSize - 23 - 18 * socialIndex;
                 if (mouseX >= socialLeft && mouseX <= socialLeft + 16 && mouseY >= y + 6 && mouseY <= y + 23) {
-                    UrlOpener.open(socialsLink[socialIndex]);
+                    UrlOpener.open(socialUrl(socialIndex));
                     return true;
                 }
             }

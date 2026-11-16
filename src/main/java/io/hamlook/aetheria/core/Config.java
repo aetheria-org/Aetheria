@@ -22,6 +22,7 @@ import io.hamlook.aetheria.core.features.waypoints.Waypoints;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
 import io.hamlook.aetheria.features.capes.CapeManager;
 import io.hamlook.aetheria.features.dungeons.rooms.secret.SecretChime;
+import io.hamlook.aetheria.repo.RepoLinks;
 import io.hamlook.aetheria.utils.UrlOpener;
 
 public class Config {
@@ -157,9 +158,9 @@ public class Config {
             case "chatFiltersGUI": ATHRConfig.openChatFilterUI(); break;
             case "openPrivacyNotice": ATHRConfig.openPrivacyNotice(); break;
             case "reloadCapes": CapeManager.reload(); break;
-            case "openWebsite": openUrl("https://aetheria.github.io"); break;
-            case "openDiscord": openUrl("https://discord.gg/tdMFbmhFTb"); break;
-            case "openGithub": openUrl("https://github.com/aetheria-org/Aetheria"); break;
+            case "openWebsite": openUrl(RepoLinks.website()); break;
+            case "openDiscord": openUrl(RepoLinks.discord()); break;
+            case "openGithub": openUrl(RepoLinks.github()); break;
             case "openLicenseForge": openUrl("https://github.com/MinecraftForge/MinecraftForge"); break;
             case "openLicenseMixin": openUrl("https://github.com/SpongePowered/Mixin/"); break;
             case "openLicenseMoulConfig": openUrl("https://github.com/NotEnoughUpdates/MoulConfig"); break;
@@ -176,8 +177,8 @@ public class Config {
             case "openLicenseSlf4j": openUrl("https://github.com/qos-ch/slf4j"); break;
             case "openLicenseImageioApng": openUrl("https://github.com/Tianscar/imageio-apng"); break;
             case "openLicenseWebp4j": openUrl("https://github.com/MrNanko/webp4j"); break;
-            case "openModrinth": openUrl("https://modrinth.com/mod/aetheriamod"); break;
-            case "openSkyAtlas": openUrl("https://skyatlas.lol"); break;
+            case "openModrinth": openUrl(RepoLinks.modrinth()); break;
+            case "openSkyAtlas": openUrl(RepoLinks.skyatlas()); break;
             case "resetPlayerButtonsColors":
                 ATHRConfig.feature.chat.playerButtons.backgroundColor = PlayerButtonsConfig.DEFAULT_BACKGROUND_COLOR;
                 ATHRConfig.feature.chat.playerButtons.accentColor = PlayerButtonsConfig.DEFAULT_ACCENT_COLOR;

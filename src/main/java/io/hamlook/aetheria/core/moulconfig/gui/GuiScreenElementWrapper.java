@@ -84,6 +84,7 @@ public class GuiScreenElementWrapper extends AetheriaBaseScreen {
 
     @Override
     public void guiClosed() {
+        element.onGuiClosed();
         ATHRConfig.saveConfig();
     }
 }
