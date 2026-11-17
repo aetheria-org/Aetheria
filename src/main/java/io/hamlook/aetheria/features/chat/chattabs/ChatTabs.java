@@ -7,7 +7,9 @@ import io.hamlook.aetheria.utils.compat.ChatHudCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 
 public final class ChatTabs {
 
@@ -15,6 +17,7 @@ public final class ChatTabs {
     private static volatile ChatTabType previewOverride;
     private static int lastSignature = -1;
     private static final Map<ChatTabType, Integer> unread = new EnumMap<>(ChatTabType.class);
+    private static final Set<ChatTabType> seen = EnumSet.noneOf(ChatTabType.class);
 
     private ChatTabs() {
     }
@@ -85,6 +88,7 @@ public final class ChatTabs {
     public static void noteLineArrived(MessageType type) {
         ChatTabType owner = ChatTabType.owner(type);
         if (owner == ChatTabType.ALL) return;
+        seen.add(owner);
         if (!enabled(owner)) return;
         if (owner == effectiveTab()) return;
         unread.put(owner, unread.getOrDefault(owner, 0) + 1);
@@ -109,6 +113,15 @@ public final class ChatTabs {
     public static boolean dotBadges() {
         ChatTabsConfig.UnreadBadge cfg = unreadBadge();
         return cfg != null && cfg.badgeStyle == 1;
+    }
+
+    public static boolean hasNoMessages(ChatTabType tab) {
+        return !seen.contains(tab);
+    }
+
+    public static boolean hideEmptyTabs() {
+        ChatTabsConfig.UnreadBadge cfg = unreadBadge();
+        return cfg != null && cfg.hideEmptyTabs;
     }
 
     public static void pruneDisabledUnread() {

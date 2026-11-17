@@ -125,5 +125,10 @@ public class ChatTabsConfig {
         @ConfigOption(name = "Badge Colour", desc = "Background colour of the badge")
         @ConfigEditorColour
         public String badgeColor = "0:255:208:48:48";
+
+        @Expose
+        @ConfigOption(name = "Hide Empty Tabs", desc = "Hide tabs that have not seen any messages yet this session. ALL always shows.")
+        @ConfigEditorBoolean
+        public boolean hideEmptyTabs = false;
     }
 }

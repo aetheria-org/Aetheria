@@ -55,17 +55,25 @@ public final class ChatTabsBar {
         int center = heldTabX(heldWidth, mouseX, screenWidth) + heldWidth / 2;
         int dropIndex = insertionIndex(center, others.entries);
 
-        List<ChatTabType> visible = new ArrayList<>();
+        List<ChatTabType> merged = new ArrayList<>();
         for (ChatTabType tab : orderedTabs()) {
             if (tab == held) continue;
-            if (ChatTabs.enabled(tab)) visible.add(tab);
+            if (ChatTabs.hideEmptyTabs()
+                    && tab != ChatTabType.ALL
+                    && ChatTabs.hasNoMessages(tab)) continue;
+            if (ChatTabs.enabled(tab)) merged.add(tab);
         }
-        visible.add(Math.min(Math.max(dropIndex, 0), visible.size()), held);
+        merged.add(Math.min(Math.max(dropIndex, 0), merged.size()), held);
 
-        List<String> newOrder = new ArrayList<>();
-        for (ChatTabType tab : visible) newOrder.add(tab.name());
+        Set<ChatTabType> ordered = new HashSet<>(merged);
+        List<String> newOrder = new ArrayList<>(ChatTabType.values().length);
+        int next = 0;
         for (ChatTabType tab : orderedTabs()) {
-            if (!visible.contains(tab)) newOrder.add(tab.name());
+            if (ordered.contains(tab)) {
+                newOrder.add(merged.get(next++).name());
+            } else {
+                newOrder.add(tab.name());
+            }
         }
         cfg.tabOrder = newOrder;
         ATHRConfig.saveConfig();
@@ -131,8 +139,10 @@ public final class ChatTabsBar {
         if (cfg == null) return new Layout(new ArrayList<>(), y, -1, 0);
 
         FontRenderer fr = MinecraftCompat.getFontRenderer();
+        boolean hideEmpty = ChatTabs.hideEmptyTabs();
         for (ChatTabType tab : orderedTabs()) {
             if (tab == held) continue;
+            if (hideEmpty && tab != ChatTabType.ALL && ChatTabs.hasNoMessages(tab)) continue;
             if (ChatTabs.enabled(tab)) tabs.add(tab);
         }
 
