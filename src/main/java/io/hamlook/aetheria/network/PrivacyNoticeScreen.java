@@ -25,10 +25,7 @@ public class PrivacyNoticeScreen extends NetworkNoticeScreen {
                     "Disabling this will break the majority of the mod.", "disableGithubCalls"),
 
             new Page("Smart Connection", "Global Chat and Diana Party only connect while you're using them, and disconnect after 10 minutes of inactivity.",
-                    "Reduces background connections and network usage when you're not chatting. Off by default.", "smartSocketLifecycle", true),
-
-            new Page("Custom Main Menu", "Replace the existing Main Menu with a Custom One, You can use pre-made presets OR make your own.\n(Doesn't work with Essentials or LabyMod)",
-                    "Gives a unique look to the main menu, instead of the stale minecraft menu.","customMainMenu",true)
+                    "Reduces background connections and network usage when you're not chatting. Off by default.", "smartSocketLifecycle", true)
     };
 
     private static final Page[] SOCKET_ONLY_PAGES = {PAGES[PAGES.length - 1]};
@@ -60,8 +57,6 @@ public class PrivacyNoticeScreen extends NetworkNoticeScreen {
                 return ATHRConfig.feature.network.disableGithubCalls;
             case "smartSocketLifecycle":
                 return ATHRConfig.feature.network.smartSocketLifecycle;
-            case "customMainMenu":
-                return ATHRConfig.feature.cosmetics.customMenu.enabled;
             default:
                 return false;
         }

@@ -17,7 +17,6 @@ import io.hamlook.aetheria.features.chat.chatfilters.ChatFilterManager;
 import io.hamlook.aetheria.features.chat.emoji.EmojiManager;
 import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
-import io.hamlook.aetheria.features.custommenu.util.CMMHelper;
 import io.hamlook.aetheria.features.diana.party.DianaPartyConnector;
 import io.hamlook.aetheria.features.dungeons.caseopening.CitManager;
 import io.hamlook.aetheria.features.farming.visitors.VisitorShoppingList;
@@ -93,7 +92,6 @@ public class Aetheria {
         AetheriaEventBus.INSTANCE.register(this);
         EventRegistrar.registerAll();
         CommandsRegistry.INSTANCE.registerAll();
-        CMMHelper.initialise();
     }
     //#else
     //$$ @Override
@@ -128,7 +126,6 @@ public class Aetheria {
     //$$     EventRegistrar.registerAll();
     //$$     CommandsRegistry.INSTANCE.registerAll();
     //$$     FabricCommandsBridge.INSTANCE.register();
-    //$$     CMMHelper.initialise();
     //$$ }
     //#endif
 

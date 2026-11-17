@@ -22,7 +22,6 @@ io.hamlook.aetheria.mixins.gui.MixinGuiContainer.java
 io.hamlook.aetheria.mixins.gui.MixinGuiEditSign.java
 io.hamlook.aetheria.mixins.gui.MixinGuiIngame.java
 io.hamlook.aetheria.mixins.gui.MixinGuiIngameMenu.java
-io.hamlook.aetheria.mixins.gui.MixinGuiMainMenu.java
 io.hamlook.aetheria.mixins.gui.MixinGuiScreen.java
 io.hamlook.aetheria.mixins.input.MixinMouseHelper.java
 io.hamlook.aetheria.mixins.network.MixinNetHandlerPlayClient.java
