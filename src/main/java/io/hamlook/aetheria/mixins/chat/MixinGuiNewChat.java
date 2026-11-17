@@ -9,7 +9,11 @@ import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.hooks.ChatHook;
+import io.hamlook.aetheria.utils.hooks.ChatHistoryHook;
 import io.hamlook.aetheria.utils.hooks.ChatLineInitHook;
+import io.hamlook.aetheria.utils.hooks.ChatTabsHook;
+import io.hamlook.aetheria.features.chat.chattabs.ChatTabs;
+
 //#if MC < 1.16
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ChatLine;
@@ -38,6 +42,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.gen.Invoker;
 
 import java.util.List;
 import java.util.logging.Level;
@@ -57,12 +62,21 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 
     @ModifyVariable(method = "setChatLine", at = @At("HEAD"), ordinal = 0, argsOnly = true)
     private IChatComponent athr$injectTimestamp(IChatComponent component) {
+        if (ChatUtilsState.refreshTags != null) {
+            ChatUtilsState.pendingLineMessage = ChatTabsHook.tagForRefresh(component);
+        }
         return ChatCompactHandler.applyTimestamp(component);
     }
 
     @Inject(method = "setChatLine", at = @At("HEAD"))
     private void athr$beforeSetChatLine(IChatComponent component, int chatLineId,
                                          int updateCounter, boolean refresh, CallbackInfo ci) {
+        if (!refresh) {
+            ChatUtilsState.pendingLineMessage = ChatUtilsState.currentLineMessage;
+            ChatUtilsState.currentLineMessage = null;
+            ChatUtilsState.refreshTags = null;
+            ChatTabs.noteLineArrived(ChatUtilsState.pendingLineMessage);
+        }
         ChatUtilsState.currentFullMessage = component;
         try {
             ChatCompactHandler.handleChatMessage(component, refresh, this.chatLines, this.drawnChatLines);
@@ -77,6 +91,19 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
                                         int updateCounter, boolean refresh, CallbackInfo ci) {
         ChatCompactHandler.resetMessageHash();
         ChatUtilsState.currentFullMessage = null;
+        ChatUtilsState.pendingLineMessage = null;
+        ChatHistoryHook.trimToLimit(this.drawnChatLines);
+        ChatHistoryHook.trimToLimit(this.chatLines);
+    }
+
+    @Inject(method = "refreshChat", at = @At("HEAD"))
+    private void athr$beginRefreshChat(CallbackInfo ci) {
+        ChatTabsHook.beginRefresh(this.chatLines);
+    }
+
+    @Inject(method = "refreshChat", at = @At("TAIL"))
+    private void athr$endRefreshChat(CallbackInfo ci) {
+        ChatTabsHook.endRefresh();
     }
 
     @Redirect(
@@ -84,10 +111,17 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
             at = @At(value = "INVOKE", target = "Ljava/util/List;add(ILjava/lang/Object;)V", remap = false)
     )
     private void athr$trackChatLine(List<Object> list, int index, Object line) {
-        list.add(index, line);
         if (line instanceof ChatLine) {
             ChatCompactHandler.trackChatLine((ChatLine) line);
         }
+        if (!ChatTabsHook.shouldInsertIntoDrawn(this.drawnChatLines, list, line)) return;
+        list.add(index, line);
+    }
+
+    @Override
+    public void athr$refreshView() {
+        ((GuiNewChat) (Object) this).refreshChat();
+        ChatHistoryHook.trimToLimit(this.drawnChatLines);
     }
 
     @ModifyConstant(method = "setChatLine", constant = @Constant(intValue = 100), expect = 2)
@@ -110,6 +144,8 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 
     @Inject(method = "drawChat", at = @At("HEAD"))
     private void athr$pushChatAnimation(int updateCounter, CallbackInfo ci) {
+        if ("HIDDEN".equals(this.mc.gameSettings.chatVisibility.name())) return;
+        if (this.drawnChatLines.size() == 0) return;
         GlStateManagerCompat.pushMatrix();
         ChatHook.applyAnimation(updateCounter);
     }
@@ -199,6 +235,9 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 //$$             at = @At("HEAD"), cancellable = true)
 //$$     private void athr$beforeAddMessage(Text component, MessageSignatureData signature, MessageIndicator indicator, CallbackInfo ci) {
 //$$         if (ChatCompactHandler.reentering) return;
+//$$         ChatUtilsState.pendingLineMessage = ChatUtilsState.currentLineMessage;
+//$$         ChatUtilsState.currentLineMessage = null;
+//$$         ChatTabs.noteLineArrived(ChatUtilsState.pendingLineMessage);
 //$$         ChatUtilsState.currentFullMessage = component;
 //$$         try {
 //$$             ChatCompactHandler.handleChatMessage(component, false, this.messages, this.visibleMessages);
@@ -226,7 +265,18 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 //$$     private void athr$afterAddMessage(Text component, MessageSignatureData signature, MessageIndicator indicator, CallbackInfo ci) {
 //$$         ChatCompactHandler.resetMessageHash();
 //$$         ChatUtilsState.currentFullMessage = null;
+//$$         ChatUtilsState.pendingLineMessage = null;
 //$$     }
+//$$
+//$$     @Inject(
+//$$             method = "addVisibleMessage(Lnet/minecraft/client/gui/hud/ChatHudLine;)V",
+//$$             at = @At("HEAD"), cancellable = true)
+//$$     private void athr$filterVisible(ChatHudLine line, CallbackInfo ci) {
+//$$         if (!ChatTabsHook.shouldInsertVisible(line)) ci.cancel();
+//$$     }
+//$$
+//$$     @Invoker("refresh")
+//$$     public abstract void athr$refresh();
 //$$
 //$$     @Inject(
 //$$             method = "addMessage(Lnet/minecraft/client/gui/hud/ChatHudLine;)V",
@@ -234,6 +284,10 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 //$$     private void athr$trackChatLine(ChatHudLine line, CallbackInfo ci) {
 //$$         ChatCompactHandler.trackChatLine(line);
 //$$         ChatLineInitHook.tagHead(line);
+//$$         if (ChatUtilsState.pendingLineMessage != null) {
+//$$             ((ChatLineHook) (Object) line).athr$setMessageType(ChatUtilsState.pendingLineMessage);
+//$$         }
+//$$         ChatHistoryHook.trimToLimit(this.visibleMessages);
 //$$     }
 //$$
 //$$     @Inject(method = "addVisibleMessage", at = @At("HEAD"))
@@ -252,10 +306,24 @@ public abstract class MixinGuiNewChat extends Gui implements GuiNewChatHook {
 //$$     }
 //$$
 //$$     @ModifyConstant(
+//$$             method = "addVisibleMessage(Lnet/minecraft/client/gui/hud/ChatHudLine;)V",
+//$$             constant = @Constant(intValue = 100), expect = 1)
+//$$     private int athr$expandVisibleHistory(int original) {
+//$$         return 16384;
+//$$     }
+//$$
+//$$     @ModifyConstant(
 //$$             method = "addMessage(Lnet/minecraft/client/gui/hud/ChatHudLine;)V",
 //$$             constant = @Constant(intValue = 100))
 //$$     private int athr$expandHistory(int original) {
 //$$         return 16384;
+//$$     }
+//$$
+//$$     @Override
+//$$     public void athr$refreshView() {
+//$$         athr$refresh();
+//$$         ((ChatHud)(Object) this).resetScroll();
+//$$         ChatHistoryHook.trimToLimit(this.visibleMessages);
 //$$     }
 //$$
 //$$     /**

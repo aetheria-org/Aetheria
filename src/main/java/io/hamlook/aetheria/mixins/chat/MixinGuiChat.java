@@ -4,6 +4,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.GuiChatHook;
 import io.hamlook.aetheria.features.chat.emoji.EmojiSuggestionBar;
 import io.hamlook.aetheria.features.qol.ChatStateManager;
+import io.hamlook.aetheria.utils.hooks.ChatTabsBarHook;
 import io.hamlook.aetheria.utils.hooks.GuiChatMixinHook;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -40,6 +41,9 @@ public abstract class MixinGuiChat extends GuiScreen implements GuiChatHook {
 //$$     public MixinGuiChat() { super(Text.empty()); }
 //#endif
 
+    @Unique
+    private boolean athr$menuClickConsumed;
+
     //#if MC < 1.21
     @Shadow
     protected GuiTextField inputField;
@@ -54,6 +58,11 @@ public abstract class MixinGuiChat extends GuiScreen implements GuiChatHook {
         return inputField != null && inputField.isFocused();
     }
 
+    @Inject(method = "drawScreen", at = @At("HEAD"))
+    private void athr$drawChatTabs(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        ChatTabsBarHook.draw(mouseX, mouseY);
+    }
+
     @Inject(method = "drawScreen", at = @At("TAIL"))
     private void athr$drawPlayerMenu(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         PlayerButtonHook.drawMenu(mouseX, mouseY, this.width, this.height, MinecraftCompat.getFontRenderer());
@@ -66,17 +75,27 @@ public abstract class MixinGuiChat extends GuiScreen implements GuiChatHook {
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void athr$onPlayerMenuClick(int mouseX, int mouseY, int mouseButton, CallbackInfo ci) {
-        if (PlayerButtonHook.handlePlayerMenuClick(mouseX, mouseY, mouseButton, this.width, this.height, this.inputField))
+        if (PlayerButtonHook.handlePlayerMenuClick(mouseX, mouseY, mouseButton, this.width, this.height, this.inputField)) {
+            athr$menuClickConsumed = true;
             ci.cancel();
+        }
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void ATHR$onMouseClicked(int mouseX, int mouseY, int mouseButton, CallbackInfo ci) {
+        if (athr$menuClickConsumed) {
+            athr$menuClickConsumed = false;
+            return;
+        }
         if (!athr$disabled() && inputField != null && EmojiSuggestionBar.handleMouseClick(mouseX, mouseY, mouseButton, inputField)) {
             ci.cancel();
             return;
         }
         if (GuiChatMixinHook.handleChatCopy(mouseButton)) {
+            ci.cancel();
+            return;
+        }
+        if (ChatTabsBarHook.onClick(mouseX, mouseY, mouseButton)) {
             ci.cancel();
         }
     }
@@ -120,6 +139,7 @@ public abstract class MixinGuiChat extends GuiScreen implements GuiChatHook {
 
     @Inject(method = "initGui", at = @At("RETURN"))
     public void ATHR$chatStateInit(CallbackInfo ci) {
+        ChatTabsBarHook.cancelDrag();
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.chatStateRestore) return;
         if (ChatStateManager.getInstance().shouldRestore()) {
             inputField.setText(ChatStateManager.getInstance().getSavedText());
@@ -137,6 +157,16 @@ public abstract class MixinGuiChat extends GuiScreen implements GuiChatHook {
 //$$     @Override
 //$$     public boolean athr$isTypingMode() {
 //$$         return chatField != null && chatField.isFocused();
+//$$     }
+
+//$$     @Inject(method = "render(Lnet/minecraft/client/gui/DrawContext;IIF)V", at = @At("HEAD"))
+//$$     private void athr$drawChatTabs(net.minecraft.client.gui.DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+//$$         DrawContextUtils.setContext(context);
+//$$         try {
+//$$             ChatTabsBarHook.draw(mouseX, mouseY);
+//$$         } finally {
+//$$             DrawContextUtils.clearContext();
+//$$         }
 //$$     }
 //$$
 //$$     @Inject(method = "render(Lnet/minecraft/client/gui/DrawContext;IIF)V", at = @At("TAIL"))
@@ -157,18 +187,28 @@ public abstract class MixinGuiChat extends GuiScreen implements GuiChatHook {
 //$$     @Inject(method = "mouseClicked(DDI)Z", at = @At("HEAD"), cancellable = true)
 //$$     private void athr$onPlayerMenuClick(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
 //$$         int mx = (int) mouseX, my = (int) mouseY;
-//$$         if (PlayerButtonHook.handlePlayerMenuClick(mx, my, button, this.width, this.height, this.chatField))
+//$$         if (PlayerButtonHook.handlePlayerMenuClick(mx, my, button, this.width, this.height, this.chatField)) {
+//$$             athr$menuClickConsumed = true;
 //$$             cir.setReturnValue(true);
+//$$         }
 //$$     }
 //$$
 //$$     @Inject(method = "mouseClicked(DDI)Z", at = @At("HEAD"), cancellable = true)
 //$$     private void ATHR$onMouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+//$$         if (athr$menuClickConsumed) {
+//$$             athr$menuClickConsumed = false;
+//$$             return;
+//$$         }
 //$$         int mx = (int) mouseX, my = (int) mouseY;
 //$$         if (!athr$disabled() && chatField != null && EmojiSuggestionBar.handleMouseClick(mx, my, button, chatField)) {
 //$$             cir.setReturnValue(true);
 //$$             return;
 //$$         }
 //$$         if (GuiChatMixinHook.handleChatCopy(button)) {
+//$$             cir.setReturnValue(true);
+//$$             return;
+//$$         }
+//$$         if (ChatTabsBarHook.onClick(mx, my, button)) {
 //$$             cir.setReturnValue(true);
 //$$         }
 //$$     }
@@ -217,6 +257,7 @@ public abstract class MixinGuiChat extends GuiScreen implements GuiChatHook {
 //$$
 //$$     @Inject(method = "init()V", at = @At("RETURN"))
 //$$     public void ATHR$chatStateInit(CallbackInfo ci) {
+//$$         ChatTabsBarHook.cancelDrag();
 //$$         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.chatStateRestore) return;
 //$$         if (ChatStateManager.getInstance().shouldRestore()) {
 //$$             chatField.setText(ChatStateManager.getInstance().getSavedText());

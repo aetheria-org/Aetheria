@@ -16,6 +16,7 @@ import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.chat.chatfilters.ui.ChatFilterGUI;
+import io.hamlook.aetheria.features.chat.chattabs.ChatTabs;
 import io.hamlook.aetheria.features.chat.globalchat.ui.NotificationOverlay;
 import io.hamlook.aetheria.features.diana.DianaStats;
 import io.hamlook.aetheria.features.diana.GuiDianaOverlayEditor;
@@ -69,6 +70,7 @@ import io.hamlook.aetheria.utils.compat.KeybindCompat;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
+import io.hamlook.aetheria.utils.hooks.ChatTabsBarHook;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.settings.KeyBinding;
@@ -81,10 +83,7 @@ import org.lwjgl.input.Keyboard;
 //$$ import org.lwjgl.glfw.GLFW;
 //#endif
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -805,6 +804,10 @@ public class ATHRConfig {
             pendingConfigNotice = null;
         }
         flushConfigIfDirty();
+        ChatTabsBarHook.enforceActiveTabFitsOverflow();
+        if (!ChatUtils.isChatOpen()) ChatTabs.preview(null);
+        ChatTabs.pruneDisabledUnread();
+        ChatTabs.refreshView();
 
         if (screenToOpen != null) {
             screenTicks++;

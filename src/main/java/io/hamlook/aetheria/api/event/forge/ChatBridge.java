@@ -1,6 +1,7 @@
 package io.hamlook.aetheria.api.event.forge;
 
 import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.features.chat.ChatUtilsState;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.compat.TextCompat;
 //#if FORGE
@@ -19,6 +20,10 @@ public class ChatBridge {
     public void onChatReceived(ClientChatReceivedEvent event) {
         ASMChatEvent asmEvent = new ASMChatEvent(event.message, ASMChatEvent.Type.fromId(event.type));
         asmEvent.post();
+        ChatUtilsState.currentLineMessage =
+                (asmEvent.isCancelled() || asmEvent.type == ASMChatEvent.Type.ACTION_BAR)
+                        ? null
+                        : asmEvent.parsed() == null ? null : asmEvent.parsed().type;
         if (asmEvent.isCancelled()) {
             event.setCanceled(true);
         }
@@ -41,6 +46,10 @@ public class ChatBridge {
     //$$ private static boolean athr$intake(Text message, ASMChatEvent.Type type) {
 //$$     ASMChatEvent asmEvent = new ASMChatEvent(message, type);
 //$$     asmEvent.post();
+//$$     ChatUtilsState.currentLineMessage =
+//$$             (asmEvent.isCancelled() || asmEvent.type == ASMChatEvent.Type.ACTION_BAR)
+//$$                     ? null
+//$$                     : asmEvent.parsed() == null ? null : asmEvent.parsed().type;
     //$$     if (asmEvent.isCancelled()) {
     //$$         athr$pending = null;
     //$$         return false;

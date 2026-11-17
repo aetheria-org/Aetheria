@@ -11,4 +11,6 @@ public interface GuiNewChatHook {
     ChatLine athr$getHoveredChatLine(int rawMouseX, int rawMouseY);
 
     ChatLine athr$getCurrentHoveredLine();
+
+    void athr$refreshView();
 }

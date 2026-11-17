@@ -6,6 +6,11 @@ import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
 public class ChatConfig {
 
     @Expose
+    @ConfigOption(name = "Extended Chat History", desc = "Keep up to 16384 chat lines instead of the vanilla 100 (both the visible chat and the stored history)")
+    @ConfigEditorBoolean
+    public boolean extendedChatHistory = true;
+
+    @Expose
     @Category(name = "Chat Filters",desc = "Edit various parts of the Chat Filters Feature")
     public final ChatFilterConfig chatFilterConfig = new  ChatFilterConfig();
 
@@ -40,4 +45,8 @@ public class ChatConfig {
     @Expose
     @Category(name = "Player Buttons", desc = "Clickable player-name menu in chat: whisper, profile, AH, party invite, friend, ignore and visit shortcuts")
     public final PlayerButtonsConfig playerButtons = new PlayerButtonsConfig();
+
+    @Expose
+    @Category(name = "Chat Tabs", desc = "Filter chat by message type — six built-in tabs, each can be disabled and falls back to ALL")
+    public final ChatTabsConfig chatTabs = new ChatTabsConfig();
 }

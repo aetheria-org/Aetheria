@@ -13,7 +13,7 @@ public abstract class MixinClientPlayerInteractionManagerFix {
 
     @Redirect(method = "isCurrentlyBreaking",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;areItemsAndComponentsEqual(Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemStack;)Z"))
-    private static boolean ATHR$sameTool(ItemStack first, ItemStack second) {
+    private boolean ATHR$sameTool(ItemStack first, ItemStack second) {
         if (MiningProgressHook.isEnabled() && ItemUtils.isSameTool(first, second)) return true;
         return ItemStack.areItemsAndComponentsEqual(first, second);
     }

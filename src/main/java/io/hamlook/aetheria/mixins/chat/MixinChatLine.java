@@ -3,6 +3,7 @@ package io.hamlook.aetheria.mixins.chat;
 import io.hamlook.aetheria.features.chat.ChatLineHook;
 import io.hamlook.aetheria.features.chat.ChatUtilsState;
 import io.hamlook.aetheria.utils.hooks.ChatLineInitHook;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 //#if MC < 1.16
 import net.minecraft.client.gui.ChatLine;
 //#else
@@ -24,6 +25,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 //#endif
 public class MixinChatLine implements ChatLineHook {
 
+    @Unique
+    private ChatUtils.MessageType athr$messageType = null;
+
+    @Override
+    public ChatUtils.MessageType athr$getMessageType() {
+        return athr$messageType;
+    }
+
+    @Override
+    public void athr$setMessageType(ChatUtils.MessageType messageType) {
+        this.athr$messageType = messageType;
+    }
+
     //#if MC < 1.16
     @Unique private boolean athr$detected = false;
     @Unique private NetworkPlayerInfo athr$playerInfo = null;
@@ -36,6 +50,7 @@ public class MixinChatLine implements ChatLineHook {
     private void onInit(int updateCounter, IChatComponent lineString, int chatLineID, CallbackInfo ci) {
         athr$uniqueId = ++athr$lastUniqueId;
         athr$fullMsg  = ChatUtilsState.currentFullMessage;
+        athr$messageType = ChatUtilsState.pendingLineMessage;
 
         ChatLineInitHook.PlayerDetectionResult result = ChatLineInitHook.detectPlayer(
                 lineString, athr$playerInfo, ChatUtilsState.lastFullMessage);

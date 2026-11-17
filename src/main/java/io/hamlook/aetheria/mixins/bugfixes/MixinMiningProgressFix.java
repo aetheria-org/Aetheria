@@ -13,7 +13,7 @@ public abstract class MixinMiningProgressFix {
 
     @Redirect(method = "isHittingPosition",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;areItemStackTagsEqual(Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemStack;)Z"))
-    private static boolean ATHR$sameTool(ItemStack stackA, ItemStack stackB) {
+    private boolean ATHR$sameTool(ItemStack stackA, ItemStack stackB) {
         if (MiningProgressHook.isEnabled() && ItemUtils.isSameTool(stackA, stackB)) return true;
         return ItemStack.areItemStackTagsEqual(stackA, stackB);
     }

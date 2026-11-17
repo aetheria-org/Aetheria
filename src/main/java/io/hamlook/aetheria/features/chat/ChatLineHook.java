@@ -7,6 +7,8 @@ import net.minecraft.util.IChatComponent;
 //$$ import net.minecraft.client.gui.hud.ChatHudLine;
 //#endif
 
+import io.hamlook.aetheria.utils.chat.ChatUtils;
+
 /**
  * Interface injected onto {@code net.minecraft.client.gui.ChatLine} by
  * {@link io.hamlook.aetheria.mixins.chat.MixinChatLine}.
@@ -38,4 +40,8 @@ public interface ChatLineHook {
     //$$
     //$$ void athr$setHeadRow(boolean headRow);
     //#endif
+
+    ChatUtils.MessageType athr$getMessageType();
+
+    void athr$setMessageType(ChatUtils.MessageType type);
 }
