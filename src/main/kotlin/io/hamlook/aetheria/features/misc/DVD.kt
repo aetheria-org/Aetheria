@@ -1,21 +1,23 @@
 package io.hamlook.aetheria.features.misc
 
-import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.Resources
-import io.hamlook.aetheria.utils.render.RenderUtils
-import io.hamlook.aetheria.utils.overlay.SimpleOverlay
+import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.chat.ChatUtils
-import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.ScaledResolution
-import net.minecraft.client.renderer.GlStateManager
+import io.hamlook.aetheria.utils.SoundUtils
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
+import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.compat.TextureCompat
+import io.hamlook.aetheria.utils.overlay.SimpleOverlay
+import io.hamlook.aetheria.utils.render.RenderUtils
+
 import java.awt.Color
 
 @RegisterEvents
 object DVD : SimpleOverlay() {
 
     private const val ASPECT_RATIO = 0.553
-    private val mc = Minecraft.getMinecraft()
+    private val mc = MinecraftCompat.getMinecraft()
     private var lastUpdateTime = System.nanoTime()
     private var color = 0xFFFFFF
     private var x = 100.0
@@ -55,33 +57,31 @@ object DVD : SimpleOverlay() {
     override fun hideOnTab() = ATHRConfig.feature.misc.dvd.hideOnTab
     override fun hideOnDebug() = ATHRConfig.feature.misc.dvd.hideOnDebug
 
-    override fun render(sr: ScaledResolution) {
+    override fun render(scaledWidth: Int, scaledHeight: Int) {
         if (!initialized) {
-            x = sr.scaledWidth / 2.0
-            y = sr.scaledHeight / 2.0
+            x = scaledWidth / 2.0
+            y = scaledHeight / 2.0
             initialized = true
             justInitialized = true
             lastUpdateTime = System.nanoTime()
         }
 
-        updatePosition()
+        updatePosition(scaledWidth, scaledHeight)
 
         val boxWidth = getBoxWidth()
         val boxHeight = getBoxHeight()
 
-        mc.textureManager.bindTexture(Resources.DVD_LOGO)
-
         val r = (color shr 16 and 0xFF) / 255f
         val g = (color shr 8 and 0xFF) / 255f
         val b = (color and 0xFF) / 255f
-        GlStateManager.color(r, g, b, 1f)
+        GlStateManagerCompat.color(r, g, b, 1f)
 
-        RenderUtils.drawTexturedRect(x.toFloat(), y.toFloat(), boxWidth.toFloat(), boxHeight.toFloat())
+        TextureCompat.drawBoundTextured(Resources.DVD_LOGO, x.toFloat(), y.toFloat(), boxWidth.toFloat(), boxHeight.toFloat(), 0f, 0f, 1f, 1f)
 
-        GlStateManager.color(1f, 1f, 1f, 1f)
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f)
     }
 
-    private fun updatePosition() {
+    private fun updatePosition(scaledWidth: Int, scaledHeight: Int) {
         val currentTime = System.nanoTime()
         val deltaTime = (currentTime - lastUpdateTime) / 1_000_000_000.0
         lastUpdateTime = currentTime
@@ -91,14 +91,13 @@ object DVD : SimpleOverlay() {
         x += dx * movement
         y += dy * movement
 
-        val sr = ScaledResolution(mc)
         val boxWidth = getBoxWidth()
         val boxHeight = getBoxHeight()
 
         if (x < 0) x = 0.0
         if (y < 0) y = 0.0
-        if (x + boxWidth > sr.scaledWidth) x = (sr.scaledWidth - boxWidth).toDouble()
-        if (y + boxHeight > sr.scaledHeight) y = (sr.scaledHeight - boxHeight).toDouble()
+        if (x + boxWidth > scaledWidth) x = (scaledWidth - boxWidth).toDouble()
+        if (y + boxHeight > scaledHeight) y = (scaledHeight - boxHeight).toDouble()
 
         val tolerance = 0.5
         var hitCorner = false
@@ -107,29 +106,29 @@ object DVD : SimpleOverlay() {
             x = 0.0
             dx = -dx
             color = randomColor()
-            hitCorner = y <= tolerance || y + boxHeight >= sr.scaledHeight - tolerance
-        } else if (x + boxWidth >= sr.scaledWidth) {
-            x = (sr.scaledWidth - boxWidth).toDouble()
+            hitCorner = y <= tolerance || y + boxHeight >= scaledHeight - tolerance
+        } else if (x + boxWidth >= scaledWidth) {
+            x = (scaledWidth - boxWidth).toDouble()
             dx = -dx
             color = randomColor()
-            hitCorner = y <= tolerance || y + boxHeight >= sr.scaledHeight - tolerance
+            hitCorner = y <= tolerance || y + boxHeight >= scaledHeight - tolerance
         }
 
         if (y <= 0) {
             y = 0.0
             dy = -dy
             color = randomColor()
-            hitCorner = hitCorner || x <= tolerance || x + boxWidth >= sr.scaledWidth - tolerance
-        } else if (y + boxHeight >= sr.scaledHeight) {
-            y = (sr.scaledHeight - boxHeight).toDouble()
+            hitCorner = hitCorner || x <= tolerance || x + boxWidth >= scaledWidth - tolerance
+        } else if (y + boxHeight >= scaledHeight) {
+            y = (scaledHeight - boxHeight).toDouble()
             dy = -dy
             color = randomColor()
-            hitCorner = hitCorner || x <= tolerance || x + boxWidth >= sr.scaledWidth - tolerance
+            hitCorner = hitCorner || x <= tolerance || x + boxWidth >= scaledWidth - tolerance
         }
 
         if (hitCorner && !justInitialized) {
-            mc.thePlayer?.playSound("mob.enderdragon.growl", 1.0f, 1.0f)
-            ChatUtils.sendMessage("§d§l✦ §5§lLEGENDARY CORNER HIT! §d§l✦")
+            SoundUtils.playSound("mob.enderdragon.growl", 1.0f, 1.0f)
+            ChatUtils.sendMessage("§d§lâœ¦ §5§lLEGENDARY CORNER HIT! §d§lâœ¦")
         }
 
         justInitialized = false

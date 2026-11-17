@@ -1,11 +1,14 @@
 package io.hamlook.aetheria.features.qol;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMActionPerformedEvent;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiInitEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiIngameMenu;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @RegisterEvents
 public class ConfirmDisconnect {
@@ -14,8 +17,8 @@ public class ConfirmDisconnect {
     private long lastClick = 0L;
     private GuiButton disconnectButton = null;
 
-    @SubscribeEvent
-    public void onGuiInit(GuiScreenEvent.InitGuiEvent.Post event) {
+    @HandleEvent
+    public void onGuiInit(ASMGuiInitEvent event) {
         if (!(event.gui instanceof GuiIngameMenu)) return;
 
         confirm = false;
@@ -24,46 +27,46 @@ public class ConfirmDisconnect {
 
         for (Object obj : event.buttonList) {
             GuiButton btn = (GuiButton) obj;
-            if (btn.id == 1) {
+            if ("Disconnect".equals(GuiScreenUtils.getButtonMessage(btn))) {
                 disconnectButton = btn;
                 break;
             }
         }
     }
 
-    @SubscribeEvent
-    public void onAction(GuiScreenEvent.ActionPerformedEvent.Pre event) {
+    @HandleEvent
+    public void onAction(ASMActionPerformedEvent event) {
         if (!(event.gui instanceof GuiIngameMenu)) return;
 
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.confirmDisconnect) return;
 
-        if (event.button.id != 1) return;
+        if (event.button != disconnectButton) return;
 
         if (System.currentTimeMillis() - lastClick > 3000L) {
             confirm = false;
         }
 
         if (!confirm) {
-            event.setCanceled(true);
+            event.cancel();
 
             confirm = true;
             lastClick = System.currentTimeMillis();
 
-            event.button.displayString = "§cPress again to confirm";
+            GuiScreenUtils.setButtonMessage(event.button, "§cPress again to confirm");
         } else {
             confirm = false;
         }
     }
 
-    @SubscribeEvent
-    public void onDraw(GuiScreenEvent.DrawScreenEvent.Post event) {
+    @HandleEvent
+    public void onDraw(ASMGuiDrawEvent event) {
         if (!(event.gui instanceof GuiIngameMenu)) return;
 
         if (confirm && System.currentTimeMillis() - lastClick > 2000L) {
             confirm = false;
 
             if (disconnectButton != null) {
-                disconnectButton.displayString = "Disconnect";
+                GuiScreenUtils.setButtonMessage(disconnectButton, "Disconnect");
             }
         }
     }

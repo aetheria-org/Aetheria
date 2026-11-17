@@ -68,33 +68,8 @@ public class PowderTrackerConfig {
 
     @Expose
     @ConfigOption(name = "Display Lines", desc = "Choose which lines to show and drag to reorder")
-    @ConfigEditorDraggableList(exampleText = {"§b§lPowder Tracker",
-            "§7420 Chests §7(120/h)",
-            "§b2x Powder: §aActive!",
-            "§d1,337 Gemstone Powder §7(2.5K/h)",
-            "§1Playtime: §f2h 30m  §1Session: §f45m",
-            "§b12 Diamond Essence",
-            "§66 Gold Essence",
-            "§88 Oil Barrels",
-            "§53 Ascension Ropes",
-            "§92 Wishing Compasses",
-            "§61 Jungle Hearts",
-            "§a512 Enchanted Hard Stone §8(5 compact) §7(1.5K/h)",
-            "§51-§93-§a4-§f0 §cRuby",
-            "§51-§93-§a4-§f0 §bSapphire",
-            "§51-§93-§a4-§f0 §6Amber",
-            "§51-§93-§a4-§f0 §5Amethyst",
-            "§51-§93-§a4-§f0 §aJade",
-            "§51-§93-§a4-§f0 §eTopaz",
-            "§51-§93-§a4-§f0 §cJasper",
-            "§51-§93-§a4-§f0 §fOpal",
-            "§51-§93-§a4-§f0 §6Citrine",
-            "§51-§93-§a4-§f0 §3Aquamarine",
-            "§51-§93-§a4-§f0 §aPeridot",
-            "§51-§93-§a4-§f0 §8Onyx",
-            "§33-§c2-§e1-§a1-§91 §fGoblin Eggs"
-    })
-    public List<Integer> powderDisplayLines = new ArrayList<>(Arrays.asList(0,24,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23));
+    @ConfigEditorDraggableList(exampleText = {"§b§lPowder Tracker", "§7420 Chests §7(120/h)", "§b2x Powder: §aActive!", "§d1,337 Gemstone Powder §7(2.5K/h)", "§1Playtime: §f2h 30m  §1Session: §f45m", "§b12 Diamond Essence", "§66 Gold Essence", "§88 Oil Barrels", "§53 Ascension Ropes", "§92 Wishing Compasses", "§61 Jungle Hearts", "§a512 Enchanted Hard Stone §8(5 compact) §7(1.5K/h)", "§51-§93-§a4-§f0 §cRuby", "§51-§93-§a4-§f0 §bSapphire", "§51-§93-§a4-§f0 §6Amber", "§51-§93-§a4-§f0 §5Amethyst", "§51-§93-§a4-§f0 §aJade", "§51-§93-§a4-§f0 §eTopaz", "§51-§93-§a4-§f0 §cJasper", "§51-§93-§a4-§f0 §fOpal", "§51-§93-§a4-§f0 §6Citrine", "§51-§93-§a4-§f0 §3Aquamarine", "§51-§93-§a4-§f0 §aPeridot", "§51-§93-§a4-§f0 §8Onyx", "§33-§c2-§e1-§a1-§91 §fGoblin Eggs"})
+    public List<Integer> powderDisplayLines = new ArrayList<>(Arrays.asList(0, 24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23));
 
     @Expose
     public Position powderOverlayPos = new Position(4, 60);

@@ -1,8 +1,7 @@
 package io.hamlook.aetheria.core.features.farming;
 
 import com.google.gson.annotations.Expose;
-import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
-import org.lwjgl.input.Keyboard;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
 
 public class Farming {
 
@@ -33,6 +32,10 @@ public class Farming {
     @Expose
     @Category(name = "Garden Plots", desc = "Plot numbers and highlights in the Configure Plots menu")
     public GardenPlotsConfig gardenPlots = new GardenPlotsConfig();
+
+    @Expose
+    @Category(name = "Garden Plot Warp Grid", desc = "Clickable plot grid over your inventory for quick /tptoplot warps")
+    public GardenPlotWarpGridConfig gardenPlotWarpGrid = new GardenPlotWarpGridConfig();
 
     @Expose
     @Category(name = "Sensitivity Reducer", desc = "Reduce mouse sensitivity while holding a crop farming tool")

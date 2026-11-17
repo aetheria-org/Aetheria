@@ -1,9 +1,9 @@
 package io.hamlook.aetheria.features.storage.data;
 
 import com.google.gson.annotations.SerializedName;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.JsonToNBT;
-import net.minecraft.nbt.NBTTagCompound;
 
 public class ItemData {
 
@@ -19,15 +19,19 @@ public class ItemData {
     }
 
     public static ItemData fromItemStack(ItemStack stack) {
+        //#if MC < 1.21
         if (stack == null) return null;
+        //#else
+        //$$ if (stack == null || stack.isEmpty()) return null;
+        //#endif
 
         ItemData item = new ItemData();
 
-        NBTTagCompound compound = new NBTTagCompound();
-        stack.writeToNBT(compound);
-        item.data = compound.toString();
+        String encoded = NbtCompat.encodeStack(stack);
+        if (encoded == null) return null;
+        item.data = encoded;
 
-        item.displayName = stack.getDisplayName();
+        item.displayName = ItemUtils.getDisplayName(stack);
         item.cachedStack = stack;
 
         return item;
@@ -38,7 +42,7 @@ public class ItemData {
         if (data == null || data.isEmpty()) return null;
 
         try {
-            cachedStack = ItemStack.loadItemStackFromNBT(JsonToNBT.getTagFromJson(data));
+            cachedStack = NbtCompat.decodeStack(data);
             return cachedStack;
         } catch (Exception e) {
             return null;

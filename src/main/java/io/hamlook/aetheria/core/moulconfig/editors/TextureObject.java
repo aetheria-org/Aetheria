@@ -4,6 +4,7 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import com.google.gson.JsonObject;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.ResourceLocation;
 
 import java.util.Arrays;
@@ -23,7 +24,7 @@ public class TextureObject {
                 .filter(field -> field.getType().equals(ResourceLocation.class))
                 .forEach(field -> {
                     try {
-                        field.set(textureObject, new ResourceLocation(json.get(field.getName()).getAsString()));
+                        field.set(textureObject, TextCompat.createResourceLocation(json.get(field.getName()).getAsString()));
                     } catch (Exception ignored) {
                     }
                 });
@@ -31,6 +32,6 @@ public class TextureObject {
     }
 
     private static ResourceLocation resource(String path) {
-        return new ResourceLocation("notenoughfakepixel", path);
+        return TextCompat.createResourceLocation("notenoughfakepixel", path);
     }
 }

@@ -1,43 +1,42 @@
 package io.hamlook.aetheria.features.farming.visitors;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.VisitorsConfig;
-import io.hamlook.aetheria.events.DebugReportEvent;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.features.price.PriceMap;
 import io.hamlook.aetheria.init.RegisterEvents;
-import io.hamlook.aetheria.utils.chat.ChatUtils;
 import io.hamlook.aetheria.utils.ColorUtils;
-import io.hamlook.aetheria.utils.SoundUtils;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.InventoryCompatKt;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
+import io.hamlook.aetheria.utils.item.OtherInventoryData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiEditSign;
 import net.minecraft.inventory.ContainerChest;
+//#if MC < 1.21
+//#else
+//$$ import io.hamlook.aetheria.mixins.accessors.SignEditScreenAccessor;
+//$$ import net.minecraft.client.gui.screen.Screen;
+//#endif
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntitySign;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RegisterEvents
 public final class VisitorShoppingList {
@@ -45,7 +44,7 @@ public final class VisitorShoppingList {
     private static final long HAVE_CACHE_MS = 1000L;
     private static final long SEARCH_TTL_MS = 60_000L;
     private static final int MAX_ROWS = 12;
-    private static final long CONTENTS_WAIT_MS = 1500L;
+    private static final long PENDING_OFFER_TTL_MS = 5000L;
     private static final int PARSE_LOG_MAX = 15;
 
     private static final Map<String, String> RESOLVED_IDS = new HashMap<>();
@@ -54,22 +53,22 @@ public final class VisitorShoppingList {
 
     private static Map<String, Integer> haveCounts = Collections.emptyMap();
     private static long haveCountsAt = 0L;
-    private static GuiScreen lastParsedScreen;
-    private static GuiScreen pendingScreen;
-    private static long pendingSinceMs;
+    private static String pendingOfferVisitor;
+    private static ItemStack pendingOfferStack;
+    private static long pendingOfferAtMs;
     private static final ArrayDeque<String> PARSE_LOG = new ArrayDeque<>();
 
     private static String pendingBzsCommand = null;
     private static int pendingBzsTicks = 0;
     private static long signSubmitAtMs = 0L;
-    private static GuiEditSign pendingSubmitSign;
+    private static GuiScreen pendingSubmitSign;
     private static String lastRemoteAddress = null;
 
     static {
         VisitorBazaarHighlight.register();
     }
 
-    public static void onServerJoined(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+    public static void onServerJoined(ASMServerJoinEvent event) {
         String address = event.manager == null ? "" : String.valueOf(event.manager.getRemoteAddress());
         boolean addressChanged = lastRemoteAddress != null && !lastRemoteAddress.equals(address);
         lastRemoteAddress = address;
@@ -80,18 +79,20 @@ public final class VisitorShoppingList {
         }
     }
 
-    @SubscribeEvent
-    public void onUnload(WorldEvent.Unload event) {
-        lastParsedScreen = null;
-        pendingScreen = null;
+    @HandleEvent
+    public void onUnload(ASMWorldUnloadEvent event) {
+        clearPendingOffer();
         pendingBzsCommand = null;
         signSubmitAtMs = 0L;
         pendingSubmitSign = null;
+        int mode = config() != null ? config().resetMode : 2;
+        if (mode != 1) {
+            FarmingApi.clearVisitorData();
+        }
     }
 
     private static void clearTransientState() {
-        lastParsedScreen = null;
-        pendingScreen = null;
+        clearPendingOffer();
         PARSE_LOG.clear();
         PENDING_CONFIRMS.clear();
         pendingBzsCommand = null;
@@ -99,15 +100,32 @@ public final class VisitorShoppingList {
         pendingSubmitSign = null;
     }
 
-    @SubscribeEvent
-    public void onBackgroundDrawn(GuiScreenEvent.BackgroundDrawnEvent event) {
+    @HandleEvent
+    public void onBackgroundDrawn(ASMGuiBackgroundDrawEvent event) {
         if (!(event.gui instanceof GuiContainer)) return;
         GuiContainer gui = (GuiContainer) event.gui;
-        if (!(gui.inventorySlots instanceof ContainerChest)) return;
-        ContainerChest chest = (ContainerChest) gui.inventorySlots;
+        if (!(InventoryCompat.getContainer(gui) instanceof ContainerChest)) return;
+        ContainerChest chest = (ContainerChest) InventoryCompat.getContainer(gui);
         updateChestSignature(chest);
-        if (lastParsedScreen == event.gui) return;
-        attemptParse(chest, event.gui);
+    }
+
+    @HandleEvent
+    public void onInventoryFullyOpened(InventoryFullyOpenedEvent event) {
+        ItemStack offer = findAcceptOffer(event.getInventoryItems().values());
+        if (offer == null) return;
+
+        String visitor = event.getInventoryName();
+        if (visitor.isEmpty()) return;
+
+        if (FarmingApi.getActiveVisitors().contains(visitor)) {
+            recordOffer(visitor, offer);
+            return;
+        }
+
+        pendingOfferVisitor = visitor;
+        pendingOfferStack = offer;
+        pendingOfferAtMs = System.currentTimeMillis();
+        noteParse("'" + visitor + "' offer arrived before tab capture; retrying");
     }
 
     public static boolean nameMatchesFlow(String raw) {
@@ -126,36 +144,56 @@ public final class VisitorShoppingList {
                 && FarmingApi.isSearchFresh(SEARCH_TTL_MS);
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        Minecraft mc = Minecraft.getMinecraft();
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
         // Delayed /bzs dispatch after closing the current menu
         if (pendingBzsCommand != null) {
-            if (mc.currentScreen instanceof GuiContainer) {
+            if (MinecraftCompat.getCurrentScreen() instanceof GuiContainer) {
                 // Player opened another container before dispatch; drop the order
                 pendingBzsCommand = null;
-            } else if (mc.currentScreen == null && --pendingBzsTicks <= 0) {
+            } else if (MinecraftCompat.getCurrentScreen() == null && --pendingBzsTicks <= 0) {
                 ChatUtils.sendChatCommand(pendingBzsCommand);
                 pendingBzsCommand = null;
             }
         }
 
         if (signSubmitAtMs > 0 && System.currentTimeMillis() >= signSubmitAtMs) {
-            GuiEditSign gui = pendingSubmitSign;
+            GuiScreen gui = pendingSubmitSign;
             signSubmitAtMs = 0L;
             pendingSubmitSign = null;
-            if (gui != null && mc.currentScreen == gui) {
+            if (gui != null && MinecraftCompat.getCurrentScreen() == gui) {
                 noteParse("[flow] submitted sign automatically");
                 mc.displayGuiScreen(null);
             } else {
                 noteParse("[flow] sign changed before auto-submit; aborted");
             }
         }
+
+        retryPendingOffer();
     }
 
-    @SubscribeEvent
+    private static void retryPendingOffer() {
+        if (pendingOfferStack == null) return;
+
+        if (FarmingApi.getActiveVisitors().contains(pendingOfferVisitor)) {
+            recordOffer(pendingOfferVisitor, pendingOfferStack);
+            clearPendingOffer();
+        } else if (System.currentTimeMillis() - pendingOfferAtMs > PENDING_OFFER_TTL_MS) {
+            noteParse("dropped offer for '" + pendingOfferVisitor + "' (not in tab capture)");
+            clearPendingOffer();
+        }
+    }
+
+    private static void clearPendingOffer() {
+        pendingOfferVisitor = null;
+        pendingOfferStack = null;
+        pendingOfferAtMs = 0L;
+    }
+
+    @HandleEvent
     public void onDebugReport(DebugReportEvent event) {
         event.title("Visitors");
         List<String> lines = new ArrayList<>();
@@ -169,6 +207,9 @@ public final class VisitorShoppingList {
                 + ", last remote address: " + (lastRemoteAddress == null ? "<none yet>" : lastRemoteAddress));
         lines.add("panel show-in: " + (showIn >= 0 && showIn < showIns.length ? showIns[showIn] : showIn)
                 + ", only-show-with-data: " + (cfg == null || cfg.panel == null || cfg.panel.onlyShowWithData));
+        OtherInventoryData data = OtherInventoryData.INSTANCE;
+        lines.add("last opened container: '" + data.getInventoryName() + "'"
+                + (data.isFullyOpened() ? " (fully opened)" : " (contents pending)"));
 
         List<String> active = FarmingApi.getActiveVisitors();
         if (active.isEmpty()) {
@@ -284,17 +325,17 @@ public final class VisitorShoppingList {
         return wantsCost / copper;
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onSlotClick(io.hamlook.aetheria.events.SlotClickEvent event) {
-        if (event.isCanceled()) return;
+        if (event.isCancelled()) return;
         if (event.getSlot() == null) return;
         ItemStack stack = event.getSlot().getStack();
         if (stack == null) return;
         String name = stripped(stack);
         boolean accept = "Accept Offer".equals(name);
         if (!accept && !"Refuse Offer".equals(name)) return;
-        if (!(event.getGui().inventorySlots instanceof ContainerChest)) return;
-        ContainerChest chest = (ContainerChest) event.getGui().inventorySlots;
+        if (!(InventoryCompat.getContainer(event.getGui()) instanceof ContainerChest)) return;
+        ContainerChest chest = (ContainerChest) InventoryCompat.getContainer(event.getGui());
         String visitor = ContainerUtils.getTitle(chest);
         if (visitor == null || visitor.isEmpty()) return;
         if (accept && !canAcceptOffer(stack)) return;
@@ -316,7 +357,7 @@ public final class VisitorShoppingList {
                 FarmingApi.markVisitorCompleted(visitor);
                 return;
             }
-            event.setCanceled(true);
+            event.cancel();
             PENDING_CONFIRMS.put(visitor, new PendingConfirm(confirmType, now));
             SoundUtils.playSound("note.pling");
             String fmt = formatPrice(per);
@@ -400,7 +441,7 @@ public final class VisitorShoppingList {
         int size = chest.getLowerChestInventory().getSizeInventory();
         for (int i = 0; i < size; i++) {
             ItemStack stack = chest.getLowerChestInventory().getStackInSlot(i);
-            if (stack != null && stack.stackSize > 0) return false;
+            if (stack != null && ItemCompatKt.getCountCompat(stack) > 0) return false;
         }
         return true;
     }
@@ -461,48 +502,6 @@ public final class VisitorShoppingList {
         return neededNamesCache;
     }
 
-    /**
-     * The GUI can render before the server's S30PacketWindowItems arrives (laggy
-     * servers), so an empty first frame must NOT mark the screen parsed. Wait up
-     * to CONTENTS_WAIT_MS for an "Accept Offer" item to appear; only then decide
-     */
-    private static void attemptParse(ContainerChest chest, GuiScreen gui) {
-        long now = System.currentTimeMillis();
-        if (pendingScreen != gui) {
-            pendingScreen = gui;
-            pendingSinceMs = now;
-        }
-
-        ItemStack offer = findAcceptOffer(chest);
-        if (offer == null) {
-            if (now - pendingSinceMs >= CONTENTS_WAIT_MS) {
-                finishScreen(gui);
-                noteParse("no 'Accept Offer' item " + CONTENTS_WAIT_MS + "ms after open -> not a visitor menu");
-            }
-            return;
-        }
-
-        String visitor = ContainerUtils.getTitle(chest);
-        if (visitor.isEmpty()) {
-            finishScreen(gui);
-            noteParse("'Accept Offer' found but chest title empty");
-            return;
-        }
-
-        if (!FarmingApi.getActiveVisitors().contains(visitor)) {
-            noteParse("'" + visitor + "' offer seen, waiting for tab capture to list it");
-            return;
-        }
-
-        finishScreen(gui);
-        recordOffer(visitor, offer);
-    }
-
-    private static void finishScreen(GuiScreen gui) {
-        lastParsedScreen = gui;
-        pendingScreen = null;
-    }
-
     static void noteParse(String msg) {
         if (!PARSE_LOG.isEmpty() && PARSE_LOG.peekLast().equals(msg)) return;
         PARSE_LOG.addLast(msg);
@@ -528,17 +527,15 @@ public final class VisitorShoppingList {
         noteParse(msg.toString());
     }
 
-    private static ItemStack findAcceptOffer(ContainerChest chest) {
-        int size = chest.getLowerChestInventory().getSizeInventory();
-        for (int i = 0; i < size; i++) {
-            ItemStack stack = chest.getLowerChestInventory().getStackInSlot(i);
+    private static ItemStack findAcceptOffer(Iterable<ItemStack> stacks) {
+        for (ItemStack stack : stacks) {
             if (stack != null && "Accept Offer".equals(stripped(stack))) return stack;
         }
         return null;
     }
 
     private static String stripped(ItemStack stack) {
-        return ColorUtils.stripColor(stack.getDisplayName()).trim();
+        return ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
     }
 
     public static String resolveItemId(String displayName) {
@@ -602,13 +599,13 @@ public final class VisitorShoppingList {
         long now = System.currentTimeMillis();
         if (now - haveCountsAt < HAVE_CACHE_MS) return haveCounts;
         Map<String, Integer> counts = new HashMap<>();
-        EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
-        if (player != null && player.inventory != null) {
-            for (ItemStack stack : player.inventory.mainInventory) {
-                if (stack == null) continue;
+        EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
+        if (player != null && InventoryCompat.getInventory(player) != null) {
+            for (ItemStack stack : InventoryCompat.getMainInventory(player)) {
+                if (!InventoryCompatKt.isStackNotEmpty(stack)) continue;
                 String id = ItemUtils.getEffectiveItemId(stack);
                 if (id == null) continue;
-                counts.merge(id, stack.stackSize, Integer::sum);
+                counts.merge(id, ItemCompatKt.getCountCompat(stack), Integer::sum);
             }
         }
         haveCounts = counts;
@@ -823,9 +820,8 @@ public final class VisitorShoppingList {
             }
         }
 
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.currentScreen instanceof GuiEditSign) {
-            writeIntoSign(mc, missing);
+        if (MinecraftCompat.getCurrentScreen() instanceof GuiEditSign) {
+            writeIntoSign(missing);
             return;
         }
 
@@ -838,7 +834,7 @@ public final class VisitorShoppingList {
         }
         pendingBzsCommand = "/bzs " + name;
         pendingBzsTicks = 3;
-        if (mc.currentScreen != null) mc.thePlayer.closeScreen();
+        if (MinecraftCompat.getCurrentScreen() != null) MinecraftCompat.getLocalPlayer().closeScreen();
         noteParse("[flow] ordering " + name + " x" + missing + " (closed menu, dispatching /bzs)");
     }
 
@@ -895,37 +891,61 @@ public final class VisitorShoppingList {
 
     /** Empty slots across hotbar + main inventory (armor is a separate array). */
     public static int countEmptyMainInventorySlots() {
-        EntityPlayerSP player = Minecraft.getMinecraft().thePlayer;
-        if (player == null || player.inventory == null) return 0;
+        EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
+        if (player == null || InventoryCompat.getInventory(player) == null) return 0;
         int empty = 0;
-        for (ItemStack stack : player.inventory.mainInventory) {
-            if (stack == null || stack.stackSize <= 0) empty++;
+        for (ItemStack stack : InventoryCompat.getMainInventory(player)) {
+            if (!InventoryCompatKt.isStackNotEmpty(stack) || ItemCompatKt.getCountCompat(stack) <= 0) empty++;
         }
         return empty;
     }
 
-    public static void scheduleSignSubmit(GuiEditSign gui) {
+    public static void scheduleSignSubmit(GuiScreen gui) {
         pendingSubmitSign = gui;
         signSubmitAtMs = System.currentTimeMillis() + 200L;
     }
 
-    private static void writeIntoSign(Minecraft mc, int amount) {
-        TileEntitySign sign = ((io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor) mc.currentScreen).ATHR$getTileSign();
+    private static void writeIntoSign(int amount) {
+        //#if MC < 1.21
+        TileEntitySign sign = ((io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor) MinecraftCompat.getCurrentScreen()).ATHR$getTileSign();
         if (sign == null || sign.signText == null || sign.signText.length == 0) return;
-        if (!sign.signText[0].getUnformattedText().isEmpty()) return;
-        sign.signText[0] = new net.minecraft.util.ChatComponentText(String.valueOf(amount));
+        if (TextCompat.getUnformattedText(sign.signText[0]).isEmpty()) return;
+        sign.signText[0] = TextCompat.createText(String.valueOf(amount));
+        //#else
+        //$$ Screen screen = MinecraftCompat.getCurrentScreen();
+        //$$ if (!(screen instanceof SignEditScreenAccessor)) return;
+        //$$ String[] messages = ((SignEditScreenAccessor) screen).ATHR$getMessages();
+        //$$ if (messages == null || messages.length == 0) return;
+        //$$ if (!messages[0].isEmpty()) return;
+        //$$ messages[0] = String.valueOf(amount);
+        //#endif
     }
 
     public static boolean isBazaarAmountSign(TileEntitySign sign) {
+        //#if MC < 1.21
         if (sign == null || sign.signText == null || sign.signText.length < 4) return false;
         if (!"^^^^^^^^^^^^^^^".equals(text(sign.signText[1]))) return false;
         if (!"Enter amount".equals(text(sign.signText[2]))) return false;
         String purpose = text(sign.signText[3]);
         return purpose.startsWith("to order") || purpose.startsWith("to sell");
+        //#else
+        //$$ return false;
+        //#endif
     }
 
+    //#if MC < 1.21
+    //#else
+    //$$ public static boolean isBazaarAmountSign(String[] lines) {
+    //$$     if (lines == null || lines.length < 4) return false;
+    //$$     if (!"^^^^^^^^^^^^^^^".equals(lines[1].trim())) return false;
+    //$$     if (!"Enter amount".equals(lines[2].trim())) return false;
+    //$$     String purpose = lines[3].trim();
+    //$$     return purpose.startsWith("to order") || purpose.startsWith("to sell");
+    //$$ }
+    //#endif
+
     private static String text(net.minecraft.util.IChatComponent component) {
-        return component == null ? "" : ColorUtils.stripColor(component.getUnformattedText()).trim();
+        return component == null ? "" : ColorUtils.stripColor(TextCompat.getUnformattedText(component)).trim();
     }
 
     public static boolean hiddenAt(int mode) {

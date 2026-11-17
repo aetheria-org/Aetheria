@@ -5,18 +5,19 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
-import io.hamlook.aetheria.features.profile.ProfileParser;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -69,9 +70,9 @@ public class ElectionUtils {
         if (s == null || !s.getHasStack()) return;
         ItemStack stack = s.getStack();
         if (stack == null) return;
-        String title = stack.getDisplayName();
+        String title = ItemUtils.getDisplayName(stack);
         String colorToCheck = title.substring(0, 2);
-        List<String> lore = ProfileParser.getLoreColored(stack);
+        List<String> lore = ItemUtils.getLoreLines(stack);
         List<String> perks = new ArrayList<>();
 
         for (String line : lore) {
@@ -140,20 +141,20 @@ public class ElectionUtils {
         }
     }
 
-    @SubscribeEvent
-    public void onGuiOpen(GuiOpenEvent event) {
+    @HandleEvent
+    public void onGuiOpen(ASMGuiOpenEvent event) {
         check = true;
     }
 
-    @SubscribeEvent
-    public void onBackgroundDrawn(GuiScreenEvent.BackgroundDrawnEvent e) {
+    @HandleEvent
+    public void onBackgroundDrawn(ASMGuiBackgroundDrawEvent e) {
         if (!NetworkGuard.apiAllowed()) return;
         if (!check) return;
         GuiScreen screen = e.gui;
         if (screen instanceof GuiContainer) {
             GuiContainer container = (GuiContainer) screen;
-            if (container.inventorySlots instanceof ContainerChest) {
-                ContainerChest chest = (ContainerChest) container.inventorySlots;
+            if (InventoryCompat.getContainer(container) instanceof ContainerChest) {
+                ContainerChest chest = (ContainerChest) InventoryCompat.getContainer(container);
                 String title = ContainerUtils.getTitle(chest);
                 if (ColorUtils.stripColor(title).trim().equals("Calendar and Events")) {
                     if (System.currentTimeMillis() - lastParse < 1800000) return;

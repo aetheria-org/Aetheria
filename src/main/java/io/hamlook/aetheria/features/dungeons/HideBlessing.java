@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 @RegisterEvents
 public class HideBlessing {
 
-    private static final Pattern BLESSING = Pattern.compile("§r§6§lDUNGEON BUFF! .*?found a §r§dBlessing of \\w+.*?§r§f!§r");
+    public static final Pattern BLESSING = Pattern.compile("§r§6§lDUNGEON BUFF! .*?found a §r§dBlessing of \\w+.*?§r§f!§r");
 
     public HideBlessing() {
         ChatFilter.hide("dungeons.blessingMessages", msg -> ATHRConfig.feature != null && ATHRConfig.feature.dungeons.hideBlessingMessages && BLESSING.matcher(msg).find());

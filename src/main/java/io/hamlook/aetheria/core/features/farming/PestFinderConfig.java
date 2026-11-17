@@ -36,6 +36,11 @@ public class PestFinderConfig {
     public boolean hideWarpHintInPlot = true;
 
     @Expose
+    @ConfigOption(name = "Warp To Garden Spawn When No Pests", desc = "When there's no infested plot to warp to, the warp key instead runs /warp garden")
+    @ConfigEditorBoolean
+    public boolean warpToGardenWhenNoPests = false;
+
+    @Expose
     @ConfigOption(name = "Show While Holding Vacuum Only", desc = "Only show the overlay while holding a vacuum")
     @ConfigEditorBoolean
     public boolean showOnlyWhileHoldingVacuum = true;
@@ -67,16 +72,7 @@ public class PestFinderConfig {
 
     @Expose
     @ConfigOption(name = "Display Lines", desc = "Choose which pest finder lines to show and drag to reorder")
-    @ConfigEditorDraggableList(exampleText = {
-            "§7Total: §e2",
-            "§7Plots: §b1, §b5 §8x§c3",
-            "§7Spray: §7None",
-            "§7Repellent: §7None",
-            "§7Bonus: §c§lINACTIVE",
-            "§7Cooldown: §a§lACTIVE",
-            "§7Bonus Pest Chance: §245",
-            "§7Press §e<Key> §7to warp to §bPlot 4"
-    })
+    @ConfigEditorDraggableList(exampleText = {"§7Total: §e2", "§7Plots: §b1, §b5 §8x§c3", "§7Spray: §7None", "§7Repellent: §7None", "§7Bonus: §c§lINACTIVE", "§7Cooldown: §a§lACTIVE", "§7Bonus Pest Chance: §245", "§7Press §e<Key> §7to warp to §bPlot 4"})
     public List<Integer> pestFinderLines = new ArrayList<>(DEFAULT_LINES);
 
     @Expose

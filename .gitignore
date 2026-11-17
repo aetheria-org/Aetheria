@@ -12,3 +12,7 @@ bin/
 gradle.properties
 settings.gradle.kts
 AGENTS.md
+versions/1.8.9-forge/1.8.9-forge.iml
+versions/1.21.1-fabric/1.21.1-fabric.iml
+versions/1.16.5-fabric/1.16.5-fabric.iml
+/sharedVariables/.kotlin

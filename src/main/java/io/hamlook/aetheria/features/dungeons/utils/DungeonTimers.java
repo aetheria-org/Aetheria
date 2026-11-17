@@ -28,7 +28,10 @@ public class DungeonTimers {
     
     @Getter @Setter
     private long bloodTime = 0;
-    
+
+    @Getter @Setter
+    private boolean bloodCleared = false;
+
     @Getter @Setter
     private long bossTime = 0;
     
@@ -85,6 +88,7 @@ public class DungeonTimers {
         currentFloor = DungeonFloor.NONE;
         runStart = 0;
         clearedTime = bloodTime = bossTime = bossDeadTime = 0;
+        bloodCleared = false;
         maxorStart = maxorEnd = stormStart = stormEnd = 0;
         terminalStart = goldorFight = goldorEnd = necronStart = necronEnd = 0;
         witherStart = witherEnd = 0;

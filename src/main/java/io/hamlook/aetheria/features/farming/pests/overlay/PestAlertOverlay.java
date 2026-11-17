@@ -1,29 +1,26 @@
 package io.hamlook.aetheria.features.farming.pests.overlay;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.PestAlertConfig;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.SoundUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.SimpleOverlay;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import io.hamlook.aetheria.utils.render.RenderUtils;
+
 
 @RegisterEvents
 public class PestAlertOverlay extends SimpleOverlay {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
     private static final long DISPLAY_MS = 3000L;
     private static final long SOUND_REPEAT_MS = 1000L;
-    private static final long FADE_IN_MS = 250L;
-    private static final long FADE_OUT_MS = 450L;
-    private static final long PULSE_PERIOD_MS = 600L;
     private static final String[] SOUND_IDS = {
             "note.pling", "mob.enderdragon.growl", "mob.cat.meow", "random.orb", "random.levelup"
     };
@@ -34,9 +31,9 @@ public class PestAlertOverlay extends SimpleOverlay {
     private static volatile long activeUntilMs = 0L;
     private static volatile long nextSoundAtMs = 0L;
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
         PestAlertConfig cfg = config();
         long now = System.currentTimeMillis();
 
@@ -45,7 +42,7 @@ public class PestAlertOverlay extends SimpleOverlay {
             nextSoundAtMs = now + SOUND_REPEAT_MS;
         }
 
-        if (mc.theWorld == null || mc.thePlayer == null
+        if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null
                 || SkyblockData.getCurrentLocation() != SkyblockData.Location.GARDEN) {
             armed = true;
             lastRemainingMs = -1L;
@@ -97,11 +94,8 @@ public class PestAlertOverlay extends SimpleOverlay {
     }
 
     @Override
-    public void render(ScaledResolution sr) {
+    public void render(int scaledWidth, int scaledHeight) {
         PestAlertConfig cfg = config();
-        float scale = cfg == null ? 2f : Math.max(1f, cfg.alertScale);
-        boolean animate = cfg == null || cfg.fadeInOut;
-
         String cooldown = FarmingApi.getGardenCooldown();
         String stripped = ColorUtils.stripColor(cooldown == null ? "" : cooldown).trim();
         long now = System.currentTimeMillis();
@@ -118,54 +112,10 @@ public class PestAlertOverlay extends SimpleOverlay {
             text = formatRemaining(remainMs);
         }
 
-        net.minecraft.client.gui.FontRenderer fr = mc.fontRendererObj;
         String main = "§c§lPEST ALERT! §r" + text;
         String sub = "§7" + Math.max(1, windowSec) + "s";
-        float subScale = Math.max(0.75f, scale * 0.5f);
-
-        float elapsed = DISPLAY_MS - remainWindowMs;
-        float envelope = Math.min(1f, elapsed / FADE_IN_MS) * Math.min(1f, (float) remainWindowMs / FADE_OUT_MS);
-        double phase = (elapsed % PULSE_PERIOD_MS) / (double) PULSE_PERIOD_MS;
-        float pulse = 0.4f + 0.6f * (float) Math.abs(Math.sin(phase * Math.PI));
-        float mainAlpha = animate ? clamp(envelope * pulse) : 1f;
-        float subAlpha = animate ? clamp(envelope) : 1f;
-
-        int mainW = fr.getStringWidth(main);
-        int subW = fr.getStringWidth(sub);
-        int gap = 4;
-        float blockH = fr.FONT_HEIGHT * scale + gap + fr.FONT_HEIGHT * subScale;
-        float yMain = sr.getScaledHeight() * 0.44f - blockH / 2f;
-        float xMain = (sr.getScaledWidth() - mainW * scale) / 2f;
-        float xSub = (sr.getScaledWidth() - subW * subScale) / 2f;
-
-        if (mainAlpha < 1f || subAlpha < 1f) {
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        }
-
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(xMain, yMain, 0);
-        GlStateManager.scale(scale, scale, 1);
-        fr.drawStringWithShadow(main, 0, 0, alpha(mainAlpha));
-        GlStateManager.popMatrix();
-
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(xSub, yMain + fr.FONT_HEIGHT * scale + gap, 0);
-        GlStateManager.scale(subScale, subScale, 1);
-        fr.drawStringWithShadow(sub, 0, 0, alpha(subAlpha));
-        GlStateManager.popMatrix();
-
-        if (mainAlpha < 1f || subAlpha < 1f) {
-            GlStateManager.disableBlend();
-        }
-    }
-
-    private static float clamp(float v) {
-        return Math.max(0f, Math.min(1f, v));
-    }
-
-    private static int alpha(float a) {
-        return ((int) (clamp(a) * 255f)) << 24 | 0xFFFFFF;
+        RenderUtils.drawAlertText(scaledWidth, scaledHeight, main, sub, activeUntilMs, DISPLAY_MS,
+                cfg == null ? 2f : cfg.alertScale, cfg == null || cfg.fadeInOut);
     }
 
     private static String formatRemaining(long ms) {

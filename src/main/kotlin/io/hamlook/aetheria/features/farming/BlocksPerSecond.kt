@@ -1,13 +1,14 @@
 package io.hamlook.aetheria.features.farming
 
+import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
-import io.hamlook.aetheria.utils.Position
+import io.hamlook.aetheria.events.ASMTickEvent
 import io.hamlook.aetheria.events.BlockBreakEvent
+import io.hamlook.aetheria.events.TickPhase
 import io.hamlook.aetheria.init.RegisterEvents
+import io.hamlook.aetheria.utils.Position
 import io.hamlook.aetheria.utils.data.SkyblockData
 import io.hamlook.aetheria.utils.overlay.Overlay
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
-import net.minecraftforge.fml.common.gameevent.TickEvent
 
 @RegisterEvents
 class BPSOverlay : Overlay(50, 20) {
@@ -36,7 +37,7 @@ class BPSOverlay : Overlay(50, 20) {
         return location == SkyblockData.Location.BARN || location == SkyblockData.Location.PRIVATE_ISLAND || location == SkyblockData.Location.GARDEN
     }
 
-    @SubscribeEvent
+    @HandleEvent
     fun onBlockBreak(event: BlockBreakEvent) {
         if (config.bpsRequireFarmingIsland && !isInFarmingLocation()) return
 
@@ -45,9 +46,9 @@ class BPSOverlay : Overlay(50, 20) {
         lastBreakTime = System.currentTimeMillis()
     }
 
-    @SubscribeEvent
-    fun onTick(event: TickEvent.ClientTickEvent) {
-        if (event.phase != TickEvent.Phase.START) return
+    @HandleEvent
+    fun onTick(event: ASMTickEvent) {
+        if (event.phase != TickPhase.START) return
 
         if (blocksBroken > 0) {
             val timeInSeconds = (System.currentTimeMillis() - startTime) / 1000.0

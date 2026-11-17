@@ -1,20 +1,23 @@
 package io.hamlook.aetheria.features.dungeons;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.dungeons.overlays.PhaseOverlay;
 import io.hamlook.aetheria.features.dungeons.utils.*;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.DungeonUtils;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -26,7 +29,7 @@ public class DungeonStats extends Overlay {
     public static final int OVERLAY_WIDTH = 160;
     public static final int OVERLAY_HEIGHT = 160;
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private static final Pattern TIME_ELAPSED = Pattern.compile("Time Elapsed: (\\d+)");
     private static final int[][] BOSS_COORDS = {{29, 71, 80},  // F1/M1
             {32, 69, 11},  // F2/M2
@@ -69,6 +72,11 @@ public class DungeonStats extends Overlay {
     public static boolean isInBossFight() {
         DungeonStats s = getInstance();
         return s != null && s.timers.getBossTime() > 0 && s.timers.getBossDeadTime() == 0;
+    }
+
+    public static boolean isBloodActive() {
+        DungeonStats s = getInstance();
+        return s != null && s.timers.getBloodTime() > 0 && !s.timers.isBloodCleared();
     }
 
     public boolean isInStormPhase() {
@@ -121,11 +129,11 @@ public class DungeonStats extends Overlay {
         return timers.getCurrentFloor();
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || ++tickCounter % 10 != 0) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END || ++tickCounter % 10 != 0) return;
         if (ATHRConfig.feature == null) return;
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         if (!timers.isInDungeon()) {
             detectDungeonStart();
@@ -139,8 +147,8 @@ public class DungeonStats extends Overlay {
         updateBossEntry();
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (ATHRConfig.feature == null) return;
         if (!timers.isInDungeon()) return;
 
@@ -159,8 +167,8 @@ public class DungeonStats extends Overlay {
         }
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         timers.reset();
         endStats.reset();
     }
@@ -202,9 +210,9 @@ public class DungeonStats extends Overlay {
 
         int[] c = getBossCoords(timers.getCurrentFloor());
         if (c != null) {
-            double dx = mc.thePlayer.posX - c[0];
-            double dy = mc.thePlayer.posY - c[1];
-            double dz = mc.thePlayer.posZ - c[2];
+            double dx = EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()) - c[0];
+            double dy = EntityCompat.getPosY(MinecraftCompat.getLocalPlayer()) - c[1];
+            double dz = EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()) - c[2];
             if (dx * dx + dy * dy + dz * dz <= 30 * 30) {
                 timers.setBossTime(timers.elapsed());
                 if (timers.getClearedTime() == 0) {

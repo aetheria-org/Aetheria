@@ -1,22 +1,24 @@
 package io.hamlook.aetheria.features.farming.mouse;
 
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
+import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Utils;
-import io.hamlook.aetheria.utils.overlay.SimpleOverlay;
-import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
+import io.hamlook.aetheria.utils.overlay.SimpleOverlay;
+
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @RegisterEvents
 public class LockMouse extends SimpleOverlay {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
     private static final String PREFIX = EnumChatFormatting.GREEN + "[ASM] " + EnumChatFormatting.RESET;
 
     private boolean keyWasDown = false;
@@ -32,10 +34,10 @@ public class LockMouse extends SimpleOverlay {
         ChatUtils.sendMessage(PREFIX + (locked ? EnumChatFormatting.GREEN + "Mouse locked." : EnumChatFormatting.RED + "Mouse unlocked."));
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        if (ATHRConfig.feature == null || mc.thePlayer == null || mc.currentScreen != null) return;
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
+        if (ATHRConfig.feature == null || MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getCurrentScreen() != null) return;
 
         boolean keyDown = KeybindHelper.isKeyDown(ATHRConfig.feature.farming.lockMouseConfig.lockMouseKey);
         if (keyDown && !keyWasDown) setLocked(!isLocked());
@@ -44,25 +46,24 @@ public class LockMouse extends SimpleOverlay {
 
     @Override
     public boolean shouldRender() {
-        return isLocked() && mc.currentScreen == null;
+        return isLocked() && MinecraftCompat.getCurrentScreen() == null;
     }
 
     @Override
-    public void render(ScaledResolution sr) {
-        int w = sr.getScaledWidth();
-        int h = sr.getScaledHeight();
+    public void render(int scaledWidth, int scaledHeight) {
+        int w = scaledWidth;
+        int h = scaledHeight;
 
         int iconSize = 16;
         float iconX = (w - iconSize) / 2f;
         float iconY = (h - iconSize) / 2f;
 
-        mc.getTextureManager().bindTexture(Resources.LOCK_CURSOR);
-        Utils.drawTexturedRect(iconX, iconY, iconSize, iconSize);
+        TextureCompat.drawBoundTextured(Resources.LOCK_CURSOR, iconX, iconY, iconSize, iconSize, 0, 0, 1, 1);
 
         if (ATHRConfig.feature.farming.lockMouseConfig.showUnlockHint) {
             String hint = "Use /lockyp to unlock mouse";
-            float textX = (w - mc.fontRendererObj.getStringWidth(hint)) / 2f;
-            mc.fontRendererObj.drawStringWithShadow(hint, textX, iconY + iconSize + 4, 0xFFFFFF);
+            float textX = (w - MinecraftCompat.getFontRenderer().getStringWidth(hint)) / 2f;
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), hint, textX, iconY + iconSize + 4, 0xFFFFFF);
         }
     }
 }

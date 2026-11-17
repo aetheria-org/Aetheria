@@ -1,652 +1,606 @@
 package io.hamlook.aetheria.features.waypoints;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElement;
-import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.features.waypoints.ui.EditorTab;
+import io.hamlook.aetheria.features.waypoints.ui.HelpTab;
+import io.hamlook.aetheria.features.waypoints.ui.MenuTab;
+import io.hamlook.aetheria.features.waypoints.ui.Modals;
+import io.hamlook.aetheria.features.waypoints.ui.RoutesTab;
+import io.hamlook.aetheria.features.waypoints.ui.SettingsTab;
+import io.hamlook.aetheria.features.waypoints.ui.WaypointField;
+import io.hamlook.aetheria.features.waypoints.ui.WaypointUi;
 import io.hamlook.aetheria.utils.KeybindHelper;
-import io.hamlook.aetheria.utils.render.NineSliceUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.*;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.util.EnumChatFormatting;
+import io.hamlook.aetheria.utils.LerpUtils;
+import net.minecraft.client.gui.FontRenderer;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
-import org.lwjgl.opengl.GL11;
 
-import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class WaypointGroupGui extends GuiElement {
 
-    private static final int MAX_W = 440;
-    private static final int MAX_H = 360;
-    private static final int PAD = 10;
-    private static final int TITLE_H = 20;
-    private static final int ROW_H = 24;
-    private static final int ROW_PAD = 4;
-    private static final int WP_H = 18;
-    private static final int WP_PAD = 2;
-    private static final int SF_H = 16;
-    private static final int BTN_W = 42;
-    private static final int BTN_H = 14;
-    private static final int SBTN_W = 14;
-    private static final int SBTN_H = 12;
-    private static final int INDENT = 16;
+    public static final int TAB_ROUTES = 0;
+    public static final int TAB_EDITOR = 1;
 
-    private final Set<String> expandedGroups = new HashSet<>();
-    private int scrollOffset = 0;
+    private static final int MAX_W = 640;
+    private static final int MAX_H = 420;
+    private static final int TOAST_H = 14;
+    private static final long TOAST_MS = 3000L;
 
-    private GuiTextField searchField;
-    private GuiTextField importField;
-    private GuiTextField createField;
-    private boolean importOpen = false;
-    private boolean createOpen = false;
+    private static WaypointGroupGui INSTANCE;
 
-    private int pw, ph, px, py;
+    private final MenuTab[] tabs = {new RoutesTab(), new EditorTab(), new SettingsTab(), new HelpTab()};
+    private final WaypointUi.HitList hits = new WaypointUi.HitList();
+    private final List<WaypointField> fields = new ArrayList<>();
+    private final List<Modals.Modal> modals = new ArrayList<>();
 
-    static String exportSoopy(WaypointGroup g) {
-        List<Map<String, Object>> list = new ArrayList<>();
-        for (WaypointPoint wp : g.waypoints) {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("x", wp.x);
-            m.put("y", wp.y);
-            m.put("z", wp.z);
-            m.put("r", 0);
-            m.put("g", 1);
-            m.put("b", 0);
-            Map<String, Object> opts = new LinkedHashMap<>();
-            opts.put("name", wp.name != null ? wp.name : "");
-            m.put("options", opts);
-            list.add(m);
-        }
-        return new GsonBuilder().create().toJson(list);
+    private int activeTab = TAB_ROUTES;
+    private String selectedRoute;
+    private WaypointField activeField;
+
+    private String toastText;
+    private boolean toastOk;
+    private long toastUntil;
+
+    private WaypointUi.Hit tooltipSource;
+    private long tooltipSince;
+    private boolean tooltipSuppressed;
+    private WaypointUi.SliderDrag sliderDrag;
+
+    private LerpUtils.LerpingFloat tabHighlightX;
+    private LerpUtils.LerpingFloat tabHighlightW;
+    private LerpUtils.LerpingFloat progressFill;
+    private float progressTarget = -1f;
+    private LerpUtils.LerpingFloat enabledAnim;
+    private LerpUtils.LerpingFloat setupAnim;
+    private LerpUtils.LerpingFloat toastAlpha;
+    private LerpUtils.LerpingFloat panelFade;
+    private LerpUtils.LerpingFloat modalFade;
+
+    private int px, py, pw, ph;
+
+    public WaypointGroupGui() {
+        INSTANCE = this;
+        WaypointActions.clearUndo();
+        KeyboardCompat.enableRepeatEvents(true);
     }
 
-    static List<WaypointPoint> parseSoopy(String json) {
-        try {
-            if (json.startsWith("[")) {
-                Type type = new TypeToken<List<Map<String, Object>>>() {
-                }.getType();
-                List<Map<String, Object>> raw = new Gson().fromJson(json, type);
-                List<WaypointPoint> wps = new ArrayList<>();
-                for (int i = 0; i < raw.size(); i++) {
-                    Map<String, Object> m = raw.get(i);
-                    double x = toD(m.get("x")), y = toD(m.get("y")), z = toD(m.get("z"));
-                    String name = String.valueOf(i + 1);
-                    if (m.containsKey("options")) {
-                        @SuppressWarnings("unchecked") Map<String, Object> opts = (Map<String, Object>) m.get("options");
-                        if (opts != null && opts.containsKey("name")) name = String.valueOf(opts.get("name"));
-                    }
-                    wps.add(new WaypointPoint(x, y, z, name));
-                }
-                wps.sort((a, b) -> {
-                    try {
-                        return Integer.compare(Integer.parseInt(a.name), Integer.parseInt(b.name));
-                    } catch (NumberFormatException e) {
-                        return 0;
-                    }
-                });
-                return wps;
-            }
-            if (json.matches("(?s).*\\d.*")) {
-                List<WaypointPoint> wps = new ArrayList<>();
-                String[] rows = json.split("[\\r\\n]+");
-                for (int i = 0; i < rows.length; i++) {
-                    String[] parts = rows[i].trim().split("\\s+");
-                    if (parts.length >= 3)
-                        wps.add(new WaypointPoint(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), String.valueOf(i + 1)));
-                }
-                return wps.isEmpty() ? null : wps;
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
+    @Override
+    public void onGuiClosed() {
+        KeyboardCompat.enableRepeatEvents(false);
     }
 
-    private static double toD(Object o) {
-        if (o instanceof Number) return ((Number) o).doubleValue();
-        return Double.parseDouble(String.valueOf(o));
+    public static WaypointGroupGui current() {
+        return INSTANCE;
     }
 
-    private void updatePanel(ScaledResolution sr) {
-        pw = Math.min(MAX_W, sr.getScaledWidth() - PAD * 2);
-        ph = Math.min(MAX_H, sr.getScaledHeight() - PAD * 2);
-        px = (sr.getScaledWidth() - pw) / 2;
-        py = (sr.getScaledHeight() - ph) / 2;
+    private void layout() {
+        int sw = GuiScreenUtils.getScaledWindowWidth();
+        int sh = GuiScreenUtils.getScaledWindowHeight();
+        pw = Math.min(MAX_W, sw - 20);
+        ph = Math.min(MAX_H, sh - 20);
+        px = (sw - pw) / 2;
+        py = (sh - ph) / 2;
     }
 
-    private int computeTotalH(List<WaypointGroup> groups) {
-        int h = 0;
-        for (WaypointGroup g : groups) {
-            h += ROW_H + ROW_PAD;
-            if (expandedGroups.contains(g.name)) h += (g.waypoints.size() + 1) * (WP_H + WP_PAD) + ROW_PAD;
-        }
-        return h;
+    public int contentX() {
+        return px + WaypointUi.SIDE_PAD;
     }
 
-    private List<RowItem> buildRows(int listTopY, List<WaypointGroup> groups) {
-        List<RowItem> rows = new ArrayList<>();
-        int rowY = listTopY - scrollOffset;
-        for (WaypointGroup g : groups) {
-            GroupRow gr = new GroupRow();
-            gr.g = g;
-            gr.y = rowY;
-            gr.expanded = expandedGroups.contains(g.name);
-            rows.add(gr);
-            rowY += ROW_H + ROW_PAD;
-            if (gr.expanded) {
-                for (int i = 0; i < g.waypoints.size(); i++) {
-                    WpRow wr = new WpRow();
-                    wr.g = g;
-                    wr.idx = i;
-                    wr.y = rowY;
-                    rows.add(wr);
-                    rowY += WP_H + WP_PAD;
-                }
-                AddRow ar = new AddRow();
-                ar.g = g;
-                ar.y = rowY;
-                rows.add(ar);
-                rowY += WP_H + ROW_PAD;
+    public int contentY() {
+        return py + WaypointUi.HEADER_H + WaypointUi.ACTIVE_H + WaypointUi.TAB_H + WaypointUi.PAD;
+    }
+
+    public int contentW() {
+        return pw - WaypointUi.SIDE_PAD * 2;
+    }
+
+    public int contentH() {
+        return py + ph - WaypointUi.FOOT_H - TOAST_H - WaypointUi.PAD - contentY();
+    }
+
+    public FontRenderer font() {
+        return MinecraftCompat.getFontRenderer();
+    }
+
+    public String selectedRouteName() {
+        return selectedRoute;
+    }
+
+    public WaypointGroup selectedRoute() {
+        WaypointStorage storage = WaypointStorage.getInstance();
+        WaypointGroup g = selectedRoute == null ? null : storage.getGroup(selectedRoute);
+        if (g != null) return g;
+        WaypointState state = WaypointState.getInstance();
+        if (state.loadedGroup != null) g = storage.getGroup(state.loadedGroup.name);
+        if (g == null) {
+            for (WaypointGroup candidate : storage.getGroups().values()) {
+                g = candidate;
+                break;
             }
         }
-        return rows;
+        selectedRoute = g == null ? null : g.name;
+        return g;
+    }
+
+    public void selectRoute(String name) {
+        WaypointGroup g = name == null ? null : WaypointStorage.getInstance().getGroup(name);
+        selectedRoute = g == null ? null : g.name;
+    }
+
+    public boolean isRouteActive(WaypointGroup g) {
+        return WaypointActions.isActive(g);
+    }
+
+    public int activeIndex() {
+        WaypointState state = WaypointState.getInstance();
+        return state.hasGroup() ? state.currentIndex : -1;
+    }
+
+    public void openTab(int tab) {
+        if (tab < 0 || tab >= tabs.length || tab == activeTab) return;
+        WaypointActions.clearUndo();
+        closeField();
+        activeTab = tab;
+        tabs[tab].onShow(this);
+    }
+
+    public void requestNewRoute() {
+        openTab(TAB_ROUTES);
+        ((RoutesTab) tabs[TAB_ROUTES]).requestNewRoute(this);
+    }
+
+    public void openEditorTab(String routeName, boolean rename) {
+        selectRoute(routeName);
+        openTab(TAB_EDITOR);
+        if (selectedRoute() == null) return;
+        if (rename) ((EditorTab) tabs[TAB_EDITOR]).requestRename();
+    }
+
+    public void toast(WaypointResult result) {
+        if (result == null) return;
+        toast(result.message, result.ok);
+    }
+
+    public void toast(String message, boolean ok) {
+        toastText = message;
+        toastOk = ok;
+        toastUntil = System.currentTimeMillis() + TOAST_MS;
+    }
+
+    public WaypointField field(MenuTab owner, String tag) {
+        for (WaypointField f : fields) if (f.matches(owner, tag)) return f;
+        WaypointField f = new WaypointField(owner, tag);
+        fields.add(f);
+        return f;
+    }
+
+    public void activateField(WaypointField field) {
+        if (field == null) return;
+        for (WaypointField f : fields) if (f != field) f.deactivate();
+        activeField = field;
+        field.activate();
+    }
+
+    public void closeField() {
+        if (activeField != null) activeField.deactivate();
+        activeField = null;
+    }
+
+    private void commitField() {
+        if (activeField == null) return;
+        boolean close = activeField.submit();
+        if (close) closeField();
+    }
+
+    private void cancelField() {
+        if (activeField == null) return;
+        WaypointField field = activeField;
+        closeField();
+        field.cancel();
+    }
+
+    public void openModal(Modals.Modal modal) {
+        if (modal == null) return;
+        closeField();
+        modals.add(modal);
+        modalFade = new LerpUtils.LerpingFloat(0, 150);
+        modalFade.resetTimer();
+    }
+
+    public void closeModal() {
+        if (!modals.isEmpty()) modals.remove(modals.size() - 1);
+    }
+
+    private Modals.Modal topModal() {
+        return modals.isEmpty() ? null : modals.get(modals.size() - 1);
+    }
+
+    public void startSliderDrag(WaypointUi.SliderDrag drag, int mouseX) {
+        sliderDrag = drag;
+        if (drag != null) drag.applyAt(mouseX);
     }
 
     @Override
     public void render() {
-        Minecraft mc = Minecraft.getMinecraft();
-        ScaledResolution sr = new ScaledResolution(mc);
-        FontRenderer fr = mc.fontRendererObj;
-        updatePanel(sr);
+        layout();
+        FontRenderer fr = font();
+        int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(),
+                GuiScreenUtils.getScaledWindowHeight());
+        int mx = mouse[0], my = mouse[1];
+        boolean modalOpen = topModal() != null;
+        hits.clear(modalOpen ? -1 : mx, modalOpen ? -1 : my);
 
-        Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0xaa050508);
+        if (sliderDrag != null) {
+            if (MouseCompat.isButtonDown(0)) sliderDrag.applyAt(mx);
+            else sliderDrag = null;
+        }
 
-        GlStateManager.color(0.18f, 0.18f, 0.18f, 1f);
-        NineSliceUtils.draw(Resources.storageBackground(1), px, py, pw, ph, 6, 18);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        if (panelFade == null) {
+            panelFade = new LerpUtils.LerpingFloat(0, 150);
+            panelFade.resetTimer();
+        }
+        panelFade.setTarget(1);
+        panelFade.tick();
+        float pa = panelFade.getValue();
 
-        int curY = py + PAD;
+        WaypointUi.rect(0, 0, GuiScreenUtils.getScaledWindowWidth(),
+                GuiScreenUtils.getScaledWindowHeight(), WaypointUi.withAlpha(WaypointUi.DIM, pa));
+        WaypointUi.rect(px - 1, py - 1, pw + 2, ph + 2, WaypointUi.withAlpha(WaypointUi.EDGE, pa));
+        WaypointUi.rect(px, py, pw, ph, WaypointUi.withAlpha(WaypointUi.PANEL, pa));
+        WaypointUi.border(px, py, pw, ph, WaypointUi.LINE);
 
-        fr.drawStringWithShadow(EnumChatFormatting.WHITE + "" + EnumChatFormatting.BOLD + "Waypoints", px + PAD, curY + 5, -1);
-        String escHint = EnumChatFormatting.DARK_GRAY + "ESC";
-        fr.drawStringWithShadow(escHint, px + pw - fr.getStringWidth(escHint) - PAD, curY + 5, -1);
-        Gui.drawRect(px + PAD, curY + TITLE_H, px + pw - PAD, curY + TITLE_H + 1, 0xff252535);
-        curY += TITLE_H + ROW_PAD + 2;
+        renderHeader(fr, hits);
+        renderActiveBar(fr, hits);
+        renderTabs(fr, hits);
+
+        tabs[activeTab].render(this, fr, hits, mx, my);
+
+        if (activeField != null) activeField.render();
+
+        renderFooter(fr, hits);
+        tabs[activeTab].renderOverlay(this, fr);
+
+        if (modalOpen) hits.setMouse(mx, my);
+        renderModals(fr, hits);
+
+        WaypointUi.Hit hovered = hits.topAt(mx, my);
+        long now = System.currentTimeMillis();
+        if (hovered != tooltipSource) {
+            tooltipSource = hovered;
+            tooltipSince = now;
+            tooltipSuppressed = false;
+        }
+        if (hovered != null && hovered.tooltip != null && !tooltipSuppressed && now - tooltipSince >= 300
+                && !tabs[activeTab].hasOverlay()) {
+            List<String> lines = new ArrayList<>(1);
+            lines.add(hovered.tooltip);
+            TextRenderUtils.drawHoveringText(lines, mx, my, GuiScreenUtils.getScaledWindowWidth(),
+                    GuiScreenUtils.getScaledWindowHeight(), 220, fr);
+        }
+    }
+
+    private void renderHeader(FontRenderer fr, WaypointUi.HitList hits) {
+        int y = py + (WaypointUi.HEADER_H - 8) / 2;
+        WaypointUi.text(fr, Strings.HEADER_TITLE, px + WaypointUi.SIDE_PAD, y, WaypointUi.TEXT);
+        WaypointUi.divider(px + WaypointUi.SIDE_PAD, py + WaypointUi.HEADER_H - 1,
+                pw - WaypointUi.SIDE_PAD * 2);
 
         WaypointState state = WaypointState.getInstance();
-        WaypointStorage storage = WaypointStorage.getInstance();
-
-        GlStateManager.color(0.14f, 0.14f, 0.14f, 1f);
-        NineSliceUtils.draw(Resources.storageBackground(1), px + PAD, curY, pw - PAD * 2, ROW_H, 6, 18);
-        GlStateManager.color(1f, 1f, 1f, 1f);
-
-        if (state.hasGroup()) {
-            String dot = EnumChatFormatting.GREEN + "▶ ";
-            String label = EnumChatFormatting.WHITE + state.loadedGroup.name + EnumChatFormatting.DARK_GRAY + " (" + (state.currentIndex + 1) + "/" + state.size() + ")";
-            fr.drawStringWithShadow(dot + label, px + PAD + 6, curY + 6, -1);
-            int bx = px + pw - BTN_W - PAD - 4;
-            drawBtn(bx, curY + 5, EnumChatFormatting.RED + "Unload", fr, isHovered(bx, curY + 5, BTN_W, BTN_H));
-        } else {
-            fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "No group loaded", px + PAD + 6, curY + 6, -1);
+        if (setupAnim == null) setupAnim = new LerpUtils.LerpingFloat(state.setupMode ? 1 : 0, 100);
+        if (setupAnim.getTarget() != (state.setupMode ? 1f : 0f)) {
+            setupAnim.setTarget(state.setupMode ? 1f : 0f);
+            setupAnim.resetTimer();
         }
-        curY += ROW_H + ROW_PAD;
-
-        int sfW = pw - PAD * 2 - BTN_W * 2 - 12;
-        ensureSearchField(px + PAD, curY, sfW, fr);
-        searchField.xPosition = px + PAD;
-        searchField.yPosition = curY;
-        searchField.width = sfW;
-        searchField.height = SF_H;
-        drawInputBg(px + PAD, curY, sfW);
-        searchField.drawTextBox();
-        if (searchField.getText().isEmpty() && !searchField.isFocused())
-            fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "Search...", px + PAD + 3, curY + 4, -1);
-
-        int impTogX = px + pw - BTN_W * 2 - 10;
-        int newTogX = px + pw - BTN_W - PAD;
-        drawToolBtn(impTogX, curY, importOpen ? EnumChatFormatting.YELLOW + "Cancel" : EnumChatFormatting.GRAY + "Import", fr, isHovered(impTogX, curY, BTN_W, SF_H));
-        drawToolBtn(newTogX, curY, createOpen ? EnumChatFormatting.YELLOW + "Cancel" : EnumChatFormatting.WHITE + "+ New", fr, isHovered(newTogX, curY, BTN_W, SF_H));
-        curY += SF_H + ROW_PAD;
-
-        if (importOpen) {
-            int ifW = pw - PAD * 2 - BTN_W - 8;
-            importField = ensureGenericField(importField, 2, px + PAD, curY, ifW, fr);
-            importField.xPosition = px + PAD;
-            importField.yPosition = curY;
-            importField.width = ifW;
-            importField.height = SF_H;
-            drawInputBg(px + PAD, curY, ifW);
-            importField.drawTextBox();
-            if (importField.getText().isEmpty())
-                fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "Group name for import...", px + PAD + 3, curY + 4, -1);
-            int goBtnX = px + pw - BTN_W - PAD;
-            drawToolBtn(goBtnX, curY, EnumChatFormatting.WHITE + "Go", fr, isHovered(goBtnX, curY, BTN_W, SF_H));
-            curY += SF_H + ROW_PAD;
+        setupAnim.tick();
+        if (enabledAnim == null) enabledAnim = new LerpUtils.LerpingFloat(state.enabled ? 1 : 0, 100);
+        if (enabledAnim.getTarget() != (state.enabled ? 1f : 0f)) {
+            enabledAnim.setTarget(state.enabled ? 1f : 0f);
+            enabledAnim.resetTimer();
         }
+        enabledAnim.tick();
+        int right = px + pw - WaypointUi.SIDE_PAD;
+        right = headerSwitch(fr, hits, Strings.TOGGLE_SETUP, setupAnim.getValue(), right,
+                Strings.TOOLTIP_SETUP,
+                () -> toast(WaypointActions.setSetupMode(!state.setupMode)));
+        headerSwitch(fr, hits, Strings.TOGGLE_ENABLED, enabledAnim.getValue(), right,
+                Strings.TOOLTIP_ENABLED,
+                () -> toast(WaypointActions.setEnabled(!state.enabled)));
+    }
 
-        if (createOpen) {
-            int cfW = pw - PAD * 2 - BTN_W - 8;
-            createField = ensureGenericField(createField, 3, px + PAD, curY, cfW, fr);
-            createField.xPosition = px + PAD;
-            createField.yPosition = curY;
-            createField.width = cfW;
-            createField.height = SF_H;
-            drawInputBg(px + PAD, curY, cfW);
-            createField.drawTextBox();
-            if (createField.getText().isEmpty())
-                fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "New group name...", px + PAD + 3, curY + 4, -1);
-            int createBtnX = px + pw - BTN_W - PAD;
-            drawToolBtn(createBtnX, curY, EnumChatFormatting.WHITE + "Create", fr, isHovered(createBtnX, curY, BTN_W, SF_H));
-            curY += SF_H + ROW_PAD;
-        }
-        Gui.drawRect(px + PAD, curY, px + pw - PAD, curY + 1, 0xff252535);
-        curY += 4;
-        int listTopY = curY;
-        int listBottomY = py + ph - PAD;
-        int visibleH = Math.max(0, listBottomY - listTopY);
-        String query = searchField != null ? searchField.getText().trim().toLowerCase() : "";
-        List<WaypointGroup> groups = filteredGroups(storage, query);
-        int totalH = computeTotalH(groups);
-        int maxScroll = Math.max(0, totalH - visibleH);
-        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
-        List<RowItem> rows = buildRows(listTopY, groups);
-        int scale = sr.getScaleFactor();
-        GlStateManager.pushMatrix();
-        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(px * scale, mc.displayHeight - listBottomY * scale, pw * scale, visibleH * scale);
+    private int headerSwitch(FontRenderer fr, WaypointUi.HitList hits, String label, float frac,
+                             int right, String tooltip, Runnable action) {
+        int toggleX = right - 30;
+        int labelRight = toggleX - 6;
+        int labelW = WaypointUi.width(fr, label);
+        int y = py + (WaypointUi.HEADER_H - 16) / 2;
+        WaypointUi.textRight(fr, label, labelRight, y + 4, WaypointUi.TEXT);
+        WaypointUi.toggle(hits, toggleX, y, frac, action, tooltip);
+        hits.add(labelRight - labelW, y, labelW, 16, tooltip, action);
+        return labelRight - labelW - 16;
+    }
 
-        for (RowItem item : rows) {
-            if (item.y + item.h() <= listTopY || item.y >= listBottomY) continue;
-            if (item instanceof GroupRow) renderGroupRow(px, pw, (GroupRow) item, state, fr);
-            else if (item instanceof WpRow) renderWpRow(px, pw, (WpRow) item, fr);
-            else if (item instanceof AddRow) renderAddRow(px, pw, (AddRow) item, fr);
+    private void renderActiveBar(FontRenderer fr, WaypointUi.HitList hits) {
+        int x = px + WaypointUi.SIDE_PAD;
+        int y = py + WaypointUi.HEADER_H;
+        int w = pw - WaypointUi.SIDE_PAD * 2;
+        int h = WaypointUi.ACTIVE_H;
+        WaypointUi.rect(x, y, w, h, WaypointUi.INSET);
+        WaypointUi.border(x, y, w, h, WaypointUi.LINE);
+
+        WaypointState state = WaypointState.getInstance();
+        int lineY = y + 12;
+
+        if (!state.hasGroup()) {
+            WaypointUi.text(fr, Strings.ACTIVE_BAR_NONE, x + 8, lineY, WaypointUi.MUTED);
+            return;
         }
 
-        GL11.glDisable(GL11.GL_SCISSOR_TEST);
-        GlStateManager.popMatrix();
+        int right = x + w - 8;
+        int btnY = y + (h - WaypointUi.SMALL_H) / 2 - 2;
+        right = barButton(fr, hits, Strings.BTN_UNLOAD, right, btnY, true,
+                () -> toast(WaypointActions.unloadRoute()), Strings.TOOLTIP_UNLOAD);
+        right = barButton(fr, hits, Strings.BTN_RESTART, right, btnY, false,
+                () -> toast(WaypointActions.restartRoute()), Strings.TOOLTIP_RESTART);
+        right = barButton(fr, hits, Strings.BTN_NEXT, right, btnY, false,
+                () -> toast(WaypointActions.skip(1)), Strings.TOOLTIP_NEXT);
+        right = barButton(fr, hits, Strings.BTN_PREV, right, btnY, false,
+                () -> toast(WaypointActions.skip(-1)), Strings.TOOLTIP_PREV);
 
-        if (groups.isEmpty()) {
-            String msg = query.isEmpty() ? EnumChatFormatting.DARK_GRAY + "No groups — click " + EnumChatFormatting.WHITE + "+ New" + EnumChatFormatting.DARK_GRAY + " or /w create <name>" : EnumChatFormatting.DARK_GRAY + "No groups match \"" + query + "\"";
-            fr.drawStringWithShadow(msg, px + PAD + 6, listTopY + 16, -1);
+        int nameX = x + 8;
+        String pos = (state.currentIndex + 1) + " / " + state.size();
+        int posW = WaypointUi.width(fr, pos);
+        int nameMax = right - 12 - nameX - posW;
+        WaypointUi.text(fr, WaypointUi.fit(fr, state.loadedGroup.name, nameMax), nameX, lineY, WaypointUi.TEXT);
+        WaypointUi.textRight(fr, pos, right - 6, lineY, WaypointUi.MUTED);
+
+        float target = (state.currentIndex + 1) / (float) Math.max(1, state.size());
+        if (progressFill == null) {
+            progressFill = new LerpUtils.LerpingFloat(target, 200);
+            progressTarget = target;
         }
+        if (progressTarget != target) {
+            progressFill.setTarget(target);
+            progressFill.resetTimer();
+            progressTarget = target;
+        }
+        progressFill.tick();
+        int progressLine = h - 2;
+        WaypointUi.rect(x + 1, y + progressLine, w - 2, 1, WaypointUi.LINE);
+        int filled = (int) ((w - 2) * progressFill.getValue());
+        WaypointUi.rect(x + 1, y + progressLine, Math.max(0, filled), 1, WaypointUi.ACCENT);
+    }
 
-        if (maxScroll > 0) {
-            int sbX = px + pw - 5;
-            int barH = Math.max(16, (int) (visibleH * (float) visibleH / totalH));
-            int barY = listTopY + (int) ((visibleH - barH) * ((float) scrollOffset / maxScroll));
-            Gui.drawRect(sbX, listTopY, sbX + 4, listBottomY, 0xff141418);
-            Gui.drawRect(sbX, barY, sbX + 4, barY + barH, 0xff505060);
-            Gui.drawRect(sbX, barY, sbX + 4, barY + 1, 0xff8080a0);
+    private int barButton(FontRenderer fr, WaypointUi.HitList hits, String label, int right, int y,
+                          boolean danger, Runnable action, String tooltip) {
+        int w = WaypointUi.buttonWidth(fr, label);
+        int x = right - w;
+        WaypointUi.button(hits, fr, label, x, y, w, WaypointUi.SMALL_H, false, danger, action, tooltip);
+        return x - 6;
+    }
+
+    private void renderTabs(FontRenderer fr, WaypointUi.HitList hits) {
+        int y = py + WaypointUi.HEADER_H + WaypointUi.ACTIVE_H;
+        int x = px + WaypointUi.SIDE_PAD;
+        WaypointUi.divider(x, y + WaypointUi.TAB_H - 1, pw - WaypointUi.SIDE_PAD * 2);
+
+        int activeX = x, activeW = 0, cursor = x;
+        for (int i = 0; i < tabs.length; i++) {
+            int w = Math.max(48, WaypointUi.width(fr, tabs[i].title()) + 24);
+            if (i == activeTab) {
+                activeX = cursor;
+                activeW = w;
+            }
+            cursor += w;
+        }
+        if (tabHighlightX == null) {
+            tabHighlightX = new LerpUtils.LerpingFloat(activeX, 120);
+            tabHighlightW = new LerpUtils.LerpingFloat(activeW, 120);
+        }
+        if ((int) tabHighlightX.getTarget() != activeX) {
+            tabHighlightX.setTarget(activeX);
+            tabHighlightX.resetTimer();
+        }
+        tabHighlightX.tick();
+        if ((int) tabHighlightW.getTarget() != activeW) {
+            tabHighlightW.setTarget(activeW);
+            tabHighlightW.resetTimer();
+        }
+        tabHighlightW.tick();
+        int highlightX = Math.round(tabHighlightX.getValue());
+        int highlightW = Math.round(tabHighlightW.getValue());
+        WaypointUi.rect(highlightX, y, highlightW, WaypointUi.TAB_H - 1, WaypointUi.ACCENT);
+
+        for (int i = 0; i < tabs.length; i++) {
+            int w = Math.max(48, WaypointUi.width(fr, tabs[i].title()) + 24);
+            boolean hover = hits.hover(x, y, w, WaypointUi.TAB_H - 1);
+            if (i != activeTab && hover) {
+                WaypointUi.rect(x, y, w, 1, WaypointUi.LINE);
+            }
+            WaypointUi.textCenter(fr, tabs[i].title(), x + w / 2, y + 7,
+                    i == activeTab ? WaypointUi.ACCENT_ON : WaypointUi.MUTED);
+            int index = i;
+            hits.add(x, y, w, WaypointUi.TAB_H - 1, null, () -> openTab(index));
+            x += w;
         }
     }
 
-    private void renderGroupRow(int panelX, int panelW, GroupRow gr, WaypointState state, FontRenderer fr) {
-        boolean isLoaded = state.loadedGroup != null && state.loadedGroup.name.equalsIgnoreCase(gr.g.name);
+    private void renderFooter(FontRenderer fr, WaypointUi.HitList hits) {
+        int footerTop = py + ph - WaypointUi.FOOT_H;
 
-        GlStateManager.color(isLoaded ? 0.12f : 0.14f, isLoaded ? 0.16f : 0.14f, isLoaded ? 0.12f : 0.14f, 1f);
-        NineSliceUtils.draw(Resources.storageBackground(1), panelX + PAD, gr.y, panelW - PAD * 2, ROW_H, 6, 18);
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        if (isLoaded) Gui.drawRect(panelX + PAD, gr.y, panelX + PAD + 2, gr.y + ROW_H, 0xff55aa55);
-        String arrow = gr.expanded ? EnumChatFormatting.GRAY + "▼" : EnumChatFormatting.DARK_GRAY + "▶";
-        fr.drawStringWithShadow(arrow, panelX + PAD + 5, gr.y + 7, -1);
-        String nameStr = (isLoaded ? EnumChatFormatting.GREEN : EnumChatFormatting.WHITE) + gr.g.name + EnumChatFormatting.DARK_GRAY + " (" + gr.g.waypoints.size() + ")";
-        int maxNameW = panelW - PAD * 2 - INDENT - BTN_W * 3 - 20;
-        TextRenderUtils.drawStringScaledMaxWidth(nameStr, fr, panelX + PAD + INDENT, gr.y + 7, false, maxNameW, -1);
-        int delX = panelX + panelW - BTN_W - PAD - 4;
-        int expX = delX - BTN_W - 3;
-        int loadX = expX - BTN_W - 3;
-        int btnY = gr.y + 5;
-        drawBtn(loadX, btnY, isLoaded ? EnumChatFormatting.AQUA + "Reload" : EnumChatFormatting.WHITE + "Load", fr, isHovered(loadX, btnY, BTN_W, BTN_H));
-        drawBtn(expX, btnY, EnumChatFormatting.GRAY + "Export", fr, isHovered(expX, btnY, BTN_W, BTN_H));
-        drawBtn(delX, btnY, EnumChatFormatting.RED + "Delete", fr, isHovered(delX, btnY, BTN_W, BTN_H));
-    }
-
-    private void renderWpRow(int panelX, int panelW, WpRow wr, FontRenderer fr) {
-        WaypointPoint wp = wr.g.waypoints.get(wr.idx);
-        int rowBg = wr.idx % 2 == 0 ? 0x18ffffff : 0x10ffffff;
-        Gui.drawRect(panelX + PAD + INDENT, wr.y, panelX + panelW - PAD, wr.y + WP_H, rowBg);
-        Gui.drawRect(panelX + PAD + INDENT, wr.y, panelX + PAD + INDENT + 2, wr.y + WP_H, 0xff303048);
-
-        String idxStr = EnumChatFormatting.DARK_GRAY + "" + (wr.idx + 1) + ".";
-        fr.drawStringWithShadow(idxStr, panelX + PAD + INDENT + 5, wr.y + 5, -1);
-        int indexW = fr.getStringWidth("99.") + 4;
-
-        int delX = panelX + panelW - PAD - SBTN_W - 4;
-        int downX = delX - SBTN_W - 2;
-        int upX = downX - SBTN_W - 2;
-        int btnY = wr.y + 3;
-        drawSmallBtn(delX, btnY, EnumChatFormatting.RED + "x", fr, isHovered(delX, btnY, SBTN_W, SBTN_H));
-        drawSmallBtn(downX, btnY, EnumChatFormatting.GRAY + "v", fr, isHovered(downX, btnY, SBTN_W, SBTN_H));
-        drawSmallBtn(upX, btnY, EnumChatFormatting.WHITE + "^", fr, isHovered(upX, btnY, SBTN_W, SBTN_H));
-
-        String coords = EnumChatFormatting.DARK_GRAY + "" + (int) wp.x + ", " + (int) wp.y + ", " + (int) wp.z;
-        int coordsX = upX - fr.getStringWidth(coords) - 5;
-        fr.drawStringWithShadow(coords, coordsX, wr.y + 5, -1);
-
-        int nameAreaW = coordsX - (panelX + PAD + INDENT + indexW) - 4;
-        if (nameAreaW > 0) {
-            String name = EnumChatFormatting.WHITE + (wp.name != null ? wp.name : "");
-            TextRenderUtils.drawStringScaledMaxWidth(name, fr, panelX + PAD + INDENT + indexW, wr.y + 5, false, nameAreaW, -1);
+        if (toastAlpha == null) toastAlpha = new LerpUtils.LerpingFloat(0, 150);
+        long now = System.currentTimeMillis();
+        boolean live = toastText != null && now < toastUntil;
+        float target = live ? 1f : 0f;
+        if (toastAlpha.getTarget() != target) {
+            toastAlpha.setTarget(target);
+            toastAlpha.resetTimer();
         }
+        toastAlpha.tick();
+        float ta = toastAlpha.getValue();
+        int ta255 = (int) (ta * 255);
+        if (toastText != null) {
+            if (ta255 >= 8) {
+                int color = WaypointUi.withAlpha(toastOk ? WaypointUi.SUCCESS : WaypointUi.DANGER, ta);
+                int x = px + WaypointUi.SIDE_PAD;
+                int max = pw - WaypointUi.SIDE_PAD * 2 - (WaypointActions.hasUndo() ? 44 : 0);
+                WaypointUi.text(fr, WaypointUi.fit(fr, toastText, max), x, footerTop - 12, color);
+            }
+            if (!live && ta <= 0.02f) toastText = null;
+        }
+
+        if (WaypointActions.hasUndo()) {
+            int undoW = WaypointUi.buttonWidth(fr, Strings.BTN_UNDO);
+            WaypointUi.button(hits, fr, Strings.BTN_UNDO, px + pw - WaypointUi.SIDE_PAD - undoW,
+                    footerTop - 15, undoW, WaypointUi.SMALL_H, false, false,
+                    () -> toast(WaypointActions.undo()), Strings.TOOLTIP_UNDO);
+        }
+
+        if (!WaypointLinks.hasSite9()) return;
+
+        WaypointUi.divider(px + WaypointUi.SIDE_PAD, footerTop - 2, pw - WaypointUi.SIDE_PAD * 2);
+        int y = footerTop + 6;
+        int x = px + WaypointUi.SIDE_PAD;
+        String lead = Strings.FOOTER_LEAD;
+        WaypointUi.text(fr, lead, x, y, WaypointUi.MUTED);
+        int linkX = x + WaypointUi.width(fr, lead);
+        String link = Strings.SITE_9_TEXT;
+        int linkW = WaypointUi.width(fr, link);
+        boolean hover = hits.hover(linkX, y, linkW, WaypointUi.LINE_H);
+        WaypointUi.text(fr, link, linkX, y, WaypointUi.ACCENT);
+        if (hover) WaypointUi.rect(linkX, y + 9, linkW, 1, WaypointUi.ACCENT);
+        hits.add(linkX, y, linkW, WaypointUi.LINE_H, Strings.TOOLTIP_OPEN_SITE9,
+                () -> toast(WaypointLinks.openSite9()));
     }
 
-    private void renderAddRow(int panelX, int panelW, AddRow ar, FontRenderer fr) {
-        int rx = panelX + PAD + INDENT, rw = panelW - PAD - INDENT - PAD;
-        boolean hov = isHovered(rx, ar.y, rw, WP_H);
-        Gui.drawRect(rx, ar.y, rx + rw, ar.y + WP_H, hov ? 0x20ffffff : 0x10ffffff);
-        fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "+ " + EnumChatFormatting.GRAY + "Add waypoint here", rx + 6, ar.y + 5, -1);
+    private void renderModals(FontRenderer fr, WaypointUi.HitList hits) {
+        Modals.Modal modal = topModal();
+        if (modal == null) return;
+        if (modalFade == null) {
+            modalFade = new LerpUtils.LerpingFloat(0, 150);
+            modalFade.resetTimer();
+        }
+        modalFade.setTarget(1);
+        modalFade.tick();
+        float ma = modalFade.getValue();
+        WaypointUi.rect(0, 0, GuiScreenUtils.getScaledWindowWidth(),
+                GuiScreenUtils.getScaledWindowHeight(), WaypointUi.withAlpha(WaypointUi.OVERLAY, ma));
+        hits.add(0, 0, GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight(),
+                null, this::closeModal);
+        modal.render(this, fr, hits);
+    }
+
+    public float modalAlpha() {
+        return modalFade == null ? 1 : modalFade.getValue();
     }
 
     @Override
     public boolean mouseInput(int mouseX, int mouseY) {
-        int dWheel = Mouse.getEventDWheel();
-        if (dWheel != 0) {
-            scrollOffset = Math.max(0, scrollOffset - (dWheel > 0 ? 20 : -20));
-            return false;
+        if (MouseCompat.getEventButton() == -1) {
+            int wheel = MouseCompat.getEventDWheel();
+            if (wheel == 0) return false;
+            return handleScroll(mouseX, mouseY, wheel);
         }
-        if (!Mouse.getEventButtonState() || Mouse.getEventButton() != 0) return false;
+        return handleMouse(mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
 
-        Minecraft mc = Minecraft.getMinecraft();
-        ScaledResolution sr = new ScaledResolution(mc);
-        updatePanel(sr);
-        WaypointState state = WaypointState.getInstance();
-        WaypointStorage storage = WaypointStorage.getInstance();
-        int curY = py + PAD + TITLE_H + ROW_PAD + 2;
-        if (state.hasGroup()) {
-            int bx = px + pw - BTN_W - PAD - 4;
-            if (inBounds(mouseX, mouseY, bx, curY + 5, BTN_W, BTN_H)) {
-                state.unload();
-                return true;
-            }
+    @Override
+    public boolean mouseInput(int mouseX, int mouseY, int button, boolean pressed) {
+        if (button == -1) {
+            int wheel = MouseCompat.getEventDWheel();
+            if (wheel == 0) return false;
+            return handleScroll(mouseX, mouseY, wheel);
         }
-        curY += ROW_H + ROW_PAD;
+        return handleMouse(mouseX, mouseY, button, pressed);
+    }
 
-        if (searchField != null) searchField.mouseClicked(mouseX, mouseY, 0);
+    private boolean handleScroll(int mouseX, int mouseY, int wheel) {
+        tooltipSuppressed = true;
+        Modals.Modal modal = topModal();
+        if (modal != null) return modal.scroll(this, wheel);
+        if (activeField != null) return false;
+        if (!inContent(mouseX, mouseY)) return false;
+        return tabs[activeTab].scroll(this, wheel);
+    }
 
-        int impTogX = px + pw - BTN_W * 2 - 10;
-        int newTogX = px + pw - BTN_W - PAD;
-        if (inBounds(mouseX, mouseY, impTogX, curY, BTN_W, SF_H)) {
-            importOpen = !importOpen;
-            if (!importOpen) importField = null;
+    private boolean handleMouse(int mouseX, int mouseY, int button, boolean pressed) {
+        if (!pressed) return false;
+        tooltipSuppressed = true;
+
+        if (topModal() != null) {
+            hits.click(mouseX, mouseY);
             return true;
         }
-        if (inBounds(mouseX, mouseY, newTogX, curY, BTN_W, SF_H)) {
-            createOpen = !createOpen;
-            if (!createOpen) createField = null;
-            return true;
-        }
-        curY += SF_H + ROW_PAD;
 
-        if (importOpen) {
-            if (importField != null) importField.mouseClicked(mouseX, mouseY, 0);
-            if (inBounds(mouseX, mouseY, px + pw - BTN_W - PAD, curY, BTN_W, SF_H)) {
-                doImport(storage);
+        if (activeField != null) {
+            if (activeField.inside(mouseX, mouseY)) {
+                activeField.click(mouseX, mouseY, button);
                 return true;
             }
-            curY += SF_H + ROW_PAD;
-        }
-        if (createOpen) {
-            if (createField != null) createField.mouseClicked(mouseX, mouseY, 0);
-            if (inBounds(mouseX, mouseY, px + pw - BTN_W - PAD, curY, BTN_W, SF_H)) {
-                doCreate(storage);
-                return true;
-            }
-            curY += SF_H + ROW_PAD;
-        }
-
-        curY += 5;
-        int listTopY = curY;
-        int listBottomY = py + ph - PAD;
-
-        String query = searchField != null ? searchField.getText().trim().toLowerCase() : "";
-        List<WaypointGroup> groups = filteredGroups(storage, query);
-        List<RowItem> rows = buildRows(listTopY, groups);
-
-        for (RowItem item : rows) {
-            if (item.y + item.h() <= listTopY || item.y >= listBottomY) continue;
-
-            if (item instanceof GroupRow) {
-                GroupRow gr = (GroupRow) item;
-                if (inBounds(mouseX, mouseY, px + PAD, gr.y, INDENT + 8, ROW_H)) {
-                    if (gr.expanded) expandedGroups.remove(gr.g.name);
-                    else expandedGroups.add(gr.g.name);
-                    return true;
-                }
-                int delX = px + pw - BTN_W - PAD - 4;
-                int expX = delX - BTN_W - 3;
-                int loadX = expX - BTN_W - 3;
-                int btnY = gr.y + 5;
-                if (inBounds(mouseX, mouseY, loadX, btnY, BTN_W, BTN_H)) {
-                    state.load(gr.g);
-                    return true;
-                }
-                if (inBounds(mouseX, mouseY, expX, btnY, BTN_W, BTN_H)) {
-                    GuiScreen.setClipboardString(exportSoopy(gr.g));
-                    return true;
-                }
-                if (inBounds(mouseX, mouseY, delX, btnY, BTN_W, BTN_H)) {
-                    if (state.loadedGroup != null && state.loadedGroup.name.equalsIgnoreCase(gr.g.name)) state.unload();
-                    storage.removeGroup(gr.g.name);
-                    storage.saveIfDirty();
-                    expandedGroups.remove(gr.g.name);
-                    return true;
-                }
-
-            } else if (item instanceof WpRow) {
-                WpRow wr = (WpRow) item;
-                int delX = px + pw - PAD - SBTN_W - 4;
-                int downX = delX - SBTN_W - 2;
-                int upX = downX - SBTN_W - 2;
-                int btnY = wr.y + 3;
-                if (inBounds(mouseX, mouseY, delX, btnY, SBTN_W, SBTN_H)) {
-                    wr.g.waypoints.remove(wr.idx);
-                    storage.markDirty();
-                    storage.saveIfDirty();
-                    return true;
-                }
-                if (inBounds(mouseX, mouseY, downX, btnY, SBTN_W, SBTN_H)) {
-                    if (wr.idx < wr.g.waypoints.size() - 1) {
-                        Collections.swap(wr.g.waypoints, wr.idx, wr.idx + 1);
-                        storage.markDirty();
-                        storage.saveIfDirty();
-                    }
-                    return true;
-                }
-                if (inBounds(mouseX, mouseY, upX, btnY, SBTN_W, SBTN_H)) {
-                    if (wr.idx > 0) {
-                        Collections.swap(wr.g.waypoints, wr.idx, wr.idx - 1);
-                        storage.markDirty();
-                        storage.saveIfDirty();
-                    }
-                    return true;
-                }
-
-            } else if (item instanceof AddRow) {
-                AddRow ar = (AddRow) item;
-                int rx = px + PAD + INDENT, rw = pw - PAD - INDENT - PAD;
-                if (inBounds(mouseX, mouseY, rx, ar.y, rw, WP_H)) {
-                    double bx = Math.floor(mc.thePlayer.posX);
-                    double by = Math.floor(mc.thePlayer.posY) - 1;
-                    double bz = Math.floor(mc.thePlayer.posZ);
-                    ar.g.waypoints.add(new WaypointPoint(bx, by, bz, String.valueOf(ar.g.waypoints.size() + 1)));
-                    storage.markDirty();
-                    storage.saveIfDirty();
-                    return true;
-                }
+            if (button == 0) {
+                commitField();
+                if (activeField != null) return true;
             }
         }
-        return false;
+
+        if (tabs[activeTab].mouse(this, mouseX, mouseY, button, pressed)) return true;
+        return hits.click(mouseX, mouseY);
+    }
+
+    private boolean inContent(int mouseX, int mouseY) {
+        return mouseX >= contentX() && mouseX < contentX() + contentW()
+                && mouseY >= contentY() && mouseY < contentY() + contentH();
     }
 
     @Override
     public boolean keyboardInput() {
-        if (!Keyboard.getEventKeyState()) return false;
-        int key = Keyboard.getEventKey();
-        char c = Keyboard.getEventCharacter();
+        if (!KeyboardCompat.getEventKeyState()) return false;
+        return keyboardInput(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
+    }
 
-        boolean sf = searchField != null && searchField.isFocused();
-        boolean imf = importField != null && importField.isFocused();
-        boolean crf = createField != null && createField.isFocused();
+    @Override
+    public boolean keyboardInput(char typedChar, int keyCode) {
+        Modals.Modal modal = topModal();
+        if (modal != null) {
+            if (keyCode == Keyboard.KEY_ESCAPE) return modal.escape(this);
+            return modal.key(this, typedChar, keyCode);
+        }
 
-        if (!sf && !imf && !crf) {
-            if (key == Keyboard.KEY_DOWN) {
-                scrollOffset += 12;
+        if (activeField != null) {
+            if (keyCode == Keyboard.KEY_ESCAPE) {
+                cancelField();
                 return true;
             }
-            if (key == Keyboard.KEY_UP) {
-                scrollOffset = Math.max(0, scrollOffset - 12);
+            if (keyCode == Keyboard.KEY_RETURN) {
+                commitField();
                 return true;
             }
-        }
-        if (imf && key == Keyboard.KEY_RETURN) {
-            doImport(WaypointStorage.getInstance());
+            if (keyCode == Keyboard.KEY_TAB) {
+                boolean handled = activeField.tab();
+                if (!handled) closeField();
+                return true;
+            }
+            activeField.type(typedChar, keyCode);
             return true;
         }
-        if (crf && key == Keyboard.KEY_RETURN) {
-            doCreate(WaypointStorage.getInstance());
+
+        if (tabs[activeTab].key(this, typedChar, keyCode)) return true;
+        if (keyCode >= Keyboard.KEY_1 && keyCode <= Keyboard.KEY_4) {
+            openTab(keyCode - Keyboard.KEY_1);
             return true;
         }
-        if (sf) {
-            searchField.textboxKeyTyped(c, key);
-            return true;
-        }
-        if (imf) {
-            importField.textboxKeyTyped(c, key);
-            return true;
-        }
-        if (crf) {
-            createField.textboxKeyTyped(c, key);
-            return true;
-        }
+        if (keyCode == Keyboard.KEY_DOWN) return tabs[activeTab].scroll(this, -1);
+        if (keyCode == Keyboard.KEY_UP) return tabs[activeTab].scroll(this, 1);
         return false;
     }
 
-    private void doImport(WaypointStorage storage) {
-        if (importField == null) return;
-        String name = importField.getText().trim().toLowerCase();
-        if (name.isEmpty()) return;
-        String clip = GuiScreen.getClipboardString();
-        if (clip == null || clip.trim().isEmpty()) return;
-        List<WaypointPoint> wps = parseSoopy(clip.trim());
-        if (wps == null || wps.isEmpty()) return;
-        WaypointGroup g = storage.getGroup(name);
-        if (g == null) g = new WaypointGroup(name);
-        g.waypoints = wps;
-        storage.putGroup(g);
-        storage.saveIfDirty();
-        importOpen = false;
-        importField = null;
-    }
-
-    private void doCreate(WaypointStorage storage) {
-        if (createField == null) return;
-        String name = createField.getText().trim().toLowerCase();
-        if (name.isEmpty() || storage.getGroup(name) != null) return;
-        storage.putGroup(new WaypointGroup(name));
-        storage.saveIfDirty();
-        createOpen = false;
-        createField = null;
-    }
-
-    private void drawBtn(int x, int y, String label, FontRenderer fr, boolean hov) {
-        Gui.drawRect(x, y, x + BTN_W, y + BTN_H, hov ? 0xff282830 : 0xff1a1a22);
-        Gui.drawRect(x, y, x + BTN_W, y + 1, hov ? 0xff505060 : 0xff303038);
-        Gui.drawRect(x, y + BTN_H - 1, x + BTN_W, y + BTN_H, 0xff0a0a0e);
-        TextRenderUtils.drawStringCenteredScaledMaxWidth(label, fr, x + BTN_W / 2f, y + BTN_H / 2f + 1, false, BTN_W - 4, -1);
-    }
-
-    private void drawSmallBtn(int x, int y, String label, FontRenderer fr, boolean hov) {
-        Gui.drawRect(x, y, x + SBTN_W, y + SBTN_H, hov ? 0xff282830 : 0xff1a1a22);
-        Gui.drawRect(x, y, x + SBTN_W, y + 1, 0xff303038);
-        TextRenderUtils.drawStringCenteredScaledMaxWidth(label, fr, x + SBTN_W / 2f, y + SBTN_H / 2f + 1, false, SBTN_W - 2, -1);
-    }
-
-    private void drawToolBtn(int x, int y, String label, FontRenderer fr, boolean hov) {
-        Gui.drawRect(x, y, x + BTN_W, y + SF_H, hov ? 0xff282830 : 0xff1a1a22);
-        Gui.drawRect(x, y, x + BTN_W, y + 1, hov ? 0xff505060 : 0xff303038);
-        Gui.drawRect(x, y + SF_H - 1, x + BTN_W, y + SF_H, 0xff0a0a0e);
-        TextRenderUtils.drawStringCenteredScaledMaxWidth(label, fr, x + BTN_W / 2f, y + SF_H / 2f + 1, false, BTN_W - 4, -1);
-    }
-
-    private void drawInputBg(int x, int y, int w) {
-        Gui.drawRect(x, y, x + w, y + SF_H, 0xff111118);
-        Gui.drawRect(x, y, x + w, y + 1, 0xff252530);
-        Gui.drawRect(x, y + SF_H - 1, x + w, y + SF_H, 0xff252530);
-    }
-
-
-    private void ensureSearchField(int x, int y, int w, FontRenderer fr) {
-        if (searchField == null) {
-            searchField = new GuiTextField(0, fr, x, y, w, WaypointGroupGui.SF_H);
-            searchField.setMaxStringLength(64);
-            searchField.setEnableBackgroundDrawing(false);
-            searchField.setCanLoseFocus(true);
-            searchField.setFocused(false);
-        }
-    }
-
-    private GuiTextField ensureGenericField(GuiTextField existing, int id, int x, int y, int w, FontRenderer fr) {
-        if (existing != null) return existing;
-        GuiTextField f = new GuiTextField(id, fr, x, y, w, WaypointGroupGui.SF_H);
-        f.setMaxStringLength(64);
-        f.setEnableBackgroundDrawing(false);
-        f.setCanLoseFocus(true);
-        f.setFocused(true);
-        return f;
-    }
-
-    private List<WaypointGroup> filteredGroups(WaypointStorage storage, String query) {
-        List<WaypointGroup> result = new ArrayList<>();
-        for (WaypointGroup g : storage.getGroups().values())
-            if (query.isEmpty() || g.name.toLowerCase().contains(query)) result.add(g);
-        return result;
-    }
-
-    private boolean inBounds(int mx, int my, int x, int y, int w, int h) {
-        return mx >= x && mx <= x + w && my >= y && my <= y + h;
-    }
-
-    private boolean isHovered(int x, int y, int w, int h) {
-        Minecraft mc = Minecraft.getMinecraft();
-        ScaledResolution sr = new ScaledResolution(mc);
-        int[] mouse = KeybindHelper.getMouseCoords(sr);
-        int mx = mouse[0], my = mouse[1];
-        return inBounds(mx, my, x, y, w, h);
-    }
-
-    private abstract static class RowItem {
-        int y;
-
-        abstract int h();
-    }
-
-    private static class GroupRow extends RowItem {
-        WaypointGroup g;
-        boolean expanded;
-
-        int h() {
-            return ROW_H;
-        }
-    }
-
-    private static class WpRow extends RowItem {
-        WaypointGroup g;
-        int idx;
-
-        int h() {
-            return WP_H;
-        }
-    }
-
-    private static class AddRow extends RowItem {
-        WaypointGroup g;
-
-        int h() {
-            return WP_H;
-        }
+    @Override
+    public boolean capturesEscape() {
+        return topModal() != null || activeField != null || tabs[activeTab].capturesEscape();
     }
 }

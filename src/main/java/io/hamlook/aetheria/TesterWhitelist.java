@@ -1,13 +1,14 @@
 package io.hamlook.aetheria;
 
 import com.google.gson.JsonParser;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMServerJoinEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ModCompat;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -33,7 +34,7 @@ public class TesterWhitelist {
     }
 
     private static void checkWhitelist() {
-        String playerName = Minecraft.getMinecraft().getSession().getProfile().getName().toLowerCase();
+        String playerName = MinecraftCompat.getMinecraft().getSession().getUsername().toLowerCase();
 
         ThreadUtils.run(() -> {
             try {
@@ -66,12 +67,12 @@ public class TesterWhitelist {
 
     private static void crashGame(String reason) {
         Aetheria.logger.severe("[ATHR] " + reason);
-        FMLCommonHandler.instance().exitJava(1, true);
+        ModCompat.exitJava(1);
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (!isAlpha || event.phase != TickEvent.Phase.START) return;
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
+        if (!isAlpha || event.phase != TickPhase.START) return;
 
         tickCounter++;
         if (!hasChecked || tickCounter >= CHECK_INTERVAL_TICKS) {
@@ -81,8 +82,8 @@ public class TesterWhitelist {
         }
     }
 
-    @SubscribeEvent
-    public void onServerJoin(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+    @HandleEvent
+    public void onServerJoin(ASMServerJoinEvent event) {
         if (!isAlpha) return;
         checkWhitelist();
     }

@@ -1,27 +1,27 @@
 package io.hamlook.aetheria.features.farming.gardenplots;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.GardenPlotsConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
+import io.hamlook.aetheria.events.GuiContainerRenderBeforeTooltipEvent;
 import io.hamlook.aetheria.events.RenderItemOverlayEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import io.hamlook.aetheria.utils.item.ItemStackUtils;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.HighlightUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 @RegisterEvents
 public class GardenPlotNumber {
@@ -39,6 +39,8 @@ public class GardenPlotNumber {
 
     private static final Map<ItemStack, PlotInfo> PLOT_CACHE = new IdentityHashMap<>();
     private static GuiScreen cacheScreen;
+
+    private static final Set<Integer> frameUnlockedPlots = new HashSet<>();
 
     static {
         HighlightUtils.registerHighlighter((gui, slot) -> {
@@ -60,7 +62,7 @@ public class GardenPlotNumber {
         });
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onItemOverlay(RenderItemOverlayEvent event) {
         if (notInGardenConfigurePlots()) return;
         GardenPlotsConfig config = config();
@@ -70,9 +72,19 @@ public class GardenPlotNumber {
         if (stack == null || stack.getItem() == null) return;
         PlotInfo info = info(stack);
         if (info.number < 0) return;
+        if (info.type == UNLOCKED) frameUnlockedPlots.add(info.number);
         String color = tipColor(config, info.type);
         if (color == null) return;
-        ItemStackUtils.drawTip(String.valueOf(info.number), event.x, event.y, color(color, event.x, event.y));
+        RenderUtils.drawTip(String.valueOf(info.number), event.x, event.y, color(color, event.x, event.y));
+    }
+
+    @HandleEvent
+    public void onFrameEnd(GuiContainerRenderBeforeTooltipEvent event) {
+        if (notInGardenConfigurePlots()) return;
+        GardenPlotsConfig config = config();
+        if (config == null || !config.enabled) return;
+        GardenPlotData.getInstance().updateFromChest(frameUnlockedPlots);
+        frameUnlockedPlots.clear();
     }
 
     private static GardenPlotsConfig config() {
@@ -86,7 +98,7 @@ public class GardenPlotNumber {
     }
 
     private static PlotInfo info(ItemStack stack) {
-        GuiScreen screen = Minecraft.getMinecraft().currentScreen;
+        GuiScreen screen = MinecraftCompat.getCurrentScreen();
         if (screen != cacheScreen) {
             cacheScreen = screen;
             PLOT_CACHE.clear();
@@ -99,7 +111,7 @@ public class GardenPlotNumber {
     }
 
     private static PlotInfo compute(ItemStack stack) {
-        String name = ColorUtils.stripColor(stack.getDisplayName());
+        String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName()));
         if (name.isEmpty()) return NON_PLOT;
         Matcher matcher = PLOT_PATTERN.matcher(name);
         if (!matcher.find()) return NON_PLOT;

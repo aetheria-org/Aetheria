@@ -1,7 +1,9 @@
 package io.hamlook.aetheria.core.features.mining;
 
 import com.google.gson.annotations.Expose;
-import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigEditorBoolean;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigOption;
 
 public class Mining {
 
@@ -10,6 +12,11 @@ public class Mining {
     @ConfigOption(name = "Commission Highlight", desc = "Highlights completed commissions in green inside the Commissions menu")
     @ConfigEditorBoolean
     public boolean commissionHighlight = true;
+
+    @Expose
+    @ConfigOption(name = "Mining Progress Fix", desc = "Keeps block-breaking progress when the held drill's data updates (fuel, durability)")
+    @ConfigEditorBoolean
+    public boolean miningProgressFix = true;
 
     @Expose
     @Category(name = "Gold Tracker", desc = "Tracks gold ingot and enchanted gold drops")
@@ -39,4 +46,8 @@ public class Mining {
     @Expose
     @Category(name = "Powder Mining Chat", desc = "Hide powder mining chest reward messages from chat")
     public PowderMiningChatFilterConfig powderMiningChat = new PowderMiningChatFilterConfig();
+
+    @Expose
+    @Category(name = "Bal Alert", desc = "Alerts when Bal is defeated and tracks its respawn timer in the Crystal Hollows")
+    public BalConfig bal = new BalConfig();
 }

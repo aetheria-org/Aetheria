@@ -1,24 +1,34 @@
 package io.hamlook.aetheria.features.qol;
 
 import io.hamlook.aetheria.DebugLogger;
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.ColoredBlockCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.compat.ResourceCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.init.Blocks;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.item.Item;
+//#if MC < 1.21
+//#else
+//$$ import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
+//$$ import net.minecraft.inventory.Inventory;
+//$$ import net.minecraft.screen.GenericContainerScreenHandler;
+//$$ import net.minecraft.screen.ScreenHandler;
+//#endif
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -27,7 +37,6 @@ public final class BetterContainers {
 
     private static final BetterContainers INSTANCE = new BetterContainers();
 
-    private DynamicTexture dynamicTexture = null;
     @Getter
     private boolean loaded = false;
     private int lastInvIdentity = -1;
@@ -66,28 +75,47 @@ public final class BetterContainers {
             regenerate(lower);
         }
 
-        if (!loaded || dynamicTexture == null) {
+        if (!loaded) {
             return false;
         }
 
-        Minecraft mc = Minecraft.getMinecraft();
-        mc.getTextureManager().loadTexture(Resources.BETTER_CONTAINERS_DYNAMIC, dynamicTexture);
-        mc.getTextureManager().bindTexture(Resources.BETTER_CONTAINERS_DYNAMIC);
+        TextureCompat.bindTexture(Resources.BETTER_CONTAINERS_DYNAMIC);
         return true;
     }
 
     public void reset() {
         loaded          = false;
         lastInvIdentity = -1;
-        dynamicTexture  = null;
     }
+
+    //#if MC < 1.21
+    //#else
+    //$$ public boolean tryPrepareDynamic(GenericContainerScreen screen) {
+    //$$     if (!isEnabled() || !ContainerUtils.isChestOpen()) return false;
+    //$$     ScreenHandler handler = screen.getScreenHandler();
+    //$$     if (!(handler instanceof GenericContainerScreenHandler)) return false;
+    //$$     Inventory lower = ((GenericContainerScreenHandler) handler).getInventory();
+    //$$     if (lower == null) return false;
+    //$$     int identity = System.identityHashCode(lower);
+    //$$     int style = currentStyle();
+    //$$     if (!loaded || identity != lastInvIdentity || style != lastLoadedStyle) {
+    //$$         lastInvIdentity = identity;
+    //$$         regenerate(lower);
+    //$$     }
+    //$$     return loaded;
+    //$$ }
+    //#endif
 
 
     public static boolean isBlankPane(ItemStack stack) {
         if (stack == null) return false;
-        if (stack.getItem() != Item.getItemFromBlock(Blocks.stained_glass_pane)) return false;
+        //#if MC < 1.16
+        if (stack.getItem() != ColoredBlockCompat.WHITE.createGlassPaneStack().getItem()) return false;
         if (stack.getItemDamage() != 15) return false;
-        String name = stack.getDisplayName();
+        //#else
+        //$$ if (stack.getItem() != ColoredBlockCompat.BLACK.createGlassPaneStack().getItem()) return false;
+        //#endif
+        String name = TextCompat.getFormattedText(stack.getDisplayName());
         if (name == null) return true;
         return StringUtils.stripControlCodes(name).trim().isEmpty();
     }
@@ -109,7 +137,9 @@ public final class BetterContainers {
     }
 
     private static BufferedImage read(ResourceLocation rl) throws IOException {
-        try (InputStream is = Minecraft.getMinecraft().getResourceManager().getResource(rl).getInputStream()) {
+        byte[] data = ResourceCompat.openResource(rl);
+        if (data == null) throw new IOException("Missing resource " + rl);
+        try (InputStream is = new ByteArrayInputStream(data)) {
             return ImageIO.read(is);
         }
     }
@@ -170,12 +200,7 @@ public final class BetterContainers {
                 out.setRGB(dstX, dstY, 18 * hMult, 18 * vMult, pixels, 0, 18 * hMult);
             }
 
-            if (dynamicTexture != null) {
-                out.getRGB(0, 0, w, h, dynamicTexture.getTextureData(), 0, w);
-                dynamicTexture.updateDynamicTexture();
-            } else {
-                dynamicTexture = new DynamicTexture(out);
-            }
+            TextureCompat.uploadTexture(Resources.BETTER_CONTAINERS_DYNAMIC, out);
             loaded = true;
 
         } catch (Exception e) {

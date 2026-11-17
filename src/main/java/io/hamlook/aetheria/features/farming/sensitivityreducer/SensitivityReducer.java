@@ -2,6 +2,7 @@ package io.hamlook.aetheria.features.farming.sensitivityreducer;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.SensitivityReducerConfig;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
@@ -23,9 +24,9 @@ public final class SensitivityReducer {
     }
 
     public static boolean isHoldingFarmingTool() {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null) return false;
-        return FarmingToolIds.isFarmingTool(ItemUtils.getInternalName(mc.thePlayer.getHeldItem()));
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (MinecraftCompat.getLocalPlayer() == null) return false;
+        return FarmingToolIds.isFarmingTool(ItemUtils.getInternalName(MinecraftCompat.getLocalPlayer().getHeldItem()));
     }
 
     public static boolean isActive() {

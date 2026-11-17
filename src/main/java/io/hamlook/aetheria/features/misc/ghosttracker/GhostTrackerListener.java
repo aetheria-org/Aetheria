@@ -1,14 +1,17 @@
 package io.hamlook.aetheria.features.misc.ghosttracker;
 
-import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.ActionBarUpdateEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -41,8 +44,8 @@ public class GhostTrackerListener {
         boolean onSkyblock = SkyblockData.isOnSkyblock();
         boolean inDwarven = SkyblockData.getCurrentLocation() == SkyblockData.Location.DWARVEN;
         boolean inMist = SkyblockData.isInMist();
-        Minecraft mc = Minecraft.getMinecraft();
-        boolean posYValid = mc.thePlayer != null && mc.thePlayer.posY <= 100;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        boolean posYValid = MinecraftCompat.getLocalPlayer() != null && EntityCompat.getPosY(MinecraftCompat.getLocalPlayer()) <= 100;
 
         return onSkyblock && inDwarven && inMist && posYValid;
     }
@@ -70,9 +73,9 @@ public class GhostTrackerListener {
         PurseTracker.recordKill();
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.START) return;
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.START) return;
         GhostStats.getInstance().timerTick();
         PurseTracker.tick();
         autoSaveIfNeeded();
@@ -86,24 +89,24 @@ public class GhostTrackerListener {
         }
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (!ChatUtils.isFromServer(event)) return;
         String msg = ChatUtils.clean(event);
         if (isPlayerOrPartyMessage(msg)) return;
 
-        if (GhostTrackerConstants.COIN_DROP_MESSAGE.equals(event.message.getFormattedText())) {
+        if (GhostTrackerConstants.COIN_DROP_MESSAGE.equals(TextCompat.getFormattedTextWithResets(event.message))) {
             GhostStats.getInstance().addDrop("Coins");
             return;
         }
 
-        Matcher matcher = GhostTrackerConstants.RARE_DROP_PATTERN.matcher(event.message.getFormattedText());
+        Matcher matcher = GhostTrackerConstants.RARE_DROP_PATTERN.matcher(TextCompat.getFormattedTextWithResets(event.message));
         if (!matcher.find()) return;
 
         handleRareDrop(matcher);
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onActionBar(ActionBarUpdateEvent event) {
         String msg = event.getText();
         

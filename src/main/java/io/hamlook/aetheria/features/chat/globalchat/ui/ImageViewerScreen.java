@@ -3,13 +3,17 @@ package io.hamlook.aetheria.features.chat.globalchat.ui;
 import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.utils.MediaSaver;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.renderer.GlStateManager;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -21,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
  * thumbnails. Images come from the shared {@link ImageManager} cache so no
  * re-download happens.
  */
-public class ImageViewerScreen extends GuiScreen {
+public class ImageViewerScreen extends AetheriaBaseScreen {
 
     public static class ImageRef {
         public final String name;
@@ -48,13 +52,13 @@ public class ImageViewerScreen extends GuiScreen {
     }
 
     @Override
-    public void initGui() {
-        Keyboard.enableRepeatEvents(true);
+    public void onInitGui() {
+        KeyboardCompat.enableRepeatEvents(true);
     }
 
     @Override
-    public void onGuiClosed() {
-        Keyboard.enableRepeatEvents(false);
+    public void guiClosed() {
+        KeyboardCompat.enableRepeatEvents(false);
     }
 
     @Override
@@ -63,8 +67,8 @@ public class ImageViewerScreen extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        drawRect(0, 0, width, height, 0xC8101418);
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
+        DrawContextUtils.fill(0, 0, width, height, 0xC8101418);
         if (images.isEmpty()) {
             mc.displayGuiScreen(null);
             return;
@@ -90,30 +94,29 @@ public class ImageViewerScreen extends GuiScreen {
             int iy = topMargin + (availH - drawH) / 2;
             ResourceLocation tex = img.getTextureToRender(mouseX >= ix && mouseX <= ix + drawW && mouseY >= iy && mouseY <= iy + drawH);
             if (tex != null) {
-                mc.getTextureManager().bindTexture(tex);
-                GlStateManager.color(1f, 1f, 1f, 1f);
-                GlStateManager.enableBlend();
-                drawScaledCustomSizeModalRect(ix, iy, 0, 0, img.width, img.height, drawW, drawH, img.width, img.height);
-                GlStateManager.disableBlend();
+                GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+                GlStateManagerCompat.enableBlend();
+                DrawContextUtils.drawScaledCustomSizeModalRect(tex, ix, iy, 0, 0, img.width, img.height, drawW, drawH, img.width, img.height);
+                GlStateManagerCompat.disableBlend();
             }
         } else {
             String label = img != null && img.loadFailed ? "Could not load image" : "Loading...";
-            drawCenteredString(fontRendererObj, label, width / 2, height / 2 - 8, 0xFF949BA4);
+            DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), label, width / 2, height / 2 - 8, 0xFF949BA4);
         }
 
         ImageRef ref = images.get(current);
         String info = ref.name != null && !ref.name.isEmpty()
                 ? (current + 1) + " / " + images.size() + "  -  " + ref.name
                 : (current + 1) + " / " + images.size();
-        drawCenteredString(fontRendererObj, info, width / 2, 12, 0xFFB5BAC1);
+        DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), info, width / 2, 12, 0xFFB5BAC1);
 
         closeX = width - 36;
         closeY = 8;
         closeW = 24;
         closeH = 22;
         boolean closeHover = mouseX >= closeX && mouseX <= closeX + closeW && mouseY >= closeY && mouseY <= closeY + closeH;
-        drawRect(closeX, closeY, closeX + closeW, closeY + closeH, closeHover ? 0xFF404249 : 0xFF2B2D31);
-        fontRendererObj.drawStringWithShadow("X", closeX + (closeW - fontRendererObj.getStringWidth("X")) / 2f, closeY + 6, 0xFFDCDDDE);
+        DrawContextUtils.fill(closeX, closeY, closeX + closeW, closeY + closeH, closeHover ? 0xFF404249 : 0xFF2B2D31);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), "X", closeX + (closeW - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), "X")) / 2f, closeY + 6, 0xFFDCDDDE);
 
         if (MediaSaver.isMediaUrl(ref.url)) {
             drawSaveButton(mouseX, mouseY);
@@ -131,8 +134,8 @@ public class ImageViewerScreen extends GuiScreen {
 
         if (downloadMsg != null && System.currentTimeMillis() < downloadMsgUntil) {
             int toastY = height - 44;
-            drawRect(20, toastY, width - 20, toastY + 20, 0xE62B2D31);
-            drawCenteredString(fontRendererObj, downloadMsg, width / 2, toastY + 6, 0xFFDCDDDE);
+            DrawContextUtils.fill(20, toastY, width - 20, toastY + 20, 0xE62B2D31);
+            DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), downloadMsg, width / 2, toastY + 6, 0xFFDCDDDE);
         }
     }
 
@@ -140,13 +143,13 @@ public class ImageViewerScreen extends GuiScreen {
         int bx = closeX - 64;
         int bw = 56;
         boolean hover = mouseX >= bx && mouseX <= bx + bw && mouseY >= closeY && mouseY <= closeY + closeH;
-        drawRect(bx, closeY, bx + bw, closeY + closeH, hover ? 0xFF404249 : 0xFF2B2D31);
-        fontRendererObj.drawStringWithShadow("Save", bx + (bw - fontRendererObj.getStringWidth("Save")) / 2f, closeY + 6, 0xFFDCDDDE);
+        DrawContextUtils.fill(bx, closeY, bx + bw, closeY + closeH, hover ? 0xFF404249 : 0xFF2B2D31);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), "Save", bx + (bw - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), "Save")) / 2f, closeY + 6, 0xFFDCDDDE);
     }
 
     private void drawArrowButton(int x, int y, boolean left, boolean enabled, int mouseX, int mouseY) {
         boolean hover = enabled && mouseX >= x && mouseX <= x + arrowW && mouseY >= y && mouseY <= y + arrowH;
-        drawRect(x, y, x + arrowW, y + arrowH, hover ? 0x66FFFFFF : 0x2AFFFFFF);
+        DrawContextUtils.fill(x, y, x + arrowW, y + arrowH, hover ? 0x66FFFFFF : 0x2AFFFFFF);
         int cx = x + arrowW / 2;
         int cy = y + arrowH / 2;
         int s = 8;
@@ -181,22 +184,21 @@ public class ImageViewerScreen extends GuiScreen {
                     int srcW, srcH, srcX = 0, srcY = 0;
                     if (ratio > 1f) { srcW = srcH = img.height; srcX = (img.width - srcW) / 2; }
                     else { srcW = srcH = img.width; srcY = (img.height - srcH) / 2; }
-                    mc.getTextureManager().bindTexture(tex);
-                    GlStateManager.color(1f, 1f, 1f, 1f);
-                    GlStateManager.enableBlend();
-                    drawScaledCustomSizeModalRect(tx, ty, srcX, srcY, srcW, srcH, thumb, thumb, img.width, img.height);
-                    GlStateManager.disableBlend();
+                    GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+                    GlStateManagerCompat.enableBlend();
+                    DrawContextUtils.drawScaledCustomSizeModalRect(tex, tx, ty, srcX, srcY, srcW, srcH, thumb, thumb, img.width, img.height);
+                    GlStateManagerCompat.disableBlend();
                 }
             } else {
-                drawRect(tx, ty, tx + thumb, ty + thumb, 0xFF232428);
+                DrawContextUtils.fill(tx, ty, tx + thumb, ty + thumb, 0xFF232428);
             }
             boolean sel = i == current;
             boolean hover = mouseX >= tx && mouseX <= tx + thumb && mouseY >= ty && mouseY <= ty + thumb;
             int border = sel ? 0xFF5865F2 : hover ? 0x99FFFFFF : 0x40FFFFFF;
-            drawRect(tx, ty, tx + thumb, ty + 2, border);
-            drawRect(tx, ty + thumb - 2, tx + thumb, ty + thumb, border);
-            drawRect(tx, ty, tx + 2, ty + thumb, border);
-            drawRect(tx + thumb - 2, ty, tx + thumb, ty + thumb, border);
+            DrawContextUtils.fill(tx, ty, tx + thumb, ty + 2, border);
+            DrawContextUtils.fill(tx, ty + thumb - 2, tx + thumb, ty + thumb, border);
+            DrawContextUtils.fill(tx, ty, tx + 2, ty + thumb, border);
+            DrawContextUtils.fill(tx + thumb - 2, ty, tx + thumb, ty + thumb, border);
             thumbRects.add(new int[]{tx, ty, thumb, thumb});
         }
     }
@@ -206,15 +208,14 @@ public class ImageViewerScreen extends GuiScreen {
         float r = (color >> 16 & 0xFF) / 255f;
         float g = (color >> 8 & 0xFF) / 255f;
         float b = (color & 0xFF) / 255f;
-        GlStateManager.disableTexture2D();
-        GlStateManager.enableBlend();
-        GL11.glColor4f(r, g, b, a);
-        GL11.glBegin(GL11.GL_TRIANGLES);
-        GL11.glVertex2i(x1, y1);
-        GL11.glVertex2i(x2, y2);
-        GL11.glVertex2i(x3, y3);
-        GL11.glEnd();
-        GlStateManager.enableTexture2D();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.enableBlend();
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.TRIANGLES, TessellatorCompat.POSITION_COLOR);
+        vb.pos(x1, y1, 0).color(r, g, b, a).endVertex();
+        vb.pos(x2, y2, 0).color(r, g, b, a).endVertex();
+        vb.pos(x3, y3, 0).color(r, g, b, a).endVertex();
+        vb.draw();
+        GlStateManagerCompat.enableTexture2D();
     }
 
     private GCImage getImage(String url) {
@@ -223,7 +224,7 @@ public class ImageViewerScreen extends GuiScreen {
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (mouseButton == 0) {
             if (mouseX >= closeX && mouseX <= closeX + closeW && mouseY >= closeY && mouseY <= closeY + closeH) {
                 mc.displayGuiScreen(null);
@@ -250,11 +251,10 @@ public class ImageViewerScreen extends GuiScreen {
                 }
             }
         }
-        super.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void onKeyTyped(char typedChar, int keyCode) {
         if (keyCode == Keyboard.KEY_ESCAPE) {
             mc.displayGuiScreen(null);
         } else if (keyCode == Keyboard.KEY_LEFT) {
@@ -263,8 +263,6 @@ public class ImageViewerScreen extends GuiScreen {
             if (current < images.size() - 1) current++;
         } else if (keyCode == Keyboard.KEY_S) {
             downloadCurrent();
-        } else {
-            super.keyTyped(typedChar, keyCode);
         }
     }
 

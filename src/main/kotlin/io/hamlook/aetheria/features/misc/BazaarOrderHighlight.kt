@@ -30,7 +30,7 @@ object BazaarOrderHighlight {
             val stack = slot.stack ?: return@registerHighlighter null
             if (ItemUtils.getLoreLines(stack).none { it == CLAIM_LINE }) return@registerHighlighter null
 
-            val name = stack.displayName
+            val name = ItemUtils.getDisplayName(stack)
             when {
                 config.highlightSellOrders && name.startsWith(SELL_PREFIX) -> ChromaColour.specialToChromaRGB(config.sellOrderColor)
                 config.highlightBuyOrders && name.startsWith(BUY_PREFIX) -> ChromaColour.specialToChromaRGB(config.buyOrderColor)

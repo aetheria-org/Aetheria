@@ -2,7 +2,8 @@ package io.hamlook.aetheria;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiScreenElementWrapper;
-import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigEditor;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraftforge.fml.client.IModGuiFactory;
@@ -37,14 +38,18 @@ public class GuiFactory implements IModGuiFactory {
         private final GuiScreen parent;
 
         public WrappedATHRConfig(GuiScreen parent) {
-            super(new ConfigEditor(ATHRConfig.feature));
+            super(ATHRConfig.primedConfigEditor());
             this.parent = parent;
         }
 
         @Override
         public void handleKeyboardInput() throws IOException {
-            if (Keyboard.getEventKeyState() && Keyboard.getEventKey() == Keyboard.KEY_ESCAPE) {
-                Minecraft.getMinecraft().displayGuiScreen(parent);
+            boolean escape = KeyboardCompat.getEventKeyState() && KeyboardCompat.getEventKey() == Keyboard.KEY_ESCAPE;
+            if (escape && element.capturesEscape()) {
+                if (element.keyboardInput()) return;
+            }
+            if (escape) {
+                MinecraftCompat.getMinecraft().displayGuiScreen(parent);
                 return;
             }
             super.handleKeyboardInput();

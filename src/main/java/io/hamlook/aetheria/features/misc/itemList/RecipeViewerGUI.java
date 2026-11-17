@@ -4,6 +4,12 @@ import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.features.misc.itemList.recipe.Recipe;
 import io.hamlook.aetheria.features.misc.itemList.recipe.RecipeFactory;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.KeybindCompat;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
@@ -11,12 +17,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 
-import java.io.IOException;
 import java.util.List;
 
-public class RecipeViewerGUI extends GuiScreen {
+public class RecipeViewerGUI extends AetheriaBaseScreen {
 
     private static final int MIN_W = 220;
     private static final int MIN_H = 130;
@@ -32,7 +36,7 @@ public class RecipeViewerGUI extends GuiScreen {
     private int boxX, boxY, boxW, boxH;
 
     public RecipeViewerGUI(SkyblockItem item) {
-        this(item, Minecraft.getMinecraft().currentScreen);
+        this(item, MinecraftCompat.getCurrentScreen());
     }
 
     public RecipeViewerGUI(SkyblockItem item, GuiScreen parentScreen) {
@@ -41,11 +45,11 @@ public class RecipeViewerGUI extends GuiScreen {
         this.parentScreen = parentScreen;
     }
 
-    @Override public void initGui()      { Keyboard.enableRepeatEvents(true);  recipeIndex = 0; scrollY = 0; }
-    @Override public void onGuiClosed() { Keyboard.enableRepeatEvents(false); }
+    @Override public void onInitGui()      { KeyboardCompat.enableRepeatEvents(true);  recipeIndex = 0; scrollY = 0; }
+    @Override public void guiClosed() { KeyboardCompat.enableRepeatEvents(false); }
     @Override public boolean doesGuiPauseGame() { return false; }
 
-    private void close() {
+    private void closeToParent() {
         mc.displayGuiScreen(parentScreen);
     }
 
@@ -61,11 +65,11 @@ public class RecipeViewerGUI extends GuiScreen {
             contentH = (item.baseLore != null ? item.baseLore.size() * 10 : 0) + 10;
             contentW = 200;
 
-            if (this.fontRendererObj != null) {
-                if (item.displayName != null) contentW = Math.max(contentW, this.fontRendererObj.getStringWidth(item.displayName));
+            if (MinecraftCompat.getFontRenderer() != null) {
+                if (item.displayName != null) contentW = Math.max(contentW, DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), item.displayName));
                 if (item.baseLore != null) {
                     for (String line : item.baseLore)
-                        contentW = Math.max(contentW, this.fontRendererObj.getStringWidth(line));
+                        contentW = Math.max(contentW, DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), line));
                 }
             }
         }
@@ -78,14 +82,17 @@ public class RecipeViewerGUI extends GuiScreen {
     }
 
     @Override
-    protected void keyTyped(char c, int key) throws IOException {
+    protected void onKeyTyped(char c, int key) {
         if (ItemPaneRenderer.INSTANCE != null) ItemPaneRenderer.INSTANCE.handleKeyInput();
-        if (key == Keyboard.KEY_ESCAPE || key == mc.gameSettings.keyBindInventory.getKeyCode())
-            close();
+        if (KeybindCompat.inventoryKeyMatches(key)
+                && ItemPaneRenderer.INSTANCE != null && ItemPaneRenderer.INSTANCE.isSearchFocused())
+            return;
+        if (key == Keyboard.KEY_ESCAPE || KeybindCompat.inventoryKeyMatches(key))
+            closeToParent();
     }
 
     @Override
-    protected void mouseClicked(int mx, int my, int btn) throws IOException {
+    protected void onMouseClicked(int mx, int my, int btn) {
         if (ItemPaneRenderer.INSTANCE != null)
             ItemPaneRenderer.INSTANCE.handleClick(mx, my, btn, null);
 
@@ -120,15 +127,14 @@ public class RecipeViewerGUI extends GuiScreen {
     }
 
     @Override
-    public void handleMouseInput() throws IOException {
-        super.handleMouseInput();
-        int dw = Mouse.getEventDWheel();
+    public void onHandleMouseInput() {
+        int dw = MouseCompat.getEventDWheel();
         if (dw != 0) {
             if (ItemPaneRenderer.INSTANCE != null) {
-                Minecraft mc = Minecraft.getMinecraft();
+                Minecraft mc = MinecraftCompat.getMinecraft();
                 int mx = KeybindHelper.getScaledEventX(width);
                 int my = KeybindHelper.getScaledEventY(height);
-                ItemPaneRenderer.INSTANCE.handleMouseInput(width, height, mx, my, null);
+                ItemPaneRenderer.INSTANCE.handleMouseInput(width, height, mx, my, -1, false, dw);
             }
             scrollY += dw > 0 ? -20 : 20;
             if (scrollY < 0) scrollY = 0;
@@ -136,8 +142,8 @@ public class RecipeViewerGUI extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mx, int my, float pt) {
-        drawRect(0, 0, width, height, 0xA0000000);
+    public void onDrawScreen(int mx, int my, float pt) {
+        DrawContextUtils.fill(0, 0, width, height, 0xA0000000);
         computeBox();
 
         NineSliceUtils.draw(Resources.storageBackground(1), boxX, boxY, boxW, boxH, 6, 18);
@@ -147,7 +153,7 @@ public class RecipeViewerGUI extends GuiScreen {
         if (recipes.isEmpty()) {
             ItemStack stack = item.getStack();
             String nameStr = item.displayName != null ? item.displayName : "";
-            int nameW = fontRendererObj.getStringWidth(nameStr);
+            int nameW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), nameStr);
             int rowW = (stack != null ? 18 + 4 : 0) + nameW;
             int rowX = cx - rowW / 2;
             int rowY = boxY + 12;
@@ -156,13 +162,13 @@ public class RecipeViewerGUI extends GuiScreen {
                 ItemRenderUtils.drawItemStack(stack, rowX, rowY - 4);
                 rowX += 22;
             }
-            fontRendererObj.drawStringWithShadow(nameStr, rowX, rowY, 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), nameStr, rowX, rowY, 0xFFFFFF);
 
             if (item.baseLore != null) {
                 int ly = boxY + 32;
                 for (String line : item.baseLore) {
                     if (ly + 10 > boxY + boxH - NAV_H) break;
-                    drawCenteredString(fontRendererObj, line, cx, ly, 0xFFFFFF);
+                    DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), line, cx, ly, 0xFFFFFF);
                     ly += 10;
                 }
             }
@@ -173,41 +179,40 @@ public class RecipeViewerGUI extends GuiScreen {
             String nameStr   = item.displayName != null ? item.displayName : "";
             ItemStack stack  = item.getStack();
 
-            int typeW = fontRendererObj.getStringWidth(typeLabel);
-            int nameW = fontRendererObj.getStringWidth(nameStr);
+            int typeW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), typeLabel);
+            int nameW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), nameStr);
             int iconW = stack != null ? 18 : 0;
 
             int totalW   = typeW + (iconW > 0 ? 4 + iconW : 0) + 4 + nameW;
             int currentX = cx - totalW / 2;
             int textY    = boxY + 12;
 
-            fontRendererObj.drawStringWithShadow(typeLabel, currentX, textY, current.typeLabelColor());
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), typeLabel, currentX, textY, current.typeLabelColor());
             currentX += typeW + 4;
 
             if (stack != null) {
                 ItemRenderUtils.drawItemStack(stack, currentX, textY - 4);
                 currentX += 18 + 4;
             }
-            fontRendererObj.drawStringWithShadow(nameStr, currentX, textY, 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), nameStr, currentX, textY, 0xFFFFFF);
 
             int contentX = boxX;
             int contentY = boxY + HEADER_H;
             int contentH = boxH - HEADER_H - NAV_H;
-            current.draw(mx, my, contentX, contentY, boxW, contentH, scrollY, fontRendererObj, this);
+            current.draw(mx, my, contentX, contentY, boxW, contentH, scrollY, MinecraftCompat.getFontRenderer(), this);
 
             if (recipes.size() > 1) {
                 int arrowY = boxY + boxH - NAV_H + 4;
-                drawCenteredString(fontRendererObj, "<", boxX + 20, arrowY, 0xFFFFFF);
-                drawCenteredString(fontRendererObj, ">", boxX + boxW - 20, arrowY, 0xFFFFFF);
-                drawCenteredString(fontRendererObj, "§7" + (recipeIndex + 1) + " / " + recipes.size(), cx, arrowY, 0xFFFFFF);
+                    DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), "<", boxX + 20, arrowY, 0xFFFFFF);
+                    DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), ">", boxX + boxW - 20, arrowY, 0xFFFFFF);
+                DrawContextUtils.drawCenteredString(MinecraftCompat.getFontRenderer(), "§7" + (recipeIndex + 1) + " / " + recipes.size(), cx, arrowY, 0xFFFFFF);
             }
 
             List<String> tip = current.getTooltip(mx, my, contentX, contentY, boxW, contentH, scrollY);
             if (tip != null && !tip.isEmpty())
-                TextRenderUtils.drawHoveringText(tip, mx, my, fontRendererObj);
+                TextRenderUtils.drawHoveringText(tip, mx, my, MinecraftCompat.getFontRenderer());
         }
 
-        super.drawScreen(mx, my, pt);
         if (ItemPaneRenderer.INSTANCE != null)
             ItemPaneRenderer.INSTANCE.drawPane(width, height, mx, my);
     }

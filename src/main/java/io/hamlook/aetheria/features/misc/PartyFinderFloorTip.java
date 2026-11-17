@@ -1,23 +1,23 @@
 package io.hamlook.aetheria.features.misc;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.events.RenderItemOverlayEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
-import io.hamlook.aetheria.utils.item.ItemStackUtils;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.List;
 
 @RegisterEvents
 public class PartyFinderFloorTip {
 
-    @SubscribeEvent
+    @HandleEvent
     public void onItemOverlay(RenderItemOverlayEvent event) {
         if (ATHRConfig.feature == null) return;
         if (!ATHRConfig.feature.misc.partyFinderFloorTip) return;
@@ -26,7 +26,7 @@ public class PartyFinderFloorTip {
 
         String tip = getPartyFinderFloor(event.stack);
         if (tip == null) return;
-        ItemStackUtils.drawTip(tip, event.x, event.y);
+        RenderUtils.drawTip(tip, event.x, event.y);
     }
 
     private static String getPartyFinderFloor(ItemStack stack) {

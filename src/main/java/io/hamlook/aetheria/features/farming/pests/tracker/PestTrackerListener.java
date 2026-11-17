@@ -1,17 +1,15 @@
 package io.hamlook.aetheria.features.farming.pests.tracker;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.features.farming.data.Crop;
-import io.hamlook.aetheria.features.farming.pests.PestStats;
 import io.hamlook.aetheria.features.farming.data.PestType;
+import io.hamlook.aetheria.features.farming.pests.PestStats;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,7 +18,7 @@ import java.util.regex.Pattern;
 public class PestTrackerListener {
 
     private static final Pattern PEST_KILL = Pattern.compile("You received (\\d+)x (.+?) for killing (?:a|an) (.+?)!");
-    private final Minecraft mc = Minecraft.getMinecraft();
+    private final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static long parseLong(String s) {
         try {
@@ -30,33 +28,33 @@ public class PestTrackerListener {
         }
     }
 
-    @SubscribeEvent
-    public void onClientConnect(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+    @HandleEvent
+    public void onClientConnect(ASMServerJoinEvent event) {
         PestStats.getInstance().onClientLogin();
     }
 
-    @SubscribeEvent
-    public void onClientDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+    @HandleEvent
+    public void onClientDisconnect(ASMServerDisconnectEvent event) {
         PestStats.getInstance().onClientLogout();
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
         PestStats.getInstance().timerTick();
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         PestStats.getInstance().onWorldUnload();
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         PestStats stats = PestStats.getInstance();
         if (!stats.isTracking()) return;
         if (!ChatUtils.isFromServer(event)) return;
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         String msg = ColorUtils.stripColor(ChatUtils.clean(event));
         if (ChatUtils.isPlayerChat(msg)) return;

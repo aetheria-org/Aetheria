@@ -1,6 +1,5 @@
 package io.hamlook.aetheria.utils;
 
-import java.text.DecimalFormat;
 import java.util.Map;
 import java.util.NavigableMap;
 
@@ -30,22 +29,6 @@ public final class StringUtils {
             sb.append(arr[i]);
         }
         return sb.toString();
-    }
-
-    public static String formatNumber(double number) {
-        String[] suffixes = {"", "k", "m", "b", "t", "q"};
-        int index = 0;
-
-        double value = Math.abs(number);
-        while (value >= 1000 && index < suffixes.length - 1) {
-            value /= 1000;
-            index++;
-        }
-
-        DecimalFormat format = new DecimalFormat("#.##");
-        String formatted = format.format(value) + suffixes[index];
-
-        return number < 0 ? "-" + formatted : formatted;
     }
 
     public static String clean(String s) {

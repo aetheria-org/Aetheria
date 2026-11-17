@@ -1,53 +1,48 @@
 package io.hamlook.aetheria.features.misc.protect
 
-import io.hamlook.aetheria.command.ASMCommand
-import io.hamlook.aetheria.init.RegisterCommand
+import io.hamlook.aetheria.api.event.HandleEvent
+import io.hamlook.aetheria.command.brigadier.BrigadierArguments
+import io.hamlook.aetheria.command.brigadier.CommandCategory
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent
+import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.chat.ChatUtils
+import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.compat.TextCompat
 import io.hamlook.aetheria.utils.item.ItemUtils
-import net.minecraft.client.Minecraft
-import net.minecraft.command.ICommandSender
-import net.minecraft.entity.player.EntityPlayer
-import net.minecraft.util.BlockPos
 
-@RegisterCommand
-class ProtectItemCommand : ASMCommand() {
+@RegisterEvents
+class ProtectItemCommand {
 
-    companion object {
-        private val mc = Minecraft.getMinecraft()
-
+    private companion object {
         private const val PREFIX = "§b[ItemProtect] §r"
-
-        private val TAB_OPTIONS = listOf(
-            "list", "clear"
-        )
     }
 
-    override fun getName() = "athrprotect"
-
-    override fun getAliases() = listOf(
-        "aetheriaprotect", "asmprotect", "jefprotect", "athrprotect"
-    )
-
-    override fun getUsage() = "/athrprotect [list|clear]"
-
-    override fun execute(sender: ICommandSender, args: Array<String>) {
-        val player = mc.thePlayer ?: return
-
-        when (args.firstOrNull()?.lowercase()) {
-            null -> toggleProtection(player)
-
-            "list" -> listProtected()
-
-            "clear" -> clearProtected()
-
-            else -> showUsage()
+    @HandleEvent
+    fun onCommandRegistration(event: CommandRegistrationEvent) {
+        event.registerBrigadier("athrprotect") {
+            description = "Protect items from being traded or sold"
+            aliases = listOf("aetheriaprotect", "asmprotect", "jefprotect")
+            category = CommandCategory.USERS_ACTIVE
+            simpleCallback {
+                val player = MinecraftCompat.getLocalPlayer() ?: return@simpleCallback
+                toggleProtection(player)
+            }
+            literal("list") {
+                description = "List protected items"
+                simpleCallback { listProtected() }
+            }
+            literal("clear") {
+                description = "Clear all protected items"
+                simpleCallback { clearProtected() }
+            }
+            argCallback("sub", BrigadierArguments.greedyString(), listOf("list", "clear")) { sub ->
+                when (sub.lowercase()) {
+                    "list" -> listProtected()
+                    "clear" -> clearProtected()
+                    else -> msg("§cUsage: /athrprotect [list|clear]")
+                }
+            }
         }
-    }
-
-    override fun addTabCompletionOptions(
-        sender: ICommandSender, args: Array<String>, pos: BlockPos
-    ): List<String> {
-        return if (args.size == 1) TAB_OPTIONS else emptyList()
     }
 
     private fun listProtected() {
@@ -74,7 +69,7 @@ class ProtectItemCommand : ASMCommand() {
         msg("§aCleared $count protected item(s).")
     }
 
-    private fun toggleProtection(player: EntityPlayer) {
+    private fun toggleProtection(player: net.minecraft.entity.player.EntityPlayer) {
         val held = player.heldItem
 
         if (held == null) {
@@ -92,19 +87,15 @@ class ProtectItemCommand : ASMCommand() {
         if (ProtectedItemStorage.contains(uuid)) {
             ProtectedItemStorage.remove(uuid)
 
-            msg("§e${held.displayName} §7is no longer protected.")
+            msg("§e" + TextCompat.getFormattedText(held.displayName) + " §7is no longer protected.")
         } else {
             ProtectedItemStorage.add(uuid)
 
-            msg("§a${held.displayName} §7is now protected!")
+            msg("§a" + TextCompat.getFormattedText(held.displayName) + " §7is now protected!")
         }
     }
 
-    private fun showUsage() {
-        msg("§cUsage: ${getUsage()}")
-    }
-
     private fun msg(message: String) {
-        ChatUtils.sendMessage(PREFIX + message)
+        ChatUtils.sendMessage(TextCompat.fromFormatted(PREFIX + message))
     }
 }

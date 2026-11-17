@@ -1,14 +1,8 @@
 package io.hamlook.aetheria.utils;
 
+import io.hamlook.aetheria.utils.compat.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.fml.common.Loader;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
@@ -24,25 +18,24 @@ public class Utils {
     //Labymod compatibility
     private static final FloatBuffer projectionMatrixOld = BufferUtils.createFloatBuffer(16);
     private static final FloatBuffer modelviewMatrixOld = BufferUtils.createFloatBuffer(16);
-    private static ScaledResolution lastScale = new ScaledResolution(Minecraft.getMinecraft());
 
-    public static boolean overlayShouldRender(RenderGameOverlayEvent.ElementType type, boolean... booleans) {
-        return overlayShouldRender(false, type, RenderGameOverlayEvent.ElementType.HOTBAR, booleans);
+    public static boolean overlayShouldRender(Integer type, boolean... booleans) {
+        return overlayShouldRender(false, type, 9, booleans);
     }
 
-    public static boolean overlayShouldRender(boolean hideOnf3, RenderGameOverlayEvent.ElementType type, RenderGameOverlayEvent.ElementType checkType, boolean... booleans) {
-        Minecraft mc = Minecraft.getMinecraft();
+    public static boolean overlayShouldRender(boolean hideOnf3, Integer type, Integer checkType, boolean... booleans) {
+        Minecraft mc = MinecraftCompat.getMinecraft();
         for (boolean aBoolean : booleans) if (!aBoolean) return false;
         if (hideOnf3) {
-            if (mc.gameSettings.showDebugInfo || (mc.gameSettings.keyBindPlayerList.isKeyDown() && (!mc.isIntegratedServerRunning() || mc.thePlayer.sendQueue.getPlayerInfoMap().size() > 1))) {
+            if (MinecraftCompat.getShowDebugHud() || (KeybindCompat.isPlayerListKeyDown() && (!mc.isIntegratedServerRunning() || MinecraftCompat.getPlayerListEntries().size() > 1))) {
                 return false;
             }
         }
-        return ((type == null && Loader.isModLoaded("labymod")) || type == checkType);
+        return ((type == null && ModCompat.isModLoaded("labymod")) || type == checkType);
     }
 
     public static void drawStringScaledMaxWidth(String str, FontRenderer fr, float x, float y, boolean shadow, int len, int colour) {
-        int strLen = fr.getStringWidth(str);
+        int strLen = DrawContextUtils.getStringWidth(fr, str);
         float factor = len / (float) strLen;
         factor = Math.min(1, factor);
 
@@ -50,32 +43,30 @@ public class Utils {
     }
 
     public static void drawStringScaled(String str, FontRenderer fr, float x, float y, boolean shadow, int colour, float factor) {
-        GlStateManager.scale(factor, factor, 1);
-        fr.drawString(str, x / factor, y / factor, colour, shadow);
-        GlStateManager.scale(1 / factor, 1 / factor, 1);
+        GlStateManagerCompat.scale(factor, factor, 1);
+        DrawContextUtils.drawText(fr, str, x / factor, y / factor, colour, shadow);
+        GlStateManagerCompat.scale(1 / factor, 1 / factor, 1);
     }
 
     public static void drawTexturedRect(float x, float y, float width, float height, float uMin, float uMax, float vMin, float vMax, int filter) {
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableBlend();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.enableBlend();
         GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
 
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, filter);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, filter);
 
-        Tessellator tessellator = Tessellator.getInstance();
-        WorldRenderer worldrenderer = tessellator.getWorldRenderer();
-        worldrenderer.begin(7, DefaultVertexFormats.POSITION_TEX);
-        worldrenderer.pos(x, y + height, 0.0D).tex(uMin, vMax).endVertex();
-        worldrenderer.pos(x + width, y + height, 0.0D).tex(uMax, vMax).endVertex();
-        worldrenderer.pos(x + width, y, 0.0D).tex(uMax, vMin).endVertex();
-        worldrenderer.pos(x, y, 0.0D).tex(uMin, vMin).endVertex();
-        tessellator.draw();
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_TEX);
+        vb.pos(x, y + height, 0.0D).tex(uMin, vMax).endVertex();
+        vb.pos(x + width, y + height, 0.0D).tex(uMax, vMax).endVertex();
+        vb.pos(x + width, y, 0.0D).tex(uMax, vMin).endVertex();
+        vb.pos(x, y, 0.0D).tex(uMin, vMin).endVertex();
+        vb.draw();
 
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
 
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.disableBlend();
     }
 
     public static void drawTexturedRect(float x, float y, float width, float height) {
@@ -94,13 +85,15 @@ public class Utils {
         guiScales.clear();
     }
 
-    public static ScaledResolution peekGuiScale() {
-        return lastScale;
-    }
-
-    public static ScaledResolution pushGuiScale(int scale) {
+    /**
+     * Temporarily overrides the GUI scale, sets up the GL projection, and returns
+     * the resulting scaled window dimensions as {@code int[]{width, height}}.
+     * Pass a negative value to restore the previous scale.
+     */
+    public static int[] pushGuiScale(int scale) {
+        //#if MC < 1.16
         if (guiScales.isEmpty()) {
-            if (Loader.isModLoaded("labymod")) {
+            if (ModCompat.isModLoaded("labymod")) {
                 GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projectionMatrixOld);
                 GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelviewMatrixOld);
             }
@@ -112,57 +105,56 @@ public class Utils {
             }
         } else {
             if (scale == 0) {
-                guiScales.push(Minecraft.getMinecraft().gameSettings.guiScale);
+                guiScales.push(MinecraftCompat.getMinecraft().gameSettings.guiScale);
             } else {
                 guiScales.push(scale);
             }
         }
 
-        int newScale = !guiScales.isEmpty() ? Math.max(0, Math.min(4, guiScales.peek())) : Minecraft.getMinecraft().gameSettings.guiScale;
-        if (newScale == 0) newScale = Minecraft.getMinecraft().gameSettings.guiScale;
+        int newScale = !guiScales.isEmpty() ? Math.max(0, Math.min(4, guiScales.peek())) : MinecraftCompat.getMinecraft().gameSettings.guiScale;
+        if (newScale == 0) newScale = MinecraftCompat.getMinecraft().gameSettings.guiScale;
 
-        int oldScale = Minecraft.getMinecraft().gameSettings.guiScale;
-        Minecraft.getMinecraft().gameSettings.guiScale = newScale;
-        ScaledResolution scaledresolution = new ScaledResolution(Minecraft.getMinecraft());
-        Minecraft.getMinecraft().gameSettings.guiScale = oldScale;
+        int oldScale = MinecraftCompat.getMinecraft().gameSettings.guiScale;
+        MinecraftCompat.getMinecraft().gameSettings.guiScale = newScale;
+        int w = GuiScreenUtils.getScaledWindowWidth();
+        int h = GuiScreenUtils.getScaledWindowHeight();
+        MinecraftCompat.getMinecraft().gameSettings.guiScale = oldScale;
 
         if (!guiScales.isEmpty()) {
-            GlStateManager.viewport(0, 0, Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
-            GlStateManager.matrixMode(GL11.GL_PROJECTION);
-            GlStateManager.loadIdentity();
-            GlStateManager.ortho(0.0D, scaledresolution.getScaledWidth_double(), scaledresolution.getScaledHeight_double(), 0.0D, 1000.0D, 3000.0D);
-            GlStateManager.matrixMode(GL11.GL_MODELVIEW);
-            GlStateManager.loadIdentity();
-            GlStateManager.translate(0.0F, 0.0F, -2000.0F);
+            GlStateManagerCompat.viewport(0, 0, MinecraftCompat.getMinecraft().displayWidth, MinecraftCompat.getMinecraft().displayHeight);
+            GlStateManagerCompat.matrixMode(GL11.GL_PROJECTION);
+            GlStateManagerCompat.loadIdentity();
+            GlStateManagerCompat.ortho(0.0D, (double) w, (double) h, 0.0D, 1000.0D, 3000.0D);
+            GlStateManagerCompat.matrixMode(GL11.GL_MODELVIEW);
+            GlStateManagerCompat.loadIdentity();
+            GlStateManagerCompat.translate(0.0F, 0.0F, -2000.0F);
         } else {
-            if (Loader.isModLoaded("labymod") && projectionMatrixOld.limit() > 0 && modelviewMatrixOld.limit() > 0) {
-                GlStateManager.matrixMode(GL11.GL_PROJECTION);
+            if (ModCompat.isModLoaded("labymod") && projectionMatrixOld.limit() > 0 && modelviewMatrixOld.limit() > 0) {
+                GlStateManagerCompat.matrixMode(GL11.GL_PROJECTION);
                 GL11.glLoadMatrix(projectionMatrixOld);
-                GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+                GlStateManagerCompat.matrixMode(GL11.GL_MODELVIEW);
                 GL11.glLoadMatrix(modelviewMatrixOld);
             } else {
-                GlStateManager.matrixMode(GL11.GL_PROJECTION);
-                GlStateManager.loadIdentity();
-                GlStateManager.ortho(0.0D, scaledresolution.getScaledWidth_double(), scaledresolution.getScaledHeight_double(), 0.0D, 1000.0D, 3000.0D);
-                GlStateManager.matrixMode(GL11.GL_MODELVIEW);
-                GlStateManager.loadIdentity();
-                GlStateManager.translate(0.0F, 0.0F, -2000.0F);
+                GlStateManagerCompat.matrixMode(GL11.GL_PROJECTION);
+                GlStateManagerCompat.loadIdentity();
+                GlStateManagerCompat.ortho(0.0D, (double) w, (double) h, 0.0D, 1000.0D, 3000.0D);
+                GlStateManagerCompat.matrixMode(GL11.GL_MODELVIEW);
+                GlStateManagerCompat.loadIdentity();
+                GlStateManagerCompat.translate(0.0F, 0.0F, -2000.0F);
             }
         }
 
-        lastScale = scaledresolution;
-        return scaledresolution;
+        return new int[]{w, h};
+        //#else
+        //$$ int w = GuiScreenUtils.getScaledWindowWidth();
+        //$$ int h = GuiScreenUtils.getScaledWindowHeight();
+        //$$ return new int[]{w, h};
+        //#endif
     }
 
     public static void drawStringCentered(String str, FontRenderer fr, float x, float y, boolean shadow, int colour) {
-        int strLen = fr.getStringWidth(str);
-
-        float x2 = x - strLen / 2f;
-        float y2 = y - fr.FONT_HEIGHT / 2f;
-
-        GL11.glTranslatef(x2, y2, 0);
-        fr.drawString(str, 0, 0, colour, shadow);
-        GL11.glTranslatef(-x2, -y2, 0);
+        int strLen = DrawContextUtils.getStringWidth(fr, str);
+        DrawContextUtils.drawText(fr, str, x - strLen / 2f, y - DrawContextUtils.getFontHeight(fr) / 2f, colour, shadow);
     }
 
     public static void copyToClipboard(String str) {
@@ -199,19 +191,55 @@ public class Utils {
     }
 
     private static final char[] SUFFIXES = {'\0', 'k', 'M', 'B', 'T'};
+    private static final int DEFAULT_DECIMALS = 2;
+
+    public static String shortNumberFormat(double num) {
+        return shortNumberFormat(num, 0, DEFAULT_DECIMALS);
+    }
+
     public static String shortNumberFormat(double num, int iteration) {
+        return shortNumberFormat(num, iteration, DEFAULT_DECIMALS);
+    }
+
+    public static String shortNumberFormat(double num, int iteration, int decimals) {
         boolean negative = num < 0;
         double n = Math.abs(num);
+        int index = Math.min(iteration, SUFFIXES.length - 1);
 
-        if (n < 1000) {
-            if (iteration == 0) {
+        if (n < 1000 || index == SUFFIXES.length - 1) {
+            if (index == 0) {
                 return String.valueOf((int) n);
             }
-            double d = ((long) (n * 10)) / 10.0;
-            boolean isRound = (d * 10) % 10 == 0;
-            String number = isRound || d > 9.99 ? String.valueOf((int) d) : String.valueOf(d);
-            return number + SUFFIXES[iteration];
+            return formatScaled(n, decimals) + SUFFIXES[index];
         }
-        return (negative ? "-" : "") + shortNumberFormat(n / 1000.0, iteration + 1);
+        return (negative ? "-" : "") + shortNumberFormat(n / 1000.0, index + 1, decimals);
+    }
+
+    private static String formatScaled(double value, int decimals) {
+        if (decimals <= 0) return String.valueOf(Math.round(value));
+
+        long factor = 1L;
+        for (int i = 0; i < decimals; i++) factor *= 10L;
+
+        long scaled = Math.round(value * factor);
+        long whole = scaled / factor;
+        long fraction = scaled % factor;
+        if (fraction == 0L) return String.valueOf(whole);
+
+        String digits = String.valueOf(factor + fraction).substring(1);
+        int end = digits.length();
+        while (end > 0 && digits.charAt(end - 1) == '0') end--;
+        return whole + "." + digits.substring(0, end);
+    }
+
+    public static long parseRawNumber(String raw) {
+        String s = raw.trim().replace(",", "");
+        if (s.isEmpty()) return 0L;
+        char suffix = Character.toUpperCase(s.charAt(s.length() - 1));
+        long multiplier = 1L;
+        if (suffix == 'K') { multiplier = 1_000L;         s = s.substring(0, s.length() - 1); }
+        else if (suffix == 'M') { multiplier = 1_000_000L;     s = s.substring(0, s.length() - 1); }
+        else if (suffix == 'B') { multiplier = 1_000_000_000L; s = s.substring(0, s.length() - 1); }
+        return (long) (Double.parseDouble(s) * multiplier);
     }
 }

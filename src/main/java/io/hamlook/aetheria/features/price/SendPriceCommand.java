@@ -1,24 +1,21 @@
 package io.hamlook.aetheria.features.price;
 
-import io.hamlook.aetheria.command.ASMCommand;
-import io.hamlook.aetheria.init.RegisterCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
+import io.hamlook.aetheria.init.RegisterEvents;
 
-@RegisterCommand
-public class SendPriceCommand extends ASMCommand {
-    @Override
-    public String getName() {
-        return "sendprice";
-    }
+@RegisterEvents
+public class SendPriceCommand {
 
-    @Override
-    public String getUsage() {
-        return "/" + getName();
-    }
-
-    @Override
-    public void execute(ICommandSender sender, String[] args) throws CommandException {
-        PriceDetector.sendNow();
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("sendprice", builder -> {
+            builder.description = "Sends price data now";
+            builder.setCategory(CommandCategory.USERS_ACTIVE);
+            builder.simpleCallback(() -> {
+                PriceDetector.sendNow();
+            });
+        });
     }
 }

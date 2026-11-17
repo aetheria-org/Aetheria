@@ -1,20 +1,22 @@
 package io.hamlook.aetheria.features.fishing.trophy;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -23,7 +25,7 @@ import java.util.regex.Pattern;
 @RegisterEvents
 public class TrophyFishTracker {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private static final String ODGER_TITLE = "Trophy Fishing";
 
     /**
@@ -64,11 +66,11 @@ public class TrophyFishTracker {
         }
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (ATHRConfig.feature == null) return;
 
-        Matcher m = TROPHY_CHAT.matcher(event.message.getFormattedText());
+        Matcher m = TROPHY_CHAT.matcher(TextCompat.getFormattedTextWithResets(event.message));
         if (!m.find()) return;
 
         String fishName = ColorUtils.stripColor(m.group("displayName").replace("§k", "")).trim();
@@ -85,7 +87,7 @@ public class TrophyFishTracker {
         boolean hideBronze = ATHRConfig.feature.fishing.trophyFish.trophyBronzeHider && rarity == TrophyRarity.BRONZE && newCount > 1;
         boolean hideSilver = ATHRConfig.feature.fishing.trophyFish.trophySilverHider && rarity == TrophyRarity.SILVER && newCount > 1;
         if (hideBronze || hideSilver) {
-            event.setCanceled(true);
+            event.cancel();
             return;
         }
 
@@ -99,12 +101,12 @@ public class TrophyFishTracker {
 
         String newMsg = "§6♔ §r§6§lTROPHY FISH! " + countPart + coloredRarity + " " + coloredName + " §7(§e" + String.format("%,d", total) + " total§7)";
 
-        event.setCanceled(true);
+        event.cancel();
         ChatUtils.sendMessage(newMsg);
     }
 
-    @SubscribeEvent
-    public void onGuiDraw(GuiScreenEvent.BackgroundDrawnEvent event) {
+    @HandleEvent
+    public void onGuiDraw(ASMGuiBackgroundDrawEvent event) {
         if (!ContainerUtils.isInContainer(event.gui, ODGER_TITLE)) return;
         ContainerChest container = ContainerUtils.getOpenChest(event.gui);
         if (container == null) return;
@@ -113,16 +115,16 @@ public class TrophyFishTracker {
     }
 
     private void scanOdger(ContainerChest container) {
-        if (mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
         TrophyFishStorage storage = TrophyFishStorage.getInstance();
         boolean changed = false;
 
         for (Slot slot : container.inventorySlots) {
-            if (slot.inventory == mc.thePlayer.inventory) continue;
+            if (slot.inventory == InventoryCompat.getInventory(MinecraftCompat.getLocalPlayer())) continue;
             ItemStack item = slot.getStack();
             if (item == null) continue;
 
-            String fishName = ColorUtils.stripColor(item.getDisplayName().replace("§k", "")).trim();
+            String fishName = ColorUtils.stripColor(TextCompat.getFormattedText(item.getDisplayName()).replace("§k", "")).trim();
             if (fishName.isEmpty()) continue;
 
             boolean hasRarityLine = false;
@@ -155,8 +157,8 @@ public class TrophyFishTracker {
         if (changed) storage.save();
     }
 
-    @SubscribeEvent
-    public void onTooltip(ItemTooltipEvent event) {
+    @HandleEvent
+    public void onTooltip(ASMTooltipEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.fishing.trophyFish.trophyOdgerTotal) return;
         if (!ODGER_TITLE.equals(getOpenContainerName())) return;
         if (event.toolTip == null || event.itemStack == null) return;
@@ -165,7 +167,7 @@ public class TrophyFishTracker {
         boolean discovered = lore.stream().anyMatch(l -> DISCOVERED.matcher(l).find());
         if (!discovered) return;
 
-        String fishName = ColorUtils.stripColor(event.itemStack.getDisplayName().replace("§k", "")).trim();
+        String fishName = ColorUtils.stripColor(TextCompat.getFormattedText(event.itemStack.getDisplayName()).replace("§k", "")).trim();
         TrophyFishStorage storage = TrophyFishStorage.getInstance();
 
         int total = storage.getTotal(fishName);

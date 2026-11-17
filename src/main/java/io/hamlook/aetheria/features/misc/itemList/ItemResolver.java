@@ -1,6 +1,5 @@
 package io.hamlook.aetheria.features.misc.itemList;
 
-import io.hamlook.aetheria.Aetheria;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

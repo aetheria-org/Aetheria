@@ -1,25 +1,29 @@
 package io.hamlook.aetheria.features.misc.itemList;
 
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiInitEvent;
+import io.hamlook.aetheria.events.ASMKeyEvent;
+import io.hamlook.aetheria.events.ASMMouseEvent;
 import io.hamlook.aetheria.features.misc.SearchBar;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 @RegisterEvents
 public class ItemPaneRenderer {
@@ -141,7 +146,7 @@ private boolean shouldntShow() {
         if (ATHRConfig.feature == null) return true;
         if (!ATHRConfig.feature.misc.itemList.enabled) return true;
         if (StorageManager.isOverlayActive()) return true;
-        if (ATHRConfig.feature.misc.itemList.inventoryOnly && !(Minecraft.getMinecraft().currentScreen instanceof GuiInventory)) return true;
+        if (ATHRConfig.feature.misc.itemList.inventoryOnly && !(MinecraftCompat.getCurrentScreen() instanceof GuiInventory)) return true;
         if (ATHRConfig.feature.misc.itemList.itemListSOnly && isGlobalSearch()) return !SearchBar.isSendToItemList();
         return !ItemRegistry.isLoaded || ItemRegistry.familyRegistry.isEmpty();
     }
@@ -174,22 +179,22 @@ private boolean shouldntShow() {
 
     private void renderItemInSlot(ItemStack stack, int sx, int sy) {
         if (stack == null) return;
-        GlStateManager.pushMatrix();
+        GlStateManagerCompat.pushMatrix();
         float itemScale = (S() - PAD) / 16.0f;
-        GlStateManager.translate(sx + PAD / 2f, sy + PAD / 2f, 0);
-        GlStateManager.scale(itemScale, itemScale, 1.0f);
+        GlStateManagerCompat.translate(sx + PAD / 2f, sy + PAD / 2f, 0);
+        GlStateManagerCompat.scale(itemScale, itemScale, 1.0f);
         ItemRenderUtils.drawItemStack(stack, 0, 0);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
-    @SubscribeEvent
-    public void onDraw(GuiScreenEvent.DrawScreenEvent.Post event) {
+    @HandleEvent
+    public void onDraw(ASMGuiDrawEvent event) {
         if (!(event.gui instanceof GuiContainer)) return;
         drawPane(event.gui.width, event.gui.height, event.mouseX, event.mouseY);
     }
 
     public void drawPane(int screenW, int screenH, int mouseX, int mouseY) {
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
         if (shouldntShow()) return;
         if (ItemRegistry.isLoaded && !wasLoaded) {
@@ -207,16 +212,16 @@ private boolean shouldntShow() {
         if (!globalSearch) {
             int sbY = paneH - 20 - PAD;
             if (searchField == null) {
-                searchField = new GuiTextField(2, mc.fontRendererObj, paneX + PAD, sbY, paneW - PAD * 2, 20);
-                searchField.setCanLoseFocus(true);
-                searchField.setMaxStringLength(50);
-                searchField.setEnableBackgroundDrawing(false);
+                searchField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), paneX + PAD, sbY, paneW - PAD * 2, 20);
+                GuiScreenUtils.setTextFieldCanLoseFocus(searchField, true);
+                GuiScreenUtils.setTextFieldMaxLength(searchField, 50);
+                GuiScreenUtils.setTextFieldBackground(searchField, false);
                 searchField.setFocused(false);
                 searchField.setText(localSearchText[0]);
             } else {
-                searchField.xPosition = paneX + PAD;
-                searchField.yPosition = sbY;
-                searchField.width = paneW - PAD * 2;
+                GuiScreenUtils.setX(searchField, paneX + PAD);
+                GuiScreenUtils.setY(searchField, sbY);
+                GuiScreenUtils.setW(searchField, paneW - PAD * 2);
             }
         }
 
@@ -233,13 +238,13 @@ private boolean shouldntShow() {
         int rarityX = paneX + PAD;
         boolean hoverRar = isInBounds(mouseX, mouseY, rarityX, filterY, btnWidth, FILTER_H);
         NineSliceUtils.draw(Resources.storageBackground(1), rarityX, filterY, btnWidth, FILTER_H, 6, 18);
-        if (hoverRar) Gui.drawRect(rarityX, filterY, rarityX + btnWidth, filterY + FILTER_H, 0x33FFFFFF);
+        if (hoverRar) DrawContextUtils.fill(rarityX, filterY, rarityX + btnWidth, filterY + FILTER_H, 0x33FFFFFF);
         drawCenteredText(mc, RARITIES[rarityFilterIdx], rarityX + btnWidth / 2, filterY + 6, 0xAAAAAA);
 
         int typeX = rarityX + btnWidth + PAD;
         boolean hoverType = isInBounds(mouseX, mouseY, typeX, filterY, btnWidth, FILTER_H);
         NineSliceUtils.draw(Resources.storageBackground(1), typeX, filterY, btnWidth, FILTER_H, 6, 18);
-        if (hoverType) Gui.drawRect(typeX, filterY, typeX + btnWidth, filterY + FILTER_H, 0x33FFFFFF);
+        if (hoverType) DrawContextUtils.fill(typeX, filterY, typeX + btnWidth, filterY + FILTER_H, 0x33FFFFFF);
         drawCenteredText(mc, TYPES[typeFilterIdx], typeX + btnWidth / 2, filterY + 6, 0xAAAAAA);
 
         int navY = paneY + PAD;
@@ -251,11 +256,11 @@ private boolean shouldntShow() {
         boolean hN = isInBounds(mouseX, mouseY, nextX, navY, navBtnW, NAV_H);
 
         NineSliceUtils.draw(Resources.storageBackground(1), prevX, navY, navBtnW, NAV_H, 6, 18);
-        if (hP) Gui.drawRect(prevX, navY, prevX + navBtnW, navY + NAV_H, 0x33FFFFFF);
+        if (hP) DrawContextUtils.fill(prevX, navY, prevX + navBtnW, navY + NAV_H, 0x33FFFFFF);
         drawCenteredText(mc, "◄", prevX + navBtnW / 2, navY + 6, hP ? 0xFFFFAA : 0xFFFFFF);
 
         NineSliceUtils.draw(Resources.storageBackground(1), nextX, navY, navBtnW, NAV_H, 6, 18);
-        if (hN) Gui.drawRect(nextX, navY, nextX + navBtnW, navY + NAV_H, 0x33FFFFFF);
+        if (hN) DrawContextUtils.fill(nextX, navY, nextX + navBtnW, navY + NAV_H, 0x33FFFFFF);
         drawCenteredText(mc, "►", nextX + navBtnW / 2, navY + 6, hN ? 0xFFFFAA : 0xFFFFFF);
 
         drawCenteredText(mc, "Page: " + (currentPage + 1) + "/" + cachedTotalPages, paneX + paneW / 2, navY + 6, 0xCCCCCC);
@@ -289,22 +294,22 @@ private boolean shouldntShow() {
             int col = i % COLUMNS, row = i / COLUMNS;
             int sx = gridX + col * S(), sy = gridY + row * S();
 
-            GlStateManager.color(1f, 1f, 1f, 1f);
+            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
             NineSliceUtils.draw(Resources.storageSlot(1), sx, sy, S(), S(), 6, 18);
 
             if (rep != null) renderItemInSlot(rep.getStack(), sx, sy);
 
             if (fam.hasDropdown()) {
                 int indS = (int) (4 * getScale());
-                Gui.drawRect(sx + S() - indS - 2, sy + S() - indS - 2, sx + S() - 2, sy + S() - 2, 0xFFFFDD44);
+                DrawContextUtils.fill(sx + S() - indS - 2, sy + S() - indS - 2, sx + S() - 2, sy + S() - 2, 0xFFFFDD44);
             }
 
             boolean hovered = isInBounds(mouseX, mouseY, sx, sy, S(), S());
             if (hovered && !overDropdown) {
-                GlStateManager.enableBlend();
-                GlStateManager.disableDepth();
-                Gui.drawRect(sx, sy, sx + S(), sy + S(), 0x80FFFFFF);
-                GlStateManager.enableDepth();
+                GlStateManagerCompat.enableBlend();
+                GlStateManagerCompat.disableDepth();
+                DrawContextUtils.fill(sx, sy, sx + S(), sy + S(), 0x80FFFFFF);
+                GlStateManagerCompat.enableDepth();
 
                 if (fam.hasDropdown()) {
                     nowHovered = fam.familyId;
@@ -327,7 +332,7 @@ private boolean shouldntShow() {
         }
 
         if (!globalSearch && searchField != null) {
-            searchField.updateCursorCounter();
+            GuiScreenUtils.tickTextField(searchField);
             SearchBar.drawStorageSearchBar(searchField, localSearchText);
         }
 
@@ -344,12 +349,12 @@ private boolean shouldntShow() {
             List<String> tip = new ArrayList<>();
             tip.add(tipItem.displayName);
             if (tipItem.baseLore != null) tip.addAll(tipItem.baseLore);
-            TextRenderUtils.drawHoveringText(tip, mouseX, mouseY, mc.fontRendererObj);
+            TextRenderUtils.drawHoveringText(tip, mouseX, mouseY, MinecraftCompat.getFontRenderer());
         } else if (tooltipFamily != null) {
             List<String> tip = new ArrayList<>();
             tip.add(tooltipFamily.displayName);
             tip.add("§7" + tooltipFamily.members.size() + " variants – click/hover to expand");
-            TextRenderUtils.drawHoveringText(tip, mouseX, mouseY, mc.fontRendererObj);
+            TextRenderUtils.drawHoveringText(tip, mouseX, mouseY, MinecraftCompat.getFontRenderer());
         }
     }
 
@@ -368,15 +373,15 @@ private boolean shouldntShow() {
         if (dropDx < paneX) dropDx = paneX + PAD;
         if (dropDy + dropDh > paneY + paneH) dropDy = hoverSlotY - dropDh;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(0, 0, 300);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(0, 0, 300);
 
-        Gui.drawRect(dropDx - 1, dropDy - 1, dropDx + dropDw + 1, dropDy, 0xFFFFAA00);
-        Gui.drawRect(dropDx - 1, dropDy + dropDh, dropDx + dropDw + 1, dropDy + dropDh + 1, 0xFFFFAA00);
-        Gui.drawRect(dropDx - 1, dropDy, dropDx, dropDy + dropDh, 0xFFFFAA00);
-        Gui.drawRect(dropDx + dropDw, dropDy, dropDx + dropDw + 1, dropDy + dropDh, 0xFFFFAA00);
+        DrawContextUtils.fill(dropDx - 1, dropDy - 1, dropDx + dropDw + 1, dropDy, 0xFFFFAA00);
+        DrawContextUtils.fill(dropDx - 1, dropDy + dropDh, dropDx + dropDw + 1, dropDy + dropDh + 1, 0xFFFFAA00);
+        DrawContextUtils.fill(dropDx - 1, dropDy, dropDx, dropDy + dropDh, 0xFFFFAA00);
+        DrawContextUtils.fill(dropDx + dropDw, dropDy, dropDx + dropDw + 1, dropDy + dropDh, 0xFFFFAA00);
 
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), dropDx, dropDy, dropDw, dropDh, 6, 18);
 
         SkyblockItem hovered = null;
@@ -392,69 +397,71 @@ private boolean shouldntShow() {
 
             boolean h = isInBounds(mouseX, mouseY, sx, sy, S(), S());
             if (h) {
-                GlStateManager.enableBlend();
-                GlStateManager.disableDepth();
-                Gui.drawRect(sx, sy, sx + S(), sy + S(), 0x80FFFFFF);
-                GlStateManager.enableDepth();
+                GlStateManagerCompat.enableBlend();
+                GlStateManagerCompat.disableDepth();
+                DrawContextUtils.fill(sx, sy, sx + S(), sy + S(), 0x80FFFFFF);
+                GlStateManagerCompat.enableDepth();
                 hovered = mem;
             }
         }
 
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
         return hovered;
     }
 
     private void drawCenteredText(Minecraft mc, String text, int x, int y, int color) {
-        mc.fontRendererObj.drawStringWithShadow(text, x - mc.fontRendererObj.getStringWidth(text) / 2f, y, color);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), text, x - MinecraftCompat.getFontRenderer().getStringWidth(text) / 2f, y, color);
     }
 
-    @SubscribeEvent
-    public void onMouse(GuiScreenEvent.MouseInputEvent.Pre event) {
+    @HandleEvent
+    public void onMouse(ASMMouseEvent event) {
         if (!(event.gui instanceof GuiContainer)) return;
         if (shouldntShow()) return;
 
-        int mouseX = KeybindHelper.getScaledEventX(event.gui.width);
-        int mouseY = KeybindHelper.getScaledEventY(event.gui.height);
-        handleMouseInput(event.gui.width, event.gui.height, mouseX, mouseY, event);
+        if (handleMouseInput(event.gui.width, event.gui.height, event.mouseX, event.mouseY,
+                event.button, event.buttonState, event.dWheel)) {
+            event.cancel();
+        }
     }
 
-    public void handleMouseInput(int screenW, int screenH, int mouseX, int mouseY, GuiScreenEvent.MouseInputEvent.Pre event) {
-        if (shouldntShow()) return;
+    public boolean handleMouseInput(int screenW, int screenH, int mouseX, int mouseY,
+                                    int button, boolean buttonState, int dWheel) {
+        if (shouldntShow()) return false;
 
-        int dw = Mouse.getEventDWheel();
-        if (dw != 0) {
+        if (dWheel != 0) {
             computeGeometry(screenW, screenH);
             if (isInBounds(mouseX, mouseY, paneX, paneY, paneW, paneH)) {
-                currentPage = dw > 0 ? Math.max(0, currentPage - 1) : Math.min(cachedTotalPages - 1, currentPage + 1);
-                if (event != null) event.setCanceled(true);
+                currentPage = dWheel > 0 ? Math.max(0, currentPage - 1) : Math.min(cachedTotalPages - 1, currentPage + 1);
+                return true;
             }
-            return;
+            return false;
         }
 
-        if (!Mouse.getEventButtonState()) return;
-        if (Mouse.getEventButton() != 0 && Mouse.getEventButton() != 1) return;
+        if (!buttonState) return false;
+        if (button != 0 && button != 1) return false;
 
         computeGeometry(screenW, screenH);
-        handleClick(mouseX, mouseY, Mouse.getEventButton(), event);
+        handleClick(mouseX, mouseY, button, null);
+        return false;
     }
 
-    public void handleClick(int mouseX, int mouseY, int btn, GuiScreenEvent.MouseInputEvent.Pre event) {
+    public void handleClick(int mouseX, int mouseY, int btn, ASMMouseEvent event) {
         if (shouldntShow()) return;
 
         if (mouseX < paneX || mouseX >= paneX + paneW || mouseY < paneY || mouseY >= paneY + paneH) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
 
         int navY = paneY + PAD, navBtnW = 40;
         int prevX = paneX + PAD, nextX = paneX + paneW - PAD - navBtnW;
         if (isInBounds(mouseX, mouseY, prevX, navY, navBtnW, NAV_H)) {
             currentPage = Math.max(0, currentPage - 1);
-            if (event != null) event.setCanceled(true);
+            if (event != null) event.cancel();
             return;
         }
         if (isInBounds(mouseX, mouseY, nextX, navY, navBtnW, NAV_H)) {
             currentPage = Math.min(cachedTotalPages - 1, currentPage + 1);
-            if (event != null) event.setCanceled(true);
+            if (event != null) event.cancel();
             return;
         }
 
@@ -470,19 +477,19 @@ private boolean shouldntShow() {
             if (mouseX >= rarityX && mouseX < rarityX + btnWidth) {
                 rarityFilterIdx = (rarityFilterIdx + 1) % RARITIES.length;
                 updateSearch(currentSearchQuery());
-                if (event != null) event.setCanceled(true);
+                if (event != null) event.cancel();
                 return;
             }
             if (mouseX >= typeX && mouseX < typeX + btnWidth) {
                 typeFilterIdx = (typeFilterIdx + 1) % TYPES.length;
                 updateSearch(currentSearchQuery());
-                if (event != null) event.setCanceled(true);
+                if (event != null) event.cancel();
                 return;
             }
         }
 
         if (!globalSearch && SearchBar.handleStorageMouseClick(searchField, mouseX, mouseY)) {
-            if (event != null) event.setCanceled(true);
+            if (event != null) event.cancel();
             return;
         }
 
@@ -496,8 +503,8 @@ private boolean shouldntShow() {
                     int sy = dropDy + PAD + (i / cols) * (S() + 2);
                     if (isInBounds(mouseX, mouseY, sx, sy, S(), S())) {
                         if (btn == 1) WikiPane.open(fam.members.get(i));
-                        else mc.displayGuiScreen(new RecipeViewerGUI(fam.members.get(i), mc.currentScreen));
-                        if (event != null) event.setCanceled(true);
+                        else mc.displayGuiScreen(new RecipeViewerGUI(fam.members.get(i), MinecraftCompat.getCurrentScreen()));
+                        if (event != null) event.cancel();
                         return;
                     }
                 }
@@ -513,16 +520,30 @@ private boolean shouldntShow() {
             if (isInBounds(mouseX, mouseY, sx, sy, S(), S())) {
                 if (btn == 1) WikiPane.open(fam.representative());
                 else if (!fam.hasDropdown() && fam.representative() != null)
-                    mc.displayGuiScreen(new RecipeViewerGUI(fam.representative(), mc.currentScreen));
-                if (event != null) event.setCanceled(true);
+                    mc.displayGuiScreen(new RecipeViewerGUI(fam.representative(), MinecraftCompat.getCurrentScreen()));
+                if (event != null) event.cancel();
                 return;
             }
         }
     }
 
+    public boolean isSearchFocused() {
+        return !isGlobalSearch() && searchField != null && searchField.isFocused();
+    }
+
+    public boolean handleCharTyped(char chr) {
+        if (shouldntShow()) return false;
+        if (!isSearchFocused()) return false;
+        if (SearchBar.handleStorageKeyTyped(searchField, chr, 0, localSearchText)) {
+            updateSearch(localSearchText[0]);
+            return true;
+        }
+        return false;
+    }
+
     private boolean processKeyInput() {
-        if (!isGlobalSearch() && searchField != null && searchField.isFocused() && Keyboard.getEventKeyState()) {
-            if (SearchBar.handleStorageKeyTyped(searchField, Keyboard.getEventCharacter(), Keyboard.getEventKey(), localSearchText)) {
+        if (!isGlobalSearch() && searchField != null && searchField.isFocused() && KeyboardCompat.getEventKeyState()) {
+            if (SearchBar.handleStorageKeyTyped(searchField, KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey(), localSearchText)) {
                 updateSearch(localSearchText[0]);
                 return true;
             }
@@ -530,11 +551,11 @@ private boolean shouldntShow() {
         return false;
     }
 
-    @SubscribeEvent
-    public void onKey(GuiScreenEvent.KeyboardInputEvent.Pre event) {
+    @HandleEvent
+    public void onKey(ASMKeyEvent event) {
         if (!(event.gui instanceof GuiContainer)) return;
         if (shouldntShow()) return;
-        if (processKeyInput()) event.setCanceled(true);
+        if (processKeyInput()) event.cancel();
     }
 
     public void handleKeyInput() {
@@ -542,8 +563,8 @@ private boolean shouldntShow() {
         processKeyInput();
     }
 
-    @SubscribeEvent
-    public void onGuiInit(GuiScreenEvent.InitGuiEvent.Post event) {
+    @HandleEvent
+    public void onGuiInit(ASMGuiInitEvent event) {
         if (!(event.gui instanceof GuiContainer)) return;
         if (ATHRConfig.feature == null) return;
         if (StorageManager.isOverlayActive()) return;

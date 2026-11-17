@@ -1,9 +1,9 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import net.minecraft.util.BlockPos;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
-public class PlaySoundEvent extends Event {
+public class PlaySoundEvent extends AetheriaEvent {
 
     public final String soundName;
     public final double x;
@@ -22,6 +22,6 @@ public class PlaySoundEvent extends Event {
     }
 
     public BlockPos getBlockPos() {
-        return new BlockPos(x, y, z);
+        return new BlockPos((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z));
     }
 }

@@ -1,17 +1,18 @@
 package io.hamlook.aetheria.utils.overlay;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
+import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
+import io.hamlook.aetheria.utils.render.RectBatch;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
@@ -26,8 +27,9 @@ public abstract class Overlay {
     protected static final int ICON_SIZE = 8;
     protected static final int ICON_GAP = 2;
 
-    protected static final Minecraft mc = Minecraft.getMinecraft();
-    protected static ScaledResolution sr;
+    protected static final Minecraft mc = MinecraftCompat.getMinecraft();
+    protected static int cachedWidth;
+    protected static int cachedHeight;
 
     protected int lastW;
     protected int lastH;
@@ -50,21 +52,25 @@ public abstract class Overlay {
 
     private static void drawRoundedRectRaw(int x, int y, int w, int h, int r, int color) {
         r = Math.min(r, Math.min(w - x, h - y) / 2);
-        if (r <= 0) {
-            Gui.drawRect(x, y, w, h, color);
-            return;
-        }
+        RectBatch.begin();
+        try {
+            if (r <= 0) {
+                RectBatch.rect(x, y, w, h, color);
+            } else {
+                RectBatch.rect(x + r, y, w - r, h, color);
+                RectBatch.rect(x, y + r, x + r, h - r, color);
+                RectBatch.rect(w - r, y + r, w, h - r, color);
 
-        Gui.drawRect(x + r, y, w - r, h, color);
-        Gui.drawRect(x, y + r, x + r, h - r, color);
-        Gui.drawRect(w - r, y + r, w, h - r, color);
-
-        for (int i = 0; i < r; i++) {
-            int cut = cornerCut(r, i);
-            Gui.drawRect(x + i, y + cut, x + i + 1, y + r, color);
-            Gui.drawRect(w - i - 1, y + cut, w - i, y + r, color);
-            Gui.drawRect(x + i, h - r, x + i + 1, h - cut, color);
-            Gui.drawRect(w - i - 1, h - r, w - i, h - cut, color);
+                for (int i = 0; i < r; i++) {
+                    int cut = cornerCut(r, i);
+                    RectBatch.rect(x + i, y + cut, x + i + 1, y + r, color);
+                    RectBatch.rect(w - i - 1, y + cut, w - i, y + r, color);
+                    RectBatch.rect(x + i, h - r, x + i + 1, h - cut, color);
+                    RectBatch.rect(w - i - 1, h - r, w - i, h - cut, color);
+                }
+            }
+        } finally {
+            RectBatch.end();
         }
     }
 
@@ -83,32 +89,37 @@ public abstract class Overlay {
         int width = w - x;
         int height = h - y;
 
-        if (width - 2 * r > 0) {
-            Gui.drawRect(x + r, y, w - r, y + t, color);
-            Gui.drawRect(x + r, h - t, w - r, h, color);
-        }
-        if (height - 2 * r > 0) {
-            Gui.drawRect(x, y + r, x + t, h - r, color);
-            Gui.drawRect(w - t, y + r, w, h - r, color);
-        }
-        if (r <= 0) return;
-
-        int ri = Math.max(r - t, 0);
-        int innerW = width - 2 * t;
-        for (int i = 0; i < r; i++) {
-            int co = cornerCut(r, i);
-            int cl = x + i;
-            int cr = x + width - 1 - i;
-            if (i >= t && innerW > 0) {
-                int ci = cornerCut(ri, i - t);
-                Gui.drawRect(cl, y + co, cl + 1, y + t + ci, color);
-                Gui.drawRect(cl, h - t - ci, cl + 1, h - co, color);
-                Gui.drawRect(cr, y + co, cr + 1, y + t + ci, color);
-                Gui.drawRect(cr, h - t - ci, cr + 1, h - co, color);
-            } else {
-                Gui.drawRect(cl, y + co, cl + 1, h - co, color);
-                Gui.drawRect(cr, y + co, cr + 1, h - co, color);
+        RectBatch.begin();
+        try {
+            if (width - 2 * r > 0) {
+                RectBatch.rect(x + r, y, w - r, y + t, color);
+                RectBatch.rect(x + r, h - t, w - r, h, color);
             }
+            if (height - 2 * r > 0) {
+                RectBatch.rect(x, y + r, x + t, h - r, color);
+                RectBatch.rect(w - t, y + r, w, h - r, color);
+            }
+            if (r > 0) {
+                int ri = Math.max(r - t, 0);
+                int innerW = width - 2 * t;
+                for (int i = 0; i < r; i++) {
+                    int co = cornerCut(r, i);
+                    int cl = x + i;
+                    int cr = x + width - 1 - i;
+                    if (i >= t && innerW > 0) {
+                        int ci = cornerCut(ri, i - t);
+                        RectBatch.rect(cl, y + co, cl + 1, y + t + ci, color);
+                        RectBatch.rect(cl, h - t - ci, cl + 1, h - co, color);
+                        RectBatch.rect(cr, y + co, cr + 1, y + t + ci, color);
+                        RectBatch.rect(cr, h - t - ci, cr + 1, h - co, color);
+                    } else {
+                        RectBatch.rect(cl, y + co, cl + 1, h - co, color);
+                        RectBatch.rect(cr, y + co, cr + 1, h - co, color);
+                    }
+                }
+            }
+        } finally {
+            RectBatch.end();
         }
     }
 
@@ -138,12 +149,17 @@ public abstract class Overlay {
             int sx = x * ss, sy = y * ss, sw = w * ss, sh = h * ss;
             int sr = Math.min(r * ss, Math.min(sw - sx, sh - sy) / 2);
             int width = sw - sx;
-            for (int i = 0; i < width; i++) {
-                int top = sy + Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
-                int bot = sh - Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
-                if (top < bot) {
-                    Gui.drawRect(sx + i, top, sx + i + 1, bot, ChromaColour.applyChromaShift(base, (sx + i) / (float) ss, 0, mode, size));
+            RectBatch.begin();
+            try {
+                for (int i = 0; i < width; i++) {
+                    int top = sy + Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
+                    int bot = sh - Math.max(cornerCut(sr, i), cornerCut(sr, width - 1 - i));
+                    if (top < bot) {
+                        RectBatch.rect(sx + i, top, sx + i + 1, bot, ChromaColour.applyChromaShift(base, (sx + i) / (float) ss, 0, mode, size));
+                    }
                 }
+            } finally {
+                RectBatch.end();
             }
         });
     }
@@ -155,56 +171,64 @@ public abstract class Overlay {
         }
         boolean blendWasEnabled = GL11.glIsEnabled(GL11.GL_BLEND);
         if (!blendWasEnabled) {
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+            GlStateManagerCompat.enableBlend();
+            GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
         }
-        GL11.glPushMatrix();
+        GlStateManagerCompat.pushMatrix();
         float inv = 1f / supersample;
-        GL11.glScalef(inv, inv, 1f);
-        draw.run();
-        GL11.glPopMatrix();
-        if (!blendWasEnabled) GlStateManager.disableBlend();
+        GlStateManagerCompat.scale(inv, inv, 1f);
+        try {
+            draw.run();
+        } finally {
+            GlStateManagerCompat.popMatrix();
+            if (!blendWasEnabled) GlStateManagerCompat.disableBlend();
+        }
     }
 
     private static void drawRoundedRing(int x, int y, int w, int h, int r, int t, IntUnaryOperator colorForColumn) {
         if (t <= 0) return;
         r = Math.min(r, Math.min(w - x, h - y) / 2);
         int width = w - x;
-        if (r <= 0) {
-            for (int i = 0; i < width; i++) {
-                int color = colorForColumn.applyAsInt(x + i);
-                if (i < t || i >= width - t) {
-                    Gui.drawRect(x + i, y, x + i + 1, h, color);
+        RectBatch.begin();
+        try {
+            if (r <= 0) {
+                for (int i = 0; i < width; i++) {
+                    int color = colorForColumn.applyAsInt(x + i);
+                    if (i < t || i >= width - t) {
+                        RectBatch.rect(x + i, y, x + i + 1, h, color);
+                    } else {
+                        RectBatch.rect(x + i, y, x + i + 1, y + t, color);
+                        RectBatch.rect(x + i, h - t, x + i + 1, h, color);
+                    }
+                }
+                return;
+            }
+            int ri = Math.max(r - t, 0);
+            int innerW = width - 2 * t;
+            for (int i = 0; i < r; i++) {
+                int co = cornerCut(r, i);
+                int cl = x + i;
+                int cr = x + width - 1 - i;
+                int colorL = colorForColumn.applyAsInt(cl);
+                int colorR = colorForColumn.applyAsInt(cr);
+                if (i >= t && innerW > 0) {
+                    int ci = cornerCut(ri, i - t);
+                    RectBatch.rect(cl, y + co, cl + 1, y + t + ci, colorL);
+                    RectBatch.rect(cl, h - t - ci, cl + 1, h - co, colorL);
+                    RectBatch.rect(cr, y + co, cr + 1, y + t + ci, colorR);
+                    RectBatch.rect(cr, h - t - ci, cr + 1, h - co, colorR);
                 } else {
-                    Gui.drawRect(x + i, y, x + i + 1, y + t, color);
-                    Gui.drawRect(x + i, h - t, x + i + 1, h, color);
+                    RectBatch.rect(cl, y + co, cl + 1, h - co, colorL);
+                    RectBatch.rect(cr, y + co, cr + 1, h - co, colorR);
                 }
             }
-            return;
-        }
-        int ri = Math.max(r - t, 0);
-        int innerW = width - 2 * t;
-        for (int i = 0; i < r; i++) {
-            int co = cornerCut(r, i);
-            int cl = x + i;
-            int cr = x + width - 1 - i;
-            int colorL = colorForColumn.applyAsInt(cl);
-            int colorR = colorForColumn.applyAsInt(cr);
-            if (i >= t && innerW > 0) {
-                int ci = cornerCut(ri, i - t);
-                Gui.drawRect(cl, y + co, cl + 1, y + t + ci, colorL);
-                Gui.drawRect(cl, h - t - ci, cl + 1, h - co, colorL);
-                Gui.drawRect(cr, y + co, cr + 1, y + t + ci, colorR);
-                Gui.drawRect(cr, h - t - ci, cr + 1, h - co, colorR);
-            } else {
-                Gui.drawRect(cl, y + co, cl + 1, h - co, colorL);
-                Gui.drawRect(cr, y + co, cr + 1, h - co, colorR);
+            for (int i = r; i < width - r; i++) {
+                int color = colorForColumn.applyAsInt(x + i);
+                RectBatch.rect(x + i, y, x + i + 1, y + t, color);
+                RectBatch.rect(x + i, h - t, x + i + 1, h, color);
             }
-        }
-        for (int i = r; i < width - r; i++) {
-            int color = colorForColumn.applyAsInt(x + i);
-            Gui.drawRect(x + i, y, x + i + 1, y + t, color);
-            Gui.drawRect(x + i, h - t, x + i + 1, h, color);
+        } finally {
+            RectBatch.end();
         }
     }
 
@@ -256,13 +280,14 @@ public abstract class Overlay {
     }
 
     protected void drawLine(String line, int x, int y) {
-        mc.fontRendererObj.drawStringWithShadow(line, x, y, 0xFFFFFF);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line, x, y, 0xFFFFFF);
     }
 
-    @SubscribeEvent
-    public final void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
-        sr = event.resolution;
+    @HandleEvent
+    public final void onRenderOverlay(ASMRenderOverlayEvent event) {
+        if (event.type != 0) return;
+        cachedWidth = event.scaledWidth;
+        cachedHeight = event.scaledHeight;
         if (!isLiveActive()) return;
         render(false);
     }
@@ -313,21 +338,21 @@ public abstract class Overlay {
 
         int w = getBaseWidth();
         for (String line : lines)
-            w = Math.max(w, mc.fontRendererObj.getStringWidth(line)
+            w = Math.max(w, DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), line)
                     + (getLineIcon(line) != null ? getIconSize() + ICON_GAP : 0) + PADDING * 2);
         int h = lines.size() * LINE_HEIGHT + PADDING * 2;
         lastW = w;
         lastH = h;
 
         Position pos = getPosition();
-        int x = pos.getAbsX(sr, (int) (w * scale));
-        int y = pos.getAbsY(sr, (int) (h * scale));
+        int x = pos.getAbsX(cachedWidth, (int) (w * scale));
+        int y = pos.getAbsY(cachedHeight, (int) (h * scale));
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 
-        GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0);
-        GL11.glScalef(scale, scale, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(x, y, 0);
+        GlStateManagerCompat.scale(scale, scale, 1f);
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0) drawRoundedRect(-PADDING, -PADDING, w, h - PADDING, getCornerRadius(), bgColor);
@@ -344,7 +369,7 @@ public abstract class Overlay {
             dy += LINE_HEIGHT;
         }
 
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     protected int getBaseWidth() {

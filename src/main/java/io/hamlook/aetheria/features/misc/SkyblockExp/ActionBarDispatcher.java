@@ -1,13 +1,12 @@
 package io.hamlook.aetheria.features.misc.SkyblockExp;
 
-import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.events.ActionBarUpdateEvent;
 import io.hamlook.aetheria.events.ActionBarXpGainEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.StringUtils;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,8 +14,6 @@ import java.util.regex.Pattern;
 
 @RegisterEvents
 public class ActionBarDispatcher {
-
-    private static final byte ACTION_BAR_TYPE = 2;
 
     private static final Pattern SB_XP_STRIPPED = Pattern.compile("\\+(\\d+) SkyBlock XP");
 
@@ -30,17 +27,17 @@ public class ActionBarDispatcher {
     public ActionBarDispatcher() {
     }
 
-    @SubscribeEvent
-    public void onActionBar(ClientChatReceivedEvent event) {
-        if (event.type != ACTION_BAR_TYPE) return;
+    @HandleEvent
+    public void onActionBar(ASMChatEvent event) {
+        if (event.type != ASMChatEvent.Type.ACTION_BAR) return;
 
-        String stripped = StringUtils.stripControlCodes(event.message.getUnformattedText());
-        String formatted = event.message.getFormattedText();
+        String stripped = StringUtils.stripControlCodes(TextCompat.getUnformattedText(event.message));
+        String formatted = TextCompat.getFormattedTextWithResets(event.message);
 
         lastActionBarFormatted = formatted;
         lastActionBarStripped = stripped;
 
-        MinecraftForge.EVENT_BUS.post(new ActionBarUpdateEvent(stripped));
+        new ActionBarUpdateEvent(stripped).post();
 
         Matcher strippedMatcher = SB_XP_STRIPPED.matcher(stripped);
         if (!strippedMatcher.find()) {
@@ -55,6 +52,6 @@ public class ActionBarDispatcher {
         Matcher formattedMatcher = SB_XP_FORMATTED.matcher(formatted);
         String xpText = formattedMatcher.find() ? formattedMatcher.group(1) : ("+" + amount + " SkyBlock XP");
 
-        MinecraftForge.EVENT_BUS.post(new ActionBarXpGainEvent(xpText));
+        new ActionBarXpGainEvent(xpText).post();
     }
 }

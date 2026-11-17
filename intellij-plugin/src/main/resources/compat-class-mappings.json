@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 1,
+  "package": "io.hamlook.aetheria.utils.compat",
+  "compatibilitySources": [
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/AetheriaBaseScreen.kt",
+      "compatClass": null,
+      "declaration": "fileFacade"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/ArrayNormalization.kt",
+      "compatClass": null,
+      "declaration": "fileFacade"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/BlockCompat.kt",
+      "compatClass": "BlockCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/ChatLineCompat.kt",
+      "compatClass": "ChatLineCompat",
+      "declaration": "typealias"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/ClipboardCompat.kt",
+      "compatClass": "ClipboardCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/ColoredBlockCompat.kt",
+      "compatClass": "ColoredBlockCompat",
+      "declaration": "enum class"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/DamageSourceCompat.kt",
+      "compatClass": "DamageSourceCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/DrawContext.kt",
+      "compatClass": "DrawContext",
+      "declaration": "class"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/DrawContextUtils.kt",
+      "compatClass": "DrawContextUtils",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/EffectsCompat.kt",
+      "compatClass": "EffectsCompat",
+      "declaration": "enum class"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/EnchantmentsCompat.kt",
+      "compatClass": "EnchantmentsCompat",
+      "declaration": "enum class"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/EntityCompat.kt",
+      "compatClass": "EntityCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/EventBusCompat.kt",
+      "compatClass": "EventBusCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/FramebufferCompat.kt",
+      "compatClass": "FramebufferCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/GlStateManagerCompat.kt",
+      "compatClass": "GlStateManagerCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/GuiEditSignCompat.kt",
+      "compatClass": "GuiEditSignCompat",
+      "declaration": "typealias"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/GuiScreenUtils.kt",
+      "compatClass": "GuiScreenUtils",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/InputEventQueue.kt",
+      "compatClass": "InputEventQueue",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/InventoryCompat.kt",
+      "compatClass": "InventoryCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/ItemCompat.kt",
+      "compatClass": "DyeCompat",
+      "declaration": "enum class"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/KeybindCompat.kt",
+      "compatClass": "KeybindCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/KeyboardCompat.kt",
+      "compatClass": "KeyboardCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/LegacyBlockIds.kt",
+      "compatClass": "LegacyBlockIds",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/MatrixStack.kt",
+      "compatClass": "MatrixStack",
+      "declaration": "class"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/MinecraftCompat.kt",
+      "compatClass": "MinecraftCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/ModCompat.kt",
+      "compatClass": "ModCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/MouseCompat.kt",
+      "compatClass": "MouseCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/NbtCompat.kt",
+      "compatClass": "NbtCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/PacketCompat.kt",
+      "compatClass": "ClickData",
+      "declaration": "data class"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/RenderHelperCompat.kt",
+      "compatClass": "RenderHelperCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/ResourceCompat.kt",
+      "compatClass": "ResourceCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/ScoreboardCompat.kt",
+      "compatClass": "ScoreboardCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/SkinCompat.kt",
+      "compatClass": "SkinCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/SoundCompat.kt",
+      "compatClass": "SoundCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/TessellatorCompat.kt",
+      "compatClass": "TessellatorCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/Text.kt",
+      "compatClass": "Text",
+      "declaration": "class"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/TextCompat.kt",
+      "compatClass": "TextCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/TextureCompat.kt",
+      "compatClass": "TextureCompat",
+      "declaration": "object"
+    },
+    {
+      "source": "src/main/kotlin/io/hamlook/aetheria/utils/compat/WorldCompat.kt",
+      "compatClass": "WorldCompat",
+      "declaration": "object"
+    }
+  ],
+  "rawClassMappings": [
+    {
+      "reason": "version-neutral Minecraft access wrapper",
+      "rawClass": "Minecraft",
+      "compatClass": "io.hamlook.aetheria.utils.compat.MinecraftCompat",
+      "languages": [
+        "java",
+        "kotlin"
+      ]
+    },
+    {
+      "reason": "cross-version typealias",
+      "rawClass": "ChatLine",
+      "compatClass": "io.hamlook.aetheria.utils.compat.ChatLineCompat",
+      "languages": [
+        "kotlin"
+      ]
+    },
+    {
+      "reason": "cross-version typealias",
+      "rawClass": "GuiEditSign",
+      "compatClass": "io.hamlook.aetheria.utils.compat.GuiEditSignCompat",
+      "languages": [
+        "kotlin"
+      ]
+    }
+  ]
+}

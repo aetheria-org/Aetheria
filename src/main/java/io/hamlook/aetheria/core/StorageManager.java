@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.features.diana.DianaStats;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerData;
+import io.hamlook.aetheria.features.farming.gardenplots.GardenPlotData;
 import io.hamlook.aetheria.features.farming.organicmatter.OrganicMatterTrackerData;
 import io.hamlook.aetheria.features.farming.pests.PestStats;
 import io.hamlook.aetheria.features.fishing.trophy.TrophyFishStorage;
@@ -19,17 +20,15 @@ import io.hamlook.aetheria.features.misc.protect.ProtectedItemStorage;
 import io.hamlook.aetheria.features.scoreboard.MaxwellPowerSync;
 import io.hamlook.aetheria.features.storage.data.StorageData;
 import io.hamlook.aetheria.features.waypoints.WaypointStorage;
+import io.hamlook.aetheria.utils.NameUtils;
+import io.hamlook.aetheria.utils.image.PngInfo;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.*;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -40,22 +39,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * SkyHanni-style centralised storage registry.
- *<p>
- * Every storage singleton is registered here as a one-liner enum entry.
- * ATHRMod only calls {@link #initAll} and {@link #loadAll} — it never
- * manually orchestrates individual storage classes again.
- *<p>
- * Adding a new storage file in the future:
- *   1. Make sure your class has {@code initFile(File)} and {@code load()} methods.
- *   2. Add one line to the enum below.
- *   3. That's it. ATHRMod.java does not need to change.
- *<p>
- */
 public enum StorageManager {
 
-    WAYPOINTS(WaypointStorage.getInstance()), INV_BUTTONS(InventoryButtonStorage.getInstance()), DIANA_STATS(DianaStats.getInstance()), POWDER_STATS(PowderStats.getInstance()), PRISTINE_STATS(PristineStats.getInstance()), MAXWELL_POWER(MaxwellPowerSync.getInstance()), PET_CACHE(PetCache.getInstance()), CURRENT_PET(CurrentPetTracker.getInstance()), TROPHY_FISH(TrophyFishStorage.getInstance()), FARMING_TRACKER(FarmingTrackerData.getInstance()), ORGANIC_MATTER_TRACKER(OrganicMatterTrackerData.getInstance()), GHOST_STATS(GhostStats.getInstance()), PEST_STATS(PestStats.getInstance()), GOLD_STATS(GoldStats.getInstance());
+    WAYPOINTS(WaypointStorage.getInstance()), INV_BUTTONS(InventoryButtonStorage.getInstance()), DIANA_STATS(DianaStats.getInstance()), POWDER_STATS(PowderStats.getInstance()), PRISTINE_STATS(PristineStats.getInstance()), MAXWELL_POWER(MaxwellPowerSync.getInstance()), PET_CACHE(PetCache.getInstance()), CURRENT_PET(CurrentPetTracker.getInstance()), TROPHY_FISH(TrophyFishStorage.getInstance()), FARMING_TRACKER(FarmingTrackerData.getInstance()), ORGANIC_MATTER_TRACKER(OrganicMatterTrackerData.getInstance()), GHOST_STATS(GhostStats.getInstance()), PEST_STATS(PestStats.getInstance()), GOLD_STATS(GoldStats.getInstance()), GARDEN_PLOT_DATA(GardenPlotData.getInstance());
 
     private static final ConcurrentHashMap<String, Object> FILE_LOCKS = new ConcurrentHashMap<>();
     private static final Charset WINDOWS_1252 = Charset.forName("windows-1252");
@@ -156,7 +142,8 @@ public enum StorageManager {
      * can fall back to a default instance.
      */
     public static <T> T loadSafe(File file, Class<T> clazz, Gson gson) {
-        if (file == null || !file.exists()) return null;
+        if (file == null || NameUtils.isBackupOrTempFile(file.getName())) return null;
+        if (!file.exists()) return null;
         byte[] bytes;
         try {
             bytes = Files.readAllBytes(file.toPath());
@@ -200,7 +187,8 @@ public enum StorageManager {
      * Variant for generic types (TypeToken). Same corruption handling.
      */
     public static <T> T loadSafe(File file, java.lang.reflect.Type type, Gson gson) {
-        if (file == null || !file.exists()) return null;
+        if (file == null || NameUtils.isBackupOrTempFile(file.getName())) return null;
+        if (!file.exists()) return null;
         byte[] bytes;
         try {
             bytes = Files.readAllBytes(file.toPath());
@@ -402,9 +390,8 @@ public enum StorageManager {
         }
 
         try {
-            BufferedImage check = ImageIO.read(tmp);
-            if (check == null || check.getWidth() != image.getWidth() || check.getHeight() != image.getHeight()) {
-                throw new Exception("read-back mismatch (" + (check == null ? "null" : check.getWidth() + "x" + check.getHeight()) + ")");
+            if (!PngInfo.matches(tmp, image.getWidth(), image.getHeight())) {
+                throw new Exception("read-back mismatch");
             }
         } catch (Exception e) {
             Aetheria.logger.severe("[ATHR] Refusing to commit " + tmp.getName() + " — write verification failed: " + e.getMessage());
@@ -447,7 +434,12 @@ public enum StorageManager {
      * </pre>
      */
     public static String loadSafeRaw(File file) {
-        if (file == null || !file.exists()) return null;
+        return loadSafeRaw(file, false);
+    }
+
+    public static String loadSafeRaw(File file, boolean rewriteLegacy) {
+        if (file == null || NameUtils.isBackupOrTempFile(file.getName())) return null;
+        if (!file.exists()) return null;
         byte[] bytes;
         try {
             bytes = Files.readAllBytes(file.toPath());
@@ -457,11 +449,14 @@ public enum StorageManager {
             backupCorrupted(file);
             return null;
         }
+        boolean legacy;
         String json;
         try {
             json = decodeStrictUtf8(bytes);
+            legacy = false;
         } catch (CharacterCodingException e) {
             json = new String(bytes, WINDOWS_1252);
+            legacy = true;
         }
         try {
             JsonParser.parseString(json);
@@ -474,6 +469,7 @@ public enum StorageManager {
             }
             return null;
         }
+        if (legacy && rewriteLegacy) saveAtomicRaw(file, json);
         return json;
     }
 
@@ -485,13 +481,85 @@ public enum StorageManager {
         return !json.isEmpty() && json.charAt(0) == '\uFEFF' ? json.substring(1) : json;
     }
 
-    private static void backupCorrupted(File file) {
+    /**
+     * Moves a corrupted live file to a dated {@code *.corrupted} name next to it.
+     * The original is removed so it can never be re-read as live data. Returns
+     * the backup file, or {@code null} if the input was already a backup/temp
+     * file or the move failed.
+     */
+    public static File backupCorrupted(File file) {
+        if (file == null || !file.isFile() || NameUtils.isBackupOrTempFile(file.getName())) return null;
+        File parent = file.getParentFile();
+        if (parent == null) parent = new File(".");
         String stamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        File backup = new File(file.getParentFile(), file.getName() + "." + stamp + ".corrupted");
+        File backup = uniqueBackup(parent, file.getName() + "." + stamp + ".corrupted");
         try {
-            Files.copy(file.toPath(), backup.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            Aetheria.logger.warning("[ATHR] Backed up corrupted file to " + backup.getName());
-        } catch (Exception ignored) {
+            try {
+                Files.move(file.toPath(), backup.toPath(), StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(file.toPath(), backup.toPath());
+            }
+            try (FileChannel ch = FileChannel.open(backup.toPath(), StandardOpenOption.WRITE)) {
+                ch.force(true);
+            } catch (Exception e) {
+                Aetheria.logger.warning("[ATHR] fsync failed for " + backup.getName() + ": " + e.getMessage());
+            }
+            Aetheria.logger.warning("[ATHR] Moved corrupted file to " + backup.getName());
+            return backup;
+        } catch (Exception e) {
+            Aetheria.logger.warning("[ATHR] Could not move corrupted file " + file.getName() + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    private static File uniqueBackup(File parent, String baseName) {
+        File backup = new File(parent, baseName);
+        int i = 1;
+        while (backup.exists()) {
+            backup = new File(parent, baseName + "." + i);
+            i++;
+        }
+        return backup;
+    }
+
+    public static MoveResult moveBackups(File folder) {
+        if (folder == null || !folder.isDirectory()) return new MoveResult(0, 0);
+        File[] files = folder.listFiles();
+        if (files == null) return new MoveResult(0, 0);
+        File quarantine = new File(folder, "corrupted");
+        if (quarantine.exists() && !quarantine.isDirectory()) {
+            int backups = 0;
+            for (File file : files) {
+                if (file.isFile() && NameUtils.isBackupFile(file.getName())) backups++;
+            }
+            return new MoveResult(0, backups);
+        }
+        int moved = 0;
+        int failed = 0;
+        for (File file : files) {
+            if (!file.isFile() || !NameUtils.isBackupFile(file.getName())) continue;
+            if (!quarantine.exists() && !quarantine.mkdirs()) {
+                failed++;
+                continue;
+            }
+            File target = uniqueBackup(quarantine, file.getName());
+            try {
+                Files.move(file.toPath(), target.toPath());
+                moved++;
+            } catch (IOException e) {
+                failed++;
+            }
+        }
+        return new MoveResult(moved, failed);
+    }
+
+    public static final class MoveResult {
+        public final int moved;
+        public final int failed;
+
+        public MoveResult(int moved, int failed) {
+            this.moved = moved;
+            this.failed = failed;
         }
     }
 

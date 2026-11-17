@@ -39,6 +39,10 @@ public class Qol {
     @Category(name = "Rare Drop Tracker", desc = "Get alerted the moment a tracked item drops. Search and manage tracked items with /rdt")
     public RareDropTrackerConfig rareDropTracker = new RareDropTrackerConfig();
 
+    @Expose
+    @Category(name = "Tooltips", desc = "Scale and scroll item tooltips")
+    public TooltipsConfig tooltips = new TooltipsConfig();
+
     // ── standalone options (no accordion) ───────────────────────────────────
     @Expose
     @ConfigOption(name = "Roman Numerals", desc = "Converts Roman numerals to integers in tooltips and tab list")

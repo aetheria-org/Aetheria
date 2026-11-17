@@ -1,16 +1,20 @@
 package io.hamlook.aetheria.features.misc.timer;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.time.TimeFormatter;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
@@ -95,9 +99,9 @@ public class UptimeOverlay extends Overlay {
         return lines;
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !isEnabled()) return;
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END || !isEnabled()) return;
 
         if (UptimeManager.getInstance().pollExpired()) {
             showingExpiry = true;
@@ -116,14 +120,13 @@ public class UptimeOverlay extends Overlay {
     }
 
     private void renderExpiryMessage() {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null) return;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         // Only show the big on-screen pop for the first EXPIRY_TITLE_TICKS ticks
         int titleTicksLeft = expiryTicksLeft - (EXPIRY_SHOW_TICKS - EXPIRY_TITLE_TICKS);
         if (titleTicksLeft <= 0) return;
 
-        ScaledResolution sr = Overlay.sr;
         float alpha = Math.min(1f, titleTicksLeft / 20f); // fade in for 1s, fade out last 20t
         if (expiryTicksLeft < 20) alpha = expiryTicksLeft / 20f;
         int a = (int) (alpha * 255) & 0xFF;
@@ -132,15 +135,15 @@ public class UptimeOverlay extends Overlay {
         String line2 = "§eCountdown has ended.";
 
         GL11.glPushMatrix();
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glTranslatef(sr.getScaledWidth() / 2f, sr.getScaledHeight() / 3f, 0f);
-        GL11.glScalef(2f, 2f, 1f);
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
+        GlStateManagerCompat.translate(GuiScreenUtils.getScaledWindowWidth() / 2f, GuiScreenUtils.getScaledWindowHeight() / 3f, 0f);
+        GlStateManagerCompat.scale(2f, 2f, 1f);
 
         int white = (a << 24) | 0x00FFFFFF;
-        mc.fontRendererObj.drawStringWithShadow(line1, -mc.fontRendererObj.getStringWidth(line1) / 2f, -12f, white);
-        mc.fontRendererObj.drawStringWithShadow(line2, -mc.fontRendererObj.getStringWidth(line2) / 2f, 2f, white);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line1, -MinecraftCompat.getFontRenderer().getStringWidth(line1) / 2f, -12f, white);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), line2, -MinecraftCompat.getFontRenderer().getStringWidth(line2) / 2f, 2f, white);
 
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 }

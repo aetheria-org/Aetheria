@@ -1,17 +1,20 @@
 package io.hamlook.aetheria.features.misc.itemlog;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.misc.ItemLogAlertsConfig;
+import io.hamlook.aetheria.events.ASMRenderOverlayEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.SoundUtils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -26,9 +29,9 @@ public class ItemLogAlerts {
     private long endTime = 0;
     private boolean registered = false;
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
 
         if (!registered) {
             ItemPickupLog log = ItemPickupLog.getInstance();
@@ -67,28 +70,28 @@ public class ItemLogAlerts {
         }
     }
 
-    @SubscribeEvent
-    public void onRenderOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.TEXT) return;
+    @HandleEvent
+    public void onRenderOverlay(ASMRenderOverlayEvent event) {
+        // Forge maps RenderGameOverlayElement.CHAT to 11; the Fabric bridge posts 0.
+        if (event.type != 0 && event.type != 11) return;
         if (System.currentTimeMillis() > endTime) return;
-        Minecraft mc = Minecraft.getMinecraft();
-        FontRenderer fr = mc.fontRendererObj;
-        ScaledResolution sr = new ScaledResolution(mc);
-        int screenWidth = sr.getScaledWidth();
-        int screenHeight = sr.getScaledHeight();
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
+        int screenWidth = GuiScreenUtils.getScaledWindowWidth();
+        int screenHeight = GuiScreenUtils.getScaledWindowHeight();
         int textWidth = fr.getStringWidth(displayText);
         float scale = Math.min(6.0f, (screenWidth - 20f) / textWidth);
         scale = Math.max(1.0f, scale);
-        GlStateManager.pushMatrix();
-        GlStateManager.scale(scale, scale, scale);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.scale(scale, scale, scale);
         int x = (int) ((screenWidth / scale - textWidth) / 2);
         int y = (int) ((screenHeight / scale / 2) - 15);
-        fr.drawStringWithShadow(displayText, x, y, 0xFF5555);
-        GlStateManager.popMatrix();
+        DrawContextUtils.drawTextWithShadow(fr, displayText, x, y, 0xFF5555);
+        GlStateManagerCompat.popMatrix();
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         displayText = "";
         firstTimeAlerted.clear();
     }

@@ -1,15 +1,19 @@
 package io.hamlook.aetheria.features.misc.itemList.recipe;
 
 import com.google.gson.JsonArray;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
+
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,10 +57,9 @@ public class DropsRecipe extends Recipe {
         int listX = x + 20;
         int listY = y + 5;
 
-        ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
-        int sf = sr.getScaleFactor();
+        int sf = GuiScreenUtils.getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x * sf, (Minecraft.getMinecraft().displayHeight - (y + height) * sf), width * sf, height * sf);
+        GlStateManagerCompat.scissor(x * sf, (MinecraftCompat.getDisplayHeight() - (y + height) * sf), width * sf, height * sf);
 
         for (int i = 0; i < drops.size(); i++) {
             int sy = listY + i * ROW_H - scrollY;
@@ -75,15 +78,15 @@ public class DropsRecipe extends Recipe {
                 RecipeUtils.drawAmount(fr, amt, listX, sy);
 
                 String name = dropItem.displayName != null ? dropItem.displayName : dropId;
-                fr.drawStringWithShadow(name, listX + 24, sy + 1, 0xFFFFFF);
+                DrawContextUtils.drawTextWithShadow(fr, name, listX + 24, sy + 1, 0xFFFFFF);
             } else {
-                fr.drawStringWithShadow(dropId, listX + 24, sy + 1, 0xFFFFFF);
+                DrawContextUtils.drawTextWithShadow(fr, dropId, listX + 24, sy + 1, 0xFFFFFF);
             }
 
             String rawChance = drop.has("chance") ? drop.get("chance").getAsString() : "100%";
             String fmt = RecipeUtils.formatChance(rawChance);
             String chanceStr = "Chance: " + RecipeUtils.getChanceColor(fmt) + fmt;
-            fr.drawStringWithShadow(chanceStr, listX + 24, sy + 11, 0xAAAAAA);
+            DrawContextUtils.drawTextWithShadow(fr, chanceStr, listX + 24, sy + 11, 0xAAAAAA);
         }
 
         GL11.glDisable(GL11.GL_SCISSOR_TEST);

@@ -1,18 +1,20 @@
 package io.hamlook.aetheria.features.farming.pests.overlay;
 
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.PestFinderConfig;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.input.Keyboard;
 
 import java.util.ArrayList;
@@ -80,7 +82,10 @@ public class PestFinderOverlay extends Overlay {
             int key = cfg.warpKey;
             if (key == Keyboard.KEY_NONE) return "§7Warp key: §8Not set";
             Integer plot = targetPlot(preview);
-            if (plot == null) return null;
+            if (plot == null) {
+                if (cfg.warpToGardenWhenNoPests) return "§7Press §e" + KeybindHelper.getKeyName(key) + " §7to warp to §bGarden Spawn";
+                return null;
+            }
             if (!preview && cfg.hideWarpHintInPlot && FarmingApi.isPlayerInPlot(plot)) return null;
             return "§7Press §e" + KeybindHelper.getKeyName(key) + " §7to warp to §bPlot " + plot;
         } catch (Exception e) {
@@ -202,13 +207,13 @@ public class PestFinderOverlay extends Overlay {
         return cfg == null || cfg.hideOnDebug;
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
         PestFinderConfig config = config();
         int warpKey = config != null ? config.warpKey : 0;
         boolean active = config != null && config.enabled && warpKey != Keyboard.KEY_NONE
-                && mc.thePlayer != null && mc.currentScreen == null
+                && MinecraftCompat.getLocalPlayer() != null && MinecraftCompat.getCurrentScreen() == null
                 && SkyblockData.getCurrentLocation() == SkyblockData.Location.GARDEN;
         if (!active || !KeybindHelper.isKeyTapped(warpKey)) {
             KeybindHelper.resetKeyTap(warpKey);

@@ -1,17 +1,21 @@
 package io.hamlook.aetheria.utils;
 
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiChest;
+import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.IChatComponent;
 
 import javax.annotation.Nullable;
 
 public class ContainerUtils {
-
-    private static final Minecraft mc = Minecraft.getMinecraft();
 
     private static GuiScreen cachedScreen;
     private static String cachedContainerName;
@@ -20,7 +24,7 @@ public class ContainerUtils {
     }
 
     public static boolean isChestOpen() {
-        return mc.currentScreen instanceof GuiChest;
+        return MinecraftCompat.getCurrentScreen() instanceof GuiChest;
     }
 
     public static boolean isChestOpen(GuiScreen gui) {
@@ -28,7 +32,7 @@ public class ContainerUtils {
     }
 
     public static boolean isInventoryOpen() {
-        return mc.currentScreen instanceof GuiInventory;
+        return MinecraftCompat.getCurrentScreen() instanceof GuiInventory;
     }
 
     public static boolean isInventoryOpen(GuiScreen gui) {
@@ -36,21 +40,21 @@ public class ContainerUtils {
     }
 
     public static boolean isGuiContainerOpen() {
-        return mc.currentScreen instanceof net.minecraft.client.gui.inventory.GuiContainer;
+        return MinecraftCompat.getCurrentScreen() instanceof GuiContainer;
     }
 
     @Nullable
     public static ContainerChest getOpenChest() {
         if (!isChestOpen()) return null;
-        if (!(((GuiChest) mc.currentScreen).inventorySlots instanceof ContainerChest)) return null;
-        return (ContainerChest) ((GuiChest) mc.currentScreen).inventorySlots;
+        if (!(InventoryCompat.getContainer((GuiChest) MinecraftCompat.getCurrentScreen()) instanceof ContainerChest)) return null;
+        return (ContainerChest) InventoryCompat.getContainer((GuiChest) MinecraftCompat.getCurrentScreen());
     }
 
     @Nullable
     public static ContainerChest getOpenChest(GuiScreen gui) {
         if (!isChestOpen(gui)) return null;
-        if (!(((GuiChest) gui).inventorySlots instanceof ContainerChest)) return null;
-        return (ContainerChest) ((GuiChest) gui).inventorySlots;
+        if (!(InventoryCompat.getContainer((GuiChest) gui) instanceof ContainerChest)) return null;
+        return (ContainerChest) InventoryCompat.getContainer((GuiChest) gui);
     }
 
     @Nullable
@@ -64,31 +68,65 @@ public class ContainerUtils {
         return chest == null ? null : chest.getLowerChestInventory();
     }
 
+    public static int getInventorySize(IInventory inventory) {
+        //#if MC < 1.16
+        return inventory.getSizeInventory();
+        //#else
+        //$$ return inventory.size();
+        //#endif
+    }
+
+    public static ItemStack getStackInSlot(IInventory inventory, int slot) {
+        //#if MC < 1.16
+        return inventory.getStackInSlot(slot);
+        //#else
+        //$$ return inventory.getStack(slot);
+        //#endif
+    }
+
+    public static boolean isPlayerInventory(IInventory inventory) {
+        EntityPlayer player = MinecraftCompat.getLocalPlayer();
+        //#if MC < 1.16
+        return player != null && inventory == player.inventory;
+        //#else
+        //$$ return player != null && inventory == player.getInventory();
+        //#endif
+    }
+
     public static int getWindowId() {
         if (!isChestOpen()) return -1;
-        return ((GuiChest) mc.currentScreen).inventorySlots.windowId;
+        return InventoryCompat.getWindowId(InventoryCompat.getContainer((GuiChest) MinecraftCompat.getCurrentScreen()));
     }
 
     @Nullable
     public static String getContainerName() {
-        GuiScreen screen = mc.currentScreen;
+        GuiScreen screen = MinecraftCompat.getCurrentScreen();
+        if (screen == null) return null;
         if (screen == cachedScreen) return cachedContainerName;
         cachedScreen = screen;
-        IInventory inv = getLowerInventory(getOpenChest(screen));
-        cachedContainerName = inv == null ? null : ColorUtils.stripColor(inv.getDisplayName().getUnformattedText()).trim();
+        IChatComponent title = InventoryCompat.getContainerTitle(screen);
+        cachedContainerName = title == null ? null : ColorUtils.stripColor(TextCompat.getUnformattedText(title)).trim();
         return cachedContainerName;
     }
 
     @Nullable
     public static String getContainerName(GuiScreen gui) {
-        IInventory inv = getLowerInventory(getOpenChest(gui));
-        return inv == null ? null : ColorUtils.stripColor(inv.getDisplayName().getUnformattedText()).trim();
+        IChatComponent title = InventoryCompat.getContainerTitle(gui);
+        return title == null ? null : ColorUtils.stripColor(TextCompat.getUnformattedText(title)).trim();
     }
 
     @Nullable
     public static String getTitle(ContainerChest chest) {
         if (chest == null) return null;
-        return ColorUtils.stripColor(chest.getLowerChestInventory().getDisplayName().getUnformattedText()).trim();
+        //#if MC < 1.16
+        return ColorUtils.stripColor(TextCompat.getUnformattedText((chest.getLowerChestInventory()).getDisplayName())).trim();
+        //#else
+        //$$ Screen screen = MinecraftCompat.getCurrentScreen();
+        //$$ if (!(screen instanceof HandledScreen)) return null;
+        //$$ if (InventoryCompat.getContainer((HandledScreen) screen) != (Object) chest) return null;
+        //$$ Text title = InventoryCompat.getContainerTitle(screen);
+        //$$ return title == null ? null : ColorUtils.stripColor(TextCompat.getUnformattedText(title)).trim();
+        //#endif
     }
 
     public static boolean isInContainer(String name) {

@@ -34,6 +34,14 @@ public class GuiOptionEditorBoolean extends GuiOptionEditor {
     }
 
     @Override
+    public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
+        int height = getHeight();
+        bool.x = x + width / 6 - 24;
+        bool.y = y + height - 7 - 14;
+        return bool.mouseInput(mouseX, mouseY, button, pressed);
+    }
+
+    @Override
     public boolean keyboardInput() {
         return false;
     }

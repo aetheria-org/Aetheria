@@ -1,18 +1,20 @@
 package io.hamlook.aetheria.features.scoreboard;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.GsonBuilder;
 import io.hamlook.aetheria.core.StorageManager;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterInstance;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import java.io.*;
+import java.io.File;
 
 public class MaxwellPowerSync implements StorageManager.Managed, StorageManager.AutoSaveable {
 
@@ -54,24 +56,24 @@ public class MaxwellPowerSync implements StorageManager.Managed, StorageManager.
         save();
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
 
         if (!ContainerUtils.isChestOpen()) return;
 
         IInventory inv = ContainerUtils.getLowerInventory();
         if (inv == null) return;
 
-        String title = ColorUtils.stripColor(inv.getDisplayName().getUnformattedText());
+        String title = ContainerUtils.getContainerName();
         if (!title.contains("Accessory Bag Thaumaturgy")) return;
 
         for (int i = 0; i < inv.getSizeInventory(); i++) {
             ItemStack item = inv.getStackInSlot(i);
-            if (item == null || !item.hasTagCompound()) continue;
+            if (item == null || !NbtCompat.hasTagCompound(item)) continue;
 
             if (hasSelectedLine(item)) {
-                String name = ColorUtils.stripColor(item.getDisplayName()).trim();
+                String name = ColorUtils.stripColor(TextCompat.getUnformattedText(item.getDisplayName())).trim();
                 if (!name.isEmpty() && !name.equals(data.power)) {
                     data.power = name;
                     save();
@@ -83,12 +85,8 @@ public class MaxwellPowerSync implements StorageManager.Managed, StorageManager.
 
     private boolean hasSelectedLine(ItemStack item) {
         try {
-            NBTTagList lore = item.getTagCompound().getCompoundTag("display").getTagList("Lore", 8);
-            for (int i = 0; i < lore.tagCount(); i++) {
-                if (ColorUtils.stripColor(lore.getStringTagAt(i)).trim().equals("Power is selected!")) {
-                    return true;
-                }
-            }
+            String line = ItemUtils.getLoreLine(item, "Power is selected!");
+            return line != null;
         } catch (Exception ignored) {
         }
         return false;

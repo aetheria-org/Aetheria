@@ -1,17 +1,20 @@
 package io.hamlook.aetheria.features.dungeons
 
+import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
-import io.hamlook.aetheria.utils.overlay.SimpleOverlay
+import io.hamlook.aetheria.events.ASMTickEvent
+import io.hamlook.aetheria.events.TickPhase
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.SoundUtils
 import io.hamlook.aetheria.utils.Utils
-import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.ScaledResolution
+import io.hamlook.aetheria.utils.compat.EntityCompat
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
+import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.compat.TextCompat
+import io.hamlook.aetheria.utils.compat.WorldCompat
+import io.hamlook.aetheria.utils.overlay.SimpleOverlay
+
 import net.minecraft.entity.boss.EntityWither
-import net.minecraft.util.EnumChatFormatting
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
-import net.minecraftforge.fml.common.gameevent.TickEvent
-import org.lwjgl.opengl.GL11
 import kotlin.math.sqrt
 
 @RegisterEvents
@@ -29,24 +32,24 @@ class CrushAlert : SimpleOverlay() {
     private var activePillar: Pillar? = null
     private val config get() = ATHRConfig.feature?.dungeons?.crushAlert
 
-    @SubscribeEvent
-    fun onTick(event: TickEvent.ClientTickEvent) {
-        if (event.phase != TickEvent.Phase.END) return
+    @HandleEvent
+    fun onTick(event: ASMTickEvent) {
+        if (event.phase != TickPhase.END) return
         val cfg = config ?: return
         if (!cfg.enabled) {
             alertActive = false; return
         }
 
-        val mc = Minecraft.getMinecraft()
+        val mc = MinecraftCompat.getMinecraft()
         val stats = DungeonStats.getInstance()
 
-        if (mc.theWorld == null || stats == null || !stats.currentFloor.isF7orM7 || !stats.isInStormPhase) {
+        if (MinecraftCompat.getLocalWorld() == null || stats == null || !stats.currentFloor.isF7orM7 || !stats.isInStormPhase) {
             alertActive = false
             return
         }
 
-        val storm = mc.theWorld.loadedEntityList.filterIsInstance<EntityWither>()
-            .firstOrNull { EnumChatFormatting.getTextWithoutFormattingCodes(it.name) == "Storm" }
+        val storm = MinecraftCompat.getLocalWorld()?.let { WorldCompat.getAllEntities(it) }?.filterIsInstance<EntityWither>()
+            ?.firstOrNull { EntityCompat.getName(it) == "Storm" }
 
         if (storm == null) {
             alertActive = false; return
@@ -56,8 +59,8 @@ class CrushAlert : SimpleOverlay() {
         val wasActive = alertActive
 
         activePillar = pillars.firstOrNull { pillar ->
-            val dx = storm.posX - pillar.x
-            val dz = storm.posZ - pillar.z
+            val dx = EntityCompat.getPosX(storm) - pillar.x
+            val dz = EntityCompat.getPosZ(storm) - pillar.z
             sqrt(dx * dx + dz * dz) <= range
         }
 
@@ -68,19 +71,19 @@ class CrushAlert : SimpleOverlay() {
 
     override fun shouldRender() = alertActive && config?.enabled == true
 
-    override fun render(sr: ScaledResolution) {
-        val mc = Minecraft.getMinecraft()
-        val fr = mc.fontRendererObj
+    override fun render(scaledWidth: Int, scaledHeight: Int) {
+        val mc = MinecraftCompat.getMinecraft()
+        val fr = MinecraftCompat.getFontRenderer()
 
         val pillar = activePillar
         val pillarText = if (pillar != null) " ${pillar.color}${pillar.name}" else ""
-        val text = "${EnumChatFormatting.RED}${EnumChatFormatting.BOLD}CRUSH STORM$pillarText"
+        val text = "§c§lCRUSH STORM$pillarText"
 
-        GL11.glPushMatrix()
-        GL11.glScalef(2f, 2f, 1f)
+        GlStateManagerCompat.pushMatrix()
+        GlStateManagerCompat.scale(2f, 2f, 1f)
         Utils.drawStringCentered(
-            text, fr, sr.scaledWidth / 4f, (sr.scaledHeight / 2f - 40f) / 2f, true, 0xFFFFFF
+            text, fr, scaledWidth / 4f, (scaledHeight / 2f - 40f) / 2f, true, 0xFFFFFF
         )
-        GL11.glPopMatrix()
+        GlStateManagerCompat.popMatrix()
     }
 }

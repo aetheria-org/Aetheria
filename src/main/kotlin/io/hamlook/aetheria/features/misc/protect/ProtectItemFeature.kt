@@ -1,33 +1,34 @@
 package io.hamlook.aetheria.features.misc.protect
 
-import io.hamlook.aetheria.core.ATHRConfig
 import io.hamlook.aetheria.Resources
+import io.hamlook.aetheria.api.event.HandleEvent
+import io.hamlook.aetheria.core.ATHRConfig
+import io.hamlook.aetheria.events.ASMTickEvent
 import io.hamlook.aetheria.events.ItemTossEvent
 import io.hamlook.aetheria.events.RenderItemOverlayEvent
 import io.hamlook.aetheria.events.SlotClickEvent
+import io.hamlook.aetheria.events.SlotClickEvent.ClickType
+import io.hamlook.aetheria.events.TickPhase
 import io.hamlook.aetheria.init.RegisterEvents
 import io.hamlook.aetheria.utils.ContainerUtils
+import io.hamlook.aetheria.utils.compat.DrawContextUtils
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat
+import io.hamlook.aetheria.utils.compat.InventoryCompat
+import io.hamlook.aetheria.utils.compat.KeyboardCompat
+import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.compat.TextCompat
 import io.hamlook.aetheria.utils.item.ItemUtils
-import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.Gui
-import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.item.ItemStack
-import net.minecraft.util.ChatComponentText
 import net.minecraft.util.EnumChatFormatting
-import net.minecraftforge.fml.common.eventhandler.EventPriority
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
-import net.minecraftforge.fml.common.gameevent.TickEvent
 import org.lwjgl.input.Keyboard
 
 @RegisterEvents
 class ProtectItemFeature {
 
     companion object {
-        private val mc = Minecraft.getMinecraft()
+        private val mc = MinecraftCompat.getMinecraft()
         private const val STAR_SIZE = 16
         private const val CLICK_OUTSIDE_WINDOW = -999
-        private const val DROP_KEY_CLICK_TYPE = 4
-        private const val SWAP_OFFHAND_CLICK_TYPE = 5
 
         @JvmStatic
         fun toggleProtection(stack: ItemStack) {
@@ -38,32 +39,32 @@ class ProtectItemFeature {
             }
             if (ProtectedItemStorage.contains(uuid)) {
                 ProtectedItemStorage.remove(uuid)
-                notifyRaw("${EnumChatFormatting.YELLOW}${stack.displayName} ${EnumChatFormatting.GRAY}is no longer protected.")
+                notifyRaw("${EnumChatFormatting.YELLOW}${ItemUtils.getDisplayName(stack)} ${EnumChatFormatting.GRAY}is no longer protected.")
             } else {
                 ProtectedItemStorage.add(uuid)
-                notifyRaw("${EnumChatFormatting.GREEN}${stack.displayName} ${EnumChatFormatting.GRAY}is now protected!")
+                notifyRaw("${EnumChatFormatting.GREEN}${ItemUtils.getDisplayName(stack)} ${EnumChatFormatting.GRAY}is now protected!")
             }
         }
 
         private fun notifyRaw(message: String) {
             if (ATHRConfig.feature?.misc?.protectItem?.showChatNotifications != true) return
-            mc.thePlayer?.addChatMessage(ChatComponentText("${EnumChatFormatting.RED}[ATHR] §r$message"))
+            TextCompat.addChatMessage(TextCompat.fromFormatted("${EnumChatFormatting.RED}[ATHR] §r$message"))
         }
     }
 
     private var keyWasDown = false
 
-    @SubscribeEvent
-    fun onClientTick(event: TickEvent.ClientTickEvent) {
-        if (event.phase != TickEvent.Phase.END) return
-        if (mc.thePlayer == null || mc.currentScreen != null) return
+    @HandleEvent
+    fun onClientTick(event: ASMTickEvent) {
+        if (event.phase != TickPhase.END) return
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getMinecraft().currentScreen != null) return
 
         val key = ATHRConfig.feature?.misc?.protectItem?.protectionKey ?: return
         if (key == Keyboard.KEY_NONE) return
 
-        val keyDown = Keyboard.isKeyDown(key)
+        val keyDown = KeyboardCompat.isKeyDown(key)
         if (keyDown && !keyWasDown) {
-            val held = mc.thePlayer.heldItem
+            val held = MinecraftCompat.getLocalPlayer()?.heldItem
             if (held == null) {
                 notifyRaw("${EnumChatFormatting.RED}You are not holding an item!")
             } else {
@@ -74,17 +75,17 @@ class ProtectItemFeature {
     }
 
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    @HandleEvent(priority = HandleEvent.HIGHEST)
     fun onItemDrop(event: ItemTossEvent) {
         val stack = event.item ?: return
         if (!isProtected(stack)) return
 
-        event.isCanceled = true
-        notifyBlocked(stack.displayName, "dropped")
+        event.cancel()
+        notifyBlocked(ItemUtils.getDisplayName(stack), "dropped")
     }
 
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    @HandleEvent(priority = HandleEvent.HIGHEST)
     fun onSlotClick(event: SlotClickEvent) {
         // Case 1: Click outside window (throws cursor item)
         if (isClickOutsideWindow(event)) {
@@ -106,20 +107,20 @@ class ProtectItemFeature {
 
 
     private fun isClickOutsideWindow(event: SlotClickEvent): Boolean {
-        return event.slotId == CLICK_OUTSIDE_WINDOW && event.clickType != SWAP_OFFHAND_CLICK_TYPE
+        return event.slotId == CLICK_OUTSIDE_WINDOW && event.clickType != ClickType.DRAW
     }
 
     private fun handleClickOutsideWindow(event: SlotClickEvent) {
-        val cursorItem = mc.thePlayer?.inventory?.itemStack ?: return
+        val cursorItem = InventoryCompat.getCursorStack(MinecraftCompat.getLocalPlayer() ?: return) ?: return
         if (!isProtected(cursorItem)) return
 
-        event.isCanceled = true
-        notifyBlocked(cursorItem.displayName, "thrown away")
+        event.cancel()
+        notifyBlocked(ItemUtils.getDisplayName(cursorItem), "thrown away")
     }
 
 
     private fun isDropKeyPress(event: SlotClickEvent): Boolean {
-        return event.clickType == DROP_KEY_CLICK_TYPE && event.slotId != CLICK_OUTSIDE_WINDOW
+        return event.clickType == ClickType.DROP && event.slotId != CLICK_OUTSIDE_WINDOW
     }
 
     private fun handleDropKeyPress(event: SlotClickEvent) {
@@ -129,8 +130,8 @@ class ProtectItemFeature {
         val stack = slot.stack ?: return
         if (!isProtected(stack)) return
 
-        event.isCanceled = true
-        notifyBlocked(stack.displayName, "dropped")
+        event.cancel()
+        notifyBlocked(ItemUtils.getDisplayName(stack), "dropped")
     }
 
     private fun isDangerousGuiInteraction(event: SlotClickEvent): Boolean {
@@ -144,22 +145,22 @@ class ProtectItemFeature {
         if (slot != null && slot.hasStack) {
             val stack = slot.stack
             if (stack != null && isProtected(stack)) {
-                event.isCanceled = true
-                notifyBlocked(stack.displayName, "moved in this menu")
+                event.cancel()
+                notifyBlocked(ItemUtils.getDisplayName(stack), "moved in this menu")
                 return
             }
         }
 
         // Check if the cursor has a protected item
-        val cursorItem = mc.thePlayer?.inventory?.itemStack
+        val cursorItem = InventoryCompat.getCursorStack(MinecraftCompat.getLocalPlayer() ?: return)
         if (cursorItem != null && isProtected(cursorItem)) {
-            event.isCanceled = true
-            notifyBlocked(cursorItem.displayName, "moved in this menu")
+            event.cancel()
+            notifyBlocked(ItemUtils.getDisplayName(cursorItem), "moved in this menu")
         }
     }
 
 
-    @SubscribeEvent
+    @HandleEvent
     fun onItemOverlay(event: RenderItemOverlayEvent) {
         if (!shouldShowStar()) return
 
@@ -176,21 +177,28 @@ class ProtectItemFeature {
     private fun renderProtectionStar(x: Int, y: Int) {
         val opacity = getStarOpacity()
 
-        GlStateManager.pushMatrix()
-        GlStateManager.enableBlend()
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0)
-        GlStateManager.color(1f, 1f, 1f, opacity)
-        GlStateManager.disableDepth()
+        GlStateManagerCompat.pushMatrix()
+        GlStateManagerCompat.enableBlend()
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0)
+        GlStateManagerCompat.color(1f, 1f, 1f, opacity)
+        GlStateManagerCompat.disableDepth()
 
+        //#if MC < 1.21
         mc.textureManager.bindTexture(Resources.PROTECT_ITEM_STAR)
-        Gui.drawModalRectWithCustomSizedTexture(
+        DrawContextUtils.drawModalRectWithCustomSizedTexture(
             x, y, 0f, 0f, STAR_SIZE, STAR_SIZE, STAR_SIZE.toFloat(), STAR_SIZE.toFloat()
         )
+        //#else
+        //$$ DrawContextUtils.drawModalRectWithCustomSizedTexture(
+        //$$     Resources.PROTECT_ITEM_STAR,
+        //$$     x, y, 0f, 0f, STAR_SIZE, STAR_SIZE, STAR_SIZE.toFloat(), STAR_SIZE.toFloat()
+        //$$ )
+        //#endif
 
-        GlStateManager.enableDepth()
-        GlStateManager.disableBlend()
-        GlStateManager.color(1f, 1f, 1f, 1f)
-        GlStateManager.popMatrix()
+        GlStateManagerCompat.enableDepth()
+        GlStateManagerCompat.disableBlend()
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f)
+        GlStateManagerCompat.popMatrix()
     }
 
     private fun getStarOpacity(): Float {
@@ -200,6 +208,7 @@ class ProtectItemFeature {
 
 
     private fun isProtected(stack: ItemStack?): Boolean {
+        if (ProtectedItemStorage.protectedUuids.isEmpty()) return false
         val uuid = ItemUtils.getItemUuid(stack) ?: return false
         return ProtectedItemStorage.contains(uuid)
     }

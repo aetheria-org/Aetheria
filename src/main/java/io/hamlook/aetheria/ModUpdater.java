@@ -4,9 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.ModContainer;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ModCompat;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -56,7 +55,7 @@ public class ModUpdater {
                 String downloadUrl = jarAsset.get("browser_download_url").getAsString();
                 String newFileName = jarAsset.get("name").getAsString();
 
-                File modsDir = new File(Minecraft.getMinecraft().mcDataDir, "mods");
+                File modsDir = new File(MinecraftCompat.getMinecraft().mcDataDir, "mods");
                 File newModFile = new File(modsDir, newFileName);
 
                 URL downloadURL = new URL(downloadUrl);
@@ -73,16 +72,13 @@ public class ModUpdater {
                     }
                 }
 
-                ModContainer myMod = Loader.instance().getIndexedModList().get(Aetheria.MODID);
-                if (myMod != null) {
-                    File oldJar = myMod.getSource();
-                    if (oldJar != null && oldJar.exists() && !oldJar.getName().equals(newFileName)) {
-                        oldJar.deleteOnExit();
-                    }
+                File oldJar = ModCompat.getModJar();
+                if (oldJar != null && oldJar.exists() && !oldJar.getName().equals(newFileName)) {
+                    oldJar.deleteOnExit();
                 }
 
                 if(shutdown) {
-                    Minecraft.getMinecraft().shutdown();
+                    MinecraftCompat.getMinecraft().shutdown();
                 }
             } catch (Exception e) {
                 e.printStackTrace();

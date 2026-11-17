@@ -1,10 +1,10 @@
 package io.hamlook.aetheria.utils;
 
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.entity.player.EntityPlayer;
-import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class KeybindHelper {
 
-    private static final Minecraft MC = Minecraft.getMinecraft();
+    private static final Minecraft MC = MinecraftCompat.getMinecraft();
     private static final Map<Integer, Boolean> PREV_DOWN = new ConcurrentHashMap<>();
     private static final Map<Integer, Boolean> CURR_DOWN = new ConcurrentHashMap<>();
     private static int cacheTick = -1;
@@ -26,11 +26,36 @@ public final class KeybindHelper {
     public static final int KEY_RETURN = 28;
     public static final int KEY_NUMPAD_ENTER = 156;
 
+    // Version-split key predicates (LWJGL2 codes vs GLFW codes)
+    public static boolean isEscapeKey(int keyCode) {
+        //#if MC < 1.16
+        return keyCode == KEY_ESCAPE;
+        //#else
+        //$$ return keyCode == 256;
+        //#endif
+    }
+
+    public static boolean isEnterKey(int keyCode) {
+        //#if MC < 1.16
+        return keyCode == KEY_RETURN || keyCode == KEY_NUMPAD_ENTER;
+        //#else
+        //$$ return keyCode == 257 || keyCode == 335;
+        //#endif
+    }
+
+    public static boolean isBackspaceKey(int keyCode) {
+        //#if MC < 1.16
+        return keyCode == 14;
+        //#else
+        //$$ return keyCode == 259;
+        //#endif
+    }
+
     public static String getKeyName(int keyCode) {
-        if (keyCode == 0) return "NONE";
+        if (keyCode == 0 || keyCode == -1) return "NONE";
         if (keyCode < 0) return "Button " + (keyCode + 101);
         try {
-            String name = Keyboard.getKeyName(keyCode);
+            String name = KeyboardCompat.getKeyName(keyCode);
             if (name == null) return "???";
             if (name.equalsIgnoreCase("LMENU")) return "LALT";
             if (name.equalsIgnoreCase("RMENU")) return "RALT";
@@ -45,12 +70,12 @@ public final class KeybindHelper {
     }
 
     private static boolean isKeyInvalid(int keyCode) {
-        return keyCode == 0;
+        return keyCode == 0 || keyCode == -1;
     }
 
     public static boolean isKeyDown(int keyCode) {
         if (isKeyInvalid(keyCode)) return false;
-        return keyCode < 0 ? Mouse.isButtonDown(keyCode + 100) : Keyboard.isKeyDown(keyCode);
+        return keyCode < 0 ? MouseCompat.isButtonDown(keyCode + 100) : KeyboardCompat.isKeyDown(keyCode);
     }
 
     /**
@@ -61,7 +86,7 @@ public final class KeybindHelper {
      */
     public static boolean isKeyPressed(int keyCode) {
         if (isKeyInvalid(keyCode)) return false;
-        return keyCode < 0 ? Mouse.getEventButtonState() && Mouse.getEventButton() == keyCode + 100 : Keyboard.getEventKeyState() && Keyboard.getEventKey() == keyCode;
+        return keyCode < 0 ? MouseCompat.getEventButtonState() && MouseCompat.getEventButton() == keyCode + 100 : KeyboardCompat.getEventKeyState() && KeyboardCompat.getEventKey() == keyCode;
     }
 
     public static boolean isKeyTapped(int keyCode) {
@@ -81,7 +106,7 @@ public final class KeybindHelper {
     }
 
     private static void rollTickCache() {
-        EntityPlayer player = MC.thePlayer;
+        EntityPlayer player = MinecraftCompat.getLocalPlayer();
         int tick = player == null ? -1 : player.ticksExisted;
         if (player != cacheAnchor || tick != cacheTick) {
             PREV_DOWN.clear();
@@ -102,57 +127,71 @@ public final class KeybindHelper {
 
     // Keyboard event accessors
     public static char getEventCharacter() {
-        return Keyboard.getEventCharacter();
+        return KeyboardCompat.getEventCharacter();
     }
 
     public static boolean getEventKeyState() {
-        return Keyboard.getEventKeyState();
+        return KeyboardCompat.getEventKeyState();
     }
 
     public static int getEventKeyCode() {
-        return Keyboard.getEventKey();
+        return KeyboardCompat.getEventKey();
     }
 
     public static void enableRepeatEvents(boolean repeat) {
-        Keyboard.enableRepeatEvents(repeat);
+        KeyboardCompat.enableRepeatEvents(repeat);
     }
 
     // Mouse event accessors
     public static boolean getEventButtonState() {
-        return Mouse.getEventButtonState();
+        return MouseCompat.getEventButtonState();
     }
 
     public static int getEventButton() {
-        return Mouse.getEventButton();
+        return MouseCompat.getEventButton();
     }
 
     public static int getEventDWheel() {
-        return Mouse.getEventDWheel();
+        return MouseCompat.getEventDWheel();
     }
 
     // Coordinate helpers, poll-based (for draw/render)
-    public static int[] getMouseCoords(ScaledResolution sr) {
-        return getMouseCoords(sr.getScaledWidth(), sr.getScaledHeight());
-    }
-
     public static int[] getMouseCoords(int guiWidth, int guiHeight) {
-        int mouseX = Mouse.getX() * guiWidth / MC.displayWidth;
-        int mouseY = guiHeight - Mouse.getY() * guiHeight / MC.displayHeight - 1;
+        //#if MC < 1.21
+        int mouseX = MouseCompat.getX() * guiWidth / MinecraftCompat.getDisplayWidth();
+        int mouseY = guiHeight - MouseCompat.getY() * guiHeight / MinecraftCompat.getDisplayHeight() - 1;
+        //#else
+        //$$ int mouseX = (int) (MouseCompat.getX() * guiWidth / (float) MinecraftCompat.getDisplayWidth());
+        //$$ int mouseY = (int) (MouseCompat.getY() * guiHeight / (float) MinecraftCompat.getDisplayHeight());
+        //#endif
         return new int[]{mouseX, mouseY};
     }
 
-    public static float[] getMouseCoordsFloat(ScaledResolution sr) {
-        float mouseX = (float) (Mouse.getX() * sr.getScaledWidth_double() / MC.displayWidth);
-        float mouseY = (float) (sr.getScaledHeight_double() - Mouse.getY() * sr.getScaledHeight_double() / MC.displayHeight - 1);
+    public static float[] getMouseCoordsFloat(double guiWidth, double guiHeight) {
+        //#if MC < 1.21
+        float mouseX = (float) (MouseCompat.getX() * guiWidth / MinecraftCompat.getDisplayWidth());
+        float mouseY = (float) (guiHeight - MouseCompat.getY() * guiHeight / MinecraftCompat.getDisplayHeight() - 1);
+        //#else
+        //$$ float mouseX = (float) (MouseCompat.getX() * guiWidth / MinecraftCompat.getDisplayWidth());
+        //$$ float mouseY = (float) (MouseCompat.getY() * guiHeight / MinecraftCompat.getDisplayHeight());
+        //#endif
         return new float[]{mouseX, mouseY};
     }
 
     // Coordinate helpers, event-based (for mouse input events)
     public static int getScaledEventX(int guiWidth) {
-        return Mouse.getEventX() * guiWidth / MC.displayWidth;
+        //#if MC < 1.21
+        return MouseCompat.getEventX() * guiWidth / MinecraftCompat.getDisplayWidth();
+        //#else
+        //$$ return (int) (MouseCompat.getEventX() * guiWidth / (float) MinecraftCompat.getDisplayWidth());
+        //#endif
     }
 
     public static int getScaledEventY(int guiHeight) {
-        return guiHeight - Mouse.getEventY() * guiHeight / MC.displayHeight - 1;
+        //#if MC < 1.21
+        return guiHeight - MouseCompat.getEventY() * guiHeight / MinecraftCompat.getDisplayHeight() - 1;
+        //#else
+        //$$ return (int) (MouseCompat.getEventY() * guiHeight / (float) MinecraftCompat.getDisplayHeight());
+        //#endif
     }
 }

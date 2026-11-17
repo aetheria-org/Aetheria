@@ -1,16 +1,16 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class GuiOptionEditorTextDisplay extends GuiOptionEditor {
 
-    private static int HEIGHT = 60;
+    private int height = 60;
     private final String text;
 
     public GuiOptionEditorTextDisplay(ConfigProcessor.ProcessedOption option,String text) {
@@ -20,27 +20,34 @@ public class GuiOptionEditorTextDisplay extends GuiOptionEditor {
 
     @Override
     public int getHeight() {
-        return HEIGHT;
+        return height;
     }
 
     @Override
     public void render(int x, int y, int width) {
-        Minecraft mc = Minecraft.getMinecraft();
+        RenderUtils.drawFloatingRectDark(x, y, width, height, true);
 
-        RenderUtils.drawFloatingRectDark(x, y, width, HEIGHT, true);
+        List<String> texts = wrap(Math.max(1, (int) (width * 0.9)));
+        int fontHeight = MinecraftCompat.getFontRenderer().FONT_HEIGHT;
+        height = Math.max(height, 10 + fontHeight * texts.size());
+        int totalTextHeight = fontHeight * texts.size();
+        int startY = y + (height - totalTextHeight) / 2;
+        for (int i = 0; i < texts.size(); i++) {
+            TextRenderUtils.drawStringScaleAware(texts.get(i), x + 5, startY + fontHeight * i, 1f, false);
+        }
+    }
 
-        String text = this.text;
+    private List<String> wrap(int maxLineWidth) {
         List<String> texts = new ArrayList<>();
-        int maxLineWidth = (int) (width * 0.9);
         String activeFormatting = "";
         String remaining = text;
         while (!remaining.isEmpty()) {
-            if (mc.fontRendererObj.getStringWidth(remaining) <= maxLineWidth) {
+            if (MinecraftCompat.getFontRenderer().getStringWidth(remaining) <= maxLineWidth) {
                 texts.add(activeFormatting + remaining);
                 break;
             }
             int splitPos = remaining.length();
-            while (splitPos > 0 && mc.fontRendererObj.getStringWidth(remaining.substring(0, splitPos)) > maxLineWidth) {
+            while (splitPos > 0 && MinecraftCompat.getFontRenderer().getStringWidth(remaining.substring(0, splitPos)) > maxLineWidth) {
                 splitPos--;
             }
             if (splitPos == 0) splitPos = 1;
@@ -67,14 +74,7 @@ public class GuiOptionEditorTextDisplay extends GuiOptionEditor {
             }
             activeFormatting = fmtBuilder.toString();
         }
-        int fontHeight = mc.fontRendererObj.FONT_HEIGHT;
-        HEIGHT = Math.max(HEIGHT, (10 + fontHeight * texts.size()));
-        int totalTextHeight = fontHeight * texts.size();
-        int startY = y + (HEIGHT - totalTextHeight) / 2;
-        for (int i = 0; i < texts.size(); i++) {
-            String s = texts.get(i);
-            TextRenderUtils.drawStringScaleAware(s, x + 5, startY + fontHeight * i, 1f, false);
-        }
+        return texts;
     }
 
     @Override

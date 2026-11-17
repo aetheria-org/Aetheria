@@ -1,20 +1,24 @@
 package io.hamlook.aetheria.features.misc.pet;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ProfileManagedStorage;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
 import io.hamlook.aetheria.events.SlotClickEvent;
-import io.hamlook.aetheria.init.RegisterInstance;
+import io.hamlook.aetheria.events.SlotClickEvent.ClickType;
+import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import lombok.Getter;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.StringUtils;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.io.File;
 import java.util.regex.Matcher;
@@ -22,6 +26,7 @@ import java.util.regex.Pattern;
 
 import static io.hamlook.aetheria.features.misc.pet.PetCache.normalizePetName;
 
+@RegisterEvents
 public class CurrentPetTracker extends ProfileManagedStorage {
 
     private static final String PETS_CONTAINER = "Pets";
@@ -33,8 +38,9 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     private static final Pattern LVL_PATTERN = Pattern.compile("^\\[Lvl (\\d+)] (.+)$");
     private static final Pattern SKIN_PATTERN = Pattern.compile("(§. ?✦)");
     private static final Pattern RARITY_PATTERN = Pattern.compile("§7\\[Lvl \\d+] (§.)");
-    @RegisterInstance
-    private static CurrentPetTracker INSTANCE;
+    /** Section sign as it looks after the text was encoded twice, e.g. in a name that came from a broken source. */
+    private static final String MOJIBAKE_SECTION = "Â§";
+    private static final CurrentPetTracker INSTANCE = new CurrentPetTracker();
     private boolean convertToItemEnabled = false;
     private long ignoreContainerUpdatesUntil = 0L;
     private long lastContainerScan = 0L;
@@ -47,12 +53,11 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     }
 
     public static CurrentPetTracker getInstance() {
-        if (INSTANCE == null) INSTANCE = new CurrentPetTracker();
         return INSTANCE;
     }
 
     private static PetItemData parsePetItem(ItemStack item) {
-        String rawName = item.getDisplayName().replace("Â§", "§");
+        String rawName = ItemUtils.getDisplayName(item).replace(MOJIBAKE_SECTION, "§");
         String stripped = StringUtils.stripControlCodes(rawName).trim();
 
         int level = 0;
@@ -92,8 +97,8 @@ public class CurrentPetTracker extends ProfileManagedStorage {
         PetFileValidator.save(f, currentBaseName);
     }
 
-    @SubscribeEvent
-    public void onGuiDraw(GuiScreenEvent.BackgroundDrawnEvent event) {
+    @HandleEvent
+    public void onGuiDraw(ASMGuiBackgroundDrawEvent event) {
         ContainerChest container = ContainerUtils.getOpenChest(event.gui);
         if (container == null) return;
         String title = ContainerUtils.getTitle(container);
@@ -107,25 +112,30 @@ public class CurrentPetTracker extends ProfileManagedStorage {
     }
 
     private void scanContainer(ContainerChest container) {
+        EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
+        if (player == null) return;
         for (Slot slot : container.inventorySlots) {
-            if (slot.inventory == Minecraft.getMinecraft().thePlayer.inventory) continue;
+            if (slot.inventory == InventoryCompat.getInventory(player)) continue;
 
             if (slot.slotNumber == CONVERT_SLOT_INDEX) {
                 ItemStack s = slot.getStack();
-                convertToItemEnabled = s != null && s.getItem() != null && CONVERT_ITEM_NAME.equals(s.getDisplayName()) && ItemUtils.getLoreLine(s, "§aEnabled") != null;
+                convertToItemEnabled = s != null && s.getItem() != null
+                        && CONVERT_ITEM_NAME.equals(s.getDisplayName())
+                        && ItemUtils.getLoreLine(s, "§aEnabled") != null;
                 continue;
             }
 
             ItemStack item = slot.getStack();
             if (item == null || item.getItem() == null) continue;
 
-            String texture = ItemUtils.getSkullTexture(item);
-            if (texture == null || texture.isEmpty()) continue;
+            ItemUtils.SkullIdentity identity = ItemUtils.skullIdentity(item);
+            if (identity == null) continue;
 
             PetItemData data = parsePetItem(item);
             if (data == null) continue;
             if (data.level <= 0) continue;
-            PetCache.getInstance().update(data.base, data.level, data.rarityColor, data.skinTag, texture);
+            PetCache.getInstance().update(data.base, data.level, data.rarityColor, data.skinTag,
+                    identity.textureValue, identity.profileId, identity.profileName, identity.signature);
             if (System.currentTimeMillis() < ignoreContainerUpdatesUntil) {
                 continue;
             }
@@ -140,51 +150,74 @@ public class CurrentPetTracker extends ProfileManagedStorage {
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onSlotClick(SlotClickEvent event) {
         ContainerChest container = ContainerUtils.getOpenChest(event.getGui());
         if (container == null) return;
-        if (event.getClickType() != 0 || event.getSlot() == null) return;
+        if (event.getClickType() != ClickType.NORMAL || event.getSlot() == null) {
+            return;
+        }
 
         String title = ContainerUtils.getTitle(container);
-        if (title == null || !title.startsWith(PETS_CONTAINER)) return;
+        if (title == null || !title.startsWith(PETS_CONTAINER)) {
+            return;
+        }
 
         if (event.getSlot().slotNumber == CONVERT_SLOT_INDEX) {
             scanContainer(container);
             return;
         }
 
-        if (convertToItemEnabled) return;
+        if (convertToItemEnabled) {
+            return;
+        }
 
-        if (event.getSlot().inventory == Minecraft.getMinecraft().thePlayer.inventory) return;
+        EntityPlayerSP player = MinecraftCompat.getLocalPlayer();
+        if (player == null) {
+            return;
+        }
+
+        if (event.getSlot().inventory == InventoryCompat.getInventory(player)) {
+            return;
+        }
 
         ItemStack item = event.getSlot().getStack();
-        if (item == null || item.getItem() == null) return;
+        if (item == null || item.getItem() == null) {
+            return;
+        }
 
-        String texture = ItemUtils.getSkullTexture(item);
-        if (texture == null || texture.isEmpty()) return;
+        ItemUtils.SkullIdentity identity = ItemUtils.skullIdentity(item);
+        if (identity == null) {
+            return;
+        }
 
         PetItemData data = parsePetItem(item);
-        if (data == null) return;
+        if (data == null) {
+            return;
+        }
 
-        // Ignore skulls like Autopet
-        if (data.level <= 0) return;
+        if (data.level <= 0) {
+            return;
+        }
 
-        PetCache.getInstance().update(data.base, data.level, data.rarityColor, data.skinTag, texture);
+        PetCache.getInstance().update(data.base, data.level, data.rarityColor, data.skinTag,
+                identity.textureValue, identity.profileId, identity.profileName, identity.signature);
 
-        if (ItemUtils.getLoreLine(item, ACTIVE_LORE) != null) {
+        String key = data.key();
+        boolean hasActiveLore = ItemUtils.getLoreLine(item, ACTIVE_LORE) != null;
+        if (hasActiveLore) {
             currentBaseName = "";
         } else {
-            currentBaseName = data.key();
+            currentBaseName = key;
         }
         ignoreContainerUpdatesUntil = System.currentTimeMillis() + 1500L;
         save();
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (!ChatUtils.isFromServer(event)) return;
-        Matcher am = AUTOPET.matcher(event.message.getFormattedText());
+        Matcher am = AUTOPET.matcher(TextCompat.getFormattedTextWithResets(event.message));
         if (!am.find()) return;
 
         int level = Integer.parseInt(am.group(1));

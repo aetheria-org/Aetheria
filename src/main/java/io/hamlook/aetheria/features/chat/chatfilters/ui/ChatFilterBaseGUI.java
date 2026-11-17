@@ -1,13 +1,14 @@
 package io.hamlook.aetheria.features.chat.chatfilters.ui;
 
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 
-abstract class ChatFilterBaseGUI extends GuiScreen {
+abstract class ChatFilterBaseGUI extends AetheriaBaseScreen {
 
     protected static final double BTN_W = 90;
     protected static final double BTN_H = 28;
@@ -16,6 +17,18 @@ abstract class ChatFilterBaseGUI extends GuiScreen {
 
     protected float configScale() {
         return ATHRConfig.feature.chat.chatFilterConfig.uiScale;
+    }
+
+    /**
+     * Re-runs this screen's layout pass. Legacy calls vanilla initGui;
+     * modern has no such method, so the layout hook runs directly.
+     */
+    protected void refreshGui() {
+        //#if MC < 1.21
+        initGui();
+        //#else
+        //$$ onInitGui();
+        //#endif
     }
 
     protected int getScaledX(double entry) {
@@ -27,11 +40,10 @@ abstract class ChatFilterBaseGUI extends GuiScreen {
     }
 
     protected void startScissor(int x, int y, int width, int height) {
-        ScaledResolution res = new ScaledResolution(mc);
-        int scale = res.getScaleFactor();
+        int scale = GuiScreenUtils.getScaleFactor();
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(x * scale, mc.displayHeight - (y + height) * scale, width * scale, height * scale);
+        GlStateManagerCompat.scissor(x * scale, GuiScreenUtils.getDisplayHeight() - (y + height) * scale, width * scale, height * scale);
     }
 
     protected void stopScissor() {
@@ -41,10 +53,10 @@ abstract class ChatFilterBaseGUI extends GuiScreen {
     protected void drawScrollbar(int trackX, int listY, int listH, int totalH, int scrollY, int maxScroll) {
         if (maxScroll <= 0) return;
         int barW = getScaledX(5);
-        Gui.drawRect(trackX, listY, trackX + barW, listY + listH, 0x44000000);
+        DrawContextUtils.fill(trackX, listY, trackX + barW, listY + listH, 0x44000000);
         int thumbH = Math.max(getScaledY(20), listH * listH / Math.max(listH, totalH));
         int thumbY = listY + (int) ((float) scrollY / maxScroll * (listH - thumbH));
-        Gui.drawRect(trackX, thumbY, trackX + barW, thumbY + thumbH, 0xFFAAAAAA);
+        DrawContextUtils.fill(trackX, thumbY, trackX + barW, thumbY + thumbH, 0xFFAAAAAA);
     }
 
     protected boolean tryStartScrollbarDrag(int mouseX, int mouseY, int trackX, int listY, int listH, int totalH, int scrollY, int maxScroll) {

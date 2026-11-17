@@ -8,7 +8,7 @@ public class Dungeons {
     @Expose
     @ConfigOption(name = "Blood Mob Highlight", desc = "Highlight blood room mobs. Box = bounding box, Outline = body glow, Off = disabled")
     @ConfigEditorDropdown(values = {"Box", "Outline", "Off"})
-    public int bloodMobHighlight = 2;
+    public int bloodMobHighlight = 0;
 
     @Expose
     @ConfigOption(name = "Blood Mob Color", desc = "Color used for blood mob box and outline highlight")
@@ -40,8 +40,8 @@ public class Dungeons {
     public CaseOpeningConfig caseOpening = new CaseOpeningConfig();
 
     @Expose
-    @Category(name = "Secret Finder", desc = "Secret finder with  secret ESP, and display options")
-    public DungeonSecretFinderConfig dungeonSecretFinder = new DungeonSecretFinderConfig();
+    @Category(name = "Secrets", desc = "Secret waypoints and solid highlights for levers and essence")
+    public SecretsConfig secrets = new SecretsConfig();
 
     @Expose
     @Category(name = "Dungeon Map", desc = "Custom Dungeon Map display overlay")
@@ -54,6 +54,10 @@ public class Dungeons {
     @Expose
     @Category(name = "D.Leap Overlay",desc = "Custom Overlay for Spirit Leap/Infinileap with a Dungeon Map Preview.")
     public DungeonLeapConfig leapConfig = new DungeonLeapConfig();
+
+    @Expose
+    @Category(name = "Alerts", desc = "Dungeon clear alerts")
+    public AlertsConfig alerts = new AlertsConfig();
 
     @Expose
     @ConfigOption(name = "Hide Blessing Messages", desc = "Hides the 'DUNGEON BUFF! ... found a Blessing of ...' chat spam in dungeons")

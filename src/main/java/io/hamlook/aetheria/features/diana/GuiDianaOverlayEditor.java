@@ -1,24 +1,26 @@
 package io.hamlook.aetheria.features.diana;
 
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.utils.KeybindHelper;
-import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.features.diana.overlays.DianaEventOverlay;
 import io.hamlook.aetheria.features.diana.overlays.DianaLootOverlay;
 import io.hamlook.aetheria.features.diana.overlays.DianaMobHealthOverlay;
 import io.hamlook.aetheria.features.diana.overlays.InquisitorOverlay;
+import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.Utils;
-import net.minecraft.client.gui.Gui;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
+
 import org.lwjgl.input.Keyboard;
 
-
-import java.io.IOException;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-public class GuiDianaOverlayEditor extends GuiScreen {
+public class GuiDianaOverlayEditor extends AetheriaBaseScreen {
 
     private final GuiScreen parentScreen;
     private final Runnable saveCallback;
@@ -45,51 +47,57 @@ public class GuiDianaOverlayEditor extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        super.drawScreen(mouseX, mouseY, partialTicks);
-        ScaledResolution sr = new ScaledResolution(mc);
-        int[] m = KeybindHelper.getMouseCoords(sr);
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
+        int screenW = GuiScreenUtils.getScaledWindowWidth();
+        int screenH = GuiScreenUtils.getScaledWindowHeight();
+        //#if MC < 1.21
+        int[] m = KeybindHelper.getMouseCoords(screenW, screenH);
         mouseX = m[0];
         mouseY = m[1];
-        this.width = sr.getScaledWidth();
-        this.height = sr.getScaledHeight();
+        //#endif
+        this.width = screenW;
+        this.height = screenH;
 
+        //#if MC < 1.21
         drawDefaultBackground();
+        //#endif
 
         if (draggedIndex >= 0) {
             OverlayEntry e = overlays[draggedIndex];
-            grabbedX += e.position.moveX(mouseX - grabbedX, e.scaledW(), sr);
-            grabbedY += e.position.moveY(mouseY - grabbedY, e.scaledH(), sr);
+            grabbedX += e.position.moveX(mouseX - grabbedX, e.scaledW(), screenW);
+            grabbedY += e.position.moveY(mouseY - grabbedY, e.scaledH(), screenH);
         }
 
         for (OverlayEntry e : overlays) {
             e.renderer.run();
-            int x = e.position.getAbsX(sr, e.scaledW());
-            int y = e.position.getAbsY(sr, e.scaledH());
+            int x = e.position.getAbsX(screenW, e.scaledW());
+            int y = e.position.getAbsY(screenH, e.scaledH());
             if (e.position.isCenterX()) x -= e.scaledW() / 2;
             if (e.position.isCenterY()) y -= e.scaledH() / 2;
-            Gui.drawRect(x, y, x + e.scaledW(), y + e.scaledH(), 0x80404040);
-            mc.fontRendererObj.drawStringWithShadow(e.label, x + 2, y + 2, 0xFFFFFF);
+            DrawContextUtils.fill(x, y, x + e.scaledW(), y + e.scaledH(), 0x80404040);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), e.label, x + 2, y + 2, 0xFFFFFF);
         }
 
-        Utils.drawStringCentered("Diana Overlay Editor", mc.fontRendererObj, width / 2, 8, true, 0xFFFFFF);
-        Utils.drawStringCentered("Drag overlays to move | R = reset all | ESC = back", mc.fontRendererObj, width / 2, 18, true, 0xAAAAAA);
+        Utils.drawStringCentered("Diana Overlay Editor", MinecraftCompat.getFontRenderer(), width / 2, 8, true, 0xFFFFFF);
+        Utils.drawStringCentered("Drag overlays to move | R = reset all | ESC = back", MinecraftCompat.getFontRenderer(), width / 2, 18, true, 0xAAAAAA);
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        super.mouseClicked(mouseX, mouseY, mouseButton);
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (mouseButton != 0) return;
 
-        ScaledResolution sr = new ScaledResolution(mc);
+        int screenW = GuiScreenUtils.getScaledWindowWidth();
+        int screenH = GuiScreenUtils.getScaledWindowHeight();
+        //#if MC < 1.21
         int[] m = KeybindHelper.getMouseCoords(width, height);
         mouseX = m[0];
         mouseY = m[1];
+        //#endif
 
         for (int i = 0; i < overlays.length; i++) {
             OverlayEntry e = overlays[i];
-            int x = e.position.getAbsX(sr, e.scaledW());
-            int y = e.position.getAbsY(sr, e.scaledH());
+            int x = e.position.getAbsX(screenW, e.scaledW());
+            int y = e.position.getAbsY(screenH, e.scaledH());
             if (e.position.isCenterX()) x -= e.scaledW() / 2;
             if (e.position.isCenterY()) y -= e.scaledH() / 2;
             if (mouseX >= x && mouseX <= x + e.scaledW() && mouseY >= y && mouseY <= y + e.scaledH()) {
@@ -102,8 +110,7 @@ public class GuiDianaOverlayEditor extends GuiScreen {
     }
 
     @Override
-    protected void mouseReleased(int mouseX, int mouseY, int state) {
-        super.mouseReleased(mouseX, mouseY, state);
+    protected void onMouseReleased(int mouseX, int mouseY, int state) {
         if (draggedIndex >= 0) {
             saveCallback.run();
             draggedIndex = -1;
@@ -111,24 +118,26 @@ public class GuiDianaOverlayEditor extends GuiScreen {
     }
 
     @Override
-    protected void mouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
-        super.mouseClickMove(mouseX, mouseY, clickedMouseButton, timeSinceLastClick);
+    protected void onMouseClickMove(int mouseX, int mouseY, int clickedMouseButton, long timeSinceLastClick) {
         if (draggedIndex < 0) return;
 
-        ScaledResolution sr = new ScaledResolution(mc);
+        int screenW = GuiScreenUtils.getScaledWindowWidth();
+        int screenH = GuiScreenUtils.getScaledWindowHeight();
+        //#if MC < 1.21
         int[] m = KeybindHelper.getMouseCoords(width, height);
         mouseX = m[0];
         mouseY = m[1];
+        //#endif
 
         OverlayEntry e = overlays[draggedIndex];
-        grabbedX += e.position.moveX(mouseX - grabbedX, e.scaledW(), sr);
-        grabbedY += e.position.moveY(mouseY - grabbedY, e.scaledH(), sr);
+        grabbedX += e.position.moveX(mouseX - grabbedX, e.scaledW(), screenW);
+        grabbedY += e.position.moveY(mouseY - grabbedY, e.scaledH(), screenH);
         saveCallback.run();
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        Keyboard.enableRepeatEvents(true);
+    protected void onKeyTyped(char typedChar, int keyCode) {
+        KeyboardCompat.enableRepeatEvents(true);
 
         if (keyCode == Keyboard.KEY_ESCAPE) {
             saveCallback.run();
@@ -143,16 +152,15 @@ public class GuiDianaOverlayEditor extends GuiScreen {
 
         if (focusedIndex >= 0) {
             OverlayEntry e = overlays[focusedIndex];
-            ScaledResolution sr = new ScaledResolution(mc);
-            int dist = (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) ? 10 : 1;
-            if (keyCode == Keyboard.KEY_DOWN) e.position.moveY(dist, e.scaledH(), sr);
-            else if (keyCode == Keyboard.KEY_UP) e.position.moveY(-dist, e.scaledH(), sr);
-            else if (keyCode == Keyboard.KEY_LEFT) e.position.moveX(-dist, e.scaledW(), sr);
-            else if (keyCode == Keyboard.KEY_RIGHT) e.position.moveX(dist, e.scaledW(), sr);
+            int sw = GuiScreenUtils.getScaledWindowWidth();
+            int sh = GuiScreenUtils.getScaledWindowHeight();
+            int dist = (KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) || KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT)) ? 10 : 1;
+            if (keyCode == Keyboard.KEY_DOWN) e.position.moveY(dist, e.scaledH(), sh);
+            else if (keyCode == Keyboard.KEY_UP) e.position.moveY(-dist, e.scaledH(), sh);
+            else if (keyCode == Keyboard.KEY_LEFT) e.position.moveX(-dist, e.scaledW(), sw);
+            else if (keyCode == Keyboard.KEY_RIGHT) e.position.moveX(dist, e.scaledW(), sw);
             saveCallback.run();
         }
-
-        super.keyTyped(typedChar, keyCode);
     }
 
     @Override

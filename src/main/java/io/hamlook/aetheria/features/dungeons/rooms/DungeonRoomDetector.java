@@ -4,26 +4,37 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.core.features.dungeons.DungeonSecretFinderConfig;
+import io.hamlook.aetheria.core.features.dungeons.SecretsConfig;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldLoadEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
+import io.hamlook.aetheria.features.dungeons.rooms.secret.SecretCollector;
+import io.hamlook.aetheria.features.dungeons.rooms.secret.SecretRenderer;
+import io.hamlook.aetheria.features.dungeons.rooms.secret.SecretTracker;
+import io.hamlook.aetheria.utils.render.SolidRender;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
+import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.LegacyBlockIds;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.WorldCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.block.Block;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.world.World;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.math.BigInteger;
@@ -40,7 +51,6 @@ public class DungeonRoomDetector {
 
     private static final Executor executor = Executors.newFixedThreadPool(2);
     private static final ConcurrentMap<String, DungeonRoom> visitedRooms = new ConcurrentHashMap<>();
-    private static final Set<String> loadedSecretKeys = new HashSet<>();
     public static volatile BlockPos originBlock = null;
     public static volatile String originCorner = null;
     public static volatile int roomRotation = -1;
@@ -53,12 +63,12 @@ public class DungeonRoomDetector {
     public static volatile int roomCeilingY = -1;
     public static volatile int roomFloorY = -1;
     public static volatile boolean roomBoundsValid = false;
-    public static int displayedSecretCount = -1;
+    private static volatile String lastLoggedRoomMd5 = null;
     private static JsonObject roomsJson = null;
-    private static JsonObject secretLocationsJson = null;
     private static int tickCount = 0;
     private static String lastRoomHash = null;
     private static JsonObject lastRoomJson = null;
+    private static boolean runEnded = false;
     private final Map<Long, Integer> dungeonTopCache = new ConcurrentHashMap<>();
     private final Map<Long, Integer> dungeonBottomCache = new ConcurrentHashMap<>();
     private final Map<String, Integer> endOfRoomCache = new ConcurrentHashMap<>();
@@ -132,7 +142,7 @@ public class DungeonRoomDetector {
             default:
                 return null;
         }
-        return new BlockPos(x, relative.getY(), z);
+        return new BlockPos((int) x, relative.getY(), (int) z);
     }
 
     // Store a visited room in the static cache. Called after the room has been identified
@@ -166,7 +176,7 @@ public class DungeonRoomDetector {
         return new DungeonRoom(name, alias, lastRoomHash, origin, center, width, height);
     }
 
-    private static String roomKey(String hash, BlockPos origin) {
+    public static String roomKey(String hash, BlockPos origin) {
         return hash + "|" + origin.getX() + "," + origin.getZ();
     }
 
@@ -177,8 +187,8 @@ public class DungeonRoomDetector {
 
     // Helper to determine if a player is inside a given DungeonRoom
     private static boolean isPlayerInRoom(EntityPlayer player, DungeonRoom room) {
-        int px = (int) Math.floor(player.posX);
-        int pz = (int) Math.floor(player.posZ);
+        int px = (int) Math.floor(EntityCompat.getPosX(player));
+        int pz = (int) Math.floor(EntityCompat.getPosZ(player));
         int minX = room.origin.getX();
         int minZ = room.origin.getZ();
         int maxX = minX + room.width - 1;
@@ -191,9 +201,8 @@ public class DungeonRoomDetector {
      * visited room, attempts to add the current detected room for them.
      */
     public static void updateAllPlayerRooms() {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.theWorld == null) return;
-        for (EntityPlayer player : mc.theWorld.playerEntities) {
+        if (MinecraftCompat.getLocalWorld() == null) return;
+        for (EntityPlayer player : WorldCompat.getLoadedPlayers(MinecraftCompat.getLocalWorld())) {
             boolean known = false;
             for (DungeonRoom dr : visitedRooms.values()) {
                 if (isPlayerInRoom(player, dr)) {
@@ -203,12 +212,7 @@ public class DungeonRoomDetector {
             }
             if (!known) {
                 DungeonRoom dr = getCurrentRoom();
-                if (dr != null) {
-                    visitedRooms.putIfAbsent(roomKey(dr.hash, dr.origin), dr);
-                    if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled && secretLocationsJson != null) {
-                        SecretRenderUtils.loadSecrets(dr.name, secretLocationsJson);
-                    }
-                }
+                if (dr != null) visitedRooms.putIfAbsent(roomKey(dr.hash, dr.origin), dr);
             }
         }
     }
@@ -237,30 +241,11 @@ public class DungeonRoomDetector {
             default:
                 return null;
         }
-        return new BlockPos(x, actual.getY(), z);
+        return new BlockPos((int) x, actual.getY(), (int) z);
     }
 
     public static List<String> getSecretNamesForRoom(String roomName) {
-        List<String> names = new ArrayList<>();
-        if (secretLocationsJson == null || roomName == null || !secretLocationsJson.has(roomName)) return names;
-        try {
-            JsonArray secrets = secretLocationsJson.get(roomName).getAsJsonArray();
-            for (int i = 0; i < secrets.size(); i++) {
-                JsonObject secret = secrets.get(i).getAsJsonObject();
-                if (secret.has("category") && "fairysoul".equals(secret.get("category").getAsString())) {
-                    continue;
-                }
-                if (secret.has("secretName")) {
-                    String secretName = secret.get("secretName").getAsString();
-                    if (!names.contains(secretName)) {
-                        names.add(secretName);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return names;
+        return SecretTracker.secretNamesForRoom(roomName);
     }
 
     private void resetOrigin() {
@@ -276,18 +261,28 @@ public class DungeonRoomDetector {
         roomCeilingY = -1;
         roomFloorY = -1;
         roomBoundsValid = false;
-        SecretRenderUtils.clearSecrets();
-        loadedSecretKeys.clear();
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.START) return;
+    private void resetRunState() {
+        resetOrigin();
+        visitedRooms.clear();
+        lastRoomHash = null;
+        lastRoomJson = null;
+        SecretTracker.clear();
+        SecretCollector.reset();
+        SolidRender.clearCache();
+        DungeonMapOverlay.resetRun();
+    }
+
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.START) return;
         if (ATHRConfig.feature == null) return;
+        SecretsConfig secrets = SecretsConfig.get();
         boolean overlayOn = ATHRConfig.feature.dungeons.dungeonRoomOverlayConfig.dungeonRoomOverlay;
-            boolean sfOn = ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled;
-                boolean dmOn = ATHRConfig.feature.dungeons.dungeonMapConfig.rooms.showVisitedRoomNames;
-                boolean needOrigin = sfOn || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled;
+        boolean sfOn = secrets != null && secrets.enabled;
+        boolean dmOn = ATHRConfig.feature.dungeons.dungeonMapConfig.rooms.showVisitedRoomNames;
+        boolean needOrigin = sfOn || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled;
 
                 if (!overlayOn && !sfOn && !dmOn && !ATHRConfig.feature.dungeons.dungeonMapConfig.enabled) {
             DungeonRoomOverlay.currentRoomName = null;
@@ -307,23 +302,19 @@ public class DungeonRoomDetector {
             playerRelX = Integer.MAX_VALUE;
             playerRelZ = Integer.MAX_VALUE;
         }
-        if (!sfOn) {
-            SecretRenderUtils.clearSecrets();
-            loadedSecretKeys.clear();
-            displayedSecretCount = -1;
-        }
-        if (SkyblockData.getCurrentLocation() != SkyblockData.Location.DUNGEON) {
-            resetOrigin();
+        if (!sfOn && SecretTracker.current() != null) SecretTracker.clear();
+        boolean inDungeon = SkyblockData.getCurrentLocation() == SkyblockData.Location.DUNGEON;
+        if (!inDungeon || DungeonStats.isInBossFight()) {
+            if (!runEnded) {
+                runEnded = true;
+                resetRunState();
+            }
             return;
         }
-        if (DungeonStats.isInBossFight()) {
-            resetOrigin();
-            return;
-        }
+        runEnded = false;
         if (++tickCount % 30 != 0) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null || mc.theWorld == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) return;
 
         if (roomsJson == null) loadRoomsJson();
         if (roomsJson == null) return;
@@ -334,9 +325,12 @@ public class DungeonRoomDetector {
                 dungeonBottomCache.clear();
                 endOfRoomCache.clear();
 
-                int x = (int) Math.floor(mc.thePlayer.posX);
-                int y = (int) Math.floor(mc.thePlayer.posY);
-                int z = (int) Math.floor(mc.thePlayer.posZ);
+                EntityPlayer player = MinecraftCompat.getLocalPlayer();
+                if (player == null) return;
+
+                int x = (int) Math.floor(EntityCompat.getPosX(player));
+                int y = (int) Math.floor(EntityCompat.getPosY(player));
+                int z = (int) Math.floor(EntityCompat.getPosZ(player));
 
                 // If player is still inside the last detected room, skip full scan.
                 // Fall through if secrets need origin detection (first tick after room enter clears it)
@@ -407,6 +401,7 @@ public class DungeonRoomDetector {
                         DungeonRoomOverlay.currentRoomAlias = null;
                     }
                     lastRoomJson = null;
+                    logRoomDebug(md5, null, floorHash, floorFreq, blockFreq);
                     resetOrigin();
                     return;
                 }
@@ -434,6 +429,7 @@ public class DungeonRoomDetector {
                     lastRoomJson = arr.get(0).getAsJsonObject();
                     setOverlay(lastRoomJson);
                 }
+                    logRoomDebug(md5, lastRoomJson, floorHash, floorFreq, null);
 
                 computeRoomBounds(x, top, z);
                 addVisitedRoom(lastRoomJson);
@@ -462,9 +458,25 @@ public class DungeonRoomDetector {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Aetheria.logger.warning("Dungeon room scan failed: " + e);
             }
         });
+    }
+
+    private static void logRoomDebug(String hash, JsonObject room, String floorHash, String floorFreq, String wallFreq) {
+        if (ATHRConfig.feature.debug.dungeonRoomDebug && !Objects.equals(hash, lastLoggedRoomMd5)) {
+            lastLoggedRoomMd5 = hash;
+            String floorPart = " floor=" + floorHash + (floorFreq != null ? " floorStr=" + floorFreq : "");
+            if (room == null) {
+                Aetheria.logger.info("[ATHR] Room: Unknown hash=" + hash + floorPart + (wallFreq != null ? " wall=" + wallFreq : ""));
+            } else {
+                String roomName = room.get("name").getAsString();
+                Aetheria.logger.info("[ATHR] Room: " + roomName
+                    + " alias=" + getRoomAlias(room, roomName)
+                    + " category=" + room.get("category").getAsString()
+                    + " hash=" + hash + floorPart);
+            }
+        }
     }
 
     private void setOverlay(JsonObject room) {
@@ -497,62 +509,46 @@ public class DungeonRoomDetector {
         roomBoundsValid = true;
     }
 
+    private static BlockPos immutableCopy(BlockPos pos) {
+        //#if MC < 1.16
+        return pos;
+        //#else
+        //$$ return pos.toImmutable();
+        //#endif
+    }
+
     private void checkCorner(BlockPos blockPos) {
-        World world = Minecraft.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         if (world == null) return;
-        if (world.getBlockState(blockPos).getBlock() == Blocks.stained_hardened_clay) {
+        if (BlockCompat.isStainedHardenedClay(world.getBlockState(blockPos).getBlock())) {
             Block northBlock = world.getBlockState(new BlockPos(blockPos.getX(), blockPos.getY(), blockPos.getZ() - 1)).getBlock();
             Block southBlock = world.getBlockState(new BlockPos(blockPos.getX(), blockPos.getY(), blockPos.getZ() + 1)).getBlock();
             Block eastBlock = world.getBlockState(new BlockPos(blockPos.getX() + 1, blockPos.getY(), blockPos.getZ())).getBlock();
             Block westBlock = world.getBlockState(new BlockPos(blockPos.getX() - 1, blockPos.getY(), blockPos.getZ())).getBlock();
-            if (northBlock == Blocks.air && southBlock != Blocks.air && eastBlock != Blocks.air && westBlock == Blocks.air) {
+            if (BlockCompat.isAir(northBlock) && !BlockCompat.isAir(southBlock) && !BlockCompat.isAir(eastBlock) && BlockCompat.isAir(westBlock)) {
                 originCorner = "northwest";
-                originBlock = blockPos;
-            } else if (northBlock == Blocks.air && southBlock != Blocks.air && eastBlock == Blocks.air && westBlock != Blocks.air) {
+                originBlock = immutableCopy(blockPos);
+            } else if (BlockCompat.isAir(northBlock) && !BlockCompat.isAir(southBlock) && BlockCompat.isAir(eastBlock) && !BlockCompat.isAir(westBlock)) {
                 originCorner = "northeast";
-                originBlock = blockPos;
-            } else if (northBlock != Blocks.air && southBlock == Blocks.air && eastBlock == Blocks.air && westBlock != Blocks.air) {
+                originBlock = immutableCopy(blockPos);
+            } else if (!BlockCompat.isAir(northBlock) && BlockCompat.isAir(southBlock) && BlockCompat.isAir(eastBlock) && !BlockCompat.isAir(westBlock)) {
                 originCorner = "southeast";
-                originBlock = blockPos;
-            } else if (northBlock != Blocks.air && southBlock == Blocks.air && eastBlock != Blocks.air && westBlock == Blocks.air) {
+                originBlock = immutableCopy(blockPos);
+            } else if (!BlockCompat.isAir(northBlock) && BlockCompat.isAir(southBlock) && !BlockCompat.isAir(eastBlock) && BlockCompat.isAir(westBlock)) {
                 originCorner = "southwest";
-                originBlock = blockPos;
+                originBlock = immutableCopy(blockPos);
             }
         }
     }
 
-    private void loadSecretLocationsJson() {
-        secretLocationsJson = RepoHandler.get(ATHRRepo.KEY_SECRETLOCATIONS, JsonObject.class, null);
-    }
-
     private void processSecrets() {
-        if (secretLocationsJson == null) loadSecretLocationsJson();
-        if (secretLocationsJson == null) {
-            displayedSecretCount = -1;
-            return;
-        }
-        if (originBlock == null || originCorner == null) {
-            displayedSecretCount = -1;
-            return;
-        }
-        if (lastRoomHash == null) {
-            displayedSecretCount = -1;
-            return;
-        }
+        if (originBlock == null || originCorner == null) return;
+        if (lastRoomHash == null) return;
 
         String roomName = DungeonRoomOverlay.currentRoomName;
-        if (roomName == null) {
-            displayedSecretCount = -1;
-            return;
-        }
+        if (roomName == null) return;
 
-        String cacheKey = lastRoomHash + "|" + originBlock.getX() + "," + originBlock.getZ();
-        if (!loadedSecretKeys.contains(cacheKey)) {
-            loadedSecretKeys.clear();
-            loadedSecretKeys.add(cacheKey);
-            SecretRenderUtils.loadSecrets(roomName, secretLocationsJson);
-            displayedSecretCount = SecretRenderUtils.getActiveSecretCount();
-        }
+        SecretTracker.onRoomChanged(roomName, roomKey(lastRoomHash, originBlock));
     }
 
     private void loadRoomsJson() {
@@ -563,10 +559,10 @@ public class DungeonRoomDetector {
         long key = ((long) x << 32) | (z & 0xFFFFFFFFL);
         Integer cached = dungeonTopCache.get(key);
         if (cached != null) return cached;
-        World world = Minecraft.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         for (int i = 255; i >= 78; i--) {
             Block b = world.getBlockState(new BlockPos(x, i, z)).getBlock();
-            if (b != Blocks.air && checkPlatform(x, i, z)) {
+            if (!BlockCompat.isAir(b) && checkPlatform(x, i, z)) {
                 dungeonTopCache.put(key, i);
                 return i;
             }
@@ -579,10 +575,10 @@ public class DungeonRoomDetector {
         long key = ((long) x << 32) | (z & 0xFFFFFFFFL);
         Integer cached = dungeonBottomCache.get(key);
         if (cached != null) return cached;
-        World world = Minecraft.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         for (int i = 0; i <= 68; i++) {
             Block b = world.getBlockState(new BlockPos(x, i, z)).getBlock();
-            if (b == Blocks.bedrock || b == Blocks.stone) {
+            if (b == Blocks.bedrock || BlockCompat.isStoneFamily(b)) {
                 dungeonBottomCache.put(key, i);
                 return i;
             }
@@ -596,13 +592,13 @@ public class DungeonRoomDetector {
     }
 
     private boolean checkPlatform(int x, int y, int z) {
-        World world = Minecraft.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         int n = 0, s = 0, e = 0, w = 0;
         for (int j = 0; j < 10; j++) {
-            if (world.getBlockState(new BlockPos(x, y, z - j)).getBlock() != Blocks.air) n++;
-            if (world.getBlockState(new BlockPos(x, y, z + j)).getBlock() != Blocks.air) s++;
-            if (world.getBlockState(new BlockPos(x + j, y, z)).getBlock() != Blocks.air) e++;
-            if (world.getBlockState(new BlockPos(x - j, y, z)).getBlock() != Blocks.air) w++;
+            if (!BlockCompat.isAir(world.getBlockState(new BlockPos(x, y, z - j)).getBlock())) n++;
+            if (!BlockCompat.isAir(world.getBlockState(new BlockPos(x, y, z + j)).getBlock())) s++;
+            if (!BlockCompat.isAir(world.getBlockState(new BlockPos(x + j, y, z)).getBlock())) e++;
+            if (!BlockCompat.isAir(world.getBlockState(new BlockPos(x - j, y, z)).getBlock())) w++;
         }
         return (n == 10 || s == 10 || e == 10 || w == 10);
     }
@@ -611,33 +607,33 @@ public class DungeonRoomDetector {
         String key = x + "," + y + "," + z + "," + dir;
         Integer cached = endOfRoomCache.get(key);
         if (cached != null) return cached;
-        World world = Minecraft.getMinecraft().theWorld;
-        int result = -1;
+        World world = MinecraftCompat.getLocalWorld();
+        int result;
         for (int i = 1; i <= 200; i++) {
             switch (dir) {
                 case "n":
-                    if (world.getBlockState(new BlockPos(x, y, z - i)).getBlock() == Blocks.air || checkPlatform(x, y + 1, z - i) || Math.abs(dungeonHeight(x, z - i) - dungeonHeight(x, z - i + 1)) > 3) {
+                    if (BlockCompat.isAir(world.getBlockState(new BlockPos(x, y, z - i)).getBlock()) || checkPlatform(x, y + 1, z - i) || Math.abs(dungeonHeight(x, z - i) - dungeonHeight(x, z - i + 1)) > 3) {
                         result = z - i + 1;
                         endOfRoomCache.put(key, result);
                         return result;
                     }
                     break;
                 case "s":
-                    if (world.getBlockState(new BlockPos(x, y, z + i)).getBlock() == Blocks.air || checkPlatform(x, y + 1, z + i) || Math.abs(dungeonHeight(x, z + i) - dungeonHeight(x, z + i - 1)) > 3) {
+                    if (BlockCompat.isAir(world.getBlockState(new BlockPos(x, y, z + i)).getBlock()) || checkPlatform(x, y + 1, z + i) || Math.abs(dungeonHeight(x, z + i) - dungeonHeight(x, z + i - 1)) > 3) {
                         result = z + i - 1;
                         endOfRoomCache.put(key, result);
                         return result;
                     }
                     break;
                 case "e":
-                    if (world.getBlockState(new BlockPos(x + i, y, z)).getBlock() == Blocks.air || checkPlatform(x + i, y + 1, z) || Math.abs(dungeonHeight(x + i, z) - dungeonHeight(x + i - 1, z)) > 3) {
+                    if (BlockCompat.isAir(world.getBlockState(new BlockPos(x + i, y, z)).getBlock()) || checkPlatform(x + i, y + 1, z) || Math.abs(dungeonHeight(x + i, z) - dungeonHeight(x + i - 1, z)) > 3) {
                         result = x + i - 1;
                         endOfRoomCache.put(key, result);
                         return result;
                     }
                     break;
                 case "w":
-                    if (world.getBlockState(new BlockPos(x - i, y, z)).getBlock() == Blocks.air || checkPlatform(x - i, y + 1, z) || Math.abs(dungeonHeight(x - i, z) - dungeonHeight(x - i + 1, z)) > 3) {
+                    if (BlockCompat.isAir(world.getBlockState(new BlockPos(x - i, y, z)).getBlock()) || checkPlatform(x - i, y + 1, z) || Math.abs(dungeonHeight(x - i, z) - dungeonHeight(x - i + 1, z)) > 3) {
                         result = x - i + 1;
                         endOfRoomCache.put(key, result);
                         return result;
@@ -686,9 +682,14 @@ public class DungeonRoomDetector {
         return "error";
     }
 
+    private static boolean secretFinderOn() {
+        SecretsConfig config = SecretsConfig.get();
+        return config != null && config.enabled;
+    }
+
     private String blockFrequency(int x, int y, int z) {
         if (y == -1) return null;
-        World world = Minecraft.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         Map<String, Integer> freqMap = new HashMap<>();
 
         int nw = northWidth(x, y, z), sw = southWidth(x, y, z), ew = eastWidth(x, y, z), ww = westWidth(x, y, z);
@@ -697,8 +698,8 @@ public class DungeonRoomDetector {
             int nz = endOfRoom(x, y, z, "n"), nwx = endOfRoom(x, y, nz, "w");
             int sz = endOfRoom(x, y, z, "s"), sex = endOfRoom(x, y, sz, "e");
             for (BlockPos bp : BlockPos.getAllInBox(new BlockPos(nwx, y, nz), new BlockPos(sex, y, sz))) {
-                if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled) checkCorner(bp);
-                freqMap.merge(world.getBlockState(bp).toString(), 1, Integer::sum);
+                if (secretFinderOn() || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled) checkCorner(bp);
+                freqMap.merge(LegacyBlockIds.legacyStateString(world.getBlockState(bp).toString()), 1, Integer::sum);
             }
         } else if (getSize(x, y, z).equals("L-shape")) {
             if (nw == sw) {
@@ -707,15 +708,15 @@ public class DungeonRoomDetector {
                 int dx = ew > ww ? -1 : 1;
                 for (int i = 0; i < 200; i++) {
                     int cz = nz + i;
-                    if (world.getBlockState(new BlockPos(startX, y, cz)).getBlock() == Blocks.air || checkPlatform(startX, y + 1, cz) || (i > 0 && Math.abs(dungeonHeight(startX, cz) - dungeonHeight(startX, cz - 1)) > 3))
+                    if (BlockCompat.isAir(world.getBlockState(new BlockPos(startX, y, cz)).getBlock()) || checkPlatform(startX, y + 1, cz) || (i > 0 && Math.abs(dungeonHeight(startX, cz) - dungeonHeight(startX, cz - 1)) > 3))
                         break;
                     for (int j = 0; j < 200; j++) {
                         BlockPos bp = new BlockPos(startX + dx * j, y, cz);
                         Block b = world.getBlockState(bp).getBlock();
-                        if (b == Blocks.air || checkPlatform(startX + dx * j, y + 1, cz) || (j > 0 && Math.abs(dungeonHeight(startX + dx * j, cz) - dungeonHeight(startX + dx * (j - 1), cz)) > 3))
+                        if (BlockCompat.isAir(b) || checkPlatform(startX + dx * j, y + 1, cz) || (j > 0 && Math.abs(dungeonHeight(startX + dx * j, cz) - dungeonHeight(startX + dx * (j - 1), cz)) > 3))
                             break;
-                        if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled) checkCorner(bp);
-                        freqMap.merge(b.toString(), 1, Integer::sum);
+                        if (secretFinderOn() || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled) checkCorner(bp);
+                        freqMap.merge(LegacyBlockIds.legacyBlockString(b.toString()), 1, Integer::sum);
                     }
                 }
             } else {
@@ -724,15 +725,15 @@ public class DungeonRoomDetector {
                 int dz = nw > sw ? 1 : -1;
                 for (int i = 0; i < 200; i++) {
                     int cx = wx + i;
-                    if (world.getBlockState(new BlockPos(cx, y, startZ)).getBlock() == Blocks.air || checkPlatform(cx, y + 1, startZ) || (i > 0 && Math.abs(dungeonHeight(cx, startZ) - dungeonHeight(cx - 1, startZ)) > 3))
+                    if (BlockCompat.isAir(world.getBlockState(new BlockPos(cx, y, startZ)).getBlock()) || checkPlatform(cx, y + 1, startZ) || (i > 0 && Math.abs(dungeonHeight(cx, startZ) - dungeonHeight(cx - 1, startZ)) > 3))
                         break;
                     for (int j = 0; j < 200; j++) {
                         BlockPos bp = new BlockPos(cx, y, startZ + dz * j);
                         Block b = world.getBlockState(bp).getBlock();
-                        if (b == Blocks.air || checkPlatform(cx, y + 1, startZ + dz * j) || (j > 0 && Math.abs(dungeonHeight(cx, startZ + dz * j) - dungeonHeight(cx, startZ + dz * (j - 1))) > 3))
+                        if (BlockCompat.isAir(b) || checkPlatform(cx, y + 1, startZ + dz * j) || (j > 0 && Math.abs(dungeonHeight(cx, startZ + dz * j) - dungeonHeight(cx, startZ + dz * (j - 1))) > 3))
                             break;
-                        if (ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled) checkCorner(bp);
-                        freqMap.merge(b.toString(), 1, Integer::sum);
+                        if (secretFinderOn() || ATHRConfig.feature.dungeons.dungeonMapConfig.enabled) checkCorner(bp);
+                        freqMap.merge(LegacyBlockIds.legacyBlockString(b.toString()), 1, Integer::sum);
                     }
                 }
             }
@@ -747,14 +748,14 @@ public class DungeonRoomDetector {
 
     private String floorFrequency(int x, int y, int z) {
         if (y == -1) return null;
-        World world = Minecraft.getMinecraft().theWorld;
+        World world = MinecraftCompat.getLocalWorld();
         Map<String, Integer> freqMap = new HashMap<>();
 
         if (northWidth(x, y, z) == southWidth(x, y, z) && eastWidth(x, y, z) == westWidth(x, y, z)) {
             int nz = endOfRoom(x, y, z, "n"), nwx = endOfRoom(x, y, nz, "w");
             int sz = endOfRoom(x, y, z, "s"), sex = endOfRoom(x, y, sz, "e");
             for (BlockPos bp : BlockPos.getAllInBox(new BlockPos(nwx + 10, 68, nz + 10), new BlockPos(sex - 10, 68, sz - 10)))
-                freqMap.merge(world.getBlockState(bp).getBlock().toString(), 1, Integer::sum);
+                freqMap.merge(LegacyBlockIds.legacyBlockString(world.getBlockState(bp).getBlock().toString()), 1, Integer::sum);
         }
         if (getSize(x, y, z).equals("L-shape")) freqMap.merge(String.valueOf(dungeonTop(x, z)), 1, Integer::sum);
 
@@ -779,53 +780,38 @@ public class DungeonRoomDetector {
         }
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
-        resetOrigin();
-        DungeonMapOverlay.clearPlayers();
-
+    @HandleEvent
+    public void onWorldLoad(ASMWorldLoadEvent event) {
+        runEnded = false;
+        resetRunState();
     }
 
-    @SubscribeEvent
-    public void onRenderWorld(RenderWorldLastEvent event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
+        runEnded = false;
+        resetRunState();
+    }
+
+    @HandleEvent
+    public void onRenderWorld(ASMRenderWorldEvent event) {
         if (!roomBoundsValid || roomMinX == Integer.MAX_VALUE) return;
         if (DungeonRoomOverlay.currentRoomName == null) return;
         if (roomCeilingY <= 0 || roomFloorY < 0) return;
 
-        float tracerWidth = ATHRConfig.feature != null && ATHRConfig.feature.dungeons.dungeonSecretFinder != null ? ATHRConfig.feature.dungeons.dungeonSecretFinder.other.tracerWidth : 2.0f;
+        DungeonSecretFinderConfig secretFinder = DungeonSecretFinderConfig.get();
+        float tracerWidth = secretFinder != null ? secretFinder.waypoints.tracerWidth : 2.0f;
 
-        if (ATHRConfig.feature != null && ATHRConfig.feature.debug.dungeonRoomHighlight) {
+        if (ATHRConfig.feature.debug.dungeonRoomHighlight) {
             WorldRenderUtils.drawSelectionBox(new AxisAlignedBB(roomMinX, roomFloorY, roomMinZ, roomMaxX + 1, roomCeilingY + 1, roomMaxZ + 1), new Color(0, 200, 255, 120), tracerWidth);
 
             if (originBlock != null) {
-                double vx = Minecraft.getMinecraft().getRenderManager().viewerPosX;
-                double vy = Minecraft.getMinecraft().getRenderManager().viewerPosY;
-                double vz = Minecraft.getMinecraft().getRenderManager().viewerPosZ;
-
-                drawEspBoxTranslated(originBlock.getX(), originBlock.getY(), originBlock.getZ(), new Color(180, 0, 255, 200), vx, vy, vz, tracerWidth);
+                WorldRenderUtils.drawEspBox(originBlock.getX(), originBlock.getY(), originBlock.getZ(), new Color(180, 0, 255, 200), true, tracerWidth);
             }
         }
 
-        if (ATHRConfig.feature != null && ATHRConfig.feature.dungeons.dungeonSecretFinder.enabled) {
-            displayedSecretCount = SecretRenderUtils.getActiveSecretCount();
-            SecretRenderUtils.renderSecrets(event.partialTicks);
+        SecretsConfig secrets = SecretsConfig.get();
+        if (secrets != null && secrets.enabled) {
+            SecretRenderer.render(event.partialTicks);
         }
-    }
-
-    private void drawEspBoxTranslated(double x, double y, double z, Color color, double vx, double vy, double vz, float lineWidth) {
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthMask(false);
-        GL11.glLineWidth(lineWidth);
-        GL11.glPushMatrix();
-        GL11.glTranslated(-vx, -vy, -vz);
-        WorldRenderUtils.drawEspBox(x, y, z, color);
-        GL11.glPopMatrix();
-        GL11.glPopAttrib();
-        GL11.glColor4f(1f, 1f, 1f, 1f);
     }
 }

@@ -1,12 +1,12 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumFacing;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
-public class BlockClickEvent extends Event {
+public class BlockClickEvent extends AetheriaEvent {
 
     public final BlockPos pos;
     public final EnumFacing facing;
@@ -17,6 +17,6 @@ public class BlockClickEvent extends Event {
     }
 
     public IBlockState getBlockState() {
-        return Minecraft.getMinecraft().theWorld.getBlockState(pos);
+        return MinecraftCompat.getLocalWorld().getBlockState(pos);
     }
 }

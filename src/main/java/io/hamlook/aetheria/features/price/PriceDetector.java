@@ -5,31 +5,35 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.network.NetworkGuard;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.price.vars.AuctionEntry;
 import io.hamlook.aetheria.features.price.vars.BazaarEntry;
 import io.hamlook.aetheria.features.price.vars.PriceData;
 import io.hamlook.aetheria.features.price.vars.PriceType;
-import io.hamlook.aetheria.features.profile.ProfileParser;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.repo.OtherDataAPI;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.chat.ChatUtils;
-import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.ThreadUtils;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.*;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -95,14 +99,14 @@ public class PriceDetector {
         return totalMs;
     }
 
-    @SubscribeEvent
-    public void onGuiOpen(GuiOpenEvent event) {
+    @HandleEvent
+    public void onGuiOpen(ASMGuiOpenEvent event) {
         scanning = false;
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
 
 
         if (!initialised) {
@@ -144,14 +148,14 @@ public class PriceDetector {
         || !ATHRConfig.feature.misc.itemPriceConfig.sendToDB) return;
         if (bazaarMap.isEmpty() && auctionMap.isEmpty()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         PriceData payload = new PriceData();
         payload.bazaar.putAll(bazaarMap);
         payload.auction.putAll(auctionMap);
 
         String json = gson.toJson(payload);
 
-        if (mc.thePlayer != null) {
+        if (MinecraftCompat.getLocalPlayer() != null) {
             Aetheria.logger.info("Sending " + bazaarMap.size() + " bazaar and " + auctionMap.size() + " auction entries to API");
         }
 
@@ -209,8 +213,8 @@ public class PriceDetector {
         auctionMap.clear();
     }
 
-    @SubscribeEvent
-    public void onDraw(GuiScreenEvent.BackgroundDrawnEvent event) {
+    @HandleEvent
+    public void onDraw(ASMGuiBackgroundDrawEvent event) {
         if (scanning || !ATHRConfig.feature.misc.itemPriceConfig.enabled) return;
         long now = System.currentTimeMillis();
         if (now - lastParseTime < REPARSE_COOLDOWN_MS) return;
@@ -218,7 +222,8 @@ public class PriceDetector {
         if (!(event.gui instanceof GuiContainer)) return;
         ContainerChest chest = ContainerUtils.getOpenChest(event.gui);
         if (chest == null) return;
-        String title = chest.getLowerChestInventory().getName();
+        String title = ContainerUtils.getTitle(chest);
+        if (title == null) return;
 
         if (title.contains("Auction Browser") && ATHRConfig.feature.misc.itemPriceConfig.auctionEnabled) {
             scanning = true;
@@ -271,7 +276,8 @@ public class PriceDetector {
 
     public static boolean parseBZMenus(ContainerChest chest) {
         List<BazaarEntry> entries = new ArrayList<>();
-        String title = chest.getLowerChestInventory().getName();
+        String title = ContainerUtils.getTitle(chest);
+        if (title == null) return false;
         long now = System.currentTimeMillis();
 
         if (title.contains("➜")) {
@@ -282,7 +288,7 @@ public class PriceDetector {
                 ItemStack stack = slot.getStack();
                 if (!ItemUtils.isSkyblockItem(stack)) continue;
 
-                List<String> lore = ProfileParser.getLore(stack);
+                List<String> lore = ItemUtils.getLoreLinesWithoutColor(stack);
                 String buyPrice = "", sellPrice = "";
 
                 for (String s : lore) {
@@ -315,19 +321,19 @@ public class PriceDetector {
             ItemStack iSellStack = iSell.getStack();
             if (buy == null || sell == null || iBuyStack == null || iSellStack == null) return false;
 
-            List<String> oBuyLore = ProfileParser.getLore(buy);
+            List<String> oBuyLore = ItemUtils.getLoreLinesWithoutColor(buy);
             String oBuyPrice = parseOrderPrice(oBuyLore, "Top Orders");
             if (oBuyPrice == null) return false;
 
-            List<String> oSellLore = ProfileParser.getLore(sell);
+            List<String> oSellLore = ItemUtils.getLoreLinesWithoutColor(sell);
             String oSellPrice = parseOrderPrice(oSellLore, "Top Offers");
             if (oSellPrice == null) return false;
 
             String iBuyPrice = "", iSellPrice = "";
-            for (String s : ProfileParser.getLore(iBuyStack)) {
+            for (String s : ItemUtils.getLoreLinesWithoutColor(iBuyStack)) {
                 if (s.startsWith("Price per unit:") || s.startsWith("Price pet unit:")) iBuyPrice = extractPrice(s);
             }
-            for (String s : ProfileParser.getLore(iSellStack)) {
+            for (String s : ItemUtils.getLoreLinesWithoutColor(iSellStack)) {
                 if (s.startsWith("Price per unit:") || s.startsWith("Price pet unit:")) iSellPrice = extractPrice(s);
             }
             if (iBuyPrice.isEmpty() || iSellPrice.isEmpty()) return false;
@@ -360,43 +366,38 @@ public class PriceDetector {
             String playerUsername = "";
             long expireTime = 0;
 
-            if (stack.hasTagCompound()) {
-                NBTTagCompound tag = stack.getTagCompound();
+            if (NbtCompat.hasTagCompound(stack)) {
+                boolean cutLore = false;
 
-                if (tag.hasKey("display", 10)) {
-                    NBTTagList loreList = tag.getCompoundTag("display").getTagList("Lore", 8);
-                    boolean cutLore = false;
+                for (String rawLine : ItemUtils.getLoreLines(stack)) {
+                    String stripped = ColorUtils.stripColor(rawLine);
 
-                    for (int j = 0; j < loreList.tagCount(); j++) {
-                        String rawLine = loreList.getStringTagAt(j);
-                        String stripped = ColorUtils.stripColor(rawLine);
-
-                        if (!cutLore) {
-                            if (stripped.contains("-----------------")) {
-                                cutLore = true;
-                            }else{
-                                formattedLore.add(rawLine);
-                            }
+                    if (!cutLore) {
+                        if (stripped.contains("-----------------")) {
+                            cutLore = true;
+                        } else {
+                            formattedLore.add(rawLine);
                         }
+                    }
 
-                        if (stripped.startsWith("Buy it now:")) {
-                            price = extractPrice(stripped);
-                            type = PriceType.BIN;
-                        } else if (stripped.startsWith("Starting bid:") || stripped.startsWith("Top bid:")) {
-                            price = extractPrice(stripped);
-                        } else if (stripped.startsWith("Seller: ")) {
-                            String sellerContent = stripped.substring("Seller: ".length()).trim();
-                            String[] parts = sellerContent.split(" ");
-                            playerUsername = parts[parts.length - 1];
-                        } else if (stripped.startsWith("Ends in: ")) {
-                            String timeStr = stripped.substring("Ends in: ".length()).trim();
-                            expireTime = now + parseDurationToMs(timeStr);
-                        }
+                    if (stripped.startsWith("Buy it now:")) {
+                        price = extractPrice(stripped);
+                        type = PriceType.BIN;
+                    } else if (stripped.startsWith("Starting bid:") || stripped.startsWith("Top bid:")) {
+                        price = extractPrice(stripped);
+                    } else if (stripped.startsWith("Seller: ")) {
+                        String sellerContent = stripped.substring("Seller: ".length()).trim();
+                        String[] parts = sellerContent.split(" ");
+                        playerUsername = parts[parts.length - 1];
+                    } else if (stripped.startsWith("Ends in: ")) {
+                        String timeStr = stripped.substring("Ends in: ".length()).trim();
+                        expireTime = now + parseDurationToMs(timeStr);
                     }
                 }
 
-                if (tag.hasKey("ExtraAttributes", 10)) {
-                    extraAttributes = nbtToJson(tag.getCompoundTag("ExtraAttributes"));
+                NBTTagCompound extra = NbtCompat.getExtraAttributes(stack);
+                if (extra != null) {
+                    extraAttributes = nbtToJson(extra);
                 }
             }
 
@@ -410,23 +411,24 @@ public class PriceDetector {
 
     private static JsonObject nbtToJson(NBTTagCompound compound) {
         JsonObject json = new JsonObject();
-        for (String key : compound.getKeySet()) {
-            NBTBase base = compound.getTag(key);
-            byte id = base.getId();
+        for (String key : NbtCompat.keySet(compound)) {
+            NBTBase base = NbtCompat.getTag(compound, key);
+            if (base == null) continue;
+            int id = NbtCompat.getId(base);
 
-            if (id == 1) json.addProperty(key, ((NBTTagByte) base).getByte());
-            else if (id == 2) json.addProperty(key, ((NBTTagShort) base).getShort());
-            else if (id == 3) json.addProperty(key, ((NBTTagInt) base).getInt());
-            else if (id == 4) json.addProperty(key, ((NBTTagLong) base).getLong());
-            else if (id == 5) json.addProperty(key, ((NBTTagFloat) base).getFloat());
-            else if (id == 6) json.addProperty(key, ((NBTTagDouble) base).getDouble());
-            else if (id == 8) json.addProperty(key, ((NBTTagString) base).getString());
+            if (id == 1) json.addProperty(key, NbtCompat.getByteValue(base));
+            else if (id == 2) json.addProperty(key, NbtCompat.getShortValue(base));
+            else if (id == 3) json.addProperty(key, NbtCompat.getIntValue(base));
+            else if (id == 4) json.addProperty(key, NbtCompat.getLongValue(base));
+            else if (id == 5) json.addProperty(key, NbtCompat.getFloatValue(base));
+            else if (id == 6) json.addProperty(key, NbtCompat.getDoubleValue(base));
+            else if (id == 8) json.addProperty(key, NbtCompat.getStringValue(base));
             else if (id == 10) json.add(key, nbtToJson((NBTTagCompound) base));
             else if (id == 9) {
                 JsonArray arr = new JsonArray();
                 NBTTagList list = (NBTTagList) base;
-                for (int i = 0; i < list.tagCount(); i++) {
-                    if (list.getTagType() == 8) arr.add(new JsonPrimitive(list.getStringTagAt(i)));
+                for (int i = 0; i < NbtCompat.tagCount(list); i++) {
+                    if (NbtCompat.getHeldType(list) == 8) arr.add(new JsonPrimitive(NbtCompat.getStringAt(list, i)));
                 }
                 json.add(key, arr);
             }

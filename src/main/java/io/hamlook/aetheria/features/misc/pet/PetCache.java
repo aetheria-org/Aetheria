@@ -2,15 +2,14 @@ package io.hamlook.aetheria.features.misc.pet;
 
 import com.google.gson.reflect.TypeToken;
 import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
 import io.hamlook.aetheria.core.ProfileManagedStorage;
-import java.io.File;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 
+import java.io.File;
 import java.lang.reflect.Type;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 
 public class PetCache extends ProfileManagedStorage {
 
@@ -56,15 +55,30 @@ public class PetCache extends ProfileManagedStorage {
             pet.sanitize();
             pets.put(key, pet);
         });
+        warmupTextures();
     }
 
     public void warmupTextures() {
         for (CachedPet pet : pets.values()) {
-            if (pet.textureValue.isEmpty()) continue;
-            GameProfile profile = new GameProfile(UUID.randomUUID(), "");
-            profile.getProperties().put("textures", new Property("textures", pet.textureValue));
-            Minecraft.getMinecraft().getSkinManager().loadProfileTextures(profile, null, false);
+            registerIdentity(pet);
+            warmupTexture(pet.textureValue);
         }
+    }
+
+    private void registerIdentity(CachedPet pet) {
+        if (pet.textureValue == null || pet.textureValue.isEmpty()) return;
+        ItemUtils.registerSkullIdentity(pet.textureValue, pet.textureProfileId, pet.textureProfileName, pet.textureSignature);
+    }
+
+    public void warmupTexture(String textureValue) {
+        ItemUtils.SkullIdentity identity = ItemUtils.skullIdentity(textureValue);
+        if (identity == null) return;
+        GameProfile profile = identity.profile;
+        //#if MC < 1.16
+        MinecraftCompat.getMinecraft().getSkinManager().loadProfileTextures(profile, null, false);
+        //#else
+        //$$ MinecraftCompat.getMinecraft().getSkinProvider().fetchSkinTextures(profile);
+        //#endif
     }
 
     public void save() {
@@ -85,7 +99,8 @@ public class PetCache extends ProfileManagedStorage {
         });
     }
 
-    public void update(String baseName, int level, String rarityColor, String skinTag, String textureValue) {
+    public void update(String baseName, int level, String rarityColor, String skinTag, String textureValue,
+                       String profileId, String profileName, String signature) {
         baseName = normalizePetName(baseName);
         if (baseName.isEmpty()) return;
         String key = makeKey(rarityColor, baseName, skinTag);
@@ -93,7 +108,14 @@ public class PetCache extends ProfileManagedStorage {
         pet.level = level;
         pet.rarityColor = rarityColor;
         pet.skinTag = skinTag;
-        if (textureValue != null && !textureValue.isEmpty()) pet.textureValue = textureValue;
+        if (textureValue != null && !textureValue.isEmpty() && !textureValue.equals(pet.textureValue)) {
+            pet.textureValue = textureValue;
+            pet.textureProfileId = profileId == null ? "" : profileId;
+            pet.textureProfileName = profileName == null ? "" : profileName;
+            pet.textureSignature = signature == null ? "" : signature;
+            registerIdentity(pet);
+            warmupTexture(textureValue);
+        }
         pet.rebuildFormattedName();
         save();
     }

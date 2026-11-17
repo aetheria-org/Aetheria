@@ -9,14 +9,20 @@ import io.hamlook.aetheria.features.storage.utils.SContainer;
 import io.hamlook.aetheria.features.storage.utils.StorageListener;
 import io.hamlook.aetheria.features.storage.utils.StorageParser;
 import io.hamlook.aetheria.init.RegisterEvents;
-import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.SoundUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import lombok.Getter;
-import net.minecraft.client.Minecraft;
-import net.minecraft.inventory.ContainerChest;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.inventory.GuiChest;
+import net.minecraft.inventory.Slot;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.LinkedHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -83,31 +89,6 @@ public class StorageManager {
         return overlayActive;
     }
 
-    public static boolean initializeOverlay(ContainerChest parser) {
-        if (StorageData.containers.isEmpty()) {
-            StorageData.loadContainers();
-        }
-
-        LinkedHashMap<String, SContainer> containers = StorageParser.parseOverlay(parser, StorageData.containers);
-
-        if (containers.isEmpty()) {
-            return false;
-        }
-
-        StorageData.containers = containers;
-
-        lastValidChestTime = System.currentTimeMillis();
-        renderer = new StorageRenderer(containers);
-        overlayActive = true;
-
-        // Request scroll to active container
-        if (ATHRConfig.feature.storage.autoScrollToActive && activeContainerId != null) {
-            renderer.requestScrollToActive();
-        }
-
-        return true;
-    }
-
     public static void renderOverlay(int mouseX, int mouseY) {
         if (ContainerUtils.isChestOpen()) {
             lastValidChestTime = System.currentTimeMillis();
@@ -151,23 +132,15 @@ public class StorageManager {
         return renderer.isMouseOverStorageArea(mouseX, mouseY);
     }
 
-    public static void handleMouseInput() {
+    public static void handleMouseInput(int mouseX, int mouseY, int button, boolean buttonState, int dWheel) {
         if (renderer == null) return;
 
-        int dWheel = org.lwjgl.input.Mouse.getEventDWheel();
         if (dWheel != 0) {
             renderer.handleScroll(dWheel);
         }
 
-        if (org.lwjgl.input.Mouse.getEventButtonState()) {
-            int mouseButton = org.lwjgl.input.Mouse.getEventButton();
-            if (mouseButton == 0) {
-                net.minecraft.client.gui.ScaledResolution sr = new net.minecraft.client.gui.ScaledResolution(Minecraft.getMinecraft());
-                int[] mouse = KeybindHelper.getMouseCoords(sr);
-                int mouseX = mouse[0], mouseY = mouse[1];
-
-                renderer.handleClick(mouseX, mouseY);
-            }
+        if (buttonState && button == 0) {
+            renderer.handleClick(mouseX, mouseY);
         }
     }
 
@@ -175,6 +148,17 @@ public class StorageManager {
     public static boolean handleKeyTyped(char typedChar, int keyCode) {
         if (renderer == null) return false;
         return renderer.handleKeyTyped(typedChar, keyCode);
+    }
+
+    public static boolean handleCharTyped(char chr) {
+        if (renderer == null) return false;
+        if (!ContainerUtils.isChestOpen(MinecraftCompat.getCurrentScreen())) return false;
+        return renderer.handleKeyTyped(chr, 0);
+    }
+
+    public static boolean isSearchFocused() {
+        if (renderer == null) return false;
+        return renderer.isSearchFocused();
     }
 
     public static void switchToContainer(String containerId) {
@@ -198,7 +182,7 @@ public class StorageManager {
         }
 
         StorageListener.setSwitchingContainer(true);
-        Minecraft.getMinecraft().thePlayer.closeScreen();
+        MinecraftCompat.closeScreen();
 
         String command = buildContainerCommand(container);
         executeCommandDelayed(command);
@@ -216,10 +200,22 @@ public class StorageManager {
     }
 
     private static void executeCommandDelayed(String command) {
+        executeCommandDelayed(command, false);
+    }
+
+    private static void executeCommandDelayed(String command, boolean retried) {
         cancelPendingSwitchCommand();
         pendingSwitchCommand = COMMAND_EXECUTOR.schedule(() -> {
             pendingSwitchCommand = null;
-            Minecraft.getMinecraft().addScheduledTask(() -> Minecraft.getMinecraft().thePlayer.sendChatMessage(command));
+            MinecraftCompat.getMinecraft().addScheduledTask(() -> {
+                if (MinecraftCompat.getCurrentScreen() != null && !retried) {
+                    Aetheria.logger.warning("[ATHR] Storage switch: screen still open, re-closing and retrying once: " + command);
+                    MinecraftCompat.closeScreen();
+                    executeCommandDelayed(command, true);
+                    return;
+                }
+                TextCompat.sendChatMessage(command);
+            });
         }, 100, TimeUnit.MILLISECONDS);
     }
 
@@ -259,18 +255,24 @@ public class StorageManager {
         }
     }
 
+    public static void markLayoutDirty() {
+        if (renderer != null) {
+            renderer.markLayoutDirty();
+        }
+    }
+
     public static boolean isStorageChest() {
-        net.minecraft.client.gui.GuiScreen screen = Minecraft.getMinecraft().currentScreen;
-        if (!(screen instanceof net.minecraft.client.gui.inventory.GuiChest)) return false;
+        GuiScreen screen = MinecraftCompat.getCurrentScreen();
+        if (!(screen instanceof GuiChest)) return false;
         String title = ContainerUtils.getContainerName(screen);
         return title != null && ("Storage".equals(title) || StorageParser.isStorageContainer(title));
     }
 
-    public static void overrideIsMouseOverSlot(net.minecraft.inventory.Slot slotIn, int mouseX, int mouseY, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+    public static void overrideIsMouseOverSlot(Slot slotIn, int mouseX, int mouseY, CallbackInfoReturnable<Boolean> cir) {
         if (!isOverlayActive() || renderer == null) return;
         if (!isStorageChest()) return;
 
-        boolean isPlayerSlot = slotIn.inventory == Minecraft.getMinecraft().thePlayer.inventory;
+        boolean isPlayerSlot = slotIn.inventory == InventoryCompat.getInventory(MinecraftCompat.getLocalPlayer());
 
         if (isPlayerSlot) {
             cir.setReturnValue(renderer.isMouseOverPlayerInventorySlot(slotIn, mouseX, mouseY));

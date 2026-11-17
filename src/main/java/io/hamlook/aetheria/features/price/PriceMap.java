@@ -10,7 +10,8 @@ import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.ThreadUtils;
 import lombok.Getter;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;

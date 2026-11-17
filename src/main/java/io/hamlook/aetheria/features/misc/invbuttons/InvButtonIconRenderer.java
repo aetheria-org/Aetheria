@@ -3,9 +3,13 @@ package io.hamlook.aetheria.features.misc.invbuttons;
 import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -14,6 +18,7 @@ import net.minecraft.util.ResourceLocation;
 
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.UUID;
 
 public class InvButtonIconRenderer {
@@ -27,23 +32,22 @@ public class InvButtonIconRenderer {
         if (icon == null || icon.isEmpty()) return;
 
         if (icon.startsWith("extra:")) {
-            String name = icon.substring("extra:".length());
-            ResourceLocation loc = new ResourceLocation("aetheria", "invbuttons/extraicons/" + name + ".png");
-            Minecraft.getMinecraft().getTextureManager().bindTexture(loc);
-            GlStateManager.color(1, 1, 1, 1);
-            Utils.drawTexturedRect(x, y, 16, 16);
+            String name = icon.substring("extra:".length()).toLowerCase(Locale.ROOT);
+            ResourceLocation loc = TextCompat.createResourceLocation("aetheria", "invbuttons/extraicons/" + name + ".png");
+            GlStateManagerCompat.color(1, 1, 1, 1);
+            TextureCompat.drawBoundTextured(loc, x, y, 16, 16, 0, 0, 1, 1);
         } else {
             ItemStack stack = getStack(icon);
             if (stack == null) return;
 
             float scale = icon.startsWith("skull:") ? 1.2f : 1f;
 
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(x + 8, y + 8, 0);
-            GlStateManager.scale(scale, scale, 1);
-            GlStateManager.translate(-8, -8, 0);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(x + 8, y + 8, 0);
+            GlStateManagerCompat.scale(scale, scale, 1);
+            GlStateManagerCompat.translate(-8, -8, 0);
             drawItemStack(stack, 0, 0);
-            GlStateManager.popMatrix();
+            GlStateManagerCompat.popMatrix();
         }
     }
 
@@ -69,7 +73,7 @@ public class InvButtonIconRenderer {
     }
 
     private static ItemStack buildSkullStack(String hash) {
-        ItemStack render = new ItemStack(Items.skull, 1, 3);
+          ItemStack render = ItemCompatKt.createPlayerHeadStack();
         NBTTagCompound nbt = new NBTTagCompound();
         NBTTagCompound owner = new NBTTagCompound();
         NBTTagCompound props = new NBTTagCompound();
@@ -86,7 +90,7 @@ public class InvButtonIconRenderer {
         props.setTag("textures", texs);
         owner.setTag("Properties", props);
         nbt.setTag("SkullOwner", owner);
-        render.setTagCompound(nbt);
+        NbtCompat.setTagCompound(render, nbt);
         return render;
     }
 

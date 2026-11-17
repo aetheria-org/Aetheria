@@ -1,19 +1,24 @@
 package io.hamlook.aetheria.features.misc.itemlog;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -41,13 +46,13 @@ public class ItemPickupLog extends Overlay {
 
     private static void accumulate(Map<String, Integer> map, ItemStack stack) {
         if (stack == null) return;
-        map.merge(stack.getDisplayName(), stack.stackSize, Integer::sum);
+        map.merge(ItemUtils.getDisplayName(stack), ItemCompatKt.getCountCompat(stack), Integer::sum);
     }
 
     private static ItemStack[] copyInventory(ItemStack[] src) {
         ItemStack[] copy = new ItemStack[src.length];
         for (int i = 0; i < src.length; i++) {
-            copy[i] = src[i] != null ? ItemStack.copyItemStack(src[i]) : null;
+              copy[i] = src[i] != null ? src[i].copy() : null;
         }
         return copy;
     }
@@ -71,8 +76,8 @@ public class ItemPickupLog extends Overlay {
             ItemStack a = prev[i], b = curr[i];
             if (a == null && b == null) continue;
             if (a == null || b == null) return true;
-            if (a.stackSize != b.stackSize) return true;
-            if (!a.getDisplayName().equals(b.getDisplayName())) return true;
+            if (ItemCompatKt.getCountCompat(a) != ItemCompatKt.getCountCompat(b)) return true;
+            if (!ItemUtils.getDisplayName(a).equals(ItemUtils.getDisplayName(b))) return true;
         }
         return false;
     }
@@ -109,42 +114,42 @@ public class ItemPickupLog extends Overlay {
     @Override
     protected boolean hideOnDebug()  { return ATHRConfig.feature.misc.itemPickupLogConfig.hideOnDebug; }
 
-    @SubscribeEvent
-    public void onGuiOpen(GuiOpenEvent event) {
+    @HandleEvent
+    public void onGuiOpen(ASMGuiOpenEvent event) {
         if (!SkyblockData.isOnSkyblock()) return;
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null) return;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         if (event.gui == null) {
             if (preScreenSnapshot != null) {
-                ItemStack[] current = mc.thePlayer.inventory.mainInventory;
+                ItemStack[] current = InventoryCompat.getMainInventory(MinecraftCompat.getLocalPlayer());
                 if (preScreenSnapshot.length == current.length) {
                     diffAndLog(preScreenSnapshot, current);
                 }
                 preScreenSnapshot = null;
             }
-            previousInventory = copyInventory(mc.thePlayer.inventory.mainInventory);
+            previousInventory = copyInventory(InventoryCompat.getMainInventory(MinecraftCompat.getLocalPlayer()));
         } else {
-            preScreenSnapshot = copyInventory(mc.thePlayer.inventory.mainInventory);
+            preScreenSnapshot = copyInventory(InventoryCompat.getMainInventory(MinecraftCompat.getLocalPlayer()));
             previousInventory = null;
         }
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null || !SkyblockData.isOnSkyblock()) {
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (MinecraftCompat.getLocalPlayer() == null || !SkyblockData.isOnSkyblock()) {
             previousInventory = null;
             return;
         }
 
         log.removeIf(LogEntry::isExpired);
 
-        if (mc.currentScreen != null) return;
+        if (MinecraftCompat.getCurrentScreen() != null) return;
 
-        ItemStack[] current = mc.thePlayer.inventory.mainInventory;
+        ItemStack[] current = InventoryCompat.getMainInventory(MinecraftCompat.getLocalPlayer());
 
         if (previousInventory != null
                 && previousInventory.length == current.length
@@ -155,8 +160,8 @@ public class ItemPickupLog extends Overlay {
         previousInventory = copyInventory(current);
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         resetSnapshot();
     }
 
@@ -164,8 +169,8 @@ public class ItemPickupLog extends Overlay {
         if (stack == null) return;
         String id = ItemUtils.getInternalName(stack);
         if (id.isEmpty()) return;
-        map.merge(id, stack.stackSize, Integer::sum);
-        internalToDisplay.putIfAbsent(id, stack.getDisplayName());
+        map.merge(id, ItemCompatKt.getCountCompat(stack), Integer::sum);
+        internalToDisplay.putIfAbsent(id, ItemUtils.getDisplayName(stack));
     }
 
     private void diffAndLog(ItemStack[] prev, ItemStack[] curr) {

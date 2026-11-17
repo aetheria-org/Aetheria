@@ -2,19 +2,27 @@ package io.hamlook.aetheria.features.scoreboard;
 
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
-import io.hamlook.aetheria.utils.KeybindHelper;
-import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.features.mining.MiningApi;
 import io.hamlook.aetheria.features.mining.fetchur.FetchurData;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ScoreboardCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.data.TablistParser;
 import io.hamlook.aetheria.utils.overlay.Overlay;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.overlay.OverlayUtils;
+import io.hamlook.aetheria.utils.render.MarqueeUtils;
+import io.hamlook.aetheria.utils.time.TimeFormatter;
+import net.minecraft.client.gui.FontRenderer;
 import lombok.Getter;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.opengl.GL11;
 
 import java.util.*;
@@ -26,6 +34,11 @@ public class CustomScoreboard extends Overlay {
     private static final int PAD_X = 4;
     private static final int PAD_Y = 4;
     private static final int LINE_GAP = 1;
+
+    private static final String FETCHUR_LABEL = "§fFetchur: ";
+    private static final String FETCHUR_COLOR = "§e";
+    private static final String FETCHUR_MARKER = FETCHUR_LABEL + FETCHUR_COLOR;
+    private static final int MIN_CHARS = 12;
 
     private static final int LINE_SERVER       = 0;
     private static final int LINE_TIME         = 1;
@@ -56,6 +69,8 @@ public class CustomScoreboard extends Overlay {
     private static final int LINE_COPPER       = 26;
     private static final int LINE_PLOT_NUMBER  = 27;
     private static final int LINE_CLEANUP      = 28;
+    private static final int LINE_BAL          = 29;
+    private static final int LINE_BOOSTERS     = 30;
 
     private static final String LOC_SYMBOL_NORMAL = "⏣";
     private static final String LOC_SYMBOL_RIFT   = "ф";
@@ -127,12 +142,66 @@ public class CustomScoreboard extends Overlay {
     // ── alignment ─────────────────────────────────────────────────────────────
     // alignment config: 0=Left, 1=Center, 2=Right
 
-    private int xFor(String line, int boxW, int alignment) {
-        int w = mc.fontRendererObj.getStringWidth(line);
+    private static int xForWidth(int width, int boxW, int alignment) {
         switch (alignment) {
-            case 1: return PAD_X + (boxW - PAD_X * 2 - w) / 2;
-            case 2: return boxW - PAD_X - w;
+            case 1: return PAD_X + (boxW - PAD_X * 2 - width) / 2;
+            case 2: return boxW - PAD_X - width;
             default: return PAD_X;
+        }
+    }
+
+    private static final class FetchurMarquee {
+        final int lineIndex;
+        final String styledItem;
+        final int labelWidth;
+        final int windowWidth;
+
+        FetchurMarquee(int lineIndex, String styledItem, int labelWidth, int windowWidth) {
+            this.lineIndex = lineIndex;
+            this.styledItem = styledItem;
+            this.labelWidth = labelWidth;
+            this.windowWidth = windowWidth;
+        }
+    }
+
+    private static FetchurMarquee fetchurMarquee(List<String> lines, int[] widths, int minWidth) {
+        if (!ATHRConfig.feature.scoreboard.marqueeEnabled) return null;
+        int index = -1;
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).startsWith(FETCHUR_MARKER)) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) return null;
+        FontRenderer font = MinecraftCompat.getFontRenderer();
+        int labelWidth = DrawContextUtils.getStringWidth(font, FETCHUR_LABEL);
+        int itemWidth = widths[index] - labelWidth;
+        if (itemWidth <= 0) return null;
+        int widestOther = minWidth;
+        for (int i = 0; i < lines.size(); i++) {
+            if (i != index && widths[i] > widestOther) widestOther = widths[i];
+        }
+        String item = lines.get(index).substring(FETCHUR_MARKER.length());
+        // floor so the window dont get unreadable on narrow sidebars
+        int floorWidth = DrawContextUtils.getStringWidth(font, item.substring(0, Math.min(MIN_CHARS, item.length())));
+        int windowWidth = Math.max(floorWidth, widestOther - labelWidth);
+        if (itemWidth <= windowWidth) return null;
+        return new FetchurMarquee(index, FETCHUR_COLOR + item, labelWidth, windowWidth);
+    }
+
+    private static void drawBodyLines(List<String> lines, int[] widths, FetchurMarquee marquee, int boxW, int alignment, int textY, int lh) {
+        for (int i = 1; i < lines.size(); i++) {
+            if (marquee != null && i == marquee.lineIndex) {
+                int x = xForWidth(marquee.labelWidth + marquee.windowWidth, boxW, alignment);
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), FETCHUR_LABEL, x, textY, 0xFFFFFF);
+                MarqueeUtils.draw(MinecraftCompat.getFontRenderer(), marquee.styledItem,
+                        x + marquee.labelWidth, textY, marquee.windowWidth, 0xFFFFFF, true);
+            } else {
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), lines.get(i),
+                        xForWidth(widths[i], boxW, alignment), textY, 0xFFFFFF);
+            }
+            textY += lh;
         }
     }
 
@@ -152,8 +221,8 @@ public class CustomScoreboard extends Overlay {
             if (vanillaTitle == null || vanillaTitle.isEmpty()) {
                 try {
                     net.minecraft.scoreboard.ScoreObjective obj =
-                            mc.theWorld.getScoreboard().getObjectiveInDisplaySlot(1);
-                    if (obj != null) vanillaTitle = obj.getDisplayName();
+                            ScoreboardCompat.getSidebarObjective(MinecraftCompat.getLocalWorld().getScoreboard());
+                    if (obj != null) vanillaTitle = TextCompat.getUnformattedText(obj.getDisplayName());
                 } catch (Exception ignored) {}
             }
             if (vanillaTitle != null && !vanillaTitle.isEmpty()) result.add(vanillaTitle);
@@ -343,6 +412,7 @@ public class CustomScoreboard extends Overlay {
                     if (!inDungeon) {
                         String cookie = TablistParser.readCookieBuff();
                         if (cookie != null && !cookie.toLowerCase().contains("not active")) {
+                            if (ATHRConfig.feature.scoreboard.cookieShortTime) cookie = TimeFormatter.trimUnits(cookie, 2);
                             lines.add("§dCookie Buff: §f" + cookie); rawIndex.add(-1);
                         }
                     }
@@ -356,7 +426,7 @@ public class CustomScoreboard extends Overlay {
                 }
                 case LINE_FETCHUR:
                     if (SkyblockData.isOnSkyblock()) {
-                        lines.add("§fFetchur: §e" + FetchurData.getTodaysItem()); rawIndex.add(-1);
+                        lines.add(FETCHUR_MARKER + FetchurData.getTodaysItem()); rawIndex.add(-1);
                     }
                     break;
                 case LINE_COPPER:
@@ -367,6 +437,21 @@ public class CustomScoreboard extends Overlay {
                     break;
                 case LINE_CLEANUP:
                     if (cleanupRaw != null) { lines.add(cleanupRaw); rawIndex.add(-1); }
+                    break;
+                case LINE_BAL:
+                    if (SkyblockData.getCurrentLocation() == SkyblockData.Location.CRYSTAL_HOLLOWS
+                            && MiningApi.hasBalTimer()) {
+                        lines.add("§cBal Respawn: §f" + MiningApi.formatBalClock(MiningApi.getBalRemainingMs()));
+                        rawIndex.add(-1);
+                    }
+                    break;
+                case LINE_BOOSTERS:
+                    if (SkyblockData.isOnSkyblock()) {
+                        for (String booster : TablistParser.readBoosters()) {
+                            lines.add(booster);
+                            rawIndex.add(-1);
+                        }
+                    }
                     break;
                 case LINE_SLAYER:
                     if (!inDungeon)
@@ -432,60 +517,48 @@ public class CustomScoreboard extends Overlay {
         int alignment  = ATHRConfig.feature.scoreboard.lineAlignment;
         int minWidth   = ATHRConfig.feature.scoreboard.minWidth;
 
+        int[] widths = new int[lines.size()];
+        for (int i = 0; i < lines.size(); i++)
+            widths[i] = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), lines.get(i));
+
+        FetchurMarquee marquee = fetchurMarquee(lines, widths, minWidth);
+
         int maxW = minWidth;
-        for (String line : lines)
-            maxW = Math.max(maxW, mc.fontRendererObj.getStringWidth(line));
+        for (int i = 0; i < lines.size(); i++) {
+            int width = (marquee != null && i == marquee.lineIndex) ? marquee.labelWidth + marquee.windowWidth : widths[i];
+            if (width > maxW) maxW = width;
+        }
 
         int boxW = maxW + PAD_X * 2;
         int boxH = lines.size() * lh + PAD_Y * 2 - LINE_GAP;
         lastW = boxW;
         lastH = boxH;
 
-        ScaledResolution sr = Overlay.sr;
         Position pos = getPosition();
 
-        int x = pos.getAbsX(sr, (int) (boxW * scale));
-        int y = pos.getAbsY(sr, (int) (boxH * scale));
+        int x = pos.getAbsX(GuiScreenUtils.getScaledWindowWidth(), (int) (boxW * scale));
+        int y = pos.getAbsY(GuiScreenUtils.getScaledWindowHeight(), (int) (boxH * scale));
         if (pos.isCenterX()) x -= (int) (boxW * scale / 2);
         if (pos.isCenterY()) y -= (int) (boxH * scale / 2);
 
-        GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0);
-        GL11.glScalef(scale, scale, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(x, y, 0);
+        GlStateManagerCompat.scale(scale, scale, 1f);
 
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0)
             drawRoundedRect(0, 0, boxW, boxH, getCornerRadius(), bgColor);
 
         int textY = PAD_Y;
-        if (SkyblockData.isOnSkyblock()) {
-            // Line 0 is the Skyblock title — always centered
-            String firstLine = lines.get(0);
-            int titleX = (boxW - mc.fontRendererObj.getStringWidth(firstLine)) / 2;
-            mc.fontRendererObj.drawStringWithShadow(firstLine, titleX, textY, -1);
-            textY += lh;
-            for (int i = 1; i < lines.size(); i++) {
-                String line = lines.get(i);
-                mc.fontRendererObj.drawStringWithShadow(line, xFor(line, boxW, alignment), textY, 0xFFFFFF);
-                textY += lh;
-            }
-        } else {
-            // Outside Skyblock — first line always centered, rest use alignment
-            String firstLine = lines.get(0);
-            int titleX = (boxW - mc.fontRendererObj.getStringWidth(firstLine)) / 2;
-            mc.fontRendererObj.drawStringWithShadow(firstLine, titleX, textY, -1);
-            textY += lh;
-            for (int i = 1; i < lines.size(); i++) {
-                String line = lines.get(i);
-                mc.fontRendererObj.drawStringWithShadow(line, xFor(line, boxW, alignment), textY, 0xFFFFFF);
-                textY += lh;
-            }
-        }
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), lines.get(0),
+                (boxW - widths[0]) / 2, textY, -1);
+        textY += lh;
+        drawBodyLines(lines, widths, marquee, boxW, alignment, textY, lh);
 
-        GlStateManager.disableBlend();
-        GL11.glPopMatrix();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.popMatrix();
     }
 }

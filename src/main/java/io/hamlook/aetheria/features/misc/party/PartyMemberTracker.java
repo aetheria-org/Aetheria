@@ -1,11 +1,13 @@
 package io.hamlook.aetheria.features.misc.party;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -55,8 +57,8 @@ public class PartyMemberTracker {
         return name != null && partyMembers.contains(name.toLowerCase());
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         String msg = ChatUtils.clean(event);
         Matcher m;
 
@@ -97,8 +99,8 @@ public class PartyMemberTracker {
         }
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         partyLeft();
     }
 
@@ -118,8 +120,8 @@ public class PartyMemberTracker {
     }
 
     private static String ownName() {
-        Minecraft mc = Minecraft.getMinecraft();
-        return mc.thePlayer != null ? mc.thePlayer.getName() : "";
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        return MinecraftCompat.getLocalPlayer() != null ? TextCompat.getUnformattedText(MinecraftCompat.getLocalPlayer().getName()) : "";
     }
 
     private static void partyLeft() {

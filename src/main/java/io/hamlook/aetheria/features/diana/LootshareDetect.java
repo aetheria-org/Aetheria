@@ -1,13 +1,18 @@
 package io.hamlook.aetheria.features.diana;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMEntityJoinWorldEvent;
+import io.hamlook.aetheria.events.ASMServerDisconnectEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityArmorStand;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 
 import java.util.*;
 
@@ -24,7 +29,7 @@ public class LootshareDetect {
     private final Map<Integer, EntityArmorStand> tracked = new HashMap<>();
     private final Set<Integer> trackedInqs = new HashSet<>();
     private final Set<Integer> trackedNonInqs = new HashSet<>();
-    private final Minecraft mc = Minecraft.getMinecraft();
+    private final Minecraft mc = MinecraftCompat.getMinecraft();
 
     public LootshareDetect() {
         INSTANCE = this;
@@ -46,63 +51,65 @@ public class LootshareDetect {
     // Returns the closest tracked inq stand name, or null
     public static String getClosestInqName() {
         if (INSTANCE == null) return null;
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null || mc.theWorld == null) return null;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) return null;
         EntityArmorStand closest = null;
         double minDist = Double.MAX_VALUE;
         for (Map.Entry<Integer, EntityArmorStand> e : INSTANCE.tracked.entrySet()) {
             if (!INSTANCE.trackedInqs.contains(e.getKey())) continue;
             EntityArmorStand stand = e.getValue();
-            if (stand.isDead) continue;
-            double d = mc.thePlayer.getDistanceSqToEntity(stand);
+            if (EntityCompat.isDead(stand)) continue;
+            double d = EntityCompat.getDistanceSqTo(MinecraftCompat.getLocalPlayer(), stand);
             if (d < minDist) {
                 minDist = d;
                 closest = stand;
             }
         }
-        return closest != null ? closest.getCustomNameTag() : null;
+        return closest != null ? EntityCompat.getNametag(closest) : null;
     }
 
     // Returns the closest tracked non-inq diana mob stand name, only after a dig message fired
     public static String getClosestNonInqMobName() {
         if (INSTANCE == null || !nonInqMobActive) return null;
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null || mc.theWorld == null) return null;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (MinecraftCompat.getLocalPlayer() == null || MinecraftCompat.getLocalWorld() == null) return null;
         EntityArmorStand closest = null;
         double minDist = Double.MAX_VALUE;
         for (Map.Entry<Integer, EntityArmorStand> e : INSTANCE.tracked.entrySet()) {
             if (!INSTANCE.trackedNonInqs.contains(e.getKey())) continue;
             EntityArmorStand stand = e.getValue();
-            if (stand.isDead) continue;
-            double d = mc.thePlayer.getDistanceSqToEntity(stand);
+            if (EntityCompat.isDead(stand)) continue;
+            double d = EntityCompat.getDistanceSqTo(MinecraftCompat.getLocalPlayer(), stand);
             if (d < minDist) {
                 minDist = d;
                 closest = stand;
             }
         }
-        return closest != null ? closest.getCustomNameTag() : null;
+        return closest != null ? EntityCompat.getNametag(closest) : null;
     }
 
-    @SubscribeEvent
-    public void onEntityJoin(EntityJoinWorldEvent event) {
-        if (mc.theWorld == null) return;
+    @HandleEvent
+    public void onEntityJoin(ASMEntityJoinWorldEvent event) {
+        if (MinecraftCompat.getLocalWorld() == null) return;
         if (!(event.entity instanceof EntityArmorStand)) return;
         // Only bother tracking if spade in hotbar (diana active) or a mob was just dug
-        if ((DianaStats.hasSpadeInHotbar() || nonInqMobActive) && DianaStats.getInstance().isDianaMayor())
+        if (SkyblockData.getCurrentLocation() == SkyblockData.Location.HUB
+                && DianaStats.getInstance().isDianaMayor()
+                && (nonInqMobActive || DianaStats.hasSpadeInHotbar()))
             unconfirmed.put(event.entity.getEntityId(), System.currentTimeMillis());
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        if (mc.theWorld == null || mc.thePlayer == null) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
+        if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null) return;
         long now = System.currentTimeMillis();
         promoteUnconfirmed(now);
         checkTracked();
     }
 
-    @SubscribeEvent
-    public void onDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+    @HandleEvent
+    public void onDisconnect(ASMServerDisconnectEvent event) {
         unconfirmed.clear();
         tracked.clear();
         trackedInqs.clear();
@@ -115,15 +122,15 @@ public class LootshareDetect {
         while (it.hasNext()) {
             Map.Entry<Integer, Long> entry = it.next();
             int id = entry.getKey();
-            Entity entity = mc.theWorld.getEntityByID(id);
+            Entity entity = MinecraftCompat.getLocalWorld().getEntityByID(id);
 
-            if (!(entity instanceof EntityArmorStand) || entity.isDead) {
+            if (!(entity instanceof EntityArmorStand) || EntityCompat.isDead(entity)) {
                 it.remove();
                 continue;
             }
 
-            String name = entity.getCustomNameTag();
-            if (name.contains(DIANA_MARKER)) {
+            String name = EntityCompat.getNametag(entity);
+            if (TextCompat.matchesCoded(name, DIANA_MARKER)) {
                 tracked.put(id, (EntityArmorStand) entity);
                 String cleanName = net.minecraft.util.StringUtils.stripControlCodes(name);
                 if (cleanName.contains("Minos Inquisitor")) {
@@ -145,9 +152,9 @@ public class LootshareDetect {
             int id = entry.getKey();
             EntityArmorStand stand = entry.getValue();
 
-            if (!stand.isDead) {
+            if (!EntityCompat.isDead(stand)) {
                 if (!trackedInqs.contains(id) && !trackedNonInqs.contains(id)) {
-                    String clean = net.minecraft.util.StringUtils.stripControlCodes(stand.getCustomNameTag());
+                    String clean = TextCompat.plainString(stand.getCustomNameTag());
                     if (clean.contains("Minos Inquisitor")) trackedInqs.add(id);
                 }
                 continue;

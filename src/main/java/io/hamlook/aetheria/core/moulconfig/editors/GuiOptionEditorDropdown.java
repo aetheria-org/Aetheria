@@ -4,12 +4,12 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
-import org.lwjgl.input.Mouse;
 
 public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
@@ -20,10 +20,21 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
     public GuiOptionEditorDropdown(ConfigProcessor.ProcessedOption option, String[] values, int selected, boolean useOrdinal) {
         super(option);
-        if (selected >= values.length) selected = values.length;
         this.values = values;
-        this.selected = selected;
+        this.selected = Math.max(0, Math.min(values.length - 1, selected));
         this.useOrdinal = useOrdinal;
+    }
+
+    private int dropdownWidth(int width) {
+        return Math.min(width / 3 - 10, 80);
+    }
+
+    private int dropdownLeft(int x, int width) {
+        return x + width / 6 - dropdownWidth(width) / 2;
+    }
+
+    private int dropdownTop(int y, int height) {
+        return y + height - 7 - 14;
     }
 
     @Override
@@ -33,10 +44,10 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
         if (!open) {
             int height = getHeight();
 
-            FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
-            int dropdownWidth = Math.min(width / 3 - 10, 80);
-            int left = x + width / 6 - dropdownWidth / 2;
-            int top = y + height - 7 - 14;
+            FontRenderer fr = MinecraftCompat.getFontRenderer();
+            int dropdownWidth = dropdownWidth(width);
+            int left = dropdownLeft(x, width);
+            int top = dropdownTop(y, height);
 
             String selectedString = " - Select - ";
             if (selected >= 0 && selected < values.length) {
@@ -60,22 +71,22 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
             int height = getHeight();
 
-            FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
-            int dropdownWidth = Math.min(width / 3 - 10, 80);
-            int left = x + width / 6 - dropdownWidth / 2;
-            int top = y + height - 7 - 14;
+            FontRenderer fr = MinecraftCompat.getFontRenderer();
+            int dropdownWidth = dropdownWidth(width);
+            int left = dropdownLeft(x, width);
+            int top = dropdownTop(y, height);
 
             int dropdownHeight = 13 + 12 * values.length;
 
             int main = 0xff202026;
             int blue = 0xff2355ad;
-            Gui.drawRect(left, top, left + 1, top + dropdownHeight, blue); //Left
-            Gui.drawRect(left + 1, top, left + dropdownWidth, top + 1, blue); //Top
-            Gui.drawRect(left + dropdownWidth - 1, top + 1, left + dropdownWidth, top + dropdownHeight, blue); //Right
-            Gui.drawRect(left + 1, top + dropdownHeight - 1, left + dropdownWidth - 1, top + dropdownHeight, blue); //Bottom
-            Gui.drawRect(left + 1, top + 1, left + dropdownWidth - 1, top + dropdownHeight - 1, main); //Middle
+            DrawContextUtils.fill(left, top, left + 1, top + dropdownHeight, blue); //Left
+            DrawContextUtils.fill(left + 1, top, left + dropdownWidth, top + 1, blue); //Top
+            DrawContextUtils.fill(left + dropdownWidth - 1, top + 1, left + dropdownWidth, top + dropdownHeight, blue); //Right
+            DrawContextUtils.fill(left + 1, top + dropdownHeight - 1, left + dropdownWidth - 1, top + dropdownHeight, blue); //Bottom
+            DrawContextUtils.fill(left + 1, top + 1, left + dropdownWidth - 1, top + dropdownHeight - 1, main); //Middle
 
-            Gui.drawRect(left + 1, top + 14 - 1, left + dropdownWidth - 1, top + 14, blue); //Bar
+            DrawContextUtils.fill(left + 1, top + 14 - 1, left + dropdownWidth - 1, top + 14, blue); //Bar
 
             int dropdownY = 13;
             for (String option : values) {
@@ -94,13 +105,19 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
+        return mouseInput(x, y, width, mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
         int height = getHeight();
 
-        int left = x + width / 6 - 40;
-        int top = y + height - 7 - 14;
+        int left = dropdownLeft(x, width);
+        int dropdownWidth = dropdownWidth(width);
+        int top = dropdownTop(y, height);
 
-        if (Mouse.getEventButtonState() && Mouse.getEventButton() == 0) {
-            if (mouseX >= left && mouseX <= left + 80 && mouseY >= top && mouseY <= top + 14) {
+        if (pressed && button == 0) {
+            if (mouseX >= left && mouseX <= left + dropdownWidth && mouseY >= top && mouseY <= top + 14) {
                 open = !open;
                 return true;
             }
@@ -111,15 +128,21 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
     @Override
     public boolean mouseInputOverlay(int x, int y, int width, int mouseX, int mouseY) {
+        return mouseInputOverlay(x, y, width, mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInputOverlay(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
         int height = getHeight();
 
-        int left = x + width / 6 - 40;
-        int top = y + height - 7 - 14;
+        int left = dropdownLeft(x, width);
+        int dropdownWidth = dropdownWidth(width);
+        int top = dropdownTop(y, height);
 
-        if (Mouse.getEventButtonState() && Mouse.getEventButton() == 0) {
-            if (!(mouseX >= left && mouseX <= left + 80 && mouseY >= top && mouseY <= top + 14) && open) {
+        if (pressed && button == 0) {
+            if (!(mouseX >= left && mouseX <= left + dropdownWidth && mouseY >= top && mouseY <= top + 14) && open) {
                 open = false;
-                if (mouseX >= left && mouseX <= left + 80) {
+                if (mouseX >= left && mouseX <= left + dropdownWidth) {
                     int dropdownY = 13;
                     for (int ordinal = 0; ordinal < values.length; ordinal++) {
                         if (mouseY >= top + 3 + dropdownY && mouseY <= top + 3 + dropdownY + 12) {

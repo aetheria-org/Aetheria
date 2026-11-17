@@ -1,8 +1,11 @@
 package io.hamlook.aetheria.features.qol;
 
-import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.data.ApiHandler;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.price.PriceMap;
 import io.hamlook.aetheria.features.price.vars.PriceType;
 import io.hamlook.aetheria.features.price.vars.recieve.PriceEntry;
@@ -10,15 +13,12 @@ import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
 import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,8 +35,8 @@ public class SkyblockTooltips {
 
     private int tickCounter = 0;
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onTooltip(ItemTooltipEvent e) {
+    @HandleEvent(priority = HandleEvent.HIGHEST)
+    public void onTooltip(ASMTooltipEvent e) {
         if (e.toolTip == null || e.itemStack == null) return;
         if (ATHRConfig.feature == null) return;
 
@@ -127,27 +127,27 @@ public class SkyblockTooltips {
         return null;
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent e) {
-        if (e.phase != TickEvent.Phase.START) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent e) {
+        if (e.phase != TickPhase.START) return;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.romanNumerals) return;
         if (++tickCounter % 20 != 0) return;
 
         try {
-            Minecraft mc = Minecraft.getMinecraft();
-            if (mc.thePlayer == null || mc.thePlayer.sendQueue == null) return;
-            Collection<NetworkPlayerInfo> infos = mc.thePlayer.sendQueue.getPlayerInfoMap();
+            Minecraft mc = MinecraftCompat.getMinecraft();
+            if (MinecraftCompat.getLocalPlayer() == null) return;
+            Collection<NetworkPlayerInfo> infos = MinecraftCompat.getPlayerListEntries();
             if (infos == null) return;
             for (NetworkPlayerInfo info : infos) {
                 try {
                     if (info.getDisplayName() != null) {
-                        String name = info.getDisplayName().getFormattedText();
+                        String name = TextCompat.getFormattedText(info.getDisplayName());
                         String replaced = RomanNumeralParser.replaceInString(name);
-                        if (!replaced.equals(name)) info.setDisplayName(new ChatComponentText(replaced));
+                        if (!replaced.equals(name)) info.setDisplayName(TextCompat.createText(replaced));
                     } else if (info.getGameProfile() != null) {
                         String name = info.getGameProfile().getName();
                         String replaced = RomanNumeralParser.replaceInString(name);
-                        if (!replaced.equals(name)) info.setDisplayName(new ChatComponentText(replaced));
+                        if (!replaced.equals(name)) info.setDisplayName(TextCompat.createText(replaced));
                     }
                 } catch (Throwable ignored) {
                 }

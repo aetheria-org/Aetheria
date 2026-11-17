@@ -2,11 +2,14 @@ package io.hamlook.aetheria.features.misc.itemList.recipe;
 
 import com.google.gson.JsonObject;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
+
 import java.util.List;
 
 public class CraftingRecipe extends Recipe {
@@ -54,18 +57,18 @@ public class CraftingRecipe extends Recipe {
         }
 
         int arrowX = gridStartX + 3 * S + 4;
-        fr.drawStringWithShadow(">", arrowX, gridStartY + S + 4, 0xFFFFFF);
+        DrawContextUtils.drawTextWithShadow(fr, ">", arrowX, gridStartY + S + 4, 0xFFFFFF);
 
         int resultX = arrowX + 12;
         int resultY = gridStartY + S - 4;
         RecipeUtils.drawSlot(resultX, resultY, 26);
         ItemStack stack = targetItem.getStack();
         if (stack != null) {
-            GL11.glPushMatrix();
-            GL11.glTranslatef(resultX + 1, resultY + 1, 0);
-            GL11.glScalef(1.5f, 1.5f, 1f);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(resultX + 1, resultY + 1, 0);
+            GlStateManagerCompat.scale(1.5f, 1.5f, 1f);
             ItemRenderUtils.drawItemStack(stack, 0, 0);
-            GL11.glPopMatrix();
+            GlStateManagerCompat.popMatrix();
         }
     }
 

@@ -61,13 +61,17 @@ public class SContainer {
     }
 
     public void setStack(Integer key, ItemStack stack) {
+        //#if MC < 1.21
         if (stack == null) {
+        //#else
+        //$$ if (stack == null || stack.isEmpty()) {
+        //#endif
             slots.remove(key);
-        } else {
-            ItemData data = ItemData.fromItemStack(stack);
-            if (data != null) {
-                slots.put(key, data);
-            }
+            return;
+        }
+        ItemData data = ItemData.fromItemStack(stack);
+        if (data != null) {
+            slots.put(key, data);
         }
     }
 

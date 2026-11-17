@@ -1,15 +1,16 @@
 package io.hamlook.aetheria.features.misc.SkyblockExp;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.misc.Misc;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.data.TablistParser;
-import net.minecraft.client.Minecraft;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @RegisterEvents
 public class SkyblockXpInChat {
@@ -40,13 +41,13 @@ public class SkyblockXpInChat {
         return "§8[" + getLevelColor(level) + level + "§8]";
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.misc.skyblockXpInChat) return;
-        if (Minecraft.getMinecraft().thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
         if (!SkyblockData.isOnSkyblock()) return;
-        if (Minecraft.getMinecraft().thePlayer.ticksExisted % 10 != 0) return;
+        if (MinecraftCompat.getLocalPlayer().ticksExisted % 10 != 0) return;
 
         int currentXp = TablistParser.getSbCurrentXp();
         int maxXp = TablistParser.getSbMaxXp();
@@ -116,8 +117,8 @@ public class SkyblockXpInChat {
         ATHRConfig.markConfigDirty();
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         pendingLevel = -1;
         pendingXp = -1;
         pendingTime = 0L;

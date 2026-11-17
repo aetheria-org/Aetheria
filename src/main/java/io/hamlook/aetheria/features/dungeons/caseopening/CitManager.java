@@ -2,22 +2,16 @@ package io.hamlook.aetheria.features.dungeons.caseopening;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.*;
+import io.hamlook.aetheria.utils.compat.ResourceCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.ResourceLocation;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 public class CitManager {
 
@@ -30,14 +24,14 @@ public class CitManager {
     private static final Map<String, TextureData> citCache = new HashMap<>();
 
     public CitManager() {
-        ((IReloadableResourceManager) Minecraft.getMinecraft().getResourceManager()).registerReloadListener(manager -> rebuildCache());
+        ResourceCompat.registerReloadListener("cit", () -> rebuildCache());
     }
 
-    private static int getFrameTime(IResourceManager rm, ResourceLocation rl) {
+    private static int getFrameTime(String namespace, String path) {
         try {
-            IResource res = rm.getResource(new ResourceLocation(rl.getResourceDomain(), rl.getResourcePath() + ".mcmeta"));
-            if (res == null) return 1;
-            JsonObject root = JsonParser.parseReader(new InputStreamReader(res.getInputStream())).getAsJsonObject();
+            byte[] data = ResourceCompat.openResource(TextCompat.createResourceLocation(namespace, path + ".mcmeta"));
+            if (data == null) return 1;
+            JsonObject root = JsonParser.parseReader(new InputStreamReader(new ByteArrayInputStream(data))).getAsJsonObject();
             if (root.has("animation")) {
                 JsonObject anim = root.getAsJsonObject("animation");
                 if (anim.has(FRAME_TIME_KEY)) return anim.get(FRAME_TIME_KEY).getAsInt();
@@ -47,9 +41,11 @@ public class CitManager {
         return 1;
     }
 
-    private static int getFrameCount(IResourceManager rm, ResourceLocation rl) {
-        try (InputStream stream = rm.getResource(rl).getInputStream()) {
-            BufferedImage img = ImageIO.read(stream);
+    private static int getFrameCount(String namespace, String path) {
+        try {
+            byte[] data = ResourceCompat.openResource(TextCompat.createResourceLocation(namespace, path));
+            if (data == null) return 1;
+            BufferedImage img = ImageIO.read(new ByteArrayInputStream(data));
             if (img == null) return 1;
             return Math.max(img.getHeight() / img.getWidth(), 1);
         } catch (Exception e) {
@@ -61,36 +57,20 @@ public class CitManager {
         return citCache.getOrDefault(nbtId, new TextureData(ItemEnum.valueOf(nbtId).getDefaultRl(), 1, 1));
     }
 
-    private static File getPackFile(IResourcePack pack) {
-        try {
-            Field f = AbstractResourcePack.class.getDeclaredField("resourcePackFile");
-            f.setAccessible(true);
-            return (File) f.get(pack);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     private void rebuildCache() {
         citCache.clear();
-        IResourceManager rm = Minecraft.getMinecraft().getResourceManager();
-        for (ResourcePackRepository.Entry entry : Minecraft.getMinecraft().getResourcePackRepository().getRepositoryEntries()) {
-            try {
-                IResourcePack pack = entry.getResourcePack();
-                for (String path : listCitFiles(pack)) {
-                    try (InputStream in = pack.getInputStream(new ResourceLocation(MC_DOMAIN, path))) {
-                        Properties props = new Properties();
-                        props.load(in);
-                        processProperties(props, path, rm);
-                    } catch (Exception ignored) {
-                    }
-                }
+        for (Map.Entry<String, byte[]> entry : ResourceCompat.findResources(MC_DOMAIN, CIT_FOLDER, PROPS_EXT).entrySet()) {
+            String path = entry.getKey();
+            try (InputStream in = new ByteArrayInputStream(entry.getValue())) {
+                Properties props = new Properties();
+                props.load(in);
+                processProperties(props, path);
             } catch (Exception ignored) {
             }
         }
     }
 
-    private void processProperties(Properties props, String path, IResourceManager rm) {
+    private void processProperties(Properties props, String path) {
         String nbtId = props.getProperty("nbt.ExtraAttributes.id");
         String itemType = props.getProperty("items", "");
 
@@ -125,36 +105,9 @@ public class CitManager {
         }
 
         if (texturePath.startsWith(ASSETS_PREFIX)) texturePath = texturePath.substring(ASSETS_PREFIX.length());
+        texturePath = texturePath.toLowerCase(Locale.ROOT);
 
-        ResourceLocation rl = new ResourceLocation(MC_DOMAIN, texturePath + ".png");
-        citCache.put(nbtId, new TextureData(rl, getFrameTime(rm, rl), getFrameCount(rm, rl)));
-    }
-
-    private Set<String> listCitFiles(IResourcePack pack) {
-        Set<String> result = new HashSet<>();
-        File base = getPackFile(pack);
-        if (base == null) return result;
-
-        try {
-            if (base.isDirectory()) {
-                File target = new File(base, ASSETS_PREFIX + CIT_FOLDER);
-                if (target.exists()) {
-                    try (Stream<Path> walk = Files.walk(target.toPath())) {
-                        walk.filter(p -> p.toString().endsWith(PROPS_EXT)).forEach(p -> result.add(base.toPath().relativize(p).toString().replace("\\", "/").substring(ASSETS_PREFIX.length())));
-                    }
-                }
-            } else {
-                try (ZipFile zip = new ZipFile(base)) {
-                    Enumeration<? extends ZipEntry> entries = zip.entries();
-                    while (entries.hasMoreElements()) {
-                        String name = entries.nextElement().getName();
-                        if (name.startsWith(ASSETS_PREFIX + CIT_FOLDER) && name.endsWith(PROPS_EXT))
-                            result.add(name.substring(ASSETS_PREFIX.length()));
-                    }
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return result;
+        ResourceLocation rl = TextCompat.createResourceLocation(MC_DOMAIN, texturePath + ".png");
+        citCache.put(nbtId, new TextureData(rl, getFrameTime(MC_DOMAIN, texturePath + ".png"), getFrameCount(MC_DOMAIN, texturePath + ".png")));
     }
 }

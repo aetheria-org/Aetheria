@@ -8,17 +8,28 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.client.resources.IResource;
+import io.hamlook.aetheria.utils.compat.ResourceCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+//#if FORGE
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
-import net.minecraft.util.ResourceLocation;
+//#else
+//$$ import net.minecraft.resource.ResourceManager;
+//#endif
+
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+//#if FORGE
 public class Textures implements IResourceManagerReloadListener {
+//#else
+//$$ public class Textures {
+//#endif
 
     private static final TextureObject DEFAULT_TEXTURE = new TextureObject("Default");
 
@@ -34,16 +45,18 @@ public class Textures implements IResourceManagerReloadListener {
         }
     }
 
+    //#if FORGE
     @Override
     public void onResourceManagerReload(IResourceManager resourceManager) {
+    //#else
+    //$$ public void onResourceManagerReload(ResourceManager resourceManager) {
+    //#endif
         styles.clear();
         styles.add(DEFAULT_TEXTURE);
         DEFAULT_TEXTURE.displayName = "Default";
         try {
-            ResourceLocation stylesData = new ResourceLocation("notenoughfakepixel:data/styles.json");
-
-            for (IResource resource : resourceManager.getAllResources(stylesData)) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+            for (byte[] data : ResourceCompat.openAllResources(TextCompat.createResourceLocation("notenoughfakepixel:data/styles.json"))) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8))) {
                     JsonObject jsonObject = gson.fromJson(reader, JsonObject.class);
                     for (JsonElement json : jsonObject.getAsJsonArray("styles")) {
                         styles.add(TextureObject.decode((JsonObject) json));

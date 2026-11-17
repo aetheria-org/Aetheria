@@ -1,5 +1,6 @@
 package io.hamlook.aetheria.utils.item;
 
+import io.hamlook.aetheria.utils.compat.NbtCompat;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -29,7 +30,7 @@ public class NBTFormatter {
         } else if (nbt instanceof NBTTagList) {
             NBTTagList list = (NBTTagList) nbt;
             builder.append("[\n");
-            for (int i = 0; i < list.tagCount(); i++) {
+            for (int i = 0; i < NbtCompat.tagCount(list); i++) {
                 builder.append(spaces).append("  ");
                 builder.append(format(list.get(i), indent + 1)).append(",\n");
             }

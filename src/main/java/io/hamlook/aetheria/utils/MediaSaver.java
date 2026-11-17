@@ -1,13 +1,9 @@
 package io.hamlook.aetheria.utils;
 
 import io.hamlook.aetheria.Aetheria;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
@@ -92,7 +88,7 @@ public final class MediaSaver {
         if (dot > 0) base = base.substring(0, dot);
         base = sanitize(base);
 
-        File dir = new File(Minecraft.getMinecraft().mcDataDir, "aetheria/downloads");
+        File dir = new File(MinecraftCompat.getMinecraft().mcDataDir, "aetheria/downloads");
         if (!dir.exists() && !dir.mkdirs()) throw new IOException("Could not create downloads folder.");
 
         File target = new File(dir, base + "." + ext);

@@ -4,15 +4,10 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import org.lwjgl.input.Mouse;
-import org.lwjgl.opengl.GL11;
+import net.minecraft.client.gui.FontRenderer;
 
 public class GuiOptionEditorAccordion extends GuiOptionEditor {
 
@@ -23,11 +18,6 @@ public class GuiOptionEditorAccordion extends GuiOptionEditor {
         super(option);
         this.accordionToggled = (boolean) option.get();
         this.accordionId = accordionId;
-    }
-
-    @Override
-    public int getHeight() {
-        return 20;
     }
 
     public int getAccordionId() {
@@ -43,32 +33,37 @@ public class GuiOptionEditorAccordion extends GuiOptionEditor {
         int height = getHeight();
         RenderUtils.drawFloatingRectDark(x, y, width, height, true);
 
-        Tessellator tessellator = Tessellator.getInstance();
-        WorldRenderer worldrenderer = tessellator.getWorldRenderer();
-        GlStateManager.enableBlend();
-        GlStateManager.disableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.color(1, 1, 1, 1);
-        worldrenderer.begin(GL11.GL_TRIANGLES, DefaultVertexFormats.POSITION);
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.color(1, 1, 1, 1);
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.TRIANGLES, TessellatorCompat.POSITION);
         if (accordionToggled) {
-            worldrenderer.pos((double) x + 6, (double) y + 6, 0.0D).endVertex();
-            worldrenderer.pos((double) x + 9.75f, (double) y + 13.5f, 0.0D).endVertex();
-            worldrenderer.pos((double) x + 13.5f, (double) y + 6, 0.0D).endVertex();
+            vb.pos((double) x + 6, (double) y + 6, 0.0D).endVertex();
+            vb.pos((double) x + 9.75f, (double) y + 13.5f, 0.0D).endVertex();
+            vb.pos((double) x + 13.5f, (double) y + 6, 0.0D).endVertex();
         } else {
-            worldrenderer.pos((double) x + 6, (double) y + 13.5f, 0.0D).endVertex();
-            worldrenderer.pos((double) x + 13.5f, (double) y + 9.75f, 0.0D).endVertex();
-            worldrenderer.pos((double) x + 6, (double) y + 6, 0.0D).endVertex();
+            vb.pos((double) x + 6, (double) y + 13.5f, 0.0D).endVertex();
+            vb.pos((double) x + 13.5f, (double) y + 9.75f, 0.0D).endVertex();
+            vb.pos((double) x + 6, (double) y + 6, 0.0D).endVertex();
         }
-        tessellator.draw();
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
+        vb.draw();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.disableBlend();
 
-        TextRenderUtils.drawStringScaledMaxWidth(option.name, Minecraft.getMinecraft().fontRendererObj, x + 18, y + 6, false, width - 10, 0xc0c0c0);
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
+        TextRenderUtils.drawStringScaledMaxWidth(option.name, fr, x + 18, y + 13, true, width / 3 - 18, 0xc0c0c0);
+        renderDescription(x, y, width);
     }
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
-        if (Mouse.getEventButtonState() && mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + getHeight()) {
+        return mouseInput(x, y, width, mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
+        if (pressed && mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + getHeight()) {
             accordionToggled = !accordionToggled;
             return true;
         }

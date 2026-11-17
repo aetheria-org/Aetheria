@@ -40,6 +40,6 @@ public class ChromaStyle {
     }
 
     public int toArgb(float x, float y) {
-        return ChromaColour.applyChromaShift(toArgb(), x, y, mode, size);
+        return ChromaColour.rainbowShifted(speed, alpha, x, y, mode, size);
     }
 }

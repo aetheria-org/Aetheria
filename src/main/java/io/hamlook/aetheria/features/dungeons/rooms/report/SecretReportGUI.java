@@ -6,23 +6,28 @@ import io.hamlook.aetheria.features.dungeons.rooms.DungeonRoomDetector;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
+//#if MC > 1.21
+//$$ import net.minecraft.client.gui.widget.ButtonWidget;
+//$$ import net.minecraft.text.Text;
+//#endif
 import org.lwjgl.input.Keyboard;
 
 import javax.net.ssl.HttpsURLConnection;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
-public class SecretReportGUI extends GuiScreen {
+public class SecretReportGUI extends AetheriaBaseScreen {
 
     public long lastReport = 0;
     public static final long REPORT_INTERVAL = 10000;
@@ -39,26 +44,28 @@ public class SecretReportGUI extends GuiScreen {
     }
 
     @Override
-    public void initGui() {
+    public void onInitGui() {
         if(room == null) {
-            Minecraft.getMinecraft().displayGuiScreen(null);
+            MinecraftCompat.getMinecraft().displayGuiScreen(null);
             return;
         }
         secretNames.clear();
         secretNames.addAll(DungeonRoomDetector.getSecretNamesForRoom(room.name));
-        Keyboard.enableRepeatEvents(true);
+        KeyboardCompat.enableRepeatEvents(true);
     }
 
     @Override
-    public void onGuiClosed() {
-        Keyboard.enableRepeatEvents(false);
+    public void guiClosed() {
+        KeyboardCompat.enableRepeatEvents(false);
     }
 
+    //#if MC < 1.21
     @Override
     protected void actionPerformed(GuiButton button) {
-        if(button.id == cancelButton.id) Minecraft.getMinecraft().displayGuiScreen(null);
+        if(button.id == cancelButton.id) MinecraftCompat.getMinecraft().displayGuiScreen(null);
         if(button.id == submitButton.id) errorMessage = submitReport();
     }
+    //#endif
 
     public String submitReport() {
         if(System.currentTimeMillis() - lastReport < REPORT_INTERVAL) return "§cYou cannot submit multiple reports this fast.";
@@ -122,56 +129,57 @@ public class SecretReportGUI extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        if(this.buttonList.isEmpty()){
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
+        if(GuiScreenUtils.isButtonListEmpty(this)){
             populateButtonList();
         }
+        //#if MC < 1.21
         drawDefaultBackground();
-        TextRenderUtils.drawCenteredStringScaleAware("X-Rel. Coord", xField.xPosition + xField.width/2f,
-                xField.yPosition - 10,1f,false);
+        //#else
+        //$$ // modern background handled via Screen.renderBackground
+        //#endif
+        TextRenderUtils.drawCenteredStringScaleAware("X-Rel. Coord", GuiScreenUtils.getX(xField) + GuiScreenUtils.getW(xField)/2f,
+                GuiScreenUtils.getY(xField) - 10,1f,false);
 
-        TextRenderUtils.drawCenteredStringScaleAware("Y. Coordinate", yField.xPosition + yField.width/2f,
-                yField.yPosition - 10,1f,false);
+        TextRenderUtils.drawCenteredStringScaleAware("Y. Coordinate", GuiScreenUtils.getX(yField) + GuiScreenUtils.getW(yField)/2f,
+                GuiScreenUtils.getY(yField) - 10,1f,false);
 
-        TextRenderUtils.drawCenteredStringScaleAware("Z-Rel. Coordinate", zField.xPosition + zField.width/2f,
-                zField.yPosition - 10,1f,false);
+        TextRenderUtils.drawCenteredStringScaleAware("Z-Rel. Coordinate", GuiScreenUtils.getX(zField) + GuiScreenUtils.getW(zField)/2f,
+                GuiScreenUtils.getY(zField) - 10,1f,false);
 
-        TextRenderUtils.drawCenteredStringScaleAware("Secret Name", searchField.xPosition + searchField.width/2f,
-                searchField.yPosition - 10,1f,false);
+        TextRenderUtils.drawCenteredStringScaleAware("Secret Name", GuiScreenUtils.getX(searchField) + GuiScreenUtils.getW(searchField)/2f,
+                GuiScreenUtils.getY(searchField) - 10,1f,false);
         TextRenderUtils.drawCenteredStringScaleAware(errorMessage,
-                width/2f,searchField.yPosition - 22,1f,false);
+                width/2f,GuiScreenUtils.getY(searchField) - 22,1f,false);
 
-        super.drawScreen(mouseX, mouseY, partialTicks);
-        xField.drawTextBox();
-        yField.drawTextBox();
-        zField.drawTextBox();
-        searchField.drawTextBox();
+        GuiScreenUtils.renderTextField(xField, mouseX, mouseY);
+        GuiScreenUtils.renderTextField(yField, mouseX, mouseY);
+        GuiScreenUtils.renderTextField(zField, mouseX, mouseY);
+        GuiScreenUtils.renderTextField(searchField, mouseX, mouseY);
         searchField.drawDropdown(mouseX,mouseY);
     }
 
     @Override
-    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+    protected void onKeyTyped(char typedChar, int keyCode) {
         if (!KeybindHelper.isKeyValid(keyCode)) return;
-        super.keyTyped(typedChar, keyCode);
-        searchField.textboxKeyTyped(typedChar, keyCode);
+        GuiScreenUtils.typeTextField(searchField, typedChar, keyCode);
 
         boolean isNumberRow = (keyCode >= Keyboard.KEY_1 && keyCode <= Keyboard.KEY_0);
         boolean isNumpad = (keyCode >= Keyboard.KEY_NUMPAD7 && keyCode <= Keyboard.KEY_NUMPAD0);
 
         if (isNumpad || isNumberRow || keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_BACK || keyCode == Keyboard.KEY_MINUS) {
-            xField.textboxKeyTyped(typedChar, keyCode);
-            yField.textboxKeyTyped(typedChar, keyCode);
-            zField.textboxKeyTyped(typedChar, keyCode);
+            GuiScreenUtils.typeTextField(xField, typedChar, keyCode);
+            GuiScreenUtils.typeTextField(yField, typedChar, keyCode);
+            GuiScreenUtils.typeTextField(zField, typedChar, keyCode);
         }
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (searchField.mouseClickedDropdown(mouseX, mouseY, mouseButton)) {
             return;
         }
 
-        super.mouseClicked(mouseX, mouseY, mouseButton);
         searchField.mouseClicked(mouseX, mouseY, mouseButton);
         xField.mouseClicked(mouseX, mouseY, mouseButton);
         yField.mouseClicked(mouseX, mouseY, mouseButton);
@@ -183,14 +191,19 @@ public class SecretReportGUI extends GuiScreen {
         int yCenter = this.height/2;
 
         int yOffset = (int) ResolutionUtils.getYStatic(100);
+        //#if MC < 1.21
         submitButton = new GuiButton(0,xCenter - 125,yCenter+yOffset,100,20,"Submit");
         cancelButton = new GuiButton(1,xCenter + 25,yCenter+yOffset,100,20,"Cancel");
-        this.buttonList.add(submitButton);
-        this.buttonList.add(cancelButton);
-        searchField = new GuiDropdownTextField(5, mc.fontRendererObj, xCenter - 100, yCenter - 50, 200, 20, secretNames);
+        //#else
+        //$$ submitButton = ButtonWidget.builder(Text.literal("Submit"), btn -> errorMessage = submitReport()).dimensions(xCenter - 125,yCenter+yOffset,100,20).build();
+        //$$ cancelButton = ButtonWidget.builder(Text.literal("Cancel"), btn -> MinecraftCompat.displayGuiScreen(null)).dimensions(xCenter + 25,yCenter+yOffset,100,20).build();
+        //#endif
+        GuiScreenUtils.addButton(this, submitButton);
+        GuiScreenUtils.addButton(this, cancelButton);
+        searchField = new GuiDropdownTextField(5, MinecraftCompat.getFontRenderer(), xCenter - 100, yCenter - 50, 200, 20, secretNames);
 
-        xField = new GuiTextField(2,mc.fontRendererObj,xCenter - 175,yCenter,100,20);
-        yField = new GuiTextField(3,mc.fontRendererObj,xCenter - 50, yCenter,100,20);
-        zField = new GuiTextField(4,mc.fontRendererObj,xCenter + 75, yCenter,100,20);
+        xField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(),xCenter - 175,yCenter,100,20);
+        yField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(),xCenter - 50, yCenter,100,20);
+        zField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(),xCenter + 75, yCenter,100,20);
     }
 }

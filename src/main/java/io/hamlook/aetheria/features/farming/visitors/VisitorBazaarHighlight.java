@@ -3,6 +3,9 @@ package io.hamlook.aetheria.features.farming.visitors;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import io.hamlook.aetheria.utils.render.HighlightUtils;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -28,15 +31,16 @@ public final class VisitorBazaarHighlight {
     private static boolean matches(GuiContainer gui, Slot slot) {
         if (ATHRConfig.feature == null) return false;
         if (!FarmingApi.isSearchFresh(60_000L)) return false;
-        if (!(gui.inventorySlots instanceof ContainerChest)) return false;
-        ContainerChest chest = (ContainerChest) gui.inventorySlots;
+        if (!(InventoryCompat.getContainer(gui) instanceof ContainerChest)) return false;
+        ContainerChest chest = (ContainerChest) InventoryCompat.getContainer(gui);
 
         IInventory lower = chest.getLowerChestInventory();
         if (slot.inventory != lower) return false;
 
         // Relevance gate: only chests that belong to the ordering flow
         // ("Search: <item>", product "<item>", "<item> ➜ Instant Buy").
-        String title = ColorUtils.stripColor(lower.getDisplayName().getUnformattedText()).trim();
+        String title = ContainerUtils.getContainerName(gui);
+        if (title == null) return false;
         if (!title.startsWith("Search:") && !VisitorShoppingList.nameMatchesFlow(title)) {
             return false;
         }
@@ -50,7 +54,7 @@ public final class VisitorBazaarHighlight {
     private static boolean slotMatches(ItemStack stack, boolean searchChest) {
         String searched = FarmingApi.getSearchedItemName();
         if (searched.isEmpty()) return false;
-        String name = ColorUtils.stripColor(stack.getDisplayName()).trim();
+        String name = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim();
 
         if (searchChest && name.equals(searched)) return true;
 

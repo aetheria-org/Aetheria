@@ -8,24 +8,18 @@ import io.hamlook.aetheria.features.misc.itemList.ItemRegistry;
 import io.hamlook.aetheria.features.misc.itemList.SkyblockItem;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.KeybindHelper;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.EnumChatFormatting;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 
 public class RareDropTrackerGUI extends GuiElement {
 
@@ -61,7 +55,7 @@ public class RareDropTrackerGUI extends GuiElement {
     private int px, py, pw, ph;
 
     public RareDropTrackerGUI() {
-        this.parentScreen = Minecraft.getMinecraft().currentScreen;
+        this.parentScreen = MinecraftCompat.getCurrentScreen();
         buildCacheIfNeeded();
         if (allNamesCache == null) {
             message = "Item database is still loading, hang on...";
@@ -91,17 +85,19 @@ public class RareDropTrackerGUI extends GuiElement {
         allNamesCache = names;
     }
 
-    private void updatePanel(ScaledResolution sr) {
-        pw = Math.min(MAX_W, sr.getScaledWidth() - PAD * 2);
-        ph = Math.min(MAX_H, sr.getScaledHeight() - PAD * 2);
-        px = (sr.getScaledWidth() - pw) / 2;
-        py = (sr.getScaledHeight() - ph) / 2;
+    private void updatePanel() {
+        int screenW = GuiScreenUtils.getScaledWindowWidth();
+        int screenH = GuiScreenUtils.getScaledWindowHeight();
+        pw = Math.min(MAX_W, screenW - PAD * 2);
+        ph = Math.min(MAX_H, screenH - PAD * 2);
+        px = (screenW - pw) / 2;
+        py = (screenH - ph) / 2;
     }
 
     private void ensureSearchField(int x, int y, int w, FontRenderer fr) {
         if (searchField == null) {
-            searchField = new GuiTextField(0, fr, x, y, w, SF_H);
-            searchField.setMaxStringLength(64);
+            searchField = GuiScreenUtils.createTextField(fr, x, y, w, SF_H);
+            GuiScreenUtils.setTextFieldMaxLength(searchField, 64);
         }
     }
 
@@ -177,8 +173,8 @@ public class RareDropTrackerGUI extends GuiElement {
         if (editingItemId != null) commitEdit();
         editingItemId = id;
         editingField = "goal";
-        editField = new GuiTextField(1, Minecraft.getMinecraft().fontRendererObj, 0, 0, 0, 0);
-        editField.setMaxStringLength(10);
+        editField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), 0, 0, 0, 0);
+        GuiScreenUtils.setTextFieldMaxLength(editField, 10);
         editField.setText(String.valueOf(item.goal));
         selectAllInEditField();
         editField.setFocused(true);
@@ -189,8 +185,8 @@ public class RareDropTrackerGUI extends GuiElement {
         if (editingItemId != null) commitEdit();
         editingItemId = id;
         editingField = "command";
-        editField = new GuiTextField(2, Minecraft.getMinecraft().fontRendererObj, 0, 0, 0, 0);
-        editField.setMaxStringLength(64);
+        editField = GuiScreenUtils.createTextField(MinecraftCompat.getFontRenderer(), 0, 0, 0, 0);
+        GuiScreenUtils.setTextFieldMaxLength(editField, 64);
         editField.setText(item.command != null ? item.command : "");
         selectAllInEditField();
         editField.setFocused(true);
@@ -201,8 +197,8 @@ public class RareDropTrackerGUI extends GuiElement {
     // instead of just being inserted at the end (e.g. typing "13" over an
     // existing "12" replaces it -> "13", instead of appending -> "1213").
     private void selectAllInEditField() {
-        editField.setCursorPosition(0);
-        editField.setSelectionPos(editField.getText().length());
+        GuiScreenUtils.setTextFieldCursor(editField, 0);
+        GuiScreenUtils.setTextFieldSelection(editField, editField.getText().length());
     }
 
     private void commitEdit() {
@@ -241,48 +237,48 @@ public class RareDropTrackerGUI extends GuiElement {
 
     @Override
     public void render() {
-        Minecraft mc = Minecraft.getMinecraft();
-        ScaledResolution sr = new ScaledResolution(mc);
-        FontRenderer fr = mc.fontRendererObj;
-        updatePanel(sr);
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
+        updatePanel();
 
-        Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0xaa050508);
+        DrawContextUtils.fill(0, 0, GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight(), 0xaa050508);
 
-        GlStateManager.color(0.18f, 0.18f, 0.18f, 1f);
+        GlStateManagerCompat.color(0.18f, 0.18f, 0.18f, 1f);
         NineSliceUtils.draw(Resources.storageBackground(1), px, py, pw, ph, 6, 18);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         int curY = py + PAD;
-        fr.drawStringWithShadow(EnumChatFormatting.LIGHT_PURPLE + "" + EnumChatFormatting.BOLD + "Rare Drop Tracker", px + PAD, curY + 5, -1);
+        DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.LIGHT_PURPLE + "" + EnumChatFormatting.BOLD + "Rare Drop Tracker", px + PAD, curY + 5, -1);
         String escHint = EnumChatFormatting.DARK_GRAY + "ESC";
-        fr.drawStringWithShadow(escHint, px + pw - fr.getStringWidth(escHint) - PAD, curY + 5, -1);
-        Gui.drawRect(px + PAD, curY + TITLE_H, px + pw - PAD, curY + TITLE_H + 1, 0xff252535);
+        DrawContextUtils.drawTextWithShadow(fr, escHint, px + pw - fr.getStringWidth(escHint) - PAD, curY + 5, -1);
+        DrawContextUtils.fill(px + PAD, curY + TITLE_H, px + pw - PAD, curY + TITLE_H + 1, 0xff252535);
         curY += TITLE_H + PAD;
 
-        fr.drawStringWithShadow(EnumChatFormatting.GRAY + "Type " + MIN_QUERY_LENGTH + "+ letters to search:", px + PAD, curY, -1);
+        DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.GRAY + "Type " + MIN_QUERY_LENGTH + "+ letters to search:", px + PAD, curY, -1);
         curY += 10;
 
         int sfW = pw - PAD * 2 - BTN_W - 6;
         ensureSearchField(px + PAD, curY, sfW, fr);
-        searchField.xPosition = px + PAD;
-        searchField.yPosition = curY;
-        searchField.width = sfW;
-        searchField.height = SF_H;
-        searchField.drawTextBox();
+        GuiScreenUtils.setX(searchField, px + PAD);
+        GuiScreenUtils.setY(searchField, curY);
+        GuiScreenUtils.setW(searchField, sfW);
+        GuiScreenUtils.setH(searchField, SF_H);
+        int[] topMouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
+        GuiScreenUtils.renderTextField(searchField, topMouse[0], topMouse[1]);
 
         int addX = px + pw - PAD - BTN_W;
         drawBtn(addX, curY, EnumChatFormatting.WHITE + "Add", fr, isHovered(addX, curY));
         curY += SF_H + 6;
 
         if (!message.isEmpty()) {
-            fr.drawStringWithShadow(message, px + PAD, curY, messageColor);
+            DrawContextUtils.drawTextWithShadow(fr, message, px + PAD, curY, messageColor);
         }
         curY += 12;
 
-        Gui.drawRect(px + PAD, curY, px + pw - PAD, curY + 1, 0xff252535);
+        DrawContextUtils.fill(px + PAD, curY, px + pw - PAD, curY + 1, 0xff252535);
         curY += 6;
 
-        fr.drawStringWithShadow(EnumChatFormatting.GRAY + "Tracked items: §8(click count to type a goal, CMD to set a command, e.g. /echest 5 or /storage 3)", px + PAD, curY, -1);
+        DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.GRAY + "Tracked items: §8(click count to type a goal, CMD to set a command, e.g. /echest 5 or /storage 3)", px + PAD, curY, -1);
         curY += 12;
 
         RareDropTrackerConfig config = ATHRConfig.feature.qol.rareDropTracker;
@@ -291,9 +287,9 @@ public class RareDropTrackerGUI extends GuiElement {
         int listBottom = py + ph - PAD;
 
         if (entries.isEmpty()) {
-            fr.drawStringWithShadow(EnumChatFormatting.DARK_GRAY + "Nothing tracked yet.", px + PAD, listTop, -1);
+            DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.DARK_GRAY + "Nothing tracked yet.", px + PAD, listTop, -1);
         } else {
-            int[] mouse = KeybindHelper.getMouseCoords(sr);
+            int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
             int rowY = listTop - scrollOffset;
             for (Map.Entry<String, RareDropTrackerConfig.TrackedItem> e : entries) {
                 if (rowY + ROW_H > listTop && rowY < listBottom) {
@@ -344,18 +340,18 @@ public class RareDropTrackerGUI extends GuiElement {
 
         if (editingCmd) {
             positionEditField(px + PAD, rowY - 1, nameMaxWidth);
-            editField.drawTextBox();
+            GuiScreenUtils.renderTextField(editField, mouse[0], mouse[1]);
         } else {
             String rawName = item.displayName != null ? item.displayName : "";
             String name = fr.trimStringToWidth(rawName, Math.max(10, nameMaxWidth));
-            fr.drawStringWithShadow(EnumChatFormatting.WHITE + name, px + PAD, rowY, -1);
+            DrawContextUtils.drawTextWithShadow(fr, EnumChatFormatting.WHITE + name, px + PAD, rowY, -1);
         }
 
         if (editingGoal) {
             positionEditField(progX, rowY - 1, progW);
-            editField.drawTextBox();
+            GuiScreenUtils.renderTextField(editField, mouse[0], mouse[1]);
         } else {
-            fr.drawStringWithShadow(progressStr, progX, rowY, -1);
+            DrawContextUtils.drawTextWithShadow(fr, progressStr, progX, rowY, -1);
         }
 
         drawBracketBtn(cmdStr, cmdX, rowY, cmdW, mouse, fr);
@@ -366,59 +362,67 @@ public class RareDropTrackerGUI extends GuiElement {
     }
 
     private void positionEditField(int x, int y, int w) {
-        editField.xPosition = x;
-        editField.yPosition = y;
-        editField.width = Math.max(MIN_EDIT_FIELD_W, w);
-        editField.height = ROW_H - 1;
+        GuiScreenUtils.setX(editField, x);
+        GuiScreenUtils.setY(editField, y);
+        GuiScreenUtils.setW(editField, Math.max(MIN_EDIT_FIELD_W, w));
+        GuiScreenUtils.setH(editField, ROW_H - 1);
     }
 
     private void drawBracketBtn(String label, int x, int y, int w, int[] mouse, FontRenderer fr) {
         boolean hovered = inBounds(mouse[0], mouse[1], x, y - 1, w, ROW_H);
         if (hovered) {
-            Gui.drawRect(x - 1, y - 1, x + w + 1, y + ROW_H - 2, 0x33FFFFFF);
+            DrawContextUtils.fill(x - 1, y - 1, x + w + 1, y + ROW_H - 2, 0x33FFFFFF);
         }
-        fr.drawStringWithShadow(label, x, y, -1);
+        DrawContextUtils.drawTextWithShadow(fr, label, x, y, -1);
     }
 
     private void drawSuggestions(FontRenderer fr) {
-        int dropY = searchField.yPosition + searchField.height;
+        int dropY = GuiScreenUtils.getY(searchField) + GuiScreenUtils.getH(searchField);
         int count = Math.min(filteredNames.size(), MAX_SUGGESTIONS);
-        int[] mouse = KeybindHelper.getMouseCoords(new ScaledResolution(Minecraft.getMinecraft()));
+        int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
 
-        Gui.drawRect(searchField.xPosition - 1, dropY, searchField.xPosition + searchField.width + 1, dropY + count * SUGGESTION_H + 1, 0xFFAAAAAA);
-        Gui.drawRect(searchField.xPosition, dropY, searchField.xPosition + searchField.width, dropY + count * SUGGESTION_H, 0xE6000000);
+        DrawContextUtils.fill(GuiScreenUtils.getX(searchField) - 1, dropY, GuiScreenUtils.getX(searchField) + GuiScreenUtils.getW(searchField) + 1, dropY + count * SUGGESTION_H + 1, 0xFFAAAAAA);
+        DrawContextUtils.fill(GuiScreenUtils.getX(searchField), dropY, GuiScreenUtils.getX(searchField) + GuiScreenUtils.getW(searchField), dropY + count * SUGGESTION_H, 0xE6000000);
 
         for (int i = 0; i < count; i++) {
             int itemTop = dropY + i * SUGGESTION_H;
-            boolean hovered = inBounds(mouse[0], mouse[1], searchField.xPosition, itemTop, searchField.width, SUGGESTION_H);
+            boolean hovered = inBounds(mouse[0], mouse[1], GuiScreenUtils.getX(searchField), itemTop, GuiScreenUtils.getW(searchField), SUGGESTION_H);
             if (hovered) {
-                Gui.drawRect(searchField.xPosition, itemTop, searchField.xPosition + searchField.width, itemTop + SUGGESTION_H, 0x44FFFFFF);
+                DrawContextUtils.fill(GuiScreenUtils.getX(searchField), itemTop, GuiScreenUtils.getX(searchField) + GuiScreenUtils.getW(searchField), itemTop + SUGGESTION_H, 0x44FFFFFF);
             }
-            fr.drawStringWithShadow(filteredNames.get(i), searchField.xPosition + 3, itemTop + 2, hovered ? 0xFFFFA0 : 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(fr, filteredNames.get(i), GuiScreenUtils.getX(searchField) + 3, itemTop + 2, hovered ? 0xFFFFA0 : 0xFFFFFF);
         }
     }
 
     private void drawBtn(int x, int y, String label, FontRenderer fr, boolean hov) {
-        Gui.drawRect(x, y, x + BTN_W, y + SF_H, hov ? 0xff282830 : 0xff1a1a22);
-        Gui.drawRect(x, y, x + BTN_W, y + 1, hov ? 0xff505060 : 0xff303038);
-        Gui.drawRect(x, y + SF_H - 1, x + BTN_W, y + SF_H, 0xff0a0a0e);
+        DrawContextUtils.fill(x, y, x + BTN_W, y + SF_H, hov ? 0xff282830 : 0xff1a1a22);
+        DrawContextUtils.fill(x, y, x + BTN_W, y + 1, hov ? 0xff505060 : 0xff303038);
+        DrawContextUtils.fill(x, y + SF_H - 1, x + BTN_W, y + SF_H, 0xff0a0a0e);
         TextRenderUtils.drawStringCenteredScaledMaxWidth(label, fr, x + BTN_W / 2f, y + SF_H / 2f + 1, false, BTN_W - 4, -1);
     }
 
     @Override
     public boolean mouseInput(int mouseX, int mouseY) {
-        int dWheel = Mouse.getEventDWheel();
-        if (dWheel != 0) {
-            RareDropTrackerConfig config = ATHRConfig.feature.qol.rareDropTracker;
-            int maxScroll = Math.max(0, config.trackedItems.size() * ROW_H - (ph - PAD * 2 - 90));
-            scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (dWheel > 0 ? 20 : -20)));
+        return mouseInput(mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int mouseX, int mouseY, int button, boolean pressed) {
+        if (button == -1) {
+            int dWheel = MouseCompat.getEventDWheel();
+            if (dWheel != 0) {
+                RareDropTrackerConfig config = ATHRConfig.feature.qol.rareDropTracker;
+                int maxScroll = Math.max(0, config.trackedItems.size() * ROW_H - (ph - PAD * 2 - 90));
+                scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (dWheel > 0 ? 20 : -20)));
+            }
             return false;
         }
-        if (!Mouse.getEventButtonState() || Mouse.getEventButton() != 0) return false;
+        if (!pressed || button != 0) return false;
 
         if (editingItemId != null && editField != null) {
-            if (inBounds(mouseX, mouseY, editField.xPosition, editField.yPosition, editField.width, editField.height)) {
-                editField.mouseClicked(mouseX, mouseY, 0);
+            if (inBounds(mouseX, mouseY, GuiScreenUtils.getX(editField), GuiScreenUtils.getY(editField), GuiScreenUtils.getW(editField), GuiScreenUtils.getH(editField))) {
+                GuiScreenUtils.focusTextFieldOnClick(editField, mouseX, mouseY);
+                editField.mouseClicked(mouseX, mouseY, button);
                 return true;
             }
             // clicking away from the field saves it, then falls through so the click can still hit another button
@@ -428,9 +432,9 @@ public class RareDropTrackerGUI extends GuiElement {
         if (searchField == null) return false;
 
         if (searchField.isFocused() && !filteredNames.isEmpty()) {
-            int dropY = searchField.yPosition + searchField.height;
+            int dropY = GuiScreenUtils.getY(searchField) + GuiScreenUtils.getH(searchField);
             int count = Math.min(filteredNames.size(), MAX_SUGGESTIONS);
-            if (inBounds(mouseX, mouseY, searchField.xPosition, dropY, searchField.width, count * SUGGESTION_H)) {
+            if (inBounds(mouseX, mouseY, GuiScreenUtils.getX(searchField), dropY, GuiScreenUtils.getW(searchField), count * SUGGESTION_H)) {
                 int index = (mouseY - dropY) / SUGGESTION_H;
                 searchField.setText(filteredNames.get(index));
                 filteredNames.clear();
@@ -438,10 +442,11 @@ public class RareDropTrackerGUI extends GuiElement {
             }
         }
 
-        searchField.mouseClicked(mouseX, mouseY, 0);
+        searchField.mouseClicked(mouseX, mouseY, button);
+        GuiScreenUtils.focusTextFieldOnClick(searchField, mouseX, mouseY);
 
         int addX = px + pw - PAD - BTN_W;
-        int addY = searchField.yPosition;
+        int addY = GuiScreenUtils.getY(searchField);
         if (inBounds(mouseX, mouseY, addX, addY, BTN_W, SF_H)) {
             addTrackedItem(searchField.getText());
             return true;
@@ -452,10 +457,10 @@ public class RareDropTrackerGUI extends GuiElement {
         int listTop = listTop(addY);
         int listBottom = py + ph - PAD;
 
-        boolean shift = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+        boolean shift = KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) || KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT);
         int step = shift ? GOAL_STEP_SHIFT : GOAL_STEP;
 
-        FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
         int rowY = listTop - scrollOffset;
         for (Map.Entry<String, RareDropTrackerConfig.TrackedItem> e : entries) {
             if (rowY + ROW_H > listTop && rowY < listBottom) {
@@ -514,9 +519,12 @@ public class RareDropTrackerGUI extends GuiElement {
 
     @Override
     public boolean keyboardInput() {
-        if (!Keyboard.getEventKeyState()) return false;
-        int key = Keyboard.getEventKey();
-        char c = Keyboard.getEventCharacter();
+        if (!KeyboardCompat.getEventKeyState()) return false;
+        return keyboardInput(KeyboardCompat.getEventCharacter(), KeyboardCompat.getEventKey());
+    }
+
+    @Override
+    public boolean keyboardInput(char c, int key) {
 
         if (editingItemId != null) {
             if (key == Keyboard.KEY_ESCAPE) {
@@ -527,12 +535,12 @@ public class RareDropTrackerGUI extends GuiElement {
                 commitEdit();
                 return true;
             }
-            if (editField != null) editField.textboxKeyTyped(c, key);
+            if (editField != null) GuiScreenUtils.typeTextField(editField, c, key);
             return true;
         }
 
         if (key == Keyboard.KEY_ESCAPE) {
-            Minecraft.getMinecraft().displayGuiScreen(parentScreen);
+            MinecraftCompat.getMinecraft().displayGuiScreen(parentScreen);
             return true;
         }
 
@@ -546,7 +554,7 @@ public class RareDropTrackerGUI extends GuiElement {
                 }
                 return true;
             }
-            boolean handled = searchField.textboxKeyTyped(c, key);
+            boolean handled = GuiScreenUtils.typeTextField(searchField, c, key);
             if (handled) updateSuggestions();
             return true;
         }
@@ -558,7 +566,7 @@ public class RareDropTrackerGUI extends GuiElement {
     }
 
     private boolean isHovered(int x, int y) {
-        int[] mouse = KeybindHelper.getMouseCoords(new ScaledResolution(Minecraft.getMinecraft()));
+        int[] mouse = KeybindHelper.getMouseCoords(GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight());
         return inBounds(mouse[0], mouse[1], x, y, BTN_W, SF_H);
     }
 }

@@ -1,20 +1,25 @@
 package io.hamlook.aetheria.features.farming;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.BlockBreakEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.farming.farmingtracker.FarmingTrackerData;
+import io.hamlook.aetheria.features.farming.gardenplots.GardenPlotData;
 import io.hamlook.aetheria.features.farming.sensitivityreducer.FarmingToolIds;
 import io.hamlook.aetheria.features.farming.visitors.VisitorBonus;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.AxisAlignedBB;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,10 +84,10 @@ public final class FarmingApi {
     }
 
     private static int computePlayerPlotId() {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc == null || mc.thePlayer == null) return -1;
-        double px = mc.thePlayer.posX;
-        double pz = mc.thePlayer.posZ;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (mc == null || MinecraftCompat.getLocalPlayer() == null) return -1;
+        double px = EntityCompat.getPosX(MinecraftCompat.getLocalPlayer());
+        double pz = EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer());
         for (int i = 0; i < GARDEN_PLOTS.length; i++) {
             AxisAlignedBB box = GARDEN_PLOTS[i];
             if (px >= box.minX && px <= box.maxX && pz >= box.minZ && pz <= box.maxZ) {
@@ -97,8 +102,8 @@ public final class FarmingApi {
     }
 
     public static boolean isHoldingFarmingTool() {
-        Minecraft mc = Minecraft.getMinecraft();
-        return mc != null && mc.thePlayer != null && FarmingToolIds.isFarmingTool(cachedHeldItemId);
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        return mc != null && MinecraftCompat.getLocalPlayer() != null && FarmingToolIds.isFarmingTool(cachedHeldItemId);
     }
 
     /** True when a farming tool was held within the last {@link #TOOL_HOLD_WINDOW_MS} */
@@ -112,8 +117,8 @@ public final class FarmingApi {
     }
 
     public static boolean isHoldingVacuum() {
-        Minecraft mc = Minecraft.getMinecraft();
-        boolean holdingNow = mc != null && mc.thePlayer != null && cachedHeldItemId.contains("VACUUM");
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        boolean holdingNow = mc != null && MinecraftCompat.getLocalPlayer() != null && cachedHeldItemId.contains("VACUUM");
         if (holdingNow) lastVacuumHeldMs = System.currentTimeMillis();
         return holdingNow || System.currentTimeMillis() - lastVacuumHeldMs < VACUUM_WINDOW_MS;
     }
@@ -167,8 +172,8 @@ public final class FarmingApi {
     }
 
     public static Integer getTargetInfestedPlot(int mode) {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc == null || mc.thePlayer == null || ACTIVE_PESTS.isEmpty()) return null;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (mc == null || MinecraftCompat.getLocalPlayer() == null || ACTIVE_PESTS.isEmpty()) return null;
         Integer best = null;
         for (Integer id : ACTIVE_PESTS.keySet()) {
             if (!isValidPlot(id)) continue;
@@ -204,23 +209,40 @@ public final class FarmingApi {
     }
 
     private static double plotDistanceSq(Minecraft mc, Integer plotId) {
-        if (mc.thePlayer == null) return Double.MAX_VALUE;
+        if (MinecraftCompat.getLocalPlayer() == null) return Double.MAX_VALUE;
         AxisAlignedBB box = GARDEN_PLOTS[plotId - 1];
-        double dx = mc.thePlayer.posX - (box.minX + box.maxX) / 2.0;
-        double dz = mc.thePlayer.posZ - (box.minZ + box.maxZ) / 2.0;
+        double dx = EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()) - (box.minX + box.maxX) / 2.0;
+        double dz = EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()) - (box.minZ + box.maxZ) / 2.0;
         return dx * dx + dz * dz;
     }
 
     public static void warpToTargetPlot() {
-        warpToPlot(getTargetInfestedPlot());
+        Integer plot = getTargetInfestedPlot();
+        if (plot != null) {
+            warpToPlot(plot);
+            return;
+        }
+        if (ATHRConfig.feature != null && ATHRConfig.feature.farming.pests != null
+                && ATHRConfig.feature.farming.pests.pestFinder != null
+                && ATHRConfig.feature.farming.pests.pestFinder.warpToGardenWhenNoPests) {
+            warpToPlot(0);
+        }
     }
 
-    private static void warpToPlot(Integer plot) {
+    /** /tptoplot 19 and /tptoplot 20 are swapped in-game, so correct for it here before sending. */
+    private static int correctPlotWarpSwap(int plot) {
+        if (plot == 19) return 20;
+        if (plot == 20) return 19;
+        return plot;
+    }
+
+    public static void warpToPlot(Integer plot) {
         if (plot == null) return;
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc != null && mc.thePlayer != null) {
-            mc.thePlayer.sendChatMessage("/tptoplot " + plot);
-        }
+        ChatUtils.sendChatCommand("/tptoplot " + correctPlotWarpSwap(plot));
+    }
+
+    public static boolean isPlotUnlocked(int plotId) {
+        return GardenPlotData.getInstance().isUnlocked(plotId);
     }
 
     public static java.util.List<Integer> getSortedInfestedPlotIds() {
@@ -388,24 +410,24 @@ public final class FarmingApi {
         return amount;
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onBlockBreak(BlockBreakEvent event) {
         if (isHoldingFarmingTool()) lastFarmingBreakMs = System.currentTimeMillis();
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc == null || mc.thePlayer == null) return;
-        cachedHeldItemId = ItemUtils.getInternalName(mc.thePlayer.getHeldItem());
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (mc == null || MinecraftCompat.getLocalPlayer() == null) return;
+        cachedHeldItemId = ItemUtils.getInternalName(MinecraftCompat.getLocalPlayer().getHeldItem());
         if (cachedHeldItemId.contains("VACUUM")) {
             lastVacuumHeldMs = System.currentTimeMillis();
         }
         if (FarmingToolIds.isFarmingTool(cachedHeldItemId)) {
             lastFarmingToolHoldMs = System.currentTimeMillis();
         }
-        if (mc.thePlayer.ticksExisted % 5 == 0) {
+        if (MinecraftCompat.getLocalPlayer().ticksExisted % 5 == 0) {
             currentPlotId = SkyblockData.getCurrentLocation() == SkyblockData.Location.GARDEN ? computePlayerPlotId() : -1;
         }
     }

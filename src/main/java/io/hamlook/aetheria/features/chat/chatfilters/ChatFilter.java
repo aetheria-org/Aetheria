@@ -1,14 +1,14 @@
 package io.hamlook.aetheria.features.chat.chatfilters;
 
+import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterAction;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterCase;
 import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterMode;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import io.hamlook.aetheria.features.chat.chatfilters.vars.FilterAction;
 
 public class ChatFilter {
 
@@ -156,7 +156,7 @@ public class ChatFilter {
                 escape = true;
             } else if (c == '&' && i + 1 < word.length()) {
                 char next = word.charAt(i + 1);
-                if ("0123456789abcdefklmnorABCDEFKLMNOR".indexOf(next) != -1) {
+                if (ChatUtils.isFormattingCode(next)) {
                     tokens.add("§" + next);
                     i++;
                 } else {

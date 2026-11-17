@@ -1,15 +1,26 @@
 package io.hamlook.aetheria.features.misc.itemList;
 
-import com.google.gson.annotations.SerializedName;
 import com.google.gson.JsonObject;
+import com.google.gson.annotations.SerializedName;
+import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
-import net.minecraft.init.Blocks;
+//#if MC < 1.16
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
+import net.minecraft.nbt.NBTTagString;
+//#else
+//$$ import net.minecraft.item.Items;
+//$$ import net.minecraft.item.Item;
+//$$ import net.minecraft.nbt.NbtString;
+//$$ import net.minecraft.registry.Registries;
+//$$ import net.minecraft.util.Identifier;
+//#endif
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagString;
+
 import java.util.List;
 
 public class SkyblockItem {
@@ -74,59 +85,88 @@ public class SkyblockItem {
                 if (this.texture != null && !this.texture.isEmpty()) {
                     this.itemStack = ItemUtils.createSkullWithTexture(this.texture);
                 } else {
+                    //#if MC < 1.16
                     this.itemStack = new ItemStack(Items.skull, 1, 3);
+                    //#else
+                    //$$ this.itemStack = new ItemStack(Items.PLAYER_HEAD, 1);
+                    //#endif
                 }
             }else {
+                //#if MC < 1.16
                 Item mcItem = Item.getByNameOrId(this.itemid);
+                //#else
+                //$$ Item mcItem = Registries.ITEM.getOrEmpty(Identifier.tryParse(this.itemid)).orElse(null);
+                //#endif
                 if (mcItem != null) {
+                    //#if MC < 1.16
                     this.itemStack = new ItemStack(mcItem, 1, this.damage);
+                    //#else
+                    //$$ this.itemStack = new ItemStack(mcItem, 1);
+                    //#endif
                 } else {
-                    this.itemStack = new ItemStack(Blocks.stone);
+                    this.itemStack = BlockCompat.getStoneItem();
                 }
             }
         } else {
+            //#if MC < 1.16
             Item mcItem = Item.getByNameOrId(this.itemid);
+            //#else
+            //$$ Item mcItem = Registries.ITEM.getOrEmpty(Identifier.tryParse(this.itemid)).orElse(null);
+            //#endif
             if (mcItem != null) {
+                //#if MC < 1.16
                 this.itemStack = new ItemStack(mcItem, 1, this.damage);
+                //#else
+                //$$ this.itemStack = new ItemStack(mcItem, 1);
+                //#endif
             } else {
-                this.itemStack = new ItemStack(Blocks.stone);
+                this.itemStack = BlockCompat.getStoneItem();
             }
         }
+        //#if MC < 1.16
         this.itemStack.stackSize = this.amount > 0 ? this.amount : 1;
+        //#else
+        //$$ this.itemStack.setCount(this.amount > 0 ? this.amount : 1);
+        //#endif
         NBTTagCompound tag = ItemUtils.getOrCreateTag(this.itemStack);
-        NBTTagCompound display = new NBTTagCompound();
+        NBTTagCompound display = NbtCompat.createCompound();
         if (this.displayName != null) {
-            display.setString("Name", this.displayName);
+            NbtCompat.setString(display, "Name", this.displayName);
         }
         if (this.baseLore != null && !this.baseLore.isEmpty()) {
-            NBTTagList loreList = new NBTTagList();
+            NBTTagList loreList = NbtCompat.createList();
             for (String line : this.baseLore) {
+                //#if MC < 1.16
                 loreList.appendTag(new NBTTagString(line));
+                //#else
+                //$$ loreList.add(NbtString.of(line));
+                //#endif
             }
-            display.setTag("Lore", loreList);
+            NbtCompat.setTagList(display, "Lore", loreList);
         }
-        tag.setTag("display", display);
+        NbtCompat.setTag(tag, "display", display);
 
-        NBTTagCompound extra = new NBTTagCompound();
+        NBTTagCompound extra = NbtCompat.createCompound();
         if (this.skyblockID != null) {
-            extra.setString("id", this.skyblockID);
+            NbtCompat.setString(extra, "id", this.skyblockID);
         }
-        tag.setTag("ExtraAttributes", extra);
+        NbtCompat.setTag(tag, "ExtraAttributes", extra);
 
         if (this.color != null && !this.color.isEmpty()) {
             try {
                 int rgb = Integer.parseInt(this.color);
                 if ("minecraft:potion".equals(this.itemid)) {
-                    tag.setInteger("CustomPotionColor", rgb);
+                    NbtCompat.setInt(tag, "CustomPotionColor", rgb);
                 } else {
-                    display.setInteger("color", rgb);
+                    NbtCompat.setInt(display, "color", rgb);
                 }
             } catch (NumberFormatException ignored) {}
         }
 
         if (this.enchanted) {
-            tag.setTag("ench", new NBTTagList());
+            NbtCompat.setTagList(tag, "ench", NbtCompat.createList());
         }
+        NbtCompat.setTagCompound(this.itemStack, tag);
 
         return this.itemStack;
     }

@@ -3,17 +3,17 @@ package io.hamlook.aetheria.features.qol.enchants;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ColorUtils;
+import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Keyboard;
 
 import java.util.*;
@@ -32,18 +32,16 @@ public class MissingEnchants {
         return sb.toString().trim();
     }
 
-    @SubscribeEvent(priority = EventPriority.LOW)
-    public void onTooltip(ItemTooltipEvent event) {
+    @HandleEvent(priority = HandleEvent.LOW)
+    public void onTooltip(ASMTooltipEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.missingEnchants) return;
-        if (!Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) return;
+        if (!KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT)) return;
 
         ItemStack stack = event.itemStack;
-        if (stack == null || !stack.hasTagCompound()) return;
+        if (stack == null) return;
 
-        NBTTagCompound extra = stack.getTagCompound().getCompoundTag("ExtraAttributes");
-        if (!extra.hasKey("enchantments", 10)) return;
-
-        NBTTagCompound enchNbt = extra.getCompoundTag("enchantments");
+        NBTTagCompound enchNbt = ItemUtils.getEnchantments(stack);
+        if (enchNbt == null) return;
         Set<String> enchantIds = enchNbt.getKeySet();
         if (enchantIds.isEmpty()) return;
 

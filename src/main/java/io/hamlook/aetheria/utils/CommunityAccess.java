@@ -5,8 +5,8 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.network.NetworkGuard;
 import io.hamlook.aetheria.repo.CapeAPI;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import net.minecraft.client.Minecraft;
 
 import java.io.File;
 import java.net.HttpURLConnection;
@@ -82,7 +82,7 @@ public final class CommunityAccess {
             boolean allowed = checkSynced();
             synced = allowed;
             lastChecked = System.currentTimeMillis();
-            Minecraft.getMinecraft().addScheduledTask(() -> {
+            MinecraftCompat.getMinecraft().addScheduledTask(() -> {
                 if (allowed) {
                     action.run();
                 } else {
@@ -115,7 +115,7 @@ public final class CommunityAccess {
             connection.setRequestMethod("GET");
             connection.setRequestProperty("User-Agent", "Aetheria/" + Aetheria.VERSION);
             connection.setRequestProperty("x-playername",
-                    Minecraft.getMinecraft().getSession().getUsername().toLowerCase());
+                    MinecraftCompat.getMinecraft().getSession().getUsername().toLowerCase());
             connection.setRequestProperty("x-sync-code", secretHash);
             connection.setReadTimeout(10000);
             connection.setConnectTimeout(10000);

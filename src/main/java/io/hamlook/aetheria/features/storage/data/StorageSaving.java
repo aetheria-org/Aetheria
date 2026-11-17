@@ -2,12 +2,16 @@ package io.hamlook.aetheria.features.storage.data;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.DataFile;
-import io.hamlook.aetheria.utils.data.DataPaths;
+import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.features.storage.utils.SContainer;
+import io.hamlook.aetheria.features.storage.utils.Type;
+import io.hamlook.aetheria.utils.NameUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.data.DataPaths;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import net.minecraft.client.Minecraft;
 
 import java.io.File;
 import java.util.Collection;
@@ -23,7 +27,7 @@ public class StorageSaving {
         if (profile.isEmpty()) profile = "_unknown";
         File folder = DataPaths.storageDir(ATHRConfig.configDirectory, SkyblockData.getEnvironmentKey(), profile);
         if (!folder.exists()) {
-            String username = Minecraft.getMinecraft().getSession().getUsername();
+            String username = MinecraftCompat.getMinecraft().getSession().getUsername();
             DataPaths.migrate(
                     DataPaths.storageDir(ATHRConfig.configDirectory, "normal", profile),
                     new File(ATHRConfig.configDirectory, "profiles/" + profile + "/storage/" + username),
@@ -50,17 +54,36 @@ public class StorageSaving {
             return new LinkedHashMap<>();
         }
 
+        int moved = 0;
+        int failed = 0;
+        StorageManager.MoveResult before = StorageManager.moveBackups(folder);
+        moved += before.moved;
+        failed += before.failed;
+
         File[] files = folder.listFiles();
         if (files == null) return new LinkedHashMap<>();
 
         for (File file : files) {
             if (!file.isFile()) continue;
+            if (NameUtils.isTempFile(file.getName())) {
+                Aetheria.logger.info("[ATHR/Storage] Ignoring uncommitted temp file " + file.getName());
+                continue;
+            }
+            if (!NameUtils.isContainerFile(file.getName(), Type.ECHEST.prefix, Type.BAG.prefix)) continue;
 
             SContainer container = new DataFile(file, GSON).load(SContainer.class);
 
             if (container != null && !container.empty) {
                 sorted.put(container.id, container);
             }
+        }
+
+        StorageManager.MoveResult after = StorageManager.moveBackups(folder);
+        moved += after.moved;
+        failed += after.failed;
+        if (moved > 0 || failed > 0) {
+            Aetheria.logger.info("[ATHR/Storage] Quarantined " + moved + " backup(s)"
+                    + (failed > 0 ? ", " + failed + " failed" : ""));
         }
         return new LinkedHashMap<>(sorted);
     }

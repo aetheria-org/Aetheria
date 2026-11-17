@@ -1,14 +1,15 @@
 package io.hamlook.aetheria.features.qol.raredroptracker;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMGuiDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiMousePostEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import org.lwjgl.input.Mouse;
-
 /**
  * Handles the "click anywhere within 5 seconds" prompt fired after a tracked
  * Rare Drop Tracker item with a bound command is picked up. The click-to-open
@@ -42,8 +43,8 @@ public class RareDropCommandTrigger {
         return pendingCommand == null || System.currentTimeMillis() - promptStartTime >= WINDOW_MS;
     }
 
-    @SubscribeEvent
-    public void onDraw(GuiScreenEvent.DrawScreenEvent.Post event) {
+    @HandleEvent
+    public void onDraw(ASMGuiDrawEvent event) {
         if (isActive()) {
             pendingCommand = null;
             return;
@@ -54,20 +55,21 @@ public class RareDropCommandTrigger {
             messageSent = true;
         }
 
-        Minecraft mc = Minecraft.getMinecraft();
-        ScaledResolution sr = new ScaledResolution(mc);
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        int screenW = GuiScreenUtils.getScaledWindowWidth();
+        int screenH = GuiScreenUtils.getScaledWindowHeight();
 
-        Gui.drawRect(0, 0, sr.getScaledWidth(), sr.getScaledHeight(), 0x38000000);
+        DrawContextUtils.fill(0, 0, screenW, screenH, 0x38000000);
 
         String msg = "§dClick anywhere to run your drop command!";
-        int w = mc.fontRendererObj.getStringWidth(msg);
-        mc.fontRendererObj.drawStringWithShadow(msg, (sr.getScaledWidth() - w) / 2f, sr.getScaledHeight() / 2f, -1);
+        int w = MinecraftCompat.getFontRenderer().getStringWidth(msg);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), msg, (screenW - w) / 2f, screenH / 2f, -1);
     }
 
-    @SubscribeEvent
-    public void onMouseInputPost(GuiScreenEvent.MouseInputEvent.Post event) {
+    @HandleEvent
+    public void onMouseInputPost(ASMGuiMousePostEvent event) {
         if (isActive()) return;
-        if (!Mouse.getEventButtonState() || Mouse.getEventButton() != 0) return;
+        if (!MouseCompat.getEventButtonState() || MouseCompat.getEventButton() != 0) return;
 
         String command = pendingCommand;
         pendingCommand = null;

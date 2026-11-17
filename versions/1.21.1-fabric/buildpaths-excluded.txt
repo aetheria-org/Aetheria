@@ -1,0 +1,34 @@
+
+io.hamlook.aetheria.GuiFactory.java
+
+# Deprecated on modern; zero references outside itself.
+io.hamlook.aetheria.features.dungeons.puzzles.WaterSolver.java
+
+# Legacy mixins excluded from Fabric compilation. Each has a modern twin under
+# versions/1.21.1-fabric/src (same package scan, no registration step), or no
+# modern expression yet (RenderItem glint/overlay, FontRenderer pos) — either
+# way the legacy target class does not exist on 1.21. Prefer this over a
+# whole-file //#if MC < 1.21 gate: same effect, no empty-file indirection.
+io.hamlook.aetheria.mixins.gui.MixinGuiIngame.java
+io.hamlook.aetheria.mixins.bugfixes.MixinBowDrawFix.java
+io.hamlook.aetheria.mixins.bugfixes.MixinMiningProgressFix.java
+io.hamlook.aetheria.mixins.bugfixes.MixinReequipAnimationFix.java
+io.hamlook.aetheria.mixins.input.MixinMouseHelper.java
+io.hamlook.aetheria.mixins.network.MixinNetHandlerPlayClient.java
+io.hamlook.aetheria.mixins.renderer.MixinItemRenderer.java
+io.hamlook.aetheria.mixins.renderer.MixinEntityLivingBaseSwingDuration.java
+io.hamlook.aetheria.mixins.renderer.MixinRenderItem.java
+io.hamlook.aetheria.mixins.renderer.MixinRender.java
+io.hamlook.aetheria.mixins.renderer.MixinLayerArmorBase.java
+io.hamlook.aetheria.mixins.renderer.MixinRenderPlayer.java
+io.hamlook.aetheria.mixins.renderer.MixinRendererLivingEntity.java
+io.hamlook.aetheria.mixins.accessors.FontRendererAccessor.java
+io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor.java
+io.hamlook.aetheria.mixins.core.MixinAbstractClientPlayer.java
+io.hamlook.aetheria.mixins.core.MixinItem.java
+io.hamlook.aetheria.mixins.gui.MixinTooltipScale.java
+
+io.hamlook.aetheria.mixins.core.MixinFontRendererChroma.java
+io.hamlook.aetheria.mixins.core.MixinFontRendererEmoji.java
+
+io.hamlook.aetheria.utils.hooks.BowDrawHook.java

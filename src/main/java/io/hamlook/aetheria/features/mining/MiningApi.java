@@ -1,33 +1,26 @@
 package io.hamlook.aetheria.features.mining;
 
 import io.hamlook.aetheria.Aetheria;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.core.features.mining.BalConfig;
+import io.hamlook.aetheria.events.*;
+import io.hamlook.aetheria.features.mining.bal.BalAlertOverlay;
 import io.hamlook.aetheria.features.misc.PerformanceHUD;
-import io.hamlook.aetheria.events.BlockClickEvent;
-import io.hamlook.aetheria.events.DebugReportEvent;
-import io.hamlook.aetheria.events.OreMinedEvent;
-import io.hamlook.aetheria.events.PlaySoundEvent;
-import io.hamlook.aetheria.events.ServerBlockChangeEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import lombok.Getter;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.BlockPos;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -41,6 +34,11 @@ public class MiningApi {
     private static final long INIT_SOUND_TIMEOUT_MS = 200;
     private static final long CLICK_WINDOW_MS = 1000;
     private static final double MAX_BREAK_DISTANCE = 7.0;
+    private static final long BAL_DEATH_DELAY_MS = 5000L;
+    private static final long BAL_WARN_30_MS = 30000L;
+    private static final long BAL_WARN_10_MS = 10000L;
+    private static final String BAL_DEATH_TEXT = "The boss looks weak and tired and retreats into the lava";
+    private static final String BAL_SPAWN_TEXT = "The ground starts to shake and the lava bubbles";
 
     private static final ConcurrentHashMap<BlockPos, Long> recentClickedBlocks = new ConcurrentHashMap<>();
     private static final ConcurrentLinkedQueue<MinedBlock> surroundingMinedBlocks = new ConcurrentLinkedQueue<>();
@@ -48,6 +46,12 @@ public class MiningApi {
     private static BlockPos lastClickedPos = null;
     private static long lastClicked = 0;
     private static BlockPos lastLoggedClickPos = null;
+
+    private static long balDeathAtMs = 0;
+    private static long balRespawnAtMs = 0;
+    private static boolean balAlertFired = false;
+    private static boolean balWarn30Fired = false;
+    private static boolean balWarn10Fired = false;
 
     private static long lastInitSound = 0;
     private static BlockPos initBlockPos = null;
@@ -74,7 +78,7 @@ public class MiningApi {
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onBlockClick(BlockClickEvent event) {
         if (!isMiningArea()) { debugLog("BlockClick: not mining area"); return; }
         if (OreBlock.getByStateOrNull(event.getBlockState()) == null) { debugLogRateLimited("bc:" + event.pos, "BlockClick: unknown block at " + event.pos); return; }
@@ -88,7 +92,7 @@ public class MiningApi {
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onPlaySound(PlaySoundEvent event) {
         if (!isMiningArea()) return;
 
@@ -115,7 +119,7 @@ public class MiningApi {
             } else {
                 if (System.currentTimeMillis() - lastClicked > CLICK_WINDOW_MS) { debugLogRateLimited("orb:window", "Init reject orb: outside click window (" + (System.currentTimeMillis() - lastClicked) + "ms > " + CLICK_WINDOW_MS + ")"); return; }
                 if (lastClickedPos == null) { debugLogRateLimited("orb:null", "Init reject orb: lastClickedPos is null"); return; }
-                IBlockState state = Minecraft.getMinecraft().theWorld.getBlockState(lastClickedPos);
+                IBlockState state = MinecraftCompat.getLocalWorld().getBlockState(lastClickedPos);
                 OreBlock ore = OreBlock.getByStateOrNull(state);
                 if (ore == null) { debugLogRateLimited("orb:unknown:" + lastClickedPos, "Init reject orb: unknown ore at " + lastClickedPos + " state=" + state); return; }
                 if (ore.hasInitSound) { debugLogRateLimited("orb:hasInit:" + ore.name(), "Init reject orb: " + ore.name() + " hasInitSound=true"); return; }
@@ -141,7 +145,7 @@ public class MiningApi {
         }
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onBlockChange(ServerBlockChangeEvent event) {
         if (!isMiningArea()) { debugLog("S22: not mining area"); return; }
 
@@ -151,14 +155,14 @@ public class MiningApi {
         Block newBlock = newState.getBlock();
 
         if (oldState.equals(newState)) return;
-        if (oldBlock == Blocks.air || oldBlock == Blocks.bedrock) { debugLogRateLimited("s22:ab:" + event.pos, "S22: old block is air/bedrock at " + event.pos); return; }
-        if (newBlock != Blocks.air && newBlock != Blocks.bedrock && !OreBlock.isTitaniumBlock(newState)) { debugLogRateLimited("s22:nt:" + event.pos, "S22: new block not air/titanium at " + event.pos); return; }
+        if (BlockCompat.isAir(oldBlock) || oldBlock == Blocks.bedrock) { debugLogRateLimited("s22:ab:" + event.pos, "S22: old block is air/bedrock at " + event.pos); return; }
+        if (!BlockCompat.isAir(newBlock) && newBlock != Blocks.bedrock && !OreBlock.isTitaniumBlock(newState)) { debugLogRateLimited("s22:nt:" + event.pos, "S22: new block not air/titanium at " + event.pos); return; }
 
         BlockPos pos = event.pos;
 
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayer player = MinecraftCompat.getLocalPlayer();
         if (player == null) return;
-        double dist = player.getDistance(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+        double dist = EntityCompat.getDistanceToPos(player, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
         if (dist > MAX_BREAK_DISTANCE) { debugLogRateLimited("s22:far:" + pos, "S22: too far (" + String.format("%.1f", dist) + ") at " + pos); return; }
 
         if (System.currentTimeMillis() - lastInitSound > getBlockChangeWindow()) { debugLogRateLimited("s22:win:" + pos, "S22: outside window at " + pos); return; }
@@ -207,7 +211,7 @@ public class MiningApi {
             }
         }
 
-        MinecraftForge.EVENT_BUS.post(new OreMinedEvent(original.ore, extraBlocks));
+        new OreMinedEvent(original.ore, extraBlocks).post();
         debugLog("OreMinedEvent fired: " + original.ore.name()
             + (extraBlocks.size() > 1 ? " extras=" + extraBlocks : ""));
 
@@ -215,12 +219,15 @@ public class MiningApi {
         lastClickedPos = null;
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        if (!isMiningArea()) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
 
         long now = System.currentTimeMillis();
+        tickBal(now);
+
+        if (!isMiningArea()) return;
+
         recentClickedBlocks.entrySet().removeIf(e -> now - e.getValue() > CLICK_EXPIRE_MS);
         surroundingMinedBlocks.removeIf(b -> now - b.time > MINED_EXPIRE_MS);
         cleanupSpamCooldown(now);
@@ -237,18 +244,19 @@ public class MiningApi {
         updateCurrentAreaOreBlocks();
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         recentClickedBlocks.clear();
         surroundingMinedBlocks.clear();
         lastClickedPos = null;
         lastLoggedClickPos = null;
         resetOreEvent();
+        clearBalTimer();
         currentAreaOreBlocks = EnumSet.noneOf(OreBlock.class);
         debugLog("State reset on world unload");
     }
 
-    @SubscribeEvent
+    @HandleEvent
     public void onDebugReport(DebugReportEvent event) {
         event.title("MiningApi");
         event.addData("Area: " + (isMiningArea() ? SkyblockData.getCurrentLocation() : "none"));
@@ -260,6 +268,99 @@ public class MiningApi {
         event.addData("ignoreInit: " + ignoreInit);
         event.addData("lastInitSound: " + (System.currentTimeMillis() - lastInitSound) + "ms ago");
         event.addData("currentAreaOreBlocks: " + currentAreaOreBlocks.size());
+        event.addData("Bal respawn: " + (hasBalTimer() ? formatBalClock(getBalRemainingMs()) : "none"));
+    }
+
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
+        BalConfig cfg = balConfig();
+        if (cfg == null || !cfg.enabled) return;
+        if (!ChatUtils.isFromServer(event)) return;
+        if (SkyblockData.getCurrentLocation() != SkyblockData.Location.CRYSTAL_HOLLOWS) return;
+        if (event.parsed() != null) return;
+
+        String message = event.plain();
+
+        if (message.contains(BAL_DEATH_TEXT)) {
+            balDeathAtMs = System.currentTimeMillis() + BAL_DEATH_DELAY_MS;
+            return;
+        }
+        if (cfg.clearOnSpawn && message.contains(BAL_SPAWN_TEXT)) {
+            clearBalTimer();
+        }
+    }
+
+    private static void tickBal(long now) {
+        BalConfig cfg = balConfig();
+        if (cfg == null || !cfg.enabled) return;
+        if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null) return;
+        if (SkyblockData.getCurrentLocation() != SkyblockData.Location.CRYSTAL_HOLLOWS) return;
+
+        if (balDeathAtMs != 0) {
+            if (now < balDeathAtMs) return;
+            balDeathAtMs = 0;
+            balRespawnAtMs = now + cfg.respawnMinutes * 60_000L;
+            balAlertFired = false;
+            balWarn30Fired = false;
+            balWarn10Fired = false;
+            ChatUtils.sendMessage("§b[ASM] §eBal defeated! §7Respawns in §f" + formatBalClock(balRespawnAtMs - now));
+            return;
+        }
+
+        if (balRespawnAtMs == 0) return;
+
+        long remaining = balRespawnAtMs - now;
+        if (remaining <= 0) {
+            clearBalTimer();
+            return;
+        }
+
+        if (!balAlertFired && remaining <= cfg.alertBeforeSeconds * 1000L) {
+            balAlertFired = true;
+            BalAlertOverlay.trigger("§c§lBAL RESPAWN! §r§f" + formatBalClock(remaining), cfg);
+            if (cfg.chatMessage) {
+                ChatUtils.sendMessage("§b[ASM] §eBal respawns in §f" + formatBalClock(remaining) + "§e!");
+            }
+        }
+        if (!balWarn30Fired && remaining <= BAL_WARN_30_MS) {
+            balWarn30Fired = true;
+            ChatUtils.sendMessage("§b[ASM] §eBal respawns in §c30s§e!");
+            BalAlertOverlay.playAlertSound(cfg.alertSound);
+        }
+        if (!balWarn10Fired && remaining <= BAL_WARN_10_MS) {
+            balWarn10Fired = true;
+            ChatUtils.sendMessage("§b[ASM] §eBal respawns in §c10s§e!");
+            BalAlertOverlay.playAlertSound(cfg.alertSound);
+        }
+    }
+
+    public static boolean hasBalTimer() {
+        return balRespawnAtMs != 0;
+    }
+
+    public static long getBalRemainingMs() {
+        if (balRespawnAtMs == 0) return 0;
+        return Math.max(0L, balRespawnAtMs - System.currentTimeMillis());
+    }
+
+    public static String formatBalClock(long ms) {
+        long totalSeconds = Math.max(0L, ms) / 1000;
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
+        return minutes + ":" + String.format("%02d", seconds);
+    }
+
+    private static void clearBalTimer() {
+        balDeathAtMs = 0;
+        balRespawnAtMs = 0;
+        balAlertFired = false;
+        balWarn30Fired = false;
+        balWarn10Fired = false;
+    }
+
+    private static BalConfig balConfig() {
+        if (ATHRConfig.feature == null) return null;
+        return ATHRConfig.feature.mining.bal;
     }
 
     private static void resetOreEvent() {
@@ -297,9 +398,9 @@ public class MiningApi {
 
     private static String buildSoundDebugMessage(PlaySoundEvent event) {
         BlockPos bp = event.getBlockPos();
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayer player = MinecraftCompat.getLocalPlayer();
         double dist = player != null
-            ? player.getDistance(bp.getX() + 0.5, bp.getY() + 0.5, bp.getZ() + 0.5)
+            ? EntityCompat.getDistanceToPos(player, bp.getX() + 0.5, bp.getY() + 0.5, bp.getZ() + 0.5)
             : -1;
         return "[MiningApi/Sound] " + event.soundName
             + " pitch=" + event.pitch

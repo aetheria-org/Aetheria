@@ -1,29 +1,37 @@
 package io.hamlook.aetheria.core;
 
 import com.google.gson.annotations.Expose;
-import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
+import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.features.about.About;
 import io.hamlook.aetheria.core.features.chat.ChatConfig;
+import io.hamlook.aetheria.core.features.chat.PlayerButtonsConfig;
 import io.hamlook.aetheria.core.features.cosmetics.Cosmetics;
 import io.hamlook.aetheria.core.features.debug.Debug;
 import io.hamlook.aetheria.core.features.diana.Diana;
 import io.hamlook.aetheria.core.features.dungeons.Dungeons;
+import io.hamlook.aetheria.core.features.farming.Farming;
 import io.hamlook.aetheria.core.features.fishing.Fishing;
-import io.hamlook.aetheria.core.features.misc.Misc;
 import io.hamlook.aetheria.core.features.mining.Mining;
+import io.hamlook.aetheria.core.features.misc.Misc;
+import io.hamlook.aetheria.core.features.network.NetworkConfig;
 import io.hamlook.aetheria.core.features.overlays.Overlays;
 import io.hamlook.aetheria.core.features.qol.Qol;
-import io.hamlook.aetheria.core.features.waypoints.Waypoints;
-import io.hamlook.aetheria.core.features.farming.Farming;
 import io.hamlook.aetheria.core.features.scoreboard.Scoreboard;
 import io.hamlook.aetheria.core.features.storage.Storage;
-import io.hamlook.aetheria.core.features.network.NetworkConfig;
+import io.hamlook.aetheria.core.features.waypoints.Waypoints;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
 import io.hamlook.aetheria.features.capes.CapeManager;
-
-import java.awt.*;
-import java.net.URI;
+import io.hamlook.aetheria.features.dungeons.rooms.secret.SecretChime;
+import io.hamlook.aetheria.repo.RepoLinks;
+import io.hamlook.aetheria.utils.UrlOpener;
 
 public class Config {
+
+    @Expose
+    public int keybindMigrationVersion = 0;
+
+    @Expose
+    public int configVersion = 0;
 
     @Expose
     @Category(name = "About", desc = "Links, credits & used software")
@@ -70,7 +78,7 @@ public class Config {
     public final NetworkConfig network = new NetworkConfig();
 
     @Expose
-    @Category(name = "Chat Utils", desc = "Chat compacting, timestamps, chat heads, copy & visual tweaks")
+    @Category(name = "Chat", desc = "Chat compacting, timestamps, chat heads, copy & visual tweaks")
     public final ChatConfig chat = new ChatConfig();
 
     @Expose
@@ -90,7 +98,8 @@ public class Config {
     public final Debug debug = new Debug();
 
     private static void openUrl(String url) {
-        try { Desktop.getDesktop().browse(new URI(url)); } catch (Exception ignored) {}
+        if (UrlOpener.open(url)) return;
+        Aetheria.logger.warning("Config: could not open URL " + url);
     }
 
     public void executeRunnable(String runnableId) {
@@ -121,12 +130,14 @@ public class Config {
             case "openPestEditor": ATHRConfig.openPestEditor(); break;
             case "resetPestTracker": ATHRConfig.resetPestTracker(); break;
             case "openPestFinderEditor": ATHRConfig.openPestFinderEditor(); break;
+            case "openGardenPlotWarpGridEditor": ATHRConfig.openGardenPlotWarpGridEditor(); break;
             case "openVisitorOverlayEditor": ATHRConfig.openVisitorOverlayEditor(); break;
             case "openVisitorPanelEditor": ATHRConfig.openVisitorPanelEditor(); break;
             case "resetVisitorList": ATHRConfig.resetVisitorList(); break;
             case "openPristineEditor": ATHRConfig.openPristineEditor(); break;
             case "resetPristineTracker": ATHRConfig.resetPristineTracker(); break;
             case "openDungeonBreakerEditor": ATHRConfig.openDungeonBreakerEditor(); break;
+            case "testSecretChime": SecretChime.playTest(); break;
             case "editDungeonMapPos": ATHRConfig.openDungeonMapEditor(); break;
             case "openTrophyFishEditor": ATHRConfig.openTrophyFishEditor(); break;
             case "openDungeonRoomOverlayEditor": ATHRConfig.openDungeonRoomOverlayEditor(); break;
@@ -143,19 +154,36 @@ public class Config {
             case "resetGhostTracker": ATHRConfig.resetGhostTracker(); break;
             case "resetKillCombo": ATHRConfig.resetKillCombo(); break;
             case "resetDianaTracker": ATHRConfig.resetDianaTracker(); break;
+            case "resetItemAnimations": ATHRConfig.resetItemAnimations(); break;
             case "chatFiltersGUI": ATHRConfig.openChatFilterUI(); break;
             case "openPrivacyNotice": ATHRConfig.openPrivacyNotice(); break;
             case "reloadCapes": CapeManager.reload(); break;
-            case "openWebsite": openUrl("https://aetheria.github.io"); break;
-            case "openDiscord": openUrl("https://discord.gg/tdMFbmhFTb"); break;
-            case "openGithub": openUrl("https://github.com/aetheria-org/Aetheria"); break;
+            case "openWebsite": openUrl(RepoLinks.website()); break;
+            case "openDiscord": openUrl(RepoLinks.discord()); break;
+            case "openGithub": openUrl(RepoLinks.github()); break;
             case "openLicenseForge": openUrl("https://github.com/MinecraftForge/MinecraftForge"); break;
             case "openLicenseMixin": openUrl("https://github.com/SpongePowered/Mixin/"); break;
             case "openLicenseMoulConfig": openUrl("https://github.com/NotEnoughUpdates/MoulConfig"); break;
             case "openLicenseLombok": openUrl("https://projectlombok.org/"); break;
             case "openLicenseJbAnnotations": openUrl("https://github.com/JetBrains/java-annotations"); break;
-            case "openModrinth": openUrl("https://modrinth.com/mod/aetheriamod"); break;
-            case "openSkyAtlas": openUrl("https://skyatlas.lol"); break;
+            case "openLicenseFabricLoader": openUrl("https://github.com/FabricMC/fabric-loader"); break;
+            case "openLicenseFabricApi": openUrl("https://github.com/FabricMC/fabric"); break;
+            case "openLicenseFabricLanguageKotlin": openUrl("https://github.com/FabricMC/fabric-language-kotlin"); break;
+            case "openLicenseMixinExtras": openUrl("https://github.com/LlamaLad7/MixinExtras"); break;
+            case "openLicenseKotlin": openUrl("https://github.com/JetBrains/kotlin"); break;
+            case "openLicenseGson": openUrl("https://github.com/google/gson"); break;
+            case "openLicenseRsyntaxtextarea": openUrl("https://github.com/bobbylight/RSyntaxTextArea"); break;
+            case "openLicenseJavaWebsocket": openUrl("https://github.com/TooTallNate/Java-WebSocket"); break;
+            case "openLicenseSlf4j": openUrl("https://github.com/qos-ch/slf4j"); break;
+            case "openLicenseImageioApng": openUrl("https://github.com/Tianscar/imageio-apng"); break;
+            case "openLicenseWebp4j": openUrl("https://github.com/MrNanko/webp4j"); break;
+            case "openModrinth": openUrl(RepoLinks.modrinth()); break;
+            case "openSkyAtlas": openUrl(RepoLinks.skyatlas()); break;
+            case "resetPlayerButtonsColors":
+                ATHRConfig.feature.chat.playerButtons.backgroundColor = PlayerButtonsConfig.DEFAULT_BACKGROUND_COLOR;
+                ATHRConfig.feature.chat.playerButtons.accentColor = PlayerButtonsConfig.DEFAULT_ACCENT_COLOR;
+                ATHRConfig.saveConfig();
+                break;
         }
     }
 }

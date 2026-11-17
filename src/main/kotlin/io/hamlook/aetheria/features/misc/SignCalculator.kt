@@ -1,16 +1,16 @@
 package io.hamlook.aetheria.features.misc
 
+import io.hamlook.aetheria.api.event.HandleEvent
 import io.hamlook.aetheria.core.ATHRConfig
+import io.hamlook.aetheria.events.ASMGuiDrawEvent
 import io.hamlook.aetheria.events.SignSubmitEvent
 import io.hamlook.aetheria.init.RegisterEvents
-import io.hamlook.aetheria.mixins.accessors.GuiEditSignAccessor
 import io.hamlook.aetheria.utils.CalculatorUtils
 import io.hamlook.aetheria.utils.Utils
-import net.minecraft.client.Minecraft
-import net.minecraft.client.gui.inventory.GuiEditSign
+import io.hamlook.aetheria.utils.compat.GuiEditSignCompat
+import io.hamlook.aetheria.utils.compat.MinecraftCompat
+import io.hamlook.aetheria.utils.compat.getSignLineCompat
 import net.minecraft.util.EnumChatFormatting.*
-import net.minecraftforge.client.event.GuiScreenEvent
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent
 import java.math.BigDecimal
 
 @RegisterEvents
@@ -20,25 +20,24 @@ class SignCalculator {
     private var lastResult: BigDecimal? = null
     private var lastError: String? = null
 
-    @SubscribeEvent
-    fun onSignDrawn(event: GuiScreenEvent.DrawScreenEvent.Post) {
+    @HandleEvent
+    fun onSignDrawn(event: ASMGuiDrawEvent) {
         if (!ATHRConfig.feature.misc.signCalculator) return
 
-        val gui = event.gui as? GuiEditSign ?: return
-        val sign = (gui as GuiEditSignAccessor).`ATHR$getTileSign`()
+        val gui = event.gui as? GuiEditSignCompat ?: return
 
-        val trigger = sign.signText[1].unformattedText
+        val trigger = gui.getSignLineCompat(1)
         if (trigger != "^^^^^^^^^^^^^^^" && trigger != "^^^^^^") return
 
-        val source = sign.signText[0].unformattedText
+        val source = gui.getSignLineCompat(0)
         refresh(source)
 
-        val mc = Minecraft.getMinecraft()
+        MinecraftCompat.getMinecraft()
         val result = lastResult
         val rendered = when {
             result != null -> {
                 val formatted = CalculatorUtils.FORMAT.format(result)
-                if (mc.fontRendererObj.getStringWidth(formatted) > 90) {
+                if (MinecraftCompat.getFontRenderer().getStringWidth(formatted) > 90) {
                     "$WHITE$lastSource $YELLOW= ${RED}Result too long"
                 } else {
                     "$WHITE$lastSource $YELLOW= $GREEN$formatted"
@@ -49,10 +48,17 @@ class SignCalculator {
             else -> "${RED}No calculation"
         }
 
-        Utils.drawStringCentered(rendered, mc.fontRendererObj, gui.width / 2f, 58f, false, 0x808080FF.toInt())
+        Utils.drawStringCentered(
+            rendered,
+            MinecraftCompat.getFontRenderer(),
+            gui.width / 2f,
+            58f,
+            false,
+            0x808080FF.toInt()
+        )
     }
 
-    @SubscribeEvent
+    @HandleEvent
     fun onSignSubmit(event: SignSubmitEvent) {
         if (!ATHRConfig.feature.misc.signCalculator) return
 

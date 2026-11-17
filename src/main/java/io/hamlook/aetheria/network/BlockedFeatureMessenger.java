@@ -1,11 +1,9 @@
 package io.hamlook.aetheria.network;
 
 import io.hamlook.aetheria.core.ATHRConfig;
-import net.minecraft.client.Minecraft;
-import net.minecraft.event.ClickEvent;
-import net.minecraft.event.HoverEvent;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.ChatStyle;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import net.minecraft.util.IChatComponent;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -39,7 +37,7 @@ public final class BlockedFeatureMessenger {
      */
     public static void showBlocked(String feature, NetworkStatusInfo.Gate root) {
         if (feature == null || feature.isEmpty()) return;
-        if (Minecraft.getMinecraft().thePlayer == null) return;
+        if (MinecraftCompat.getLocalPlayer() == null) return;
         if (dismissed(feature)) return;
 
         long now = System.currentTimeMillis();
@@ -47,17 +45,19 @@ public final class BlockedFeatureMessenger {
         if (last != null && now - last < COOLDOWN_MS) return;
         lastSentAt.put(feature, now);
 
-        ChatComponentText rootComp = new ChatComponentText("§c" + feature + " §7is disabled because §c" + NetworkStatusInfo.whyText(root) + " ");
+        IChatComponent rootComp = TextCompat.fromFormatted("§c" + feature + " §7is disabled because §c" + NetworkStatusInfo.whyText(root) + " ");
 
-        ChatComponentText enable = new ChatComponentText("§a[Enable " + NetworkStatusInfo.enableLabel(root) + "§r]");
-        enable.setChatStyle(new ChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/athrnet enable " + NetworkStatusInfo.gateId(root))).setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§7Turn on " + NetworkStatusInfo.enableLabel(root) + " to use " + feature))));
-        rootComp.appendSibling(enable);
+        IChatComponent enable = TextCompat.fromFormatted("§a[Enable " + NetworkStatusInfo.enableLabel(root) + "§r]");
+        TextCompat.setChatStyle(enable, TextCompat.setClickRunCommand(TextCompat.getChatStyle(enable), "/athrnet enable " + NetworkStatusInfo.gateId(root)));
+        TextCompat.setChatStyle(enable, TextCompat.setHoverShowText(TextCompat.getChatStyle(enable), "§7Turn on " + NetworkStatusInfo.enableLabel(root) + " to use " + feature));
+        TextCompat.appendSibling(rootComp, enable);
 
-        ChatComponentText hide = new ChatComponentText(" §7[§8Hide§7]");
-        hide.setChatStyle(new ChatStyle().setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/athrnet hide " + tokenFor(feature))).setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§7Never show this message again"))));
-        rootComp.appendSibling(hide);
+        IChatComponent hide = TextCompat.fromFormatted(" §7[§8Hide§7]");
+        TextCompat.setChatStyle(hide, TextCompat.setClickRunCommand(TextCompat.getChatStyle(hide), "/athrnet hide " + tokenFor(feature)));
+        TextCompat.setChatStyle(hide, TextCompat.setHoverShowText(TextCompat.getChatStyle(hide), "§7Never show this message again"));
+        TextCompat.appendSibling(rootComp, hide);
 
-        Minecraft.getMinecraft().thePlayer.addChatMessage(rootComp);
+        TextCompat.addChatMessage(rootComp);
     }
 
     private static boolean dismissed(String feature) {

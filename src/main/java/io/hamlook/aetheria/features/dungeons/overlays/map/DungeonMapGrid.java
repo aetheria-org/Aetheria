@@ -40,6 +40,8 @@ public class DungeonMapGrid {
     private int roomPixelSize = 0;
     @Getter
     private int connectorPixelSize = 5;
+    private int contentPixelWidth = 128;
+    private int contentPixelHeight = 128;
 
     public static DungeonMapGrid parse(MapData data, int cellSizeBlocks) {
         return parse(data, cellSizeBlocks, -1, -1);
@@ -66,7 +68,13 @@ public class DungeonMapGrid {
                 int checkerAlpha = (i + i / 128 & 1) * 8 + 16;
                 colors[x][y] = new Color(0, 0, 0, checkerAlpha);
             } else {
+                //#if MC < 1.21
                 int rgb = MapColor.mapColorArray[b / 4].getMapColor(b & 3);
+                //#else
+                //$$ int rgb = MapColor.getRenderColor(b);
+                //$$ // 1.21 packs 0xFFBBGGRR; legacy getMapColor packs 0xFFRRGGBB.
+                //$$ rgb = (rgb & 0xFF000000) | ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF);
+                //#endif
                 colors[x][y] = new Color(rgb, true);
             }
         }
@@ -131,6 +139,7 @@ public class DungeonMapGrid {
         }
         grid.computeRegions();
         grid.findJunctions(colors);
+        grid.measureContent();
 
         grid.blockToPixel = (float) (grid.roomPixelSize + grid.connectorPixelSize) / grid.cellSizeBlocks;
         grid.entrancePixelCenterX = grid.startPixelX + grid.roomPixelSize / 2f;
@@ -307,7 +316,7 @@ public class DungeonMapGrid {
         if (rooms.containsKey(pos)) return;
         int px = startPixelX + pos.x * (roomPixelSize + connectorPixelSize);
         int py = startPixelY + pos.y * (roomPixelSize + connectorPixelSize);
-        if (px < 0 || py < 0 || px + roomPixelSize >= 128 || py + roomPixelSize >= 128) return;
+        if (px < 0 || py < 0 || px + roomPixelSize > 128 || py + roomPixelSize > 128) return;
         if (colors[px][py].getAlpha() <= 100) return;
         rooms.put(pos, new RoomCell());
         for (RoomOffset neighbor : pos.getNeighbors()) {
@@ -531,12 +540,40 @@ public class DungeonMapGrid {
         return state != null ? state : RoomState.DISCOVERED;
     }
 
+    public RoomRegion regionForRoom(double centerX, double centerZ) {
+        return regionAtPixel(worldToPixelX(centerX), worldToPixelZ(centerZ));
+    }
+
+    // tick a room shows, region state when split markers are on else the centre cell
+    public RoomState stateForRoom(RoomRegion region, double centerX, double centerZ) {
+        if (region != null) return region.state;
+        return stateAtWorld(centerX, centerZ);
+    }
+
+    public RoomState stateForRoom(double centerX, double centerZ, boolean split) {
+        return stateForRoom(split ? regionForRoom(centerX, centerZ) : null, centerX, centerZ);
+    }
+
     public int getGridPixelWidth() {
-        return 128;
+        return contentPixelWidth;
     }
 
     public int getGridPixelHeight() {
-        return 128;
+        return contentPixelHeight;
+    }
+
+    // pixel extent the rooms take, never under 128 so an early run keeps one frame size
+    private void measureContent() {
+        int width = 128;
+        int height = 128;
+        for (RoomOffset off : rooms.keySet()) {
+            int right = (int) gridToPixelX(off.x) + roomPixelSize + connectorPixelSize;
+            int bottom = (int) gridToPixelZ(off.y) + roomPixelSize + connectorPixelSize;
+            if (right > width) width = right;
+            if (bottom > height) height = bottom;
+        }
+        contentPixelWidth = width;
+        contentPixelHeight = height;
     }
 
     public boolean isValid() {

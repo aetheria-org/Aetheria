@@ -16,6 +16,11 @@ public class BetterContainersConfig {
     public int style = 0;
 
     @Expose
+    @ConfigOption(name = "Hide Empty Pane Hover", desc = "Treat bound empty panes as absent: no hover highlight, tooltip or clicks")
+    @ConfigEditorBoolean
+    public boolean hideEmptyPaneHover = true;
+
+    @Expose
     @ConfigOption(name = "Watermark Color", desc = "Color of the 'ASM' watermark in the top-right of chests. Enable chroma speed for animated chroma.")
     @ConfigEditorColour
     public String watermarkColor = "200:255:50:50:255";

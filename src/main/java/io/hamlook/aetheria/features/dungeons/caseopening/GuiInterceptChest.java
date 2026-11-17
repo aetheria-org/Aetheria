@@ -3,11 +3,20 @@ package io.hamlook.aetheria.features.dungeons.caseopening;
 import io.hamlook.aetheria.DebugLogger;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.InventoryCompatKt;
 import net.minecraft.client.gui.inventory.GuiContainer;
+//#if MC < 1.21
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
+//#else
+//$$ import net.minecraft.client.gui.DrawContext;
+//$$ import net.minecraft.entity.player.PlayerInventory;
+//$$ import net.minecraft.screen.ScreenHandler;
+//$$ import net.minecraft.text.Text;
+//#endif
 import net.minecraft.item.ItemStack;
 
 public class GuiInterceptChest extends GuiContainer {
@@ -15,13 +24,18 @@ public class GuiInterceptChest extends GuiContainer {
     private static final int SCAN_DELAY = 3;
     private static final int REWARD_SLOT_START = 10;
     private static final int REWARD_SLOT_END = 16;
+    //#if MC < 1.21
     private final ContainerChest container;
+    //#else
+    //$$ private final ScreenHandler container;
+    //#endif
     private final DungeonDropData.Floor floor;
     private final DungeonDropData.CaseMaterial material;
     private int tickCount = 0;
     private boolean doneCollectingReward = false;
     private DungeonDropData.Rule rewardToOpen = null;
 
+    //#if MC < 1.21
     public GuiInterceptChest(ContainerChest container, DungeonDropData.Floor floor, DungeonDropData.CaseMaterial material) {
         super(container);
         this.container = container;
@@ -29,10 +43,24 @@ public class GuiInterceptChest extends GuiContainer {
         this.material = material;
         DebugLogger.log("[GuiInterceptChest] Initialized — floor=" + floor + ", material=" + material);
     }
+    //#else
+    //$$ public GuiInterceptChest(ScreenHandler container, PlayerInventory playerInv, Text title, DungeonDropData.Floor floor, DungeonDropData.CaseMaterial material) {
+    //$$     super(container, playerInv, title);
+    //$$     this.container = container;
+    //$$     this.floor = floor;
+    //$$     this.material = material;
+    //$$     DebugLogger.log("[GuiInterceptChest] Initialized — floor=" + floor + ", material=" + material);
+    //$$ }
+    //#endif
 
+    //#if MC < 1.21
     @Override
     public void updateScreen() {
         super.updateScreen();
+    //#else
+    //$$ @Override
+    //$$ protected void handledScreenTick() {
+    //#endif
         tickCount++;
 
         if (tickCount < SCAN_DELAY) return;
@@ -44,14 +72,15 @@ public class GuiInterceptChest extends GuiContainer {
 
         if (rewardToOpen != null) {
             DebugLogger.log("[GuiInterceptChest] Launching animation for: " + rewardToOpen.item.name());
-            Minecraft.getMinecraft().displayGuiScreen(new CustomDropAnimationGui(rewardToOpen, floor, material));
+            MinecraftCompat.getMinecraft().displayGuiScreen(new CustomDropAnimationGui(rewardToOpen, floor, material));
         } else {
             DebugLogger.log("[GuiInterceptChest] No matching reward found — returning to chest GUI");
-            Minecraft.getMinecraft().displayGuiScreen(ChestListener.originalGui);
+            MinecraftCompat.getMinecraft().displayGuiScreen(ChestListener.originalGui);
         }
     }
 
     private void scanForReward() {
+        //#if MC < 1.21
         IInventory lower = ContainerUtils.getLowerInventory(container);
         int size = lower.getSizeInventory();
         int dropCount = DungeonDropData.getDrops(material, floor).size();
@@ -62,7 +91,7 @@ public class GuiInterceptChest extends GuiContainer {
                 ItemStack s = lower.getStackInSlot(i);
                 if (s == null || s.getItem() == null) continue;
                 String id = ItemUtils.getEffectiveItemId(s);
-                DebugLogger.log("[GuiInterceptChest] [ALL] Slot " + i + ": " + s.getDisplayName() + " (id=" + id + ")");
+                DebugLogger.log("[GuiInterceptChest] [ALL] Slot " + i + ": " + TextCompat.getFormattedText(s.getDisplayName()) + " (id=" + id + ")");
             }
         }
 
@@ -83,8 +112,42 @@ public class GuiInterceptChest extends GuiContainer {
                 DebugLogger.log("[GuiInterceptChest] New best reward: " + rewardToOpen.item.name() + " (rarity " + rewardToOpen.rarity + ")");
             }
         }
+        //#else
+        //$$ int size = container.slots.size();
+        //$$ int dropCount = DungeonDropData.getDrops(material, floor).size();
+        //$$ DebugLogger.log("[GuiInterceptChest] Scanning — floor=" + floor + ", material=" + material + ", possible drops=" + dropCount + ", inventory size=" + size);
+        //$$
+        //$$ if (ATHRConfig.feature.debug.enableDebug) {
+        //$$     for (int i = 0; i < size; i++) {
+        //$$         ItemStack s = container.getSlot(i).getStack();
+        //$$         if (!InventoryCompatKt.isStackNotEmpty(s) || s.getItem() == null) continue;
+        //$$         String id = ItemUtils.getEffectiveItemId(s);
+        //$$         DebugLogger.log("[GuiInterceptChest] [ALL] Slot " + i + ": " + TextCompat.codedString(s.getName()) + " (id=" + id + ")");
+        //$$     }
+        //$$ }
+        //$$
+        //$$ for (int i = REWARD_SLOT_START; i <= REWARD_SLOT_END; i++) {
+        //$$     if (i >= size) break;
+        //$$     ItemStack stack = container.getSlot(i).getStack();
+        //$$     if (!InventoryCompatKt.isStackNotEmpty(stack) || stack.getItem() == null) continue;
+        //$$
+        //$$     String itemId = ItemUtils.getEffectiveItemId(stack);
+        //$$     if (itemId.isEmpty()) continue;
+        //$$     DebugLogger.log("[GuiInterceptChest] Slot " + i + ": " + itemId);
+        //$$
+        //$$     DungeonDropData.Rule found = DungeonDropData.getDrops(material, floor).stream().filter(r -> r.item.name().equals(itemId)).findFirst().orElse(null);
+        //$$
+        //$$     if (found == null) continue;
+        //$$
+        //$$     if (rewardToOpen == null || found.rarity < rewardToOpen.rarity || (found.rarity == rewardToOpen.rarity && found.item.name().compareTo(rewardToOpen.item.name()) < 0)) {
+        //$$         rewardToOpen = found;
+        //$$         DebugLogger.log("[GuiInterceptChest] New best reward: " + rewardToOpen.item.name() + " (rarity " + rewardToOpen.rarity + ")");
+        //$$     }
+        //$$ }
+        //#endif
     }
 
+    //#if MC < 1.21
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
     }
@@ -108,4 +171,28 @@ public class GuiInterceptChest extends GuiContainer {
     @Override
     public void handleMouseInput() {
     }
+    //#else
+    //$$ @Override
+    //$$ public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    //$$ }
+    //$$
+    //$$ @Override
+    //$$ protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
+    //$$ }
+    //$$
+    //$$ @Override
+    //$$ public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
+    //$$     return false;
+    //$$ }
+    //$$
+    //$$ @Override
+    //$$ public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
+    //$$     return false;
+    //$$ }
+    //$$
+    //$$ @Override
+    //$$ public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    //$$     return false;
+    //$$ }
+    //#endif
 }

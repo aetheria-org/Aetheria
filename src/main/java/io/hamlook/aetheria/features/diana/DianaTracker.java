@@ -1,15 +1,14 @@
 package io.hamlook.aetheria.features.diana;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ElectionUtils;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.network.FMLNetworkEvent;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,7 +30,7 @@ public class DianaTracker {
     private static final Pattern DROP_COINS = Pattern.compile("RARE DROP! You dug out ([\\d,]+) Coins");
     private static final Pattern GRIFFIN_DOUBLED = Pattern.compile("Your Griffin doubled your rewards?!");
     private static final Pattern LOOT_SHARE = Pattern.compile("^LOOT SHARE You received loot for assisting");
-    private final Minecraft mc = Minecraft.getMinecraft();
+    private final Minecraft mc = MinecraftCompat.getMinecraft();
     private volatile boolean pendingDouble = false;
 
     private static boolean isInHub() {
@@ -86,27 +85,27 @@ public class DianaTracker {
         return "§6[Diana] §e!burrows !inq !mobs !chim !stick !relic !loot !time\n" + "§7SL=since last ISL=inqs since last MSL=minos since last CSL=champs since last";
     }
 
-    @SubscribeEvent
-    public void onClientConnect(FMLNetworkEvent.ClientConnectedToServerEvent event) {
+    @HandleEvent
+    public void onClientConnect(ASMServerJoinEvent event) {
         DianaStats.getInstance().onClientLogin();
         pendingDouble = false;
     }
 
-    @SubscribeEvent
-    public void onClientDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+    @HandleEvent
+    public void onClientDisconnect(ASMServerDisconnectEvent event) {
         DianaStats.getInstance().onClientLogout();
         pendingDouble = false;
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
         DianaStats.getInstance().timerTick();
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
-        if (mc.thePlayer == null) return;
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         String msg = ChatUtils.clean(event);
 

@@ -1,23 +1,25 @@
 package io.hamlook.aetheria.features.chat
 
-import io.hamlook.aetheria.command.ASMCommand
-import io.hamlook.aetheria.init.RegisterCommand
-import net.minecraft.client.gui.GuiScreen
-import net.minecraft.command.CommandException
-import net.minecraft.command.ICommandSender
+import io.hamlook.aetheria.api.event.HandleEvent
+import io.hamlook.aetheria.command.brigadier.CommandCategory
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent
+import io.hamlook.aetheria.init.RegisterEvents
+import io.hamlook.aetheria.utils.compat.ClipboardCompat
 
-@RegisterCommand
-class CopyToClipboardCommand : ASMCommand() {
+@RegisterEvents
+class CopyToClipboardCommand {
 
-    override fun getName() = "copytoclipboard"
-
-    override fun getUsage() = "/copytoclipboard <text>"
-
-    @Throws(CommandException::class)
-    override fun execute(sender: ICommandSender, args: Array<String>) {
-        if (args.isEmpty()) return
-        try {
-            GuiScreen.setClipboardString(args.joinToString(" "))
-        } catch (_: Exception) { }
+    @HandleEvent
+    fun onCommandRegistration(event: CommandRegistrationEvent) {
+        event.registerBrigadier("copytoclipboard") {
+            description = "Copy text to clipboard"
+            category = CommandCategory.USERS_ACTIVE
+            legacyCallbackArgs { args ->
+                if (args.isEmpty()) return@legacyCallbackArgs
+                try {
+                    ClipboardCompat.setClipboard(args.joinToString(" "))
+                } catch (_: Exception) { }
+            }
+        }
     }
 }

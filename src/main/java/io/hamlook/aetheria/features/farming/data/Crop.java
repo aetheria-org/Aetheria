@@ -1,5 +1,7 @@
 package io.hamlook.aetheria.features.farming.data;
 
+import io.hamlook.aetheria.utils.compat.BlockCompat;
+import io.hamlook.aetheria.utils.compat.ItemCompatKt;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
@@ -45,14 +47,14 @@ public class Crop {
             case "PUMPKIN": return new ItemStack(Item.getItemFromBlock(Blocks.pumpkin));
             case "MELON": return new ItemStack(Items.melon);
             case "SUGAR_CANE": return new ItemStack(Items.reeds);
-            case "INK_SACK__3": return new ItemStack(Items.dye, 1, 3);
+            case "INK_SACK__3": return ItemCompatKt.createDyeStackCompat(3);
             case "CACTUS": return new ItemStack(Item.getItemFromBlock(Blocks.cactus));
             case "RED_MUSHROOM": return new ItemStack(Item.getItemFromBlock(Blocks.red_mushroom));
             case "BROWN_MUSHROOM": return new ItemStack(Item.getItemFromBlock(Blocks.brown_mushroom));
             case "NETHER_STALK": return new ItemStack(Items.nether_wart);
-            case "WILD_ROSE": return new ItemStack(Item.getItemFromBlock(Blocks.double_plant), 1, 4);
-            case "MOONFLOWER": return new ItemStack(Item.getItemFromBlock(Blocks.red_flower), 1, 1);
-            case "DOUBLE_PLANT": return new ItemStack(Item.getItemFromBlock(Blocks.double_plant), 1, 0);
+            case "WILD_ROSE": return BlockCompat.getDoublePlant(4);
+            case "MOONFLOWER": return BlockCompat.getRedFlower(1);
+            case "DOUBLE_PLANT": return BlockCompat.getDoublePlant(0);
             case "SEEDS": return new ItemStack(Items.wheat_seeds);
             default: return null;
         }

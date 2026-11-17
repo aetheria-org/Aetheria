@@ -4,9 +4,9 @@ import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.item.ItemUtils;
-import net.minecraft.item.ItemStack;
-
 import lombok.Getter;
+import net.minecraft.item.ItemStack;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 @Getter
 public final class DungeonReward {
@@ -21,7 +21,7 @@ public final class DungeonReward {
         this.item = item;
         price1 = price;
         if(ItemUtils.getInternalName(item).startsWith("ESSENCE")){
-            String displayName = ColorUtils.stripColor(item.getDisplayName());
+            String displayName = ColorUtils.stripColor(TextCompat.getUnformattedText(item.getDisplayName()));
             if(displayName.contains("x")){
                 int index = displayName.lastIndexOf("x");
                 String amount = displayName.substring(index + 1);
@@ -37,7 +37,7 @@ public final class DungeonReward {
         this.price = price1;
     }
     public String getText() {
-        return item == null ? "" : item.getDisplayName() + " §7: " +
+        return item == null ? "" : ItemUtils.getDisplayName(item) + " §7: " +
                                    getPriceText();
     }
 

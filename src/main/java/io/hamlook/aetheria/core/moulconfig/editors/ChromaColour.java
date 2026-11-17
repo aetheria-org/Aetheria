@@ -3,7 +3,10 @@
 
 package io.hamlook.aetheria.core.moulconfig.editors;
 
+import io.hamlook.aetheria.Aetheria;
+
 import java.awt.*;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ChromaColour {
@@ -14,8 +17,15 @@ public class ChromaColour {
     public static long startTime = -1;
 
     private static final ConcurrentHashMap<String, int[]> DECOMPOSED = new ConcurrentHashMap<>();
+    private static final Set<String> WARNED_MALFORMED = ConcurrentHashMap.newKeySet();
+    private static final int[] FALLBACK = {0, 0, 0, 255, 0};
     private static final ConcurrentHashMap<String, Integer> STATIC_ARGB = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, float[]> CHROMA_BASE = new ConcurrentHashMap<>();
+
+    private static final long[] RAINBOW_MILLIS = new long[256];
+    private static final float[] RAINBOW_HUE = new float[256];
+
+    private static final float[] HSB_BUF = new float[3];
 
     public static String special(int chromaSpeed, int alpha, int rgb) {
         return special(chromaSpeed, alpha, (rgb & 0xFF0000) >> 16, (rgb & 0x00FF00) >> 8, (rgb & 0x0000FF));
@@ -32,13 +42,29 @@ public class ChromaColour {
     private static int[] decompose(String csv) {
         int[] cached = DECOMPOSED.get(csv);
         if (cached != null) return cached;
+        int[] arr = FALLBACK;
         String[] split = csv.split(":");
-        int[] arr = new int[split.length];
-        for (int i = 0; i < split.length; i++) {
-            arr[i] = Integer.parseInt(split[split.length - 1 - i], RADIX);
+        if (split.length == 5) {
+            try {
+                int[] parsed = new int[5];
+                for (int i = 0; i < split.length; i++) {
+                    parsed[i] = Integer.parseInt(split[split.length - 1 - i], RADIX);
+                }
+                arr = parsed;
+            } catch (NumberFormatException e) {
+                warnMalformed(csv, e);
+            }
+        } else {
+            warnMalformed(csv, null);
         }
         DECOMPOSED.put(csv, arr);
         return arr;
+    }
+
+    private static void warnMalformed(String csv, NumberFormatException e) {
+        if (WARNED_MALFORMED.add(csv)) {
+            Aetheria.logger.warning("Ignoring malformed chroma colour \"" + csv + "\"" + (e != null ? ": " + e.getMessage() : ""));
+        }
     }
 
     public static int specialToSimpleRGB(String special) {
@@ -54,6 +80,14 @@ public class ChromaColour {
         return (255 - speed) / 254f * (MAX_CHROMA_SECS - MIN_CHROMA_SECS) + MIN_CHROMA_SECS;
     }
 
+    public static Color specialToColor(String special) {
+        return toColor(specialToChromaRGB(special));
+    }
+
+    public static Color toColor(int argb) {
+        return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+    }
+
     public static int specialToChromaRGB(String special) {
         if (startTime < 0) startTime = System.currentTimeMillis();
         Integer cached = STATIC_ARGB.get(special);
@@ -67,7 +101,7 @@ public class ChromaColour {
         }
         float[] base = CHROMA_BASE.get(special);
         if (base == null) {
-            float[] hsv = Color.RGBtoHSB(d[2], d[1], d[0], null);
+            float[] hsv = Color.RGBtoHSB(d[2], d[1], d[0], HSB_BUF);
             base = new float[]{hsv[0], hsv[1], hsv[2]};
             CHROMA_BASE.put(special, base);
         }
@@ -78,12 +112,31 @@ public class ChromaColour {
         return (a & 0xFF) << 24 | (Color.HSBtoRGB(hue, base[1], base[2]) & 0x00FFFFFF);
     }
 
-    public static int animatedRainbow(int speed, int alpha) {
+    private static float rainbowHue(int speed) {
         if (startTime < 0) startTime = System.currentTimeMillis();
+        int slot = speed < 0 ? 0 : Math.min(speed, RAINBOW_HUE.length - 1);
+        long now = System.currentTimeMillis();
+        if (RAINBOW_MILLIS[slot] == now) return RAINBOW_HUE[slot];
         float seconds = getSecondsForSpeed(speed);
-        float hue = (System.currentTimeMillis() - startTime) / 1000f / seconds;
-        hue %= 1;
-        if (hue < 0) hue += 1;
+        float hue = (now - startTime) / 1000f / seconds;
+        hue %= 1f;
+        if (hue < 0) hue += 1f;
+        RAINBOW_MILLIS[slot] = now;
+        RAINBOW_HUE[slot] = hue;
+        return hue;
+    }
+
+    public static int animatedRainbow(int speed, int alpha) {
+        return (alpha & 0xFF) << 24 | (Color.HSBtoRGB(rainbowHue(speed), 1F, 1F) & 0x00FFFFFF);
+    }
+
+    public static int rainbowShifted(int speed, int alpha, float x, float y, int mode, float size) {
+        float hue = rainbowHue(speed);
+        if (mode != 0) {
+            hue += ((x + y) / Math.max(1F, size)) % 1F;
+            hue %= 1F;
+            if (hue < 0) hue += 1f;
+        }
         return (alpha & 0xFF) << 24 | (Color.HSBtoRGB(hue, 1F, 1F) & 0x00FFFFFF);
     }
 
@@ -94,14 +147,14 @@ public class ChromaColour {
         int r = (argb >>> 16) & 255;
         int g = (argb >>> 8) & 255;
         int b = argb & 255;
-        float[] hsb = Color.RGBtoHSB(r, g, b, null);
+        float[] hsb = Color.RGBtoHSB(r, g, b, HSB_BUF);
         hsb[0] = (hsb[0] + shift) % 1F;
         return (a << 24) | (Color.HSBtoRGB(hsb[0], hsb[1], hsb[2]) & 0x00FFFFFF);
     }
 
     public static int rotateHue(int argb, int degrees) {
         int a = (argb >> 24) & 0xFF, r = (argb >> 16) & 0xFF, g = (argb >> 8) & 0xFF, b = argb & 0xFF;
-        float[] hsv = Color.RGBtoHSB(r, g, b, null);
+        float[] hsv = Color.RGBtoHSB(r, g, b, HSB_BUF);
         hsv[0] += degrees / 360f;
         hsv[0] %= 1;
         return (a & 0xFF) << 24 | (Color.HSBtoRGB(hsv[0], hsv[1], hsv[2]) & 0x00FFFFFF);

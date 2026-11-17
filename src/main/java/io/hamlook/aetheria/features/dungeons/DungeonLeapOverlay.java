@@ -2,12 +2,18 @@ package io.hamlook.aetheria.features.dungeons;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMGuiBackgroundDrawEvent;
+import io.hamlook.aetheria.events.ASMGuiDrawPreEvent;
+import io.hamlook.aetheria.events.ASMGuiOpenEvent;
+import io.hamlook.aetheria.events.ASMMouseEvent;
 import io.hamlook.aetheria.features.dungeons.overlays.DungeonMapOverlay;
 import io.hamlook.aetheria.features.dungeons.overlays.map.DungeonPlayerTracker;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
@@ -16,21 +22,17 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import org.lwjgl.input.Mouse;
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 @RegisterEvents
 public class DungeonLeapOverlay {
@@ -59,19 +61,21 @@ public class DungeonLeapOverlay {
         }
     }
 
-    @SubscribeEvent
-    public void onClose(GuiOpenEvent e){
-        if(e.gui == null) isLeapGUI = false;
+    @HandleEvent
+    public void onClose(ASMGuiOpenEvent e){
+        // Reset on every screen change, not just close: onGui re-detects each frame,
+        // so a stale true would blank the next container's first frame.
+        isLeapGUI = false;
     }
 
-    @SubscribeEvent
-    public void onGui(GuiScreenEvent.BackgroundDrawnEvent event) {
+    @HandleEvent
+    public void onGui(ASMGuiBackgroundDrawEvent event) {
         if (isLeapGUI) return;
         if (!(event.gui instanceof GuiContainer)) return;
         GuiContainer gui = (GuiContainer) event.gui;
-        if (!(gui.inventorySlots instanceof ContainerChest)) return;
+        if (!(InventoryCompat.getContainer(gui) instanceof ContainerChest)) return;
 
-        ContainerChest chest = (ContainerChest) gui.inventorySlots;
+        ContainerChest chest = (ContainerChest) InventoryCompat.getContainer(gui);
         String title = ContainerUtils.getTitle(chest);
 
         isLeapGUI = isLeapGUI(title);
@@ -79,11 +83,11 @@ public class DungeonLeapOverlay {
         if (isLeapGUI) leapChest = chest;
     }
 
-    @SubscribeEvent
-    public void onDraw(GuiScreenEvent.DrawScreenEvent.Pre e){
+    @HandleEvent
+    public void onDraw(ASMGuiDrawPreEvent e){
         if(isLeapGUI && e.gui != null && tracker != null){
             Aetheria.logger.fine("[DungeonLeap] Drawing leap overlay");
-            e.setCanceled(true);
+            e.cancel();
             drawLeapGUI(e.mouseX,e.mouseY,e.gui);
         }
     }
@@ -91,7 +95,7 @@ public class DungeonLeapOverlay {
     private void drawLeapGUI(int mouseX, int mouseY, GuiScreen gui) {
         MapLayout mapLayout = getMapLayout(gui);
 
-        GuiScreen.drawRect(
+        DrawContextUtils.fill(
                 (int) mapLayout.left,
                 (int) mapLayout.top,
                 (int) (mapLayout.left + (MAP_SIZE * MAP_SCALE)),
@@ -101,7 +105,7 @@ public class DungeonLeapOverlay {
 
         overlay.renderDungeonMap(mapLayout.centerX, mapLayout.centerY, MAP_SCALE, true, true);
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         List<String> players = ATHRConfig.feature.dungeons.leapConfig.excludeSelf ? getFilteredPartyMembers() : tracker.playerNames;
         for (String player : players) {
             float[] pos = tracker.getPosition(player);
@@ -158,22 +162,22 @@ public class DungeonLeapOverlay {
                     bounds.x, bounds.y, bounds.width, bounds.height, 3, 18
             );
 
-            GuiScreen.drawRect(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, bgColor);
+            DrawContextUtils.fill(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, bgColor);
 
             ResourceLocation skin = getPlayerSkin(player, mc);
             RenderUtils.renderPlayerHead(bounds.x + 3, bounds.y + 3, -1, 2f, skin, 0);
-            mc.fontRendererObj.drawStringWithShadow(player, bounds.x + 22, bounds.y + 6, 0xFFFFFFFF);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), player, bounds.x + 22, bounds.y + 6, 0xFFFFFFFF);
         }
     }
 
 
-    @SubscribeEvent
-    public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
+    @HandleEvent
+    public void onMouseInput(ASMMouseEvent event) {
         if (!isLeapGUI || tracker == null) return;
-        if (Mouse.getEventButton() == 0 && Mouse.getEventButtonState()) {
+        if (event.button == 0 && event.buttonState) {
 
-            int mouseX = Mouse.getEventX() * event.gui.width / event.gui.mc.displayWidth;
-            int mouseY = event.gui.height - Mouse.getEventY() * event.gui.height / event.gui.mc.displayHeight - 1;
+            int mouseX = event.mouseX;
+            int mouseY = event.mouseY;
 
             List<String> players = getFilteredPartyMembers();
 
@@ -185,7 +189,7 @@ public class DungeonLeapOverlay {
                     Rectangle bounds = grid.getButtonBounds(i);
                     if (bounds.contains(mouseX, mouseY)) {
                         leapToPlayer(players.get(i));
-                        event.setCanceled(true);
+                        event.cancel();
                         return;
                     }
                 }
@@ -205,7 +209,7 @@ public class DungeonLeapOverlay {
 
                     if (checkIfClickedOptimized(posX, posY, yaw, mapLayout.halfHeadPixelSize, mouseX, mouseY)) {
                         leapToPlayer(player);
-                        event.setCanceled(true);
+                        event.cancel();
                         break;
                     }
                 }
@@ -215,7 +219,7 @@ public class DungeonLeapOverlay {
 
     private void leapToPlayer(String player) {
         if (!isLeapGUI || leapChest == null) return;
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         if (mc.playerController == null) return;
 
         int upperChestSlots = leapChest.getLowerChestInventory().getSizeInventory();
@@ -228,12 +232,12 @@ public class DungeonLeapOverlay {
             if (slot1 == null || !slot1.getHasStack()) continue;
 
             ItemStack stack = slot1.getStack();
-            if (stack.getItem().getRegistryName().equals(Item.getItemFromBlock(Blocks.stained_glass_pane).getRegistryName())) continue;
+            if (ItemCompatKt.getIdentifierString(stack.getItem()).equals(ItemCompatKt.getIdentifierString(ColoredBlockCompat.WHITE.createGlassPaneStack(1).getItem()))) continue;
 
-            String displayName = ColorUtils.stripColor(stack.getDisplayName());
+            String displayName = ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName()));
 
             if (pattern.matcher(displayName).matches()) {
-                mc.playerController.windowClick(leapChest.windowId, slot, 0, 0, mc.thePlayer);
+                InventoryCompat.windowClick(leapChest.windowId, slot, 0, 0, MinecraftCompat.getLocalPlayer());
                 break;
             }
         }
@@ -241,7 +245,7 @@ public class DungeonLeapOverlay {
 
     private List<String> getFilteredPartyMembers() {
         List<String> players = new ArrayList<>(tracker.playerNames);
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        EntityPlayer player = MinecraftCompat.getLocalPlayer();
         if (player != null) {
             players.remove(player.getGameProfile().getName());
         }
@@ -284,18 +288,7 @@ public class DungeonLeapOverlay {
     }
 
     private ResourceLocation getPlayerSkin(String player, Minecraft mc) {
-        EntityPlayer entity = tracker.getEntity(player);
-        NetworkPlayerInfo info = (entity != null)
-                ? mc.getNetHandler().getPlayerInfo(entity.getUniqueID())
-                : null;
-
-        if (info == null) {
-            info = tracker.getNetworkPlayerInfo(player, mc);
-        }
-
-        return (info != null && info.getLocationSkin() != null)
-                ? info.getLocationSkin()
-                : DefaultPlayerSkin.getDefaultSkinLegacy();
+        return tracker.resolveSkin(player, mc);
     }
 
     public static boolean isLeapGUI(String title){
@@ -304,7 +297,7 @@ public class DungeonLeapOverlay {
 
 
     private boolean isSelf(String player) {
-        return Minecraft.getMinecraft().thePlayer.getGameProfile().getName().equalsIgnoreCase(player);
+        return MinecraftCompat.getLocalPlayer().getGameProfile().getName().equalsIgnoreCase(player);
     }
 
     private int getArrowColor(String player){

@@ -5,10 +5,10 @@ package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-
 public class GuiOptionEditorVersionDisplay extends GuiOptionEditor {
 
     private static final int HEIGHT = 40;
@@ -24,27 +24,25 @@ public class GuiOptionEditorVersionDisplay extends GuiOptionEditor {
 
     @Override
     public void render(int x, int y, int width) {
-        Minecraft mc = Minecraft.getMinecraft();
-
         RenderUtils.drawFloatingRectDark(x, y, width, HEIGHT, true);
 
         String versionText = "v" + Aetheria.VERSION;
 
-        int fontHeight = mc.fontRendererObj.FONT_HEIGHT;
+        int fontHeight = MinecraftCompat.getFontRenderer().FONT_HEIGHT;
         int scaledHeight = fontHeight * 2;
 
         // ── CENTERED 2x VERSION TEXT ─────────────────
-        GlStateManager.pushMatrix();
+        GlStateManagerCompat.pushMatrix();
 
         int centerX = x + width / 2;
         int centerY = y + (HEIGHT - scaledHeight) / 2;
 
-        GlStateManager.translate(centerX, centerY, 0);
-        GlStateManager.scale(2f, 2f, 1f);
+        GlStateManagerCompat.translate(centerX, centerY, 0);
+        GlStateManagerCompat.scale(2f, 2f, 1f);
 
-        int textWidth = mc.fontRendererObj.getStringWidth(versionText);
+        int textWidth = MinecraftCompat.getFontRenderer().getStringWidth(versionText);
 
-        mc.fontRendererObj.drawString(
+        DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(),
                 versionText,
                 -textWidth / 2,
                 0,
@@ -52,7 +50,7 @@ public class GuiOptionEditorVersionDisplay extends GuiOptionEditor {
                 false
         );
 
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     @Override

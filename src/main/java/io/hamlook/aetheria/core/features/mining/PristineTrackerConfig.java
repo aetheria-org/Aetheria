@@ -78,24 +78,7 @@ public class PristineTrackerConfig {
 
     @Expose
     @ConfigOption(name = "Display Lines", desc = "Choose which lines to show and drag to reorder")
-    @ConfigEditorDraggableList(exampleText = {
-            "§d§lPristine Tracker",
-            "§7Total Gems: §a1,500 §7(150/h)",
-            "§7Procs: §d42 §7(5/h)",
-            "§1Playtime: §f2h 30m  §1Session: §f45m",
-            "§a200 §cRuby Gemstone",
-            "§a200 §bSapphire Gemstone",
-            "§a200 §6Amber Gemstone",
-            "§a200 §5Amethyst Gemstone",
-            "§a200 §aJade Gemstone",
-            "§a200 §eTopaz Gemstone",
-            "§a200 §cJasper Gemstone",
-            "§a200 §fOpal Gemstone",
-            "§a200 §6Citrine Gemstone",
-            "§a200 §3Aquamarine Gemstone",
-            "§a200 §aPeridot Gemstone",
-            "§a200 §8Onyx Gemstone"
-    })
+    @ConfigEditorDraggableList(exampleText = {"§d§lPristine Tracker", "§7Total Gems: §a1,500 §7(150/h)", "§7Procs: §d42 §7(5/h)", "§1Playtime: §f2h 30m  §1Session: §f45m", "§a200 §cRuby Gemstone", "§a200 §bSapphire Gemstone", "§a200 §6Amber Gemstone", "§a200 §5Amethyst Gemstone", "§a200 §aJade Gemstone", "§a200 §eTopaz Gemstone", "§a200 §cJasper Gemstone", "§a200 §fOpal Gemstone", "§a200 §6Citrine Gemstone", "§a200 §3Aquamarine Gemstone", "§a200 §aPeridot Gemstone", "§a200 §8Onyx Gemstone"})
     public List<Integer> pristineDisplayLines = new ArrayList<>(Arrays.asList(0, 15, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14));
 
     @Expose

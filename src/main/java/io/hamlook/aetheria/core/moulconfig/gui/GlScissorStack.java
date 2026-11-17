@@ -3,8 +3,8 @@
 
 package io.hamlook.aetheria.core.moulconfig.gui;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import org.lwjgl.opengl.GL11;
 
 import java.util.LinkedList;
@@ -28,28 +28,29 @@ public class GlScissorStack {
             return new Bounds(left, top, right, bottom);
         }
 
-        void set(ScaledResolution sr) {
-            int height = Minecraft.getMinecraft().displayHeight;
-            int scale  = sr.getScaleFactor();
-            GL11.glScissor(left * scale, height - bottom * scale, (right - left) * scale, (bottom - top) * scale);
+        void set(int scaleFactor) {
+            int height = GuiScreenUtils.getDisplayHeight();
+            GlStateManagerCompat.scissor(left * scaleFactor, height - bottom * scaleFactor, (right - left) * scaleFactor, (bottom - top) * scaleFactor);
         }
     }
 
     private static final LinkedList<Bounds> stack = new LinkedList<>();
 
-    public static void push(int left, int top, int right, int bottom, ScaledResolution sr) {
+    public static void push(int left, int top, int right, int bottom, int scaleFactor) {
         if (right < left) { int t = right; right = left; left = t; }
         if (bottom < top) { int t = bottom; bottom = top; top = t; }
         stack.push(stack.isEmpty() ? new Bounds(left, top, right, bottom)
                                    : stack.peek().createSubBound(left, top, right, bottom));
-        stack.peek().set(sr);
+        if (stack.peek() != null) {
+            stack.peek().set(scaleFactor);
+        }
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
     }
 
-    public static void pop(ScaledResolution sr) {
+    public static void pop(int scaleFactor) {
         if (!stack.isEmpty()) stack.pop();
         if (stack.isEmpty()) GL11.glDisable(GL11.GL_SCISSOR_TEST);
-        else stack.peek().set(sr);
+        else stack.peek().set(scaleFactor);
     }
 
     public static void clear() {

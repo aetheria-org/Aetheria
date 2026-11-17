@@ -1,32 +1,25 @@
 package io.hamlook.aetheria.features.capes;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.command.ASMCommand;
 import io.hamlook.aetheria.features.capes.ui.CapeSelectorGUI;
-import io.hamlook.aetheria.init.RegisterCommand;
-import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayer;
+import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 
-@RegisterCommand
-public class CapeMenuCommand extends ASMCommand {
-    @Override
-    public String getName() {
-        return "capes";
-    }
+@RegisterEvents
+public class CapeMenuCommand {
 
-    @Override
-    public String getUsage() {
-        return "/" + getName();
-    }
-
-    @Override
-    public void execute(ICommandSender sender, String[] args) throws CommandException {
-        if(!(sender instanceof EntityPlayer)) return;
-        if(args.length > 0 && args[0].equalsIgnoreCase("capeCalls")){
-            ChatUtils.sendMessage("§7[§6DEBUG§7]§a Cape Calls: §f" + CapeManager.capeCalls);
-        }
-        ATHRConfig.screenToOpen = new CapeSelectorGUI();
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("capes", builder -> {
+            builder.description = "Open the cape selector GUI";
+            builder.setCategory(CommandCategory.USERS_ACTIVE);
+            builder.simpleCallback(() -> {
+                if (MinecraftCompat.getLocalPlayer() == null) return;
+                ATHRConfig.screenToOpen = new CapeSelectorGUI();
+            });
+        });
     }
 }

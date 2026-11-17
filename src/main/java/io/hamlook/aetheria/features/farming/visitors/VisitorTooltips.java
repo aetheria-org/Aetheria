@@ -5,8 +5,9 @@ import io.hamlook.aetheria.core.features.farming.VisitorsConfig;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.ContainerChest;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 
 public final class VisitorTooltips {
 
@@ -31,7 +33,7 @@ public final class VisitorTooltips {
         if (stack == null || ATHRConfig.feature == null) return null;
         VisitorsConfig cfg = ATHRConfig.feature.farming.visitors;
         if (cfg == null || !cfg.enabled || !cfg.customTooltip) return null;
-        if (!"Accept Offer".equals(ColorUtils.stripColor(stack.getDisplayName()).trim())) return null;
+        if (!"Accept Offer".equals(ColorUtils.stripColor(TextCompat.getUnformattedText(stack.getDisplayName())).trim())) return null;
 
         String visitor = openVisitorName();
         if (visitor == null) return null;
@@ -43,10 +45,10 @@ public final class VisitorTooltips {
     }
 
     private static String openVisitorName() {
-        GuiScreen screen = Minecraft.getMinecraft().currentScreen;
+        GuiScreen screen = MinecraftCompat.getCurrentScreen();
         if (!(screen instanceof GuiContainer)) return null;
-        if (!(((GuiContainer) screen).inventorySlots instanceof ContainerChest)) return null;
-        ContainerChest chest = (ContainerChest) ((GuiContainer) screen).inventorySlots;
+        if (!(InventoryCompat.getContainer((GuiContainer) screen) instanceof ContainerChest)) return null;
+        ContainerChest chest = (ContainerChest) InventoryCompat.getContainer((GuiContainer) screen);
         String title = ContainerUtils.getTitle(chest);
         return FarmingApi.getVisitorNeeds().containsKey(title) ? title : null;
     }

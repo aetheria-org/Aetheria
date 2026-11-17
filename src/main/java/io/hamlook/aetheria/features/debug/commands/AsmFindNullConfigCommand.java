@@ -1,19 +1,17 @@
 package io.hamlook.aetheria.features.debug.commands;
 
 import io.hamlook.aetheria.Aetheria;
-import io.hamlook.aetheria.command.ASMCommand;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.command.brigadier.CommandCategory;
+import io.hamlook.aetheria.command.brigadier.CommandRegistrationEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.init.RegisterCommand;
+import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
 import net.minecraft.util.EnumChatFormatting;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -21,39 +19,31 @@ import java.util.Set;
  * and logs to console any object-typed field that is unexpectedly null. Useful
  * after config migrations/renames to catch a field that silently failed to load.
  */
-@RegisterCommand
-public class AsmFindNullConfigCommand extends ASMCommand {
+@RegisterEvents
+public class AsmFindNullConfigCommand {
 
-    @Override
-    public String getName() {
-        return "asmfindnullconfig";
-    }
+    @HandleEvent
+    public void onCommandRegistration(CommandRegistrationEvent event) {
+        event.registerBrigadier("asmfindnullconfig", builder -> {
+            builder.description = "Walks the config object graph and logs null fields";
+            builder.setCategory(CommandCategory.DEVELOPER_DEBUG);
 
-    @Override
-    public String getUsage() {
-        return "/asmfindnullconfig";
-    }
+            builder.simpleCallback(() -> {
+                if (ATHRConfig.feature == null) {
+                    ChatUtils.sendMessage(EnumChatFormatting.RED + "ATHRConfig.feature itself is null!");
+                    return;
+                }
 
-    @Override
-    public List<String> getAliases() {
-        return Collections.emptyList();
-    }
+                Aetheria.logger.info("[ASM] start null finder");
+                int[] nullCount = {0};
+                findNull(ATHRConfig.feature, "config", new HashSet<>(), nullCount);
+                Aetheria.logger.info("[ASM] stop null finder (" + nullCount[0] + " nulls found)");
 
-    @Override
-    public void execute(ICommandSender sender, String[] args) throws CommandException {
-        if (ATHRConfig.feature == null) {
-            ChatUtils.sendMessage(EnumChatFormatting.RED + "ATHRConfig.feature itself is null!");
-            return;
-        }
-
-        Aetheria.logger.info("[ASM] start null finder");
-        int[] nullCount = {0};
-        findNull(ATHRConfig.feature, "config", new HashSet<>(), nullCount);
-        Aetheria.logger.info("[ASM] stop null finder (" + nullCount[0] + " nulls found)");
-
-        ChatUtils.sendMessage(nullCount[0] == 0
-            ? EnumChatFormatting.GREEN + "No null config fields found. See console for full log."
-            : EnumChatFormatting.YELLOW + "Found " + nullCount[0] + " null config field(s). See console/logs for details.");
+                ChatUtils.sendMessage(nullCount[0] == 0
+                    ? EnumChatFormatting.GREEN + "No null config fields found. See console for full log."
+                    : EnumChatFormatting.YELLOW + "Found " + nullCount[0] + " null config field(s). See console/logs for details.");
+            });
+        });
     }
 
     private void findNull(Object obj, String path, Set<Object> seen, int[] nullCount) {

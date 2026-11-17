@@ -1,7 +1,10 @@
 package io.hamlook.aetheria.core.features.diana;
 
 import com.google.gson.annotations.Expose;
-import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigEditorBoolean;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigEditorButton;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigOption;
 
 public class Diana {
 

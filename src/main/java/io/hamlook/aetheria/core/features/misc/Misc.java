@@ -1,7 +1,9 @@
 package io.hamlook.aetheria.core.features.misc;
 
 import com.google.gson.annotations.Expose;
-import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigEditorBoolean;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.ConfigOption;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,11 +58,6 @@ public class Misc {
     @ConfigOption(name = "Skill XP Display", desc = "Hold SHIFT on a skill item to see XP remaining to max level")
     @ConfigEditorBoolean
     public boolean skillXpDisplay = true;
-
-    @Expose
-    @ConfigOption(name = "No Swap Animation", desc = "Removes the item lowering animation when switching hotbar slots")
-    @ConfigEditorBoolean
-    public boolean noItemSwitchAnimation = true;
 
     @Expose
     @ConfigOption(name = "Show Own Nametag", desc = "Shows your own nametag in third person")
@@ -126,6 +123,10 @@ public class Misc {
     @Expose
     @Category(name = "Ghost Tracker", desc = "Settings for Ghost Tracker overlay")
     public GhostTrackerConfig ghostTrackerConfig = new GhostTrackerConfig();
+
+    @Expose
+    @Category(name = "Bug Fixes", desc = "Fixes for vanilla bugs that cancel the current item action")
+    public BugFixesConfig bugFixes = new BugFixesConfig();
 
 //    @Expose
 //    @Category(name = "Party Member Outline", desc = "Highlight your party members with a colored outline while they're visible on screen (not through walls)")

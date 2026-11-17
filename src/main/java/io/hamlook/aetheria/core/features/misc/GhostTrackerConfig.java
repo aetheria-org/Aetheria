@@ -38,25 +38,8 @@ public class GhostTrackerConfig {
 
     @Expose
     @ConfigOption(name = "Ghost Tracker Lines", desc = "Choose which lines to show and drag to reorder. Drag lines to the trash to hide them.")
-    @ConfigEditorDraggableList(exampleText = {
-            "Kills: 1,234",
-            "Kills/h: 567",
-            "XP: 123.4M",
-            "XP/h: 45.6M",
-            "Sorrows: 12 (345)",
-            "Voltas: 8 (678)",
-            "Plasmas: 5 (901)",
-            "Boots: 3 (234)",
-            "Bag of Cash: 6 (567)",
-            "Scavenger: 45,678",
-            "Avg MF: 234",
-            "Best MF: 567",
-            "Time: 1h 23m",
-            "Estimated Profit: 1.2M"
-    })
-    public List<Integer> ghostTrackerLines = new ArrayList<>(Arrays.asList(
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
-    ));
+    @ConfigEditorDraggableList(exampleText = {"Kills: 1,234", "Kills/h: 567", "XP: 123.4M", "XP/h: 45.6M", "Sorrows: 12 (345)", "Voltas: 8 (678)", "Plasmas: 5 (901)", "Boots: 3 (234)", "Bag of Cash: 6 (567)", "Scavenger: 45,678", "Avg MF: 234", "Best MF: 567", "Time: 1h 23m", "Estimated Profit: 1.2M"})
+    public List<Integer> ghostTrackerLines = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13));
 
     @Expose
     @ConfigOption(name = "Drop Color", desc = "Colour of drop counters")

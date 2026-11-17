@@ -9,7 +9,7 @@ public class DungeonBreakerConfig {
     @Expose
     @ConfigOption(name = "Enable", desc = "Show the Dungeon Breaker charge overlay (only visible in dungeons with the item in hotbar)")
     @ConfigEditorBoolean
-    public boolean dungeonBreakerOverlay = false;
+    public boolean dungeonBreakerOverlay = true;
 
     @Expose
     @ConfigOption(name = "Background Color", desc = "Background color of the overlay (alpha controls opacity; 0 = fully transparent)")

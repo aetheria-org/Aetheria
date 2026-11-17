@@ -1,36 +1,30 @@
 package io.hamlook.aetheria.features.farming.trevor;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.farming.TrevorConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.features.waypoints.WaypointRenderer;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.compat.WorldCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.render.WorldRenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityArmorStand;
-import net.minecraft.event.ClickEvent;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StringUtils;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import org.lwjgl.opengl.GL11;
-
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,7 +36,7 @@ import java.util.regex.Pattern;
 @RegisterEvents
 public class TrevorSolver {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
 
     private static final Pattern QUEST_START = Pattern.compile(
             "^\\[NPC\\] Trevor: You can find your (Trackable|Untrackable|Undetected|Endangered|Elusive) (Cow|Pig|Sheep|Rabbit|Chicken|Horse) near the (.+?)\\.?$");
@@ -77,8 +71,8 @@ public class TrevorSolver {
         return ATHRConfig.feature == null ? null : ATHRConfig.feature.farming.trevor;
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         TrevorConfig config = config();
         if (config == null || !config.enabled) return;
         if (!ChatUtils.isFromServer(event)) return;
@@ -156,25 +150,24 @@ public class TrevorSolver {
      * clickable [YES]/[NO] component the server just sent, every time.
      */
     private static String findConfirmCommand(IChatComponent component, String optionText) {
-        String clean = StringUtils.stripControlCodes(component.getUnformattedTextForChat()).trim();
+        String clean = StringUtils.stripControlCodes(TextCompat.getUnformattedTextForChat(component)).trim();
         if (optionText.equalsIgnoreCase(clean)) {
-            ClickEvent click = component.getChatStyle().getChatClickEvent();
-            if (click != null && click.getAction() == ClickEvent.Action.RUN_COMMAND) {
-                return click.getValue();
+            if (TextCompat.isClickAction(component.getChatStyle(), "RUN_COMMAND")) {
+                return TextCompat.getClickValue(component.getChatStyle());
             }
         }
-        for (IChatComponent sibling : component.getSiblings()) {
+        for (IChatComponent sibling : TextCompat.getSiblings(component)) {
             String found = findConfirmCommand(sibling, optionText);
             if (found != null) return found;
         }
         return null;
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
         TrevorConfig config = config();
-        if (config == null || !config.enabled || mc.theWorld == null || mc.thePlayer == null) return;
+        if (config == null || !config.enabled || MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null) return;
 
         // Cheap island gate first: the farming islands (Barn + Mushroom Desert)
         // report Location.BARN via the tab list server prefix.
@@ -186,7 +179,7 @@ public class TrevorSolver {
         // and without input-replacement mods: vanilla Forge never dispatches key
         // events while a screen is open, rawinput-style mods do. No menu open =
         // no text field to hijack, so the typing concern is structurally gone.
-        if (mc.currentScreen != null) {
+        if (MinecraftCompat.getCurrentScreen() != null) {
             KeybindHelper.resetKeyTap(config.hotkeys.warpKey);
             KeybindHelper.resetKeyTap(config.hotkeys.desertWarpKey);
             return;
@@ -237,13 +230,13 @@ public class TrevorSolver {
 
         EntityArmorStand nearest = null;
         double nearestDist = Double.MAX_VALUE;
-        for (Entity entity : mc.theWorld.loadedEntityList) {
-            if (!(entity instanceof EntityArmorStand) || entity.isDead) continue;
-            String raw = entity.getName();
+        for (Entity entity : WorldCompat.getAllEntities(MinecraftCompat.getLocalWorld())) {
+            if (!(entity instanceof EntityArmorStand) || EntityCompat.isDead(entity)) continue;
+            String raw = TextCompat.plainString(entity.getName());
             if (raw == null) continue;
-            String name = StringUtils.stripControlCodes(raw).toLowerCase(Locale.ROOT);
+            String name = raw.toLowerCase(Locale.ROOT);
             if (!name.contains(questRarityLower) || !name.contains(questAnimalLower)) continue;
-            double dist = mc.thePlayer.getDistanceSqToEntity(entity);
+            double dist = EntityCompat.getDistanceSqTo(MinecraftCompat.getLocalPlayer(), entity);
             if (dist < nearestDist) {
                 nearestDist = dist;
                 nearest = (EntityArmorStand) entity;
@@ -252,15 +245,15 @@ public class TrevorSolver {
         trackedAnimal = nearest;
 
         if (nearest != null && config.detectAlert && alertedIds.add(nearest.getEntityId())) {
-            if (mc.ingameGUI != null) mc.ingameGUI.displayTitle("§6§lANIMAL DETECTED", "§e" + questAnimal, 5, 40, 10);
+            if (mc.ingameGUI != null) MinecraftCompat.showTitle("§6§lANIMAL DETECTED", "§e" + questAnimal, 5, 40, 10);
             ChatUtils.sendMessage("§6[ASM] §eAnimal detected: §6" + questAnimal);
         }
     }
 
-    @SubscribeEvent
-    public void onRenderWorld(RenderWorldLastEvent event) {
+    @HandleEvent
+    public void onRenderWorld(ASMRenderWorldEvent event) {
         TrevorConfig config = config();
-        if (config == null || !config.enabled || !onFarmingIsland || mc.thePlayer == null) return;
+        if (config == null || !config.enabled || !onFarmingIsland || MinecraftCompat.getLocalPlayer() == null) return;
 
         if (!activeSpots.isEmpty()) {
             Color spotColor = argbToColor(config.spotColor, 0x7800FFFF);
@@ -271,31 +264,25 @@ public class TrevorSolver {
             WorldRenderUtils.drawFilledBlocks(boxes, spotColor);
 
             if (config.spotLabels) {
-                double vx = mc.getRenderManager().viewerPosX;
-                double vy = mc.getRenderManager().viewerPosY;
-                double vz = mc.getRenderManager().viewerPosZ;
                 String label = questAnimal != null ? questAnimal : "Trevor Spot";
-                GL11.glPushMatrix();
-                GL11.glTranslated(-vx, -vy, -vz);
                 for (BlockPos pos : activeSpots) {
                     WaypointRenderer.drawLabel(pos.getX() + 0.5, pos.getY() + 2.0, pos.getZ() + 0.5, label, 0xFF55FFFF, 0xFF55FFFF);
                 }
-                GL11.glPopMatrix();
             }
         }
 
         EntityArmorStand animal = trackedAnimal;
-        if (animal != null && config.animalBeacon && !animal.isDead) {
-            double x = animal.lastTickPosX + (animal.posX - animal.lastTickPosX) * event.partialTicks;
-            double y = animal.lastTickPosY + (animal.posY - animal.lastTickPosY) * event.partialTicks;
-            double z = animal.lastTickPosZ + (animal.posZ - animal.lastTickPosZ) * event.partialTicks;
+        if (animal != null && config.animalBeacon && !EntityCompat.isDead(animal)) {
+            double x = EntityCompat.getPrevX(animal) + (EntityCompat.getPosX(animal) - EntityCompat.getPrevX(animal)) * event.partialTicks;
+            double y = EntityCompat.getPrevY(animal) + (EntityCompat.getPosY(animal) - EntityCompat.getPrevY(animal)) * event.partialTicks;
+            double z = EntityCompat.getPrevZ(animal) + (EntityCompat.getPosZ(animal) - EntityCompat.getPrevZ(animal)) * event.partialTicks;
             Color beaconColor = argbToColor(config.beaconColor, 0xFFFFAA00);
             WorldRenderUtils.drawBeaconBeam(x - 0.5, y - 2.0, z - 0.5, beaconColor, event.partialTicks, 64);
         }
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         reset();
         onFarmingIsland = false;
     }
@@ -319,6 +306,6 @@ public class TrevorSolver {
             argb = ChromaColour.specialToChromaRGB(special);
         } catch (Exception ignored) {
         }
-        return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+        return ChromaColour.toColor(argb);
     }
 }

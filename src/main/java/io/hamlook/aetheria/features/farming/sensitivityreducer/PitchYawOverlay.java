@@ -6,6 +6,9 @@ import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 
@@ -56,7 +59,7 @@ public class PitchYawOverlay extends Overlay {
 
     @Override
     protected boolean extraGuard() {
-        return mc.thePlayer != null;
+        return MinecraftCompat.getLocalPlayer() != null;
     }
 
     @Override
@@ -69,10 +72,10 @@ public class PitchYawOverlay extends Overlay {
             return lines;
         }
 
-        if (mc.thePlayer == null) return lines;
+        if (MinecraftCompat.getLocalPlayer() == null) return lines;
 
-        lines.add(String.format("Pitch: %.4f", wrapDegrees(mc.thePlayer.rotationPitch)));
-        lines.add(String.format("Yaw: %.4f", wrapDegrees(mc.thePlayer.rotationYaw)));
+        lines.add(String.format("Pitch: %.4f", wrapDegrees(EntityCompat.getPitch(MinecraftCompat.getLocalPlayer()))));
+        lines.add(String.format("Yaw: %.4f", wrapDegrees(EntityCompat.getYaw(MinecraftCompat.getLocalPlayer()))));
         return lines;
     }
 
@@ -95,7 +98,7 @@ public class PitchYawOverlay extends Overlay {
         String label = line.substring(0, splitIdx);
         String value = line.substring(splitIdx);
         int labelColor = ChromaColour.specialToChromaRGB(config().pitchYawLabelColor);
-        mc.fontRendererObj.drawStringWithShadow(label, x, y, labelColor);
-        mc.fontRendererObj.drawStringWithShadow(value, x + mc.fontRendererObj.getStringWidth(label), y, 0xFFFFFF);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), label, x, y, labelColor);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), value, x + MinecraftCompat.getFontRenderer().getStringWidth(label), y, 0xFFFFFF);
     }
 }

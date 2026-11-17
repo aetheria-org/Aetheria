@@ -6,21 +6,23 @@ import io.hamlook.aetheria.core.ProfileManagedStorage;
 import io.hamlook.aetheria.core.StorageManager;
 import io.hamlook.aetheria.features.price.PriceMap;
 import io.hamlook.aetheria.utils.ElectionUtils;
+import io.hamlook.aetheria.utils.ThreadUtils;
 import io.hamlook.aetheria.utils.Utils;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.ArrayNormalizationKt;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
-import io.hamlook.aetheria.utils.ThreadUtils;
+import io.hamlook.aetheria.utils.item.ItemUtils;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.StringUtils;
 
 import java.io.File;
 
 public class DianaStats extends ProfileManagedStorage implements StorageManager.AutoSaveable {
 
     private static final long INACTIVITY_LIMIT_MS = 120_000L;
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final String ANCESTRAL_SPADE = "ANCESTRAL_SPADE";
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private static DianaStats INSTANCE;
     public volatile String lastDropType = null;
     public volatile long lastDropAmount = 0L;
@@ -49,14 +51,7 @@ public class DianaStats extends ProfileManagedStorage implements StorageManager.
     }
 
     public static boolean hasSpadeInHotbar() {
-        if (mc.thePlayer == null) return false;
-        for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.thePlayer.inventory.mainInventory[i];
-            if (stack != null && stack.hasDisplayName() && StringUtils.stripControlCodes(stack.getDisplayName()).contains("Ancestral Spade")) {
-                return true;
-            }
-        }
-        return false;
+        return ItemUtils.isItemInHotbar(ANCESTRAL_SPADE);
     }
 
     public static String formatTime(long ms) {
@@ -104,7 +99,11 @@ public class DianaStats extends ProfileManagedStorage implements StorageManager.
     }
 
     public boolean isTracking() {
-        return trackingEnabled && hasSpadeInHotbar() && SkyblockData.getCurrentLocation() == SkyblockData.Location.HUB;
+        if (ATHRConfig.feature == null || !ATHRConfig.feature.diana.enabled) return false;
+        if (!trackingEnabled) return false;
+        if (SkyblockData.getCurrentLocation() != SkyblockData.Location.HUB) return false;
+        if (!ElectionUtils.isDianaMayor()) return false;
+        return hasSpadeInHotbar();
     }
 
     public boolean isDianaMayor() {

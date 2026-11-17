@@ -1,22 +1,27 @@
 package io.hamlook.aetheria.features.dungeons.caseopening;
 
 import io.hamlook.aetheria.DebugLogger;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.utils.ContainerUtils;
-import io.hamlook.aetheria.utils.StringUtils;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.ContainerUtils;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
+import io.hamlook.aetheria.utils.StringUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import io.hamlook.aetheria.utils.data.DungeonUtils;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiScreen;
+import io.hamlook.aetheria.utils.compat.InventoryCompat;
 import net.minecraft.client.gui.inventory.GuiChest;
+//#if MC < 1.21
+//#else
+//$$ import net.minecraft.client.gui.screen.ingame.HandledScreen;
+//#endif
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.Slot;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,7 +30,7 @@ import java.util.Map;
 public class ChestListener {
 
     private static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII"};
-    public static GuiChest originalGui;
+    public static GuiScreen originalGui;
     private static WorldClient lastWorld = null;
     private final Map<Integer, Boolean> crOpenedChestOb = new HashMap<>();
     private final Map<Integer, Boolean> crOpenedChestBr = new HashMap<>();
@@ -36,8 +41,8 @@ public class ChestListener {
     private boolean openedChestBr = false;
     private DungeonDropData.Floor curFloor;
 
-    @SubscribeEvent
-    public void onGuiOpen(GuiOpenEvent event) {
+    @HandleEvent
+    public void onGuiOpen(ASMGuiOpenEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.dungeons.caseOpening.caseOpeningAnimation) return;
         if (!ContainerUtils.isChestOpen(event.gui)) return;
 
@@ -135,19 +140,29 @@ public class ChestListener {
         }
 
         DebugLogger.log("[ChestListener] Intercepting chest → floor=" + curFloor + ", material=" + curMaterial);
+        //#if MC < 1.21
         event.gui = new GuiInterceptChest(container, curFloor, curMaterial);
+        //#else
+        //$$ if (event.gui instanceof HandledScreen) {
+        //$$     HandledScreen<?> screen = (HandledScreen<?>) event.gui;
+        //$$     event.gui = new GuiInterceptChest(screen.getScreenHandler(), MinecraftCompat.getLocalPlayer().getInventory(), screen.getTitle(), curFloor, curMaterial);
+        //$$ } else {
+        //$$     DebugLogger.log("[ChestListener] Not a container screen, skipping intercept");
+        //$$     return;
+        //$$ }
+        //#endif
     }
 
-    @SubscribeEvent
-    public void onItemTooltip(ItemTooltipEvent event) {
+    @HandleEvent
+    public void onItemTooltip(ASMTooltipEvent event) {
         if (!ContainerUtils.isChestOpen()) return;
         if (!isCatacombsChestList) return;
 
-        GuiChest chest = (GuiChest) Minecraft.getMinecraft().currentScreen;
-        Slot hovered = chest.getSlotUnderMouse();
+        GuiChest chest = (GuiChest) MinecraftCompat.getCurrentScreen();
+        Slot hovered = InventoryCompat.getSlotUnderMouse(chest);
         if (hovered == null || !hovered.getHasStack()) return;
 
-        String name = hovered.getStack().getDisplayName();
+        String name = TextCompat.getUnformattedText(hovered.getStack().getDisplayName());
 
         name = StringUtils.cleanColour(name);
         name = StringUtils.clean(name);
@@ -168,20 +183,20 @@ public class ChestListener {
         }
     }
 
-    @SubscribeEvent
-    public void onMouseClick(GuiScreenEvent.MouseInputEvent.Pre event) {
+    @HandleEvent
+    public void onMouseClick(ASMMouseEvent event) {
         if (!ContainerUtils.isChestOpen(event.gui)) return;
-        Slot slot = ((GuiChest) event.gui).getSlotUnderMouse();
-        if (slot != null && org.lwjgl.input.Mouse.getEventButtonState() && isCroesus && !isCatacombsChestList) {
+        Slot slot = InventoryCompat.getSlotUnderMouse((GuiChest) event.gui);
+        if (slot != null && event.buttonState && isCroesus && !isCatacombsChestList) {
             chestID = slot.slotNumber;
             DebugLogger.log("[ChestListener] Croesus slot clicked: chestID=" + chestID);
         }
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        WorldClient currentWorld = Minecraft.getMinecraft().theWorld;
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
+        WorldClient currentWorld = MinecraftCompat.getLocalWorld();
         if (currentWorld != null && currentWorld != lastWorld) {
             lastWorld = currentWorld;
             isCroesus = false;

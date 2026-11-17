@@ -1,8 +1,8 @@
 package io.hamlook.aetheria.features.dungeons.overlays;
 
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.features.dungeons.utils.DungeonTimers;
 import io.hamlook.aetheria.features.dungeons.utils.DungeonFloor;
+import io.hamlook.aetheria.features.dungeons.utils.DungeonTimers;
 import io.hamlook.aetheria.utils.time.TimeFormatter;
 import net.minecraft.util.EnumChatFormatting;
 

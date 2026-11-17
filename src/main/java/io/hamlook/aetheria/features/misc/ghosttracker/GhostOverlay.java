@@ -6,13 +6,16 @@ import io.hamlook.aetheria.core.features.misc.GhostTrackerConfig;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
 import io.hamlook.aetheria.utils.Utils;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import io.hamlook.aetheria.utils.time.TimeFormatter;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
@@ -54,7 +57,8 @@ public class GhostOverlay extends Overlay {
 
     @Override
     protected boolean isEnabled() {
-        return ATHRConfig.feature != null && ATHRConfig.feature.misc.ghostTrackerConfig.ghostTrackerEnabled && SkyblockData.isOnSkyblock() && SkyblockData.getCurrentLocation() == SkyblockData.Location.DWARVEN;
+        return ATHRConfig.feature != null && ATHRConfig.feature.misc.ghostTrackerConfig.ghostTrackerEnabled && SkyblockData.isOnSkyblock() && SkyblockData.getCurrentLocation() == SkyblockData.Location.DWARVEN
+                && SkyblockData.isInMist();
     }
 
     @Override
@@ -87,7 +91,7 @@ public class GhostOverlay extends Overlay {
     public void render(boolean preview) {
         if (!preview && !extraGuard()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
+        Minecraft mc = MinecraftCompat.getMinecraft();
         float scale = getScale();
         GhostTrackerConfig cfg = ATHRConfig.feature.misc.ghostTrackerConfig;
 
@@ -136,53 +140,52 @@ public class GhostOverlay extends Overlay {
         int maxW = 0;
         for (HudEntry e : entries) {
             String plain = e.label + e.value.replaceAll("§.", "");
-            int w = mc.fontRendererObj.getStringWidth(plain) + ICON_SIZE + ICON_PAD * 3 + 4;
+            int w = MinecraftCompat.getFontRenderer().getStringWidth(plain) + ICON_SIZE + ICON_PAD * 3 + 4;
             maxW = Math.max(maxW, w);
         }
 
         String header = "§8Ghost Tracker";
-        int headerW = mc.fontRendererObj.getStringWidth(header) + 6;
+        int headerW = MinecraftCompat.getFontRenderer().getStringWidth(header) + 6;
         int w = Math.max(maxW + 6, headerW);
         int h = entries.size() * LINE_HEIGHT + LINE_HEIGHT + 4; // header + entries
         lastW = w;
         lastH = h;
 
         Position pos = getPosition();
-        int x = pos.getAbsX(sr, (int) (w * scale));
-        int y = pos.getAbsY(sr, (int) (h * scale));
+        int x = pos.getAbsX(GuiScreenUtils.getScaledWindowWidth(), (int) (w * scale));
+        int y = pos.getAbsY(GuiScreenUtils.getScaledWindowHeight(), (int) (h * scale));
         if (pos.isCenterX()) x -= (int) (w * scale / 2);
         if (pos.isCenterY()) y -= (int) (h * scale / 2);
 
-        GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0);
-        GL11.glScalef(scale, scale, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(x, y, 0);
+        GlStateManagerCompat.scale(scale, scale, 1f);
 
         int bgColor = getBgColor();
         if ((bgColor >>> 24) != 0) drawRoundedRect(-3, -3, w, h - 3, getCornerRadius(), bgColor);
 
-        GlStateManager.enableAlpha();
-        GlStateManager.enableBlend();
+        GlStateManagerCompat.enableAlpha();
+        GlStateManagerCompat.enableBlend();
 
-        mc.fontRendererObj.drawStringWithShadow(header, 3, 3, 0xFFFFFF);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), header, 3, 3, 0xFFFFFF);
 
         int dy = 3 + LINE_HEIGHT;
         for (HudEntry e : entries) {
-            mc.getTextureManager().bindTexture(e.icon);
-            Utils.drawTexturedRect(ICON_PAD, dy + 1, ICON_SIZE, ICON_SIZE);
+            TextureCompat.drawBoundTextured(e.icon, ICON_PAD, dy + 1, ICON_SIZE, ICON_SIZE, 0, 0, 1, 1);
             int textX = ICON_SIZE + ICON_PAD * 2;
-            mc.fontRendererObj.drawStringWithShadow(e.label, textX, dy, 0xFFFFFF);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), e.label, textX, dy, 0xFFFFFF);
             String[] parts = e.value.split(" §7\\(");
             String mainVal = parts[0];
-            int labelEnd = textX + mc.fontRendererObj.getStringWidth(e.label);
-            mc.fontRendererObj.drawStringWithShadow(mainVal, labelEnd, dy, e.color);
+            int labelEnd = textX + MinecraftCompat.getFontRenderer().getStringWidth(e.label);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), mainVal, labelEnd, dy, e.color);
             if (parts.length > 1) {
-                int mainEnd = labelEnd + mc.fontRendererObj.getStringWidth(mainVal);
-                mc.fontRendererObj.drawStringWithShadow(" §7(" + parts[1], mainEnd, dy, 0xFFFFFF);
+                int mainEnd = labelEnd + MinecraftCompat.getFontRenderer().getStringWidth(mainVal);
+                DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), " §7(" + parts[1], mainEnd, dy, 0xFFFFFF);
             }
             dy += LINE_HEIGHT;
         }
 
-        GL11.glPopMatrix();
+        GlStateManagerCompat.popMatrix();
     }
 
     private static class HudEntry {

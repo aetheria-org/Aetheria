@@ -6,8 +6,9 @@ import dev.matrixlab.webp4j.model.AnimatedWebPFrame;
 import io.hamlook.aetheria.Aetheria;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.utils.ThreadUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.DynamicTexture;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.ResourceCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
@@ -17,11 +18,7 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -38,11 +35,11 @@ public class GCImage {
     public List<BufferedImage> images;
     public List<ResourceLocation> frames = new ArrayList<>();
     /** Per-frame display delay in ms, one entry per frame (same order as {@link #frames}). */
-    public List<Integer> delays = new ArrayList<>();
+    public List<Integer> delays;
     public int frameDelay;
     public String id;
-    public volatile int curFrame = 0;
-    public volatile long lastUpdate = 0;
+    public transient volatile int curFrame = 0;
+    public transient volatile long lastUpdate = 0;
     public boolean circularMask = false;
     public String url = "";
 
@@ -50,8 +47,8 @@ public class GCImage {
     public int width = 0;
     public int height = 0;
 
-    public volatile boolean isLoaded = false;
-    public volatile boolean loadFailed = false;
+    public transient volatile boolean isLoaded = false;
+    public transient volatile boolean loadFailed = false;
 
     public static final int[] QUALITIES = {240,360,480,720,1080,1440,3,840};
     private static final Pattern META_TAG_PATTERN = Pattern.compile(
@@ -89,20 +86,15 @@ public class GCImage {
         return frameDelay > 0 ? frameDelay : 100;
     }
 
-    public ResourceLocation getTextureToRender(boolean isHovered) {
+    public ResourceLocation getTextureToRender(boolean animated) {
         if (!isLoaded || frames.isEmpty()) return null;
         if (frames.size() == 1) return frames.get(0);
-        if (ATHRConfig.feature != null && ATHRConfig.feature.network.globalChatConfig.reducedAnimations && !isHovered) return frames.get(0);
+        if (ATHRConfig.feature != null && ATHRConfig.feature.network.globalChatConfig.reducedAnimations && !animated) return frames.get(0);
 
         updateFrame();
         return frames.get(curFrame);
     }
 
-    public static String buildAvatarUrl(String userId, String hash) {
-        boolean animated = hash.startsWith("a_");
-        String base = "https://cdn.discordapp.com/avatars/" + userId + "/" + hash + ".webp?size=240";
-        return animated ? (base + "&animated=true") : base;
-    }
 
     /** True if the URL (ignoring any query string) ends in a common raster/animated image extension. */
     public static boolean looksLikeImageUrl(String url) {
@@ -169,6 +161,72 @@ public class GCImage {
             }
         });
         return gcImage.id;
+    }
+
+    public static String createGCImageFromFile(String filePath) {
+        GCImage gcImage = new GCImage(new ArrayList<>(), -1);
+        gcImage.url = filePath == null ? "" : filePath;
+        ImageManager.images.put(gcImage.id, gcImage);
+
+        ThreadUtils.run("GCImage-FileLoader-" + gcImage.id, () -> {
+            try {
+                BufferedImage image = ImageIO.read(new File(filePath));
+                handleLoadedImage(gcImage, image);
+            } catch (Exception e) {
+                handleFailure(gcImage, e);
+            }
+        });
+        return gcImage.id;
+    }
+
+    public static String createGCImageFromResource(ResourceLocation loc) {
+        GCImage gcImage = new GCImage(new ArrayList<>(), -1);
+        gcImage.url = loc.toString();
+        ImageManager.images.put(gcImage.id, gcImage);
+
+        ThreadUtils.run("GCImage-ResourceLoader-" + gcImage.id, () -> {
+            byte[] data = null;
+            for (int attempt = 0; attempt < 5 && data == null; attempt++) {
+                if (attempt > 0) {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+                try {
+                    data = ResourceCompat.openResource(loc);
+                } catch (Exception e) {
+                    handleFailure(gcImage, e);
+                    return;
+                }
+            }
+            try {
+                if (data == null) {
+                    handleFailure(gcImage, new IOException("Missing resource " + loc));
+                    return;
+                }
+                BufferedImage image = ImageIO.read(new ByteArrayInputStream(data));
+                handleLoadedImage(gcImage, image);
+            } catch (Exception e) {
+                handleFailure(gcImage, e);
+            }
+        });
+        return gcImage.id;
+    }
+
+    private static void handleLoadedImage(GCImage gcImage, BufferedImage image) throws IOException {
+        if (image == null) throw new IOException("Unsupported image format");
+        gcImage.images.add(image);
+        gcImage.width = image.getWidth();
+        gcImage.height = image.getHeight();
+        finalizeLoad(gcImage);
+    }
+
+    private static void handleFailure(GCImage gcImage, Exception e) {
+        gcImage.loadFailed = true;
+        Aetheria.logger.warning("[GCImage] Failed to load image: " + e.getMessage());
     }
 
     /**
@@ -243,7 +301,7 @@ public class GCImage {
     }
 
     private static void finalizeLoad(GCImage gcImage) {
-        Minecraft.getMinecraft().addScheduledTask(() -> {
+        MinecraftCompat.getMinecraft().addScheduledTask(() -> {
             if (gcImage.images.isEmpty()) {
                 gcImage.loadFailed = true;
                 return;
@@ -253,12 +311,8 @@ public class GCImage {
                 if (gcImage.circularMask) {
                     bimg = applyCircularMask(bimg);
                 }
-                DynamicTexture dynamicTexture = new DynamicTexture(bimg);
-                ResourceLocation resLoc = Minecraft.getMinecraft().getTextureManager()
-                        .getDynamicTextureLocation("gcimage_" + gcImage.id + "_" + i, dynamicTexture);
-                Minecraft.getMinecraft().getTextureManager().bindTexture(resLoc);
-                GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
-                GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
+                ResourceLocation resLoc = TextureCompat.dynamicLocation("gcimage_" + gcImage.id + "_" + i);
+                TextureCompat.uploadTexture(resLoc, bimg, true);
                 gcImage.frames.add(resLoc);
             }
             gcImage.images.clear();
@@ -487,10 +541,10 @@ public class GCImage {
                         try {
                             IIOMetadata metadata = reader.getImageMetadata(i);
                             IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(metadata.getNativeMetadataFormatName());
-                            fx = intAttr(root, "ImageDescriptor", "imageLeftPosition", 0);
-                            fy = intAttr(root, "ImageDescriptor", "imageTopPosition", 0);
-                            fw = intAttr(root, "ImageDescriptor", "imageWidth", fw);
-                            fh = intAttr(root, "ImageDescriptor", "imageHeight", fh);
+                            fx = intAttr(root, "imageLeftPosition", 0);
+                            fy = intAttr(root, "imageTopPosition", 0);
+                            fw = intAttr(root, "imageWidth", fw);
+                            fh = intAttr(root, "imageHeight", fh);
                             disposal = disposalOf(getNode(root, "GraphicControlExtension"));
                         } catch (Exception ignored) {}
                     }
@@ -587,17 +641,17 @@ public class GCImage {
     private static int disposalOf(IIOMetadataNode graphicControl) {
         if (graphicControl == null) return 0;
         String dm = graphicControl.getAttribute("disposalMethod");
-        if (dm == null || dm.isEmpty()) return 0;
+        if (dm.isEmpty()) return 0;
         if ("restoreToBackground".equalsIgnoreCase(dm)) return 2;
         if ("restoreToPrevious".equalsIgnoreCase(dm)) return 3;
         return 0;
     }
 
-    private static int intAttr(IIOMetadataNode root, String nodeName, String attr, int def) {
-        IIOMetadataNode node = getNode(root, nodeName);
+    private static int intAttr(IIOMetadataNode root, String attr, int def) {
+        IIOMetadataNode node = getNode(root, "ImageDescriptor");
         if (node == null) return def;
         String v = node.getAttribute(attr);
-        if (v == null || v.isEmpty()) return def;
+        if (v.isEmpty()) return def;
         try {
             return Integer.parseInt(v);
         } catch (NumberFormatException e) {

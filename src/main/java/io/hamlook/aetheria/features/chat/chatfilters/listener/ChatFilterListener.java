@@ -1,21 +1,22 @@
 package io.hamlook.aetheria.features.chat.chatfilters.listener;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMChatEvent;
 import io.hamlook.aetheria.features.chat.chatfilters.ChatFilterManager;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import net.minecraft.util.IChatComponent;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @RegisterEvents
 public class ChatFilterListener {
 
-    @SubscribeEvent
-    public void onChatRecieved(ClientChatReceivedEvent event) {
-        if(!ATHRConfig.feature.chat.chatFilterConfig.chatFilters) return;
+    @HandleEvent
+    public void onChatRecieved(ASMChatEvent event) {
+        if (!ATHRConfig.feature.chat.chatFilterConfig.chatFilters) return;
         IChatComponent result = ChatFilterManager.applyFilters(event.message);
-        if (result == null || result.getUnformattedText().isEmpty()) {
-            event.setCanceled(true);
+        if (result == null || TextCompat.getUnformattedText(result).isEmpty()) {
+            event.cancel();
         } else {
             event.message = result;
         }

@@ -1,13 +1,15 @@
 package io.hamlook.aetheria.features.misc;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,25 +39,25 @@ public class PlayerJoinLeaveNotifier {
         return Arrays.stream(raw.split(",")).map(String::trim).filter(s -> !s.isEmpty()).map(String::toLowerCase).collect(Collectors.toSet());
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
         if ((tickCounter = (tickCounter + 1) % TICK_INTERVAL) != 0) return;
         if (!isEnabled()) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null) return;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
-        String selfName = mc.thePlayer.getGameProfile().getName().toLowerCase();
+        String selfName = MinecraftCompat.getLocalPlayer().getGameProfile().getName().toLowerCase();
         Set<String> watch = watchList();
 
         Set<String> lobby = new HashSet<>();
-        for (NetworkPlayerInfo info : mc.thePlayer.sendQueue.getPlayerInfoMap()) {
+        for (NetworkPlayerInfo info : MinecraftCompat.getPlayerListEntries()) {
             String name = info.getGameProfile().getName().toLowerCase();
             if (!name.equals(selfName)) lobby.add(name);
         }
 
-        for (NetworkPlayerInfo info : mc.thePlayer.sendQueue.getPlayerInfoMap()) {
+        for (NetworkPlayerInfo info : MinecraftCompat.getPlayerListEntries()) {
             String lower = info.getGameProfile().getName().toLowerCase();
             if (watch.contains(lower) && lobby.contains(lower) && notified.add(lower)) {
                 String display = info.getGameProfile().getName();
@@ -72,8 +74,8 @@ public class PlayerJoinLeaveNotifier {
         }
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         notified.clear();
     }
 }

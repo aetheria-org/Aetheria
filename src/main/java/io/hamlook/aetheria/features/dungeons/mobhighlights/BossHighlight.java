@@ -1,139 +1,127 @@
 package io.hamlook.aetheria.features.dungeons.mobhighlights;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.core.features.dungeons.BossHighlightConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
+import io.hamlook.aetheria.events.ASMRenderWorldEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
 import io.hamlook.aetheria.events.RenderEntityModelEvent;
+import io.hamlook.aetheria.events.RenderEntityOutlineEvent;
+import io.hamlook.aetheria.events.TickPhase;
+import io.hamlook.aetheria.features.dungeons.DungeonStats;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.data.SkyblockData;
+import io.hamlook.aetheria.utils.render.EntityRenderUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityArmorStand;
-import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.StringUtils;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 @RegisterEvents
 public class BossHighlight {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private volatile Map<EntityLivingBase, BossType> bossMobs = new HashMap<>();
     private int tickCounter = 0;
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
         if (ATHRConfig.feature == null) return;
 
-        boolean anyEnabled = ATHRConfig.feature.dungeons.bossHighlight.bonzoHighlight != 2 || ATHRConfig.feature.dungeons.bossHighlight.scarfHighlight != 2 || ATHRConfig.feature.dungeons.bossHighlight.scarfMinionHighlight != 2 || ATHRConfig.feature.dungeons.bossHighlight.professorHighlight != 2;
+        BossHighlightConfig cfg = ATHRConfig.feature.dungeons.bossHighlight;
+        boolean anyEnabled = cfg.bonzoHighlight != 2 || cfg.scarfHighlight != 2
+                || cfg.scarfMinionHighlight != 2 || cfg.professorHighlight != 2;
         if (!anyEnabled) return;
 
         if (++tickCounter < 4) return;
         tickCounter = 0;
 
-        if (!SkyblockData.isInDungeon() || mc.theWorld == null) {
+        if (!SkyblockData.isInDungeon() || MinecraftCompat.getLocalWorld() == null || !DungeonStats.isInBossFight()) {
             bossMobs = new HashMap<>();
             return;
         }
 
         Map<EntityLivingBase, BossType> found = new HashMap<>();
 
-        for (Entity entity : mc.theWorld.loadedEntityList) {
+        for (Entity entity : WorldCompat.getAllEntities(MinecraftCompat.getLocalWorld())) {
             if (!(entity instanceof EntityArmorStand)) continue;
-            String raw = entity.getName();
+            String raw = TextCompat.getUnformattedText(entity.getName());
             if (raw == null) continue;
             String name = StringUtils.stripControlCodes(raw).toLowerCase();
 
-            BossType type = null;
+                BossType type = null;
 
-            if (ATHRConfig.feature.dungeons.bossHighlight.bonzoHighlight != 2 && name.contains("bonzo")) {
-                type = BossType.BONZO;
-            } else if (ATHRConfig.feature.dungeons.bossHighlight.scarfMinionHighlight != 2 && (name.contains("undead mage") || name.contains("undead archer") || name.contains("undead warrior") || name.contains("undead priest"))) {
-                type = BossType.SCARF_MINION;
-            } else if (ATHRConfig.feature.dungeons.bossHighlight.scarfHighlight != 2 && name.contains("scarf")) {
-                type = BossType.SCARF;
-            } else if (ATHRConfig.feature.dungeons.bossHighlight.professorHighlight != 2 && (name.contains("healthy") || name.contains("chaos") || name.contains("laser") || name.contains("rogue") || name.contains("reinforced"))) {
-                type = BossType.PROFESSOR_GUARDIAN;
-            } else if (ATHRConfig.feature.dungeons.bossHighlight.professorHighlight != 2 && name.contains("professor")) {
-                type = BossType.PROFESSOR;
+                if (cfg.bonzoHighlight != 2 && name.contains("bonzo")) {
+                    type = BossType.BONZO;
+                } else if (cfg.scarfMinionHighlight != 2 && isScarfMinion(name)) {
+                    type = BossType.SCARF_MINION;
+                } else if (cfg.scarfHighlight != 2 && name.contains("scarf")) {
+                    type = BossType.SCARF;
+                } else if (cfg.professorHighlight != 2 && isProfessorGuardian(name)) {
+                    type = BossType.PROFESSOR_GUARDIAN;
+                } else if (cfg.professorHighlight != 2 && name.contains("professor")) {
+                    type = BossType.PROFESSOR;
+                }
+
+                if (type == null) continue;
+
+                final BossType finalType = type;
+                EntityLivingBase mob = EntityCompat.findMobNearStand(MinecraftCompat.getLocalWorld(), entity, 1.0, 3.0, 1.0);
+
+                if (mob != null && !EntityCompat.isDead(mob) && mob.getHealth() > 0) found.put(mob, finalType);
             }
 
-            if (type == null) continue;
-
-            final BossType finalType = type;
-            EntityLivingBase mob = mc.theWorld.getEntitiesWithinAABB(EntityLivingBase.class, entity.getEntityBoundingBox().expand(1.0, 3.0, 1.0), e -> e != null && !(e instanceof EntityArmorStand) && e != mc.thePlayer).stream().findFirst().orElse(null);
-
-            if (mob != null && !mob.isDead && mob.getHealth() > 0) found.put(mob, finalType);
-        }
-
-        bossMobs = found;
+            bossMobs = found;
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGH)
+    private static boolean isScarfMinion(String name) {
+        return name.contains("undead mage") || name.contains("undead archer")
+                || name.contains("undead warrior") || name.contains("undead priest");
+    }
+
+    private static boolean isProfessorGuardian(String name) {
+        return name.contains("healthy") || name.contains("chaos") || name.contains("laser")
+                || name.contains("rogue") || name.contains("reinforced");
+    }
+
+    @HandleEvent(priority = HandleEvent.HIGH)
     public void onRenderEntityModel(RenderEntityModelEvent event) {
         if (ATHRConfig.feature == null) return;
         EntityLivingBase entity = event.getEntity();
         BossType type = bossMobs.get(entity);
-        if (type == null || entity.isInvisible()) return;
+        if (type == null) return;
         if (highlightModeFor(type) != 1) return;
-        renderCleanOutline(event, colorFor(type));
+        EntityRenderUtils.renderOutline(event, colorFor(type));
     }
 
-    @SubscribeEvent
-    public void onRenderWorldLast(RenderWorldLastEvent event) {
+    @HandleEvent
+    public void onRenderOutline(RenderEntityOutlineEvent event) {
         if (ATHRConfig.feature == null) return;
-        Map<EntityLivingBase, BossType> snapshot = bossMobs;
-        if (snapshot.isEmpty() || mc.thePlayer == null) return;
-
-        Map<BossType, Set<EntityLivingBase>> byType = new HashMap<>();
-        for (Map.Entry<EntityLivingBase, BossType> entry : snapshot.entrySet()) {
+        for (Map.Entry<EntityLivingBase, BossType> entry : bossMobs.entrySet()) {
+            if (highlightModeFor(entry.getValue()) != 1) continue;
             EntityLivingBase mob = entry.getKey();
-            BossType type = entry.getValue();
-            if (highlightModeFor(type) != 0 || mob.isDead || mob.getHealth() <= 0) continue;
-            byType.computeIfAbsent(type, k -> new HashSet<>()).add(mob);
+            if (EntityCompat.isDead(mob)) continue;
+            event.queue(mob, colorFor(entry.getValue()).getRGB());
         }
-        if (byType.isEmpty()) return;
+    }
 
-        double vx = mc.getRenderManager().viewerPosX;
-        double vy = mc.getRenderManager().viewerPosY;
-        double vz = mc.getRenderManager().viewerPosZ;
-
-        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glDisable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthMask(false);
-        GL11.glLineWidth(2.5f);
-        GL11.glDisable(GL11.GL_CULL_FACE);
-        GL11.glPushMatrix();
-        GL11.glTranslated(-vx, -vy, -vz);
-
-        for (Map.Entry<BossType, Set<EntityLivingBase>> entry : byType.entrySet()) {
-            Color c = colorFor(entry.getKey());
-            float r = c.getRed() / 255f, g = c.getGreen() / 255f, b = c.getBlue() / 255f, a = c.getAlpha() / 255f;
-            for (EntityLivingBase mob : entry.getValue())
-                drawBox(mob.getEntityBoundingBox().expand(0.1, 0.05, 0.1), r, g, b, a);
+    @HandleEvent
+    public void onRenderWorldLast(ASMRenderWorldEvent event) {
+        if (ATHRConfig.feature == null) return;
+        Map<EntityLivingBase, Color> mobs = new HashMap<>();
+        for (Map.Entry<EntityLivingBase, BossType> entry : bossMobs.entrySet()) {
+            if (highlightModeFor(entry.getValue()) != 0) continue;
+            mobs.put(entry.getKey(), colorFor(entry.getValue()));
         }
-
-        GL11.glPopMatrix();
-        GL11.glPopAttrib();
-        GL11.glColor4f(1f, 1f, 1f, 1f);
+        EntityRenderUtils.renderBoxes(mobs);
     }
 
     private int highlightModeFor(BossType type) {
@@ -174,53 +162,7 @@ public class BossHighlight {
                 raw = "200:255:255:255:255";
                 break;
         }
-        int argb = ChromaColour.specialToChromaRGB(raw);
-        return new Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
-    }
-
-    private void renderCleanOutline(RenderEntityModelEvent event, Color color) {
-        EntityLivingBase entity = event.getEntity();
-        GlStateManager.pushMatrix();
-        GlStateManager.pushAttrib();
-        GlStateManager.disableLighting();
-        GlStateManager.disableTexture2D();
-        GlStateManager.disableDepth();
-        GlStateManager.enableBlend();
-        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlStateManager.depthMask(false);
-
-        // Pass 1: faint fill
-        GlStateManager.color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 0.22f);
-        GlStateManager.scale(1.04f, 1.04f, 1.04f);
-        event.getModel().render(entity, event.getLimbSwing(), event.getLimbSwingAmount(), event.getAgeInTicks(), event.getHeadYaw(), event.getHeadPitch(), event.getScaleFactor());
-
-        // Pass 2: crisp edge
-        GlStateManager.color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 0.88f);
-        float shrink = 1.025f / 1.04f;
-        GlStateManager.scale(shrink, shrink, shrink);
-        event.getModel().render(entity, event.getLimbSwing(), event.getLimbSwingAmount(), event.getAgeInTicks(), event.getHeadYaw(), event.getHeadPitch(), event.getScaleFactor());
-
-        GlStateManager.depthMask(true);
-        GlStateManager.enableDepth();
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableLighting();
-        GlStateManager.disableBlend();
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        GlStateManager.popAttrib();
-        GlStateManager.popMatrix();
-    }
-
-    private void drawBox(AxisAlignedBB bb, float r, float g, float b, float a) {
-        double[][] edges = {{bb.minX, bb.minY, bb.minZ, bb.maxX, bb.minY, bb.minZ}, {bb.minX, bb.minY, bb.maxZ, bb.maxX, bb.minY, bb.maxZ}, {bb.minX, bb.minY, bb.minZ, bb.minX, bb.minY, bb.maxZ}, {bb.maxX, bb.minY, bb.minZ, bb.maxX, bb.minY, bb.maxZ}, {bb.minX, bb.maxY, bb.minZ, bb.maxX, bb.maxY, bb.minZ}, {bb.minX, bb.maxY, bb.maxZ, bb.maxX, bb.maxY, bb.maxZ}, {bb.minX, bb.maxY, bb.minZ, bb.minX, bb.maxY, bb.maxZ}, {bb.maxX, bb.maxY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ}, {bb.minX, bb.minY, bb.minZ, bb.minX, bb.maxY, bb.minZ}, {bb.maxX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.minZ}, {bb.minX, bb.minY, bb.maxZ, bb.minX, bb.maxY, bb.maxZ}, {bb.maxX, bb.minY, bb.maxZ, bb.maxX, bb.maxY, bb.maxZ},};
-        int ri = (int) (r * 255), gi = (int) (g * 255), bi = (int) (b * 255), ai = (int) (a * 255);
-        Tessellator tess = Tessellator.getInstance();
-        WorldRenderer wr = tess.getWorldRenderer();
-        wr.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
-        for (double[] e : edges) {
-            wr.pos(e[0], e[1], e[2]).color(ri, gi, bi, ai).endVertex();
-            wr.pos(e[3], e[4], e[5]).color(ri, gi, bi, ai).endVertex();
-        }
-        tess.draw();
+        return ChromaColour.specialToColor(raw);
     }
 
     private enum BossType {BONZO, SCARF, SCARF_MINION, PROFESSOR, PROFESSOR_GUARDIAN}

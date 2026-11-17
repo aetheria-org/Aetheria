@@ -1,9 +1,9 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import net.minecraft.util.BlockPos;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
-public class BlockBreakEvent extends Event {
+public class BlockBreakEvent extends AetheriaEvent {
     public final BlockPos pos;
 
     public BlockBreakEvent(BlockPos pos) {

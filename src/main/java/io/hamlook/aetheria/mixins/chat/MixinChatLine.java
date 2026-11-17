@@ -1,115 +1,85 @@
 package io.hamlook.aetheria.mixins.chat;
 
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.ChatLineHook;
 import io.hamlook.aetheria.features.chat.ChatUtilsState;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.hooks.ChatLineInitHook;
+import io.hamlook.aetheria.utils.chat.ChatUtils;
+//#if MC < 1.16
 import net.minecraft.client.gui.ChatLine;
-import net.minecraft.client.network.NetHandlerPlayClient;
+//#else
+//$$ import net.minecraft.client.gui.hud.ChatHudLine;
+//$$ import net.minecraft.client.gui.hud.ChatHudLine.Visible;
+//#endif
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.util.IChatComponent;
-import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-/**
- * Implements {@link ChatLineHook} on every {@link ChatLine} instance.
- *
- * During construction the mixin scans text before the first colon to detect a
- * player name, then stores the matching {@link NetworkPlayerInfo} for the chat-head
- * renderer in {@link MixinGuiNewChat}.
- */
+//#if MC < 1.16
 @Mixin(ChatLine.class)
+//#else
+//$$ @Mixin({ChatHudLine.class, Visible.class})
+//#endif
 public class MixinChatLine implements ChatLineHook {
 
-    @Unique private boolean chatutils$detected = false;
-    @Unique private NetworkPlayerInfo chatutils$playerInfo = null;
-    @Unique private long chatutils$uniqueId = 0L;
-    @Unique private IChatComponent chatutils$fullMsg = null;
+    @Unique
+    private ChatUtils.MessageType athr$messageType = null;
 
-    @Unique private static long chatutils$lastUniqueId = 0L;
-    @Unique private static final Pattern SPLIT_PATTERN = Pattern.compile("(§.)|\\W");
+    @Override
+    public ChatUtils.MessageType athr$getMessageType() {
+        return athr$messageType;
+    }
 
-    // ── Constructor injection ─────────────────────────────────────────────────
+    @Override
+    public void athr$setMessageType(ChatUtils.MessageType messageType) {
+        this.athr$messageType = messageType;
+    }
+
+    //#if MC < 1.16
+    @Unique private boolean athr$detected = false;
+    @Unique private NetworkPlayerInfo athr$playerInfo = null;
+    @Unique private long athr$uniqueId = 0L;
+    @Unique private IChatComponent athr$fullMsg = null;
+
+    @Unique private static long athr$lastUniqueId = 0L;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onInit(int updateCounter, IChatComponent lineString, int chatLineID, CallbackInfo ci) {
-        chatutils$uniqueId = ++chatutils$lastUniqueId;
-        chatutils$fullMsg  = ChatUtilsState.currentFullMessage;
+        athr$uniqueId = ++athr$lastUniqueId;
+        athr$fullMsg  = ChatUtilsState.currentFullMessage;
+        athr$messageType = ChatUtilsState.pendingLineMessage;
 
-        // Only run head-detection once per original message (not for every wrapped line).
-        if (chatutils$fullMsg != null && chatutils$fullMsg == ChatUtilsState.lastFullMessage) return;
-        ChatUtilsState.lastFullMessage = chatutils$fullMsg;
+        ChatLineInitHook.PlayerDetectionResult result = ChatLineInitHook.detectPlayer(
+                lineString, athr$playerInfo, ChatUtilsState.lastFullMessage);
 
-        // Chat-heads require the feature to be enabled.
-        if (ATHRConfig.feature == null || !ATHRConfig.feature.chat.chatHeads) return;
+        ChatUtilsState.lastFullMessage = result.getCurrentFullMessage();
 
-        NetHandlerPlayClient netHandler = Minecraft.getMinecraft().getNetHandler();
-        if (netHandler == null) return;
-
-        String beforeColon = StringUtils.substringBefore(lineString.getFormattedText(), ":");
-        Map<String, NetworkPlayerInfo> nicknameCache = new HashMap<>();
-
-        try {
-            for (String word : SPLIT_PATTERN.split(beforeColon)) {
-                if (word.isEmpty()) continue;
-
-                NetworkPlayerInfo info = netHandler.getPlayerInfo(word);
-                if (info == null) {
-                    info = chatutils$resolveNickname(word, netHandler, nicknameCache);
-                }
-
-                if (info != null) {
-                    chatutils$detected = true;
-
-                    boolean sameAsLast = ChatUtilsState.lastDetectedPlayer != null
-                            && info.getGameProfile() == ChatUtilsState.lastDetectedPlayer.getGameProfile()
-                            && ATHRConfig.feature.chat.hideHeadOnConsecutive;
-
-                    chatutils$playerInfo = sameAsLast ? null : info;
-                    ChatUtilsState.lastDetectedPlayer = info;
-                    return;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (result.getDetected()) {
+            athr$detected = true;
+            athr$playerInfo = result.getPlayerInfo();
         }
     }
 
-    // ── Nickname lookup helper ────────────────────────────────────────────────
-
-    @Unique
-    @Nullable
-    private static NetworkPlayerInfo chatutils$resolveNickname(
-            String word,
-            NetHandlerPlayClient connection,
-            Map<String, NetworkPlayerInfo> cache) {
-
-        if (cache.isEmpty()) {
-            for (NetworkPlayerInfo p : connection.getPlayerInfoMap()) {
-                IChatComponent displayName = p.getDisplayName();
-                if (displayName == null) continue;
-                String nickname = displayName.getUnformattedTextForChat();
-                if (word.equals(nickname)) return p;
-                cache.put(nickname, p);
-            }
-            return null;
-        }
-        return cache.get(word);
-    }
-
-    // ── ChatLineHook implementation ───────────────────────────────────────────
-
-    @Override public boolean chatutils$hasDetected()         { return chatutils$detected; }
-    @Override public NetworkPlayerInfo chatutils$getPlayerInfo() { return chatutils$playerInfo; }
-    @Override public long chatutils$getUniqueId()            { return chatutils$uniqueId; }
-    @Override public IChatComponent chatutils$getFullMessage()   { return chatutils$fullMsg; }
+    @Override public boolean athr$hasDetected()            { return athr$detected; }
+    @Override public NetworkPlayerInfo athr$getPlayerInfo() { return athr$playerInfo; }
+    @Override public long athr$getUniqueId()               { return athr$uniqueId; }
+    @Override public IChatComponent athr$getFullMessage()   { return athr$fullMsg; }
+    //#else
+    //$$ @Unique private PlayerListEntry athr$playerInfo = null;
+    //$$ @Unique private boolean athr$headHidden = false;
+    //$$ @Unique private ChatHudLine athr$parentLine = null;
+    //$$ @Unique private boolean athr$headRow = false;
+    //$$
+    //$$ @Override public PlayerListEntry athr$getPlayerInfo() { return athr$playerInfo; }
+    //$$ @Override public void athr$setPlayerInfo(PlayerListEntry info) { athr$playerInfo = info; }
+    //$$ @Override public boolean athr$isHeadHidden() { return athr$headHidden; }
+    //$$ @Override public void athr$setHeadHidden(boolean hidden) { athr$headHidden = hidden; }
+    //$$ @Override public ChatHudLine athr$getParentLine() { return athr$parentLine; }
+    //$$ @Override public void athr$setParentLine(ChatHudLine parent) { athr$parentLine = parent; }
+    //$$ @Override public boolean athr$isHeadRow() { return athr$headRow; }
+    //$$ @Override public void athr$setHeadRow(boolean headRow) { athr$headRow = headRow; }
+    //#endif
 }

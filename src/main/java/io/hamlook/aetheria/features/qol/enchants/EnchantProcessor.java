@@ -3,26 +3,27 @@ package io.hamlook.aetheria.features.qol.enchants;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.features.qol.EnchantParserConfig;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaStyle;
-import io.hamlook.aetheria.utils.render.ChromaTextRenderer;
+import io.hamlook.aetheria.events.ASMTooltipEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.RomanNumeralParser;
+import io.hamlook.aetheria.utils.data.SkyblockData;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.NbtCompat;
 import io.hamlook.aetheria.utils.item.ItemUtils;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.render.ChromaTextRenderer;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -44,28 +45,32 @@ public class EnchantProcessor {
     private static final Cache LORE_CACHE = new Cache();
     private static String lastLoadedJson = null;
 
-    @SubscribeEvent(priority = EventPriority.LOW)
-    public void onTooltip(ItemTooltipEvent event) {
+    @HandleEvent(priority = HandleEvent.LOW)
+    public void onTooltip(ASMTooltipEvent event) {
         if (event == null || event.itemStack == null || event.toolTip == null || ATHRConfig.feature == null) return;
-        if (!ATHRConfig.feature.qol.enchantParser.enchantHighlight) return;
+        EnchantParserConfig parserConfig = ATHRConfig.feature.qol.enchantParser;
+        if (!SkyblockData.isOnSkyblock()) return;
+        if (!parserConfig.enchantHighlight) return;
 
         ensureLoaded();
         if (BY_LORE.isEmpty()) return;
 
         NBTTagCompound enchantNBT = getEnchantNBT(event.itemStack);
-        if (enchantNBT != null && enchantNBT.hasNoTags()) return;
+        if (enchantNBT != null && NbtCompat.isEmpty(enchantNBT)) return;
+
+        boolean isEnchantedBook = "ENCHANTED_BOOK".equals(ItemUtils.getInternalName(event.itemStack));
+        String signature = configSignature(isEnchantedBook);
 
         List<String> loreList = event.toolTip;
-        if (LORE_CACHE.isCached(loreList) && configSignature().equals(LORE_CACHE.signature)) {
+        if (LORE_CACHE.isCached(loreList) && signature.equals(LORE_CACHE.signature)) {
             loreList.clear();
             loreList.addAll(LORE_CACHE.cachedAfter);
             return;
         }
         LORE_CACHE.updateBefore(loreList);
-        LORE_CACHE.signature = configSignature();
-        FontRenderer fontRenderer = Minecraft.getMinecraft().fontRendererObj;
+        LORE_CACHE.signature = signature;
+        FontRenderer fontRenderer = MinecraftCompat.getFontRenderer();
 
-        boolean isEnchantedBook = "ENCHANTED_BOOK".equals(ItemUtils.getInternalName(event.itemStack));
         int startEnchant = -1, endEnchant = -1, maxTooltipWidth = 0;
 
         for (int i = 0; i < loreList.size(); i++) {
@@ -96,6 +101,10 @@ public class EnchantProcessor {
         TreeSet<FormattedEnchant> orderedEnchants = new TreeSet<>();
         FormattedEnchant lastEnchant = null;
         boolean hasLore = false;
+        EnchantParserConfig.Descriptions descriptions = parserConfig.descriptions;
+        boolean hideDescriptions = isEnchantedBook
+                ? descriptions.hideBookDescriptions
+                : descriptions.hideEnchantDescriptions;
 
         for (int i = startEnchant; i <= endEnchant && i < loreList.size(); i++) {
             String unformattedLine = ColorUtils.stripColor(loreList.get(i));
@@ -110,7 +119,7 @@ public class EnchantProcessor {
                 orderedEnchants.add(lastEnchant);
                 containsEnchant = true;
             }
-            if (!containsEnchant && lastEnchant != null && !ATHRConfig.feature.qol.enchantParser.hideEnchantDescriptions) {
+            if (!containsEnchant && lastEnchant != null && !hideDescriptions) {
                 lastEnchant.lore.add(loreList.get(i));
                 hasLore = true;
             }
@@ -128,9 +137,7 @@ public class EnchantProcessor {
     }
 
     private NBTTagCompound getEnchantNBT(ItemStack stack) {
-        if (stack == null || !stack.hasTagCompound()) return null;
-        NBTTagCompound extra = stack.getTagCompound().getCompoundTag("ExtraAttributes");
-        return extra.hasKey("enchantments", 10) ? extra.getCompoundTag("enchantments") : null;
+        return ItemUtils.getEnchantments(stack);
     }
 
     private boolean containsEnchantment(NBTTagCompound enchantNBT, String line) {
@@ -181,18 +188,18 @@ public class EnchantProcessor {
     }
 
     private int correctTooltipWidth(int maxTooltipWidth) {
-        final ScaledResolution scaled = new ScaledResolution(Minecraft.getMinecraft());
-        final int mouseX = KeybindHelper.getMouseCoords(scaled)[0];
+        final int screenW = GuiScreenUtils.getScaledWindowWidth();
+        final int mouseX = KeybindHelper.getMouseCoords(screenW, GuiScreenUtils.getScaledWindowHeight())[0];
         int tooltipX = mouseX + 12;
-        if (tooltipX + maxTooltipWidth + 4 > scaled.getScaledWidth()) {
+        if (tooltipX + maxTooltipWidth + 4 > screenW) {
             tooltipX = mouseX - 16 - maxTooltipWidth;
             if (tooltipX < 4) {
-                if (mouseX > scaled.getScaledWidth() / 2) maxTooltipWidth = mouseX - 12 - 8;
-                else maxTooltipWidth = scaled.getScaledWidth() - 16 - mouseX;
+                if (mouseX > screenW / 2) maxTooltipWidth = mouseX - 12 - 8;
+                else maxTooltipWidth = screenW - 16 - mouseX;
             }
         }
-        if (scaled.getScaledWidth() > 0 && maxTooltipWidth > scaled.getScaledWidth()) {
-            maxTooltipWidth = scaled.getScaledWidth();
+        if (screenW > 0 && maxTooltipWidth > screenW) {
+            maxTooltipWidth = screenW;
         }
         return maxTooltipWidth;
     }
@@ -202,7 +209,7 @@ public class EnchantProcessor {
         int layout = ATHRConfig.feature.qol.enchantParser.enchantLayout;
 
         if (layout == LAYOUT_SINGLE_LINE && enchants.size() > 1 && !(hasLore && isEnchantedBook)) {
-            FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+            FontRenderer fr = MinecraftCompat.getFontRenderer();
             int commaLength = fr.getStringWidth(GRAY_COMMA);
             int sum = 0;
             StringBuilder builder = new StringBuilder();
@@ -256,24 +263,44 @@ public class EnchantProcessor {
 
 
     private String formatColor(EnchantMeta meta, int level) {
-        String color = getTierColor(meta, level);
+        int tier = tierIndex(meta, level);
+        String color = tierColor(tier);
 
         int argb = ChromaColour.specialToSimpleRGB(color);
         String prefix = nearestMcColor(argb);
-        if (ATHRConfig.feature.qol.enchantParser.enchantChroma && ChromaColour.getSpeed(color) > 0) {
-            prefix += "§z";
-            ChromaTextRenderer.setDefaultStyle(ChromaStyle.of(color, ATHRConfig.feature.qol.enchantParser.enchantChromaMode, ATHRConfig.feature.qol.enchantParser.enchantChromaSize));
-        }
+        EnchantParserConfig.Colors colors = ATHRConfig.feature.qol.enchantParser.colors;
+        if (colors.enchantChroma && ChromaColour.getSpeed(color) > 0) {
+                ChromaStyle style = ChromaStyle.of(color, colors.enchantChromaMode, colors.enchantChromaSize);
+                ChromaTextRenderer.setDefaultStyle(style);
+                ChromaTextRenderer.setTierStyle(tier, style);
+                // 1.8.9's FontRenderer redirect swallows only "§z", so the tier digit would render as a glyph.
+                //#if MC < 1.21
+                prefix += "§z";
+                //#else
+                //$$ prefix += "§z" + tier;
+                //#endif
+            }
         if (meta.sortType == 0) prefix += "§l";
         return prefix;
     }
 
-    private String getTierColor(EnchantMeta meta, int level) {
-        if (meta.sortType == 0) return ATHRConfig.feature.qol.enchantParser.enchantUltimateColor;
-        if (level >= meta.maxLevel) return ATHRConfig.feature.qol.enchantParser.enchantPerfectColor;
-        if (level > meta.goodLevel) return ATHRConfig.feature.qol.enchantParser.enchantGreatColor;
-        if (level == meta.goodLevel) return ATHRConfig.feature.qol.enchantParser.enchantGoodColor;
-        return ATHRConfig.feature.qol.enchantParser.enchantPoorColor;
+    private static final int TIER_ULTIMATE = 0, TIER_PERFECT = 1, TIER_GREAT = 2, TIER_GOOD = 3, TIER_POOR = 4;
+
+    private int tierIndex(EnchantMeta meta, int level) {
+        if (meta.sortType == 0) return TIER_ULTIMATE;
+        if (level >= meta.maxLevel) return TIER_PERFECT;
+        if (level > meta.goodLevel) return TIER_GREAT;
+        if (level == meta.goodLevel) return TIER_GOOD;
+        return TIER_POOR;
+    }
+
+    private String tierColor(int tier) {
+        EnchantParserConfig.Colors colors = ATHRConfig.feature.qol.enchantParser.colors;
+        if (tier == TIER_ULTIMATE) return colors.enchantUltimateColor;
+        if (tier == TIER_PERFECT) return colors.enchantPerfectColor;
+        if (tier == TIER_GREAT) return colors.enchantGreatColor;
+        if (tier == TIER_GOOD) return colors.enchantGoodColor;
+        return colors.enchantPoorColor;
     }
 
     private String nearestMcColor(int argb) {
@@ -313,23 +340,11 @@ public class EnchantProcessor {
         return x * x;
     }
 
-    private String configSignature() {
+    private String configSignature(boolean isEnchantedBook) {
         EnchantParserConfig c = ATHRConfig.feature.qol.enchantParser;
-        return c.enchantLayout + "|" + c.hideEnchantDescriptions + "|" + c.enchantChroma + "|" + c.enchantChromaMode + "|" + c.enchantChromaSize + "|" + c.enchantPoorColor + "|" + c.enchantGoodColor + "|" + c.enchantGreatColor + "|" + c.enchantPerfectColor + "|" + c.enchantUltimateColor + "|" + ATHRConfig.feature.qol.romanNumerals;
-    }
-
-    private String toRoman(int number) {
-        int[] values = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
-        String[] numerals = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
-        StringBuilder out = new StringBuilder();
-        int n = Math.max(1, number);
-        for (int i = 0; i < values.length; i++) {
-            while (n >= values[i]) {
-                n -= values[i];
-                out.append(numerals[i]);
-            }
-        }
-        return out.toString();
+        EnchantParserConfig.Descriptions d = c.descriptions;
+        EnchantParserConfig.Colors colors = c.colors;
+        return c.enchantLayout + "|" + d.hideEnchantDescriptions + "|" + d.hideBookDescriptions + "|" + isEnchantedBook + "|" + colors.enchantChroma + "|" + colors.enchantChromaMode + "|" + colors.enchantChromaSize + "|" + colors.enchantPoorColor + "|" + colors.enchantGoodColor + "|" + colors.enchantGreatColor + "|" + colors.enchantPerfectColor + "|" + colors.enchantUltimateColor + "|" + ATHRConfig.feature.qol.romanNumerals;
     }
 
     private static class EnchantMeta {
@@ -384,7 +399,7 @@ public class EnchantProcessor {
 
         private String formatted() {
             if (cachedFormatted == null) {
-                String lvl = ATHRConfig.feature.qol.romanNumerals ? Integer.toString(level) : toRoman(level);
+                String lvl = ATHRConfig.feature.qol.romanNumerals ? Integer.toString(level) : RomanNumeralParser.toRoman(level);
                 cachedFormatted = formatColor(meta, level) + meta.loreName + " " + lvl;
             }
             return cachedFormatted;
@@ -392,7 +407,7 @@ public class EnchantProcessor {
 
         private int renderLength() {
             if (cachedRenderLength == -1) {
-                cachedRenderLength = Minecraft.getMinecraft().fontRendererObj.getStringWidth(formatted());
+                cachedRenderLength = MinecraftCompat.getFontRenderer().getStringWidth(formatted());
             }
             return cachedRenderLength;
         }

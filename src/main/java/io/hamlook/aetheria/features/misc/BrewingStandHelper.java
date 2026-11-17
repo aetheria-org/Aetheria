@@ -1,24 +1,23 @@
 package io.hamlook.aetheria.features.misc;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.*;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ContainerUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
 import io.hamlook.aetheria.utils.data.SkyblockData;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntityBrewingStand;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.client.event.RenderWorldLastEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.util.HashMap;
@@ -30,7 +29,7 @@ import java.util.regex.Pattern;
 @RegisterEvents
 public class BrewingStandHelper {
 
-    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final Minecraft mc = MinecraftCompat.getMinecraft();
     private static final Pattern TIME_REGEX = Pattern.compile("§a(\\d+(?:\\.\\d)?)s");
     private final Map<BlockPos, Long> brewingStandToTimeMap = new HashMap<>();
     private TileEntityBrewingStand lastBrewingStand = null;
@@ -41,83 +40,80 @@ public class BrewingStandHelper {
     }
 
     private static void drawFilledBox(AxisAlignedBB bb, float r, float g, float b, float a) {
-        Tessellator tess = Tessellator.getInstance();
-        WorldRenderer wr = tess.getWorldRenderer();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableCull();
+        GlStateManagerCompat.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GlStateManagerCompat.depthMask(false);
 
-        GlStateManager.enableBlend();
-        GlStateManager.disableTexture2D();
-        GlStateManager.disableLighting();
-        GlStateManager.disableCull();
-        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GlStateManager.depthMask(false);
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.QUADS, TessellatorCompat.POSITION_COLOR);
 
-        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
+        vb.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.minX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.minX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
 
-        wr.pos(bb.maxX, bb.minY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.minZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.maxY, bb.maxZ).color(r, g, b, a).endVertex();
-        wr.pos(bb.maxX, bb.minY, bb.maxZ).color(r, g, b, a).endVertex();
+        vb.draw();
 
-        tess.draw();
-
-        GlStateManager.depthMask(true);
-        GlStateManager.enableCull();
-        GlStateManager.enableLighting();
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.depthMask(true);
+        GlStateManagerCompat.enableCull();
+        GlStateManagerCompat.enableLighting();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.disableBlend();
     }
 
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.START) return;
+    @HandleEvent
+    public void onClientTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.START) return;
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.colorBrewingStands) return;
-        if (mc.theWorld == null) return;
+        if (MinecraftCompat.getLocalWorld() == null) return;
         if (!isOnPrivateIsland()) return;
         if (++tickCounter % 100 != 0) return;
 
         Iterator<Map.Entry<BlockPos, Long>> it = brewingStandToTimeMap.entrySet().iterator();
         while (it.hasNext()) {
-            if (!(mc.theWorld.getTileEntity(it.next().getKey()) instanceof TileEntityBrewingStand)) it.remove();
+            if (!(MinecraftCompat.getLocalWorld().getTileEntity(it.next().getKey()) instanceof TileEntityBrewingStand)) it.remove();
         }
     }
 
-    @SubscribeEvent
-    public void onPlayerInteract(PlayerInteractEvent event) {
+    @HandleEvent
+    public void onPlayerInteract(ASMPlayerInteractEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.colorBrewingStands) return;
         if (!isOnPrivateIsland()) return;
-        if (event.action != PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK) return;
-        if (mc.theWorld == null) return;
-        if (mc.theWorld.getTileEntity(event.pos) instanceof TileEntityBrewingStand)
-            lastBrewingStand = (TileEntityBrewingStand) mc.theWorld.getTileEntity(event.pos);
+        if (event.action != 1) return;
+        if (MinecraftCompat.getLocalWorld() == null) return;
+        if (MinecraftCompat.getLocalWorld().getTileEntity(event.pos) instanceof TileEntityBrewingStand)
+            lastBrewingStand = (TileEntityBrewingStand) MinecraftCompat.getLocalWorld().getTileEntity(event.pos);
     }
 
-    @SubscribeEvent
-    public void onGuiDraw(GuiScreenEvent.DrawScreenEvent.Pre event) {
+    @HandleEvent
+    public void onGuiDraw(ASMGuiDrawPreEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.colorBrewingStands) return;
         if (!isOnPrivateIsland()) return;
         if (lastBrewingStand == null) return;
@@ -133,7 +129,7 @@ public class BrewingStandHelper {
         for (int i = 0; i < container.inventorySlots.size(); i++) {
             ItemStack stack = container.getSlot(i).getStack();
             if (stack == null) continue;
-            Matcher matcher = TIME_REGEX.matcher(stack.getDisplayName());
+            Matcher matcher = TIME_REGEX.matcher(TextCompat.getFormattedText(stack.getDisplayName()));
             if (matcher.find()) {
                 try {
                     time = Double.parseDouble(matcher.group(1));
@@ -152,16 +148,16 @@ public class BrewingStandHelper {
         brewingStandToTimeMap.put(pos, System.currentTimeMillis() + (long) (time * 1000L));
     }
 
-    @SubscribeEvent
-    public void onRenderWorld(RenderWorldLastEvent event) {
+    @HandleEvent
+    public void onRenderWorld(ASMRenderWorldEvent event) {
         if (ATHRConfig.feature == null || !ATHRConfig.feature.qol.colorBrewingStands) return;
         if (!isOnPrivateIsland()) return;
-        if (mc.theWorld == null || mc.thePlayer == null) return;
+        if (MinecraftCompat.getLocalWorld() == null || MinecraftCompat.getLocalPlayer() == null) return;
 
         float pt = event.partialTicks;
-        double vx = mc.thePlayer.lastTickPosX + (mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * pt;
-        double vy = mc.thePlayer.lastTickPosY + (mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * pt;
-        double vz = mc.thePlayer.lastTickPosZ + (mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * pt;
+        double vx = EntityCompat.getPrevX(MinecraftCompat.getLocalPlayer()) + (EntityCompat.getPosX(MinecraftCompat.getLocalPlayer()) - EntityCompat.getPrevX(MinecraftCompat.getLocalPlayer())) * pt;
+        double vy = EntityCompat.getPrevY(MinecraftCompat.getLocalPlayer()) + (EntityCompat.getPosY(MinecraftCompat.getLocalPlayer()) - EntityCompat.getPrevY(MinecraftCompat.getLocalPlayer())) * pt;
+        double vz = EntityCompat.getPrevZ(MinecraftCompat.getLocalPlayer()) + (EntityCompat.getPosZ(MinecraftCompat.getLocalPlayer()) - EntityCompat.getPrevZ(MinecraftCompat.getLocalPlayer())) * pt;
 
         long now = System.currentTimeMillis();
 

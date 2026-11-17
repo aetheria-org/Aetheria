@@ -1,13 +1,15 @@
 package io.hamlook.aetheria.features.misc.killcombo;
 
+import io.hamlook.aetheria.api.event.HandleEvent;
 import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.events.ASMChatEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.chat.ChatFilter;
 import io.hamlook.aetheria.utils.chat.ChatUtils;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import lombok.Getter;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -55,14 +57,20 @@ public class KillComboTracker {
         return "§6";
     }
 
-    @SubscribeEvent
-    public void onChat(ClientChatReceivedEvent event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
+        currentCombo = 0;
+        active = false;
+    }
+
+    @HandleEvent
+    public void onChat(ASMChatEvent event) {
         if (!ATHRConfig.feature.misc.killCombo.enabled) return;
         if (!ChatUtils.isFromServer(event)) return;
         String stripped = ChatUtils.clean(event);
         if (isPlayerMessage(stripped)) return;
 
-        String text = event.message.getFormattedText();
+        String text = TextCompat.getFormattedTextWithResets(event.message);
 
         if (text.contains(EXPIRE_MARKER)) {
             handleExpire(text);

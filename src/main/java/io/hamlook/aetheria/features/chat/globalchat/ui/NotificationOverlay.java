@@ -4,6 +4,7 @@ import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.chat.globalchat.GlobalChat;
 import io.hamlook.aetheria.init.RegisterEvents;
 import io.hamlook.aetheria.utils.Position;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.overlay.Overlay;
 import lombok.Getter;
 
@@ -109,7 +110,7 @@ public class NotificationOverlay extends Overlay {
     private List<String> wrap(String text) {
         List<String> out = new ArrayList<>();
         while (!text.isEmpty() && out.size() < 3) {
-            String line = mc.fontRendererObj.trimStringToWidth(text, MAX_LINE_WIDTH);
+            String line = MinecraftCompat.getFontRenderer().trimStringToWidth(text, MAX_LINE_WIDTH);
             if (line.isEmpty()) line = text;
             out.add(line);
             if (line.length() >= text.length()) break;

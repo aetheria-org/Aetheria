@@ -2,7 +2,6 @@ package io.hamlook.aetheria.utils;
 
 import com.google.gson.annotations.Expose;
 import lombok.Getter;
-import net.minecraft.client.gui.ScaledResolution;
 
 public class Position {
 
@@ -48,44 +47,39 @@ public class Position {
         return y;
     }
 
-    public int getAbsX(ScaledResolution scaledResolution, int objWidth) {
-        int width = scaledResolution.getScaledWidth();
-
+    public int getAbsX(int screenWidth, int objWidth) {
         if (centerX) {
-            return width / 2 + x;
+            return screenWidth / 2 + x;
         }
 
         int ret = x;
         if (x < 0) {
-            ret = width + x - objWidth;
+            ret = screenWidth + x - objWidth;
         }
 
         if (ret < 0) ret = 0;
-        if (ret > width - objWidth) ret = width - objWidth;
+        if (ret > screenWidth - objWidth) ret = screenWidth - objWidth;
 
         return ret;
     }
 
-    public int getAbsY(ScaledResolution scaledResolution, int objHeight) {
-        int height = scaledResolution.getScaledHeight();
-
+    public int getAbsY(int screenHeight, int objHeight) {
         if (centerY) {
-            return height / 2 + y;
+            return screenHeight / 2 + y;
         }
 
         int ret = y;
         if (y < 0) {
-            ret = height + y - objHeight;
+            ret = screenHeight + y - objHeight;
         }
 
         if (ret < 0) ret = 0;
-        if (ret > height - objHeight) ret = height - objHeight;
+        if (ret > screenHeight - objHeight) ret = screenHeight - objHeight;
 
         return ret;
     }
 
-    public int moveX(int deltaX, int objWidth, ScaledResolution scaledResolution) {
-        int screenWidth = scaledResolution.getScaledWidth();
+    public int moveX(int deltaX, int objWidth, int screenWidth) {
         boolean wasPositiveX = this.x >= 0;
         this.x += deltaX;
 
@@ -133,8 +127,7 @@ public class Position {
         return deltaX;
     }
 
-    public int moveY(int deltaY, int objHeight, ScaledResolution scaledResolution) {
-        int screenHeight = scaledResolution.getScaledHeight();
+    public int moveY(int deltaY, int objHeight, int screenHeight) {
         boolean wasPositiveY = this.y >= 0;
         this.y += deltaY;
 
@@ -182,7 +175,7 @@ public class Position {
         return deltaY;
     }
 
-    public boolean rightAligned(ScaledResolution scaledResolution, int objWidth) {
-        return (this.getAbsX(scaledResolution, objWidth) > (scaledResolution.getScaledWidth() / 2));
+    public boolean rightAligned(int screenWidth, int objWidth) {
+        return (this.getAbsX(screenWidth, objWidth) > (screenWidth / 2));
     }
 }

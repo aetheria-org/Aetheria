@@ -5,16 +5,12 @@ import io.hamlook.aetheria.features.chat.globalchat.image.GCImage;
 import io.hamlook.aetheria.features.chat.globalchat.image.ImageManager;
 import io.hamlook.aetheria.features.chat.globalchat.util.DiscordMarkdown;
 import io.hamlook.aetheria.features.chat.globalchat.vars.IEmoji;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.input.Mouse;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,19 +18,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 
 /**
  * Multi-line chat input with full text selection (mouse drag + keyboard),
  * clipboard shortcuts and internal vertical scrolling. Replaces the vanilla
  * single-line GuiTextField used by the global chat UI.
  */
-public class ChatInputField extends Gui {
+public class ChatInputField {
 
     public static final int PAD_X = 4;
     public static final int LINE_PAD = 2;
     public static final int MAX_LENGTH = 2000;
 
-    private final FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+    private final FontRenderer fr = MinecraftCompat.getFontRenderer();
 
     public int x, y, width, height;
 
@@ -61,7 +58,7 @@ public class ChatInputField extends Gui {
     }
 
     public int lineHeight() {
-        return fr.FONT_HEIGHT + LINE_PAD;
+        return DrawContextUtils.getFontHeight(fr) + LINE_PAD;
     }
 
     public String getText() {
@@ -124,23 +121,23 @@ public class ChatInputField extends Gui {
 
     /** Returns true if the key was consumed; plain Enter returns false so the caller can send the message. */
     public boolean keyTyped(char typedChar, int keyCode) {
-        boolean ctrl = Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL);
-        boolean shift = Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
+        boolean ctrl = KeyboardCompat.isKeyDown(Keyboard.KEY_LCONTROL) || KeyboardCompat.isKeyDown(Keyboard.KEY_RCONTROL);
+        boolean shift = KeyboardCompat.isKeyDown(Keyboard.KEY_LSHIFT) || KeyboardCompat.isKeyDown(Keyboard.KEY_RSHIFT);
 
         if (ctrl && keyCode == Keyboard.KEY_A) { selectAll(); return true; }
         if (ctrl && keyCode == Keyboard.KEY_C) {
-            if (hasSelection()) GuiScreen.setClipboardString(getSelectedText());
+            if (hasSelection()) ClipboardCompat.setClipboard(getSelectedText());
             return true;
         }
         if (ctrl && keyCode == Keyboard.KEY_X) {
             if (hasSelection()) {
-                GuiScreen.setClipboardString(getSelectedText());
+                ClipboardCompat.setClipboard(getSelectedText());
                 replaceSelection("");
             }
             return true;
         }
         if (ctrl && keyCode == Keyboard.KEY_V) {
-            String clip = GuiScreen.getClipboardString();
+            String clip = ClipboardCompat.getClipboard();
             if (clip != null) replaceSelection(clip.replace("\r\n", "\n").replace('\r', '\n'));
             return true;
         }
@@ -230,14 +227,14 @@ public class ChatInputField extends Gui {
     /** Called each tick; keeps the selection anchored while the left mouse button is held. */
     public void updateDrag() {
         if (!dragging) return;
-        if (!Mouse.isButtonDown(0)) {
+        if (!MouseCompat.isButtonDown(0)) {
             dragging = false;
             return;
         }
-        Minecraft mc = Minecraft.getMinecraft();
-        int scale = new ScaledResolution(mc).getScaleFactor();
-        int mx = Mouse.getX() / scale;
-        int my = mc.displayHeight / scale - Mouse.getY() / scale;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        int scale = GuiScreenUtils.getScaleFactor();
+        int mx = MouseCompat.getX() / scale;
+        int my = GuiScreenUtils.getDisplayHeight() / scale - MouseCompat.getY() / scale;
         caret = xyToChar(mx, my);
     }
 
@@ -280,13 +277,13 @@ public class ChatInputField extends Gui {
                 if (selEnd > selStart) {
                     int sx = x + PAD_X + stringWidth(line, selStart - ls, ls);
                     int ex = x + PAD_X + stringWidth(line, selEnd - ls, ls);
-                    drawRect(sx, ly, ex, ly + fr.FONT_HEIGHT, 0x50FFFFFF);
+                    DrawContextUtils.fill(sx, ly, ex, ly + DrawContextUtils.getFontHeight(fr), 0x50FFFFFF);
                 }
             }
 
             if (i == ci && (System.currentTimeMillis() / 500) % 2 == 0) {
                 int cx = x + PAD_X + stringWidth(line, caret - ls, ls);
-                drawRect(cx, ly, cx + 1, ly + fr.FONT_HEIGHT, 0xFFE0E0E0);
+                DrawContextUtils.fill(cx, ly, cx + 1, ly + DrawContextUtils.getFontHeight(fr), 0xFFE0E0E0);
             }
 
             drawLineWithEmoji(line, x + PAD_X, ly, ls);
@@ -296,8 +293,8 @@ public class ChatInputField extends Gui {
             int trackH = height - 4;
             int thumbH = Math.max(8, trackH * visibleLines / lines.size());
             int thumbY = y + 2 + (trackH - thumbH) * scrollLines / maxScroll;
-            drawRect(x + width - 3, y + 2, x + width - 1, y + 2 + trackH, 0x22000000);
-            drawRect(x + width - 3, thumbY, x + width - 1, thumbY + thumbH, 0x80FFFFFF);
+            DrawContextUtils.fill(x + width - 3, y + 2, x + width - 1, y + 2 + trackH, 0x22000000);
+            DrawContextUtils.fill(x + width - 3, thumbY, x + width - 1, thumbY + thumbH, 0x80FFFFFF);
         }
     }
 
@@ -372,7 +369,7 @@ public class ChatInputField extends Gui {
             } else {
                 String t = (String) seg[1];
                 for (int k = 0; k < t.length(); k++) {
-                    w += fr.getStringWidth(String.valueOf(t.charAt(k)));
+                    w += DrawContextUtils.getStringWidth(fr, String.valueOf(t.charAt(k)));
                     charIdx++;
                     if (w >= relX) return ls + charIdx;
                 }
@@ -518,7 +515,7 @@ public class ChatInputField extends Gui {
             if ("E".equals(seg[0])) {
                 w += DiscordMarkdown.EMOJI_SIZE;
             } else {
-                w += fr.getStringWidth((String) seg[1]);
+                w += DrawContextUtils.getStringWidth(fr, (String) seg[1]);
             }
         }
         return w;
@@ -549,8 +546,8 @@ public class ChatInputField extends Gui {
                 x += DiscordMarkdown.EMOJI_SIZE;
             } else {
                 String text = (String) seg[1];
-                fr.drawString(text, x, y, 0xFFE0E0E0);
-                x += fr.getStringWidth(text);
+                DrawContextUtils.drawText(fr, text, x, y, 0xFFE0E0E0, false);
+                x += DrawContextUtils.getStringWidth(fr, text);
             }
         }
     }
@@ -567,16 +564,15 @@ public class ChatInputField extends Gui {
         }
         GCImage img = ImageManager.images.get(id);
         if (img == null || !img.isLoaded || img.width == 0) {
-            drawRect(x, y, x + DiscordMarkdown.EMOJI_SIZE, y + DiscordMarkdown.EMOJI_SIZE, 0x22FFFFFF);
+            DrawContextUtils.fill(x, y, x + DiscordMarkdown.EMOJI_SIZE, y + DiscordMarkdown.EMOJI_SIZE, 0x22FFFFFF);
             return;
         }
         ResourceLocation tex = img.getTextureToRender(false);
         if (tex == null) return;
-        Minecraft.getMinecraft().getTextureManager().bindTexture(tex);
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        GlStateManager.enableBlend();
-        drawScaledCustomSizeModalRect(x, y, 0, 0, img.width, img.height,
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.enableBlend();
+        DrawContextUtils.drawScaledCustomSizeModalRect(tex, x, y, 0, 0, img.width, img.height,
                 DiscordMarkdown.EMOJI_SIZE, DiscordMarkdown.EMOJI_SIZE, img.width, img.height);
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.disableBlend();
     }
 }

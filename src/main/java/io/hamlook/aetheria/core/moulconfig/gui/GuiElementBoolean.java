@@ -5,11 +5,12 @@ package io.hamlook.aetheria.core.moulconfig.gui;
 
 import io.hamlook.aetheria.Resources;
 import io.hamlook.aetheria.utils.LerpUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.MouseCompat;
 import io.hamlook.aetheria.utils.render.RenderUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
-import org.lwjgl.input.Mouse;
 
 import java.util.function.Consumer;
 
@@ -43,9 +44,8 @@ public class GuiElementBoolean extends GuiElement {
 
     @Override
     public void render() {
-        GlStateManager.color(1, 1, 1, 1);
-        Minecraft.getMinecraft().getTextureManager().bindTexture(Resources.BAR);
-        RenderUtils.drawTexturedRect(x, y, xSize, ySize);
+        GlStateManagerCompat.color(1, 1, 1, 1);
+        TextureCompat.drawBoundTextured(Resources.BAR, x, y, xSize, ySize, 0, 0, 1, 1);
 
         ResourceLocation buttonLoc = Resources.ON;
         long currentMillis = System.currentTimeMillis();
@@ -74,16 +74,20 @@ public class GuiElementBoolean extends GuiElement {
         else if (anim < 23) buttonLoc = Resources.TWO;
         else if (anim < 33) buttonLoc = Resources.THREE;
 
-        Minecraft.getMinecraft().getTextureManager().bindTexture(buttonLoc);
-        RenderUtils.drawTexturedRect(x + anim, y, 12, 14);
+        TextureCompat.drawBoundTextured(buttonLoc, x + anim, y, 12, 14, 0, 0, 1, 1);
     }
 
     @Override
     public boolean mouseInput(int mouseX, int mouseY) {
+        return mouseInput(mouseX, mouseY, MouseCompat.getEventButton(), MouseCompat.getEventButtonState());
+    }
+
+    @Override
+    public boolean mouseInput(int mouseX, int mouseY, int button, boolean pressed) {
         if (mouseX > x - clickRadius && mouseX < x + xSize + clickRadius &&
                 mouseY > y - clickRadius && mouseY < y + ySize + clickRadius) {
-            if (Mouse.getEventButton() == 0) {
-                if (Mouse.getEventButtonState()) {
+            if (button == 0) {
+                if (pressed) {
                     previewValue = !value;
                 } else if (previewValue == !value) {
                     value = !value;

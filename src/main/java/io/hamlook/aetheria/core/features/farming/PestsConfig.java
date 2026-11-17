@@ -1,7 +1,7 @@
 package io.hamlook.aetheria.core.features.farming;
 
 import com.google.gson.annotations.Expose;
-import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.*;
+import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigAnnotations.Category;
 
 public class PestsConfig {
 

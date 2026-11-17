@@ -1,7 +1,7 @@
 package io.hamlook.aetheria.utils.debug;
 
 import io.hamlook.aetheria.Aetheria;
-import net.minecraft.client.Minecraft;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import net.minecraft.client.gui.GuiScreen;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -37,11 +37,18 @@ public final class GLDebugProbe {
     public static String state() {
         if (disabled) return "GLDebugProbe disabled (earlier failure)";
         try {
+            //#if MC < 1.16
             COLOR.rewind();
             GL11.glGetFloat(GL11.GL_CURRENT_COLOR, COLOR);
             MASK.rewind();
             GL11.glGetBoolean(GL11.GL_COLOR_WRITEMASK, MASK);
-            GuiScreen screen = Minecraft.getMinecraft().currentScreen;
+            //#else
+            //$$ COLOR.rewind();
+            //$$ COLOR.put(1f).put(1f).put(1f).put(1f);
+            //$$ MASK.rewind();
+            //$$ MASK.put((byte) 1).put((byte) 1).put((byte) 1).put((byte) 1);
+            //#endif
+            GuiScreen screen = MinecraftCompat.getCurrentScreen();
             String screenName = screen == null ? "null" : screen.getClass().getSimpleName();
             return "[" + screenName + "]"
                     + " light=" + GL11.glIsEnabled(GL11.GL_LIGHTING)

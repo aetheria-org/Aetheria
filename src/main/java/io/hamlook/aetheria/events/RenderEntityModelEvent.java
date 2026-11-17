@@ -1,14 +1,14 @@
 package io.hamlook.aetheria.events;
 
+import io.hamlook.aetheria.api.event.AetheriaEvent;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraftforge.fml.common.eventhandler.Event;
 
 @Getter
 @Setter
-public class RenderEntityModelEvent extends Event {
+public class RenderEntityModelEvent extends AetheriaEvent {
 
     private EntityLivingBase entity;
     private float limbSwing;

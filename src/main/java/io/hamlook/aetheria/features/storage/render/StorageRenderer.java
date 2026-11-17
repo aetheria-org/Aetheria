@@ -1,29 +1,30 @@
 package io.hamlook.aetheria.features.storage.render;
 
-import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.Resources;
-import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.features.misc.SearchBar;
 import io.hamlook.aetheria.features.storage.StorageManager;
 import io.hamlook.aetheria.features.storage.utils.SContainer;
 import io.hamlook.aetheria.features.storage.utils.Type;
+import io.hamlook.aetheria.utils.compat.*;
 import io.hamlook.aetheria.utils.render.ItemRenderUtils;
 import io.hamlook.aetheria.utils.render.NineSliceUtils;
 import io.hamlook.aetheria.utils.render.ResolutionUtils;
+import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import lombok.Getter;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.LinkedHashMap;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 
-public class StorageRenderer extends Gui {
+public class StorageRenderer {
 
     private static final int PADDING = 5;
     private static final int ROW_SPACING = 16;
@@ -35,6 +36,7 @@ public class StorageRenderer extends Gui {
     private static final int NINE_SLICE_SIZE = 18;
     private static final int SLOT_SIZE = 18;
     private static final int SLOTS_PER_ROW = 9;
+    private static final int TITLE_HEIGHT = 18;
 
     private ResourceLocation getContainerBg() {
         return Resources.storageBackground(ATHRConfig.feature.storage.overlayStyle);
@@ -80,6 +82,7 @@ public class StorageRenderer extends Gui {
     private int[] rowYOffsets = new int[0];
 
     boolean containersDirty = false;
+    boolean layoutDirty = false;
 
     public StorageRenderer(LinkedHashMap<String, SContainer> containers) {
         this.containers = containers;
@@ -94,6 +97,10 @@ public class StorageRenderer extends Gui {
         containersDirty = true;
     }
 
+    public void markLayoutDirty() {
+        layoutDirty = true;
+    }
+
     public boolean isHoveredItemFromInventory() {
         return hoveredItemIsFromInventory;
     }
@@ -101,19 +108,26 @@ public class StorageRenderer extends Gui {
     private void drawBackground() {
         int width = ResolutionUtils.getWidth();
         int height = ResolutionUtils.getHeight();
-        GlStateManager.disableLighting();
-        GlStateManager.disableFog();
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        drawGradientRect(0, 0, width, height, -1072689136, -804253680);
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableFog();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        RenderUtils.drawGradientRect(0, 0, 0, width, height, -1072689136, -804253680);
+        GlStateManagerCompat.disableBlend();
     }
 
     private void drawPanelBackground(int x, int y, int width, int height) {
-        GlStateManager.disableBlend();
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        drawRect(x, y, x + width, y + height, 0xFF000000);
-        GlStateManager.enableBlend();
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        DrawContextUtils.fill(x, y, x + width, y + height, 0xFF000000);
+        // DrawContext queues fill() into the GUI layer until the frame ends, but
+        // NineSliceUtils draws its texture immediately on 1.21; without the flush
+        // the queued black quad renders over the nine-slice (panel turns black).
+        //#if MC < 1.21
+        //#else
+        //$$ DrawContextUtils.flushIfPresent();
+        //#endif
+        GlStateManagerCompat.enableBlend();
         NineSliceUtils.draw(getContainerBg(), x, y, width, height, NINE_SLICE_CORNER, NINE_SLICE_SIZE);
     }
 
@@ -206,7 +220,7 @@ public class StorageRenderer extends Gui {
     private boolean itemMatchesSearch(ItemStack stack) {
         if (searchText == null || searchText.isEmpty()) return false;
         if (stack == null) return false;
-        return stack.getDisplayName().toLowerCase().contains(searchText);
+        return TextCompat.getUnformattedText(stack.getDisplayName()).toLowerCase().contains(searchText);
     }
 
     private int getContainerDisplayHeight(SContainer container) {
@@ -216,9 +230,8 @@ public class StorageRenderer extends Gui {
         }
 
         int rows = (int) Math.ceil(container.slotCount / 9.0);
-        int titleHeight = 18;
         int bottomPadding = 4;
-        int height = titleHeight + (rows * 18) + bottomPadding + 8;
+        int height = TITLE_HEIGHT + (rows * 18) + bottomPadding + 8;
 
         containerHeightCache.put(cacheKey, height);
         return height;
@@ -283,7 +296,7 @@ public class StorageRenderer extends Gui {
         hoveredX = -1;
         hoveredY = -1;
 
-        FontRenderer fr = Minecraft.getMinecraft().fontRendererObj;
+        FontRenderer fr = MinecraftCompat.getFontRenderer();
 
         int curWidth = ResolutionUtils.getWidth();
         int curHeight = ResolutionUtils.getHeight();
@@ -297,7 +310,7 @@ public class StorageRenderer extends Gui {
         // Update search text — only rebuild filtered list when needed
         String newSearchText = SearchBar.getStorageSearchText().toLowerCase();
         boolean searchChanged = !newSearchText.equals(lastSearchText);
-        boolean needsRebuild = searchChanged || containersDirty;
+        boolean needsRebuild = searchChanged || containersDirty || layoutDirty;
 
         if (searchChanged) {
             searchCache.clear();
@@ -309,6 +322,12 @@ public class StorageRenderer extends Gui {
             searchCache.clear();
             containersDirty = false;
         }
+        if (layoutDirty) {
+            rowHeightCache.clear();
+            containerHeightCache.clear();
+            initLayout();
+            layoutDirty = false;
+        }
 
         searchText = newSearchText;
 
@@ -317,14 +336,14 @@ public class StorageRenderer extends Gui {
         }
 
         if (searchField != null) {
-            searchField.updateCursorCounter();
+            GuiScreenUtils.tickTextField(searchField);
         }
 
         int maxScroll = getMaxScroll();
         scrollTarget = Math.max(0, Math.min(scrollTarget, maxScroll));
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
 
-        handleScrollbarDrag(mouseX, mouseY, org.lwjgl.input.Mouse.isButtonDown(0));
+        handleScrollbarDrag(mouseX, mouseY, MouseCompat.isButtonDown(0));
 
         SearchBar.drawStorageSearchBar(searchField);
 
@@ -334,13 +353,11 @@ public class StorageRenderer extends Gui {
 
         scrollOffset += (scrollTarget - scrollOffset) * SCROLL_LENGTH;
 
-        int scaleFactor = ResolutionUtils.getFactor();
         int inset = NINE_SLICE_CORNER;
 
         int scissorScreenTop = boxY + inset;
         int scissorScreenBottom = boxY + storageAreaH - inset;
-        GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor((boxX + inset) * scaleFactor, (Minecraft.getMinecraft().displayHeight - scissorScreenBottom * scaleFactor), (boxW - inset * 2) * scaleFactor, (scissorScreenBottom - scissorScreenTop) * scaleFactor);
+        DrawContextUtils.enableScissor(boxX + inset, scissorScreenTop, boxW - inset * 2, scissorScreenBottom - scissorScreenTop);
 
         String activeId = StorageManager.getActiveContainerId();
         boolean dimMode = ATHRConfig.feature.storage.activeContainerStyle == 0 && activeId != null;
@@ -350,12 +367,13 @@ public class StorageRenderer extends Gui {
 
         // Single pass: draw containers + dim overlay in one loop
         for (int i = 0; i < filteredContainers.size(); i++) {
+            if (!cachedLayouts[i].isVisible) continue;
             SContainer container = filteredContainers.get(i);
             boolean isActive = container.id.equals(activeId);
             drawContainer(i, mouseX, mouseY, fr, isActive, dimMode);
         }
 
-        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        DrawContextUtils.disableScissor();
 
         renderScrollbar();
         renderPlayerInventory(mouseX, mouseY);
@@ -366,10 +384,14 @@ public class StorageRenderer extends Gui {
     }
 
     private void drawSlotBackground(int x, int y, float color) {
-        Minecraft.getMinecraft().getTextureManager().bindTexture(getSlotTexture());
-        GlStateManager.color(color, 1f, 1f, 1f);
-        drawModalRectWithCustomSizedTexture(x, y, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(color, 1f, 1f, 1f);
+        //#if MC < 1.21
+        MinecraftCompat.getMinecraft().getTextureManager().bindTexture(getSlotTexture());
+        DrawContextUtils.drawModalRectWithCustomSizedTexture(x, y, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+        //#else
+        //$$ DrawContextUtils.drawModalRectWithCustomSizedTexture(getSlotTexture(), x, y, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+        //#endif
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
     }
 
     private void drawSlotItem(int x, int y, ItemStack stack, int mouseX, int mouseY, boolean isFromInventory) {
@@ -387,24 +409,24 @@ public class StorageRenderer extends Gui {
     }
 
     private void drawSlotHighlight(int x, int y) {
-        GlStateManager.disableDepth();
-        GlStateManager.disableLighting();
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.colorMask(true, true, true, false);
-        drawRect(x, y, x + SLOT_SIZE, y + SLOT_SIZE, 0x80FFFFFF);
-        GlStateManager.colorMask(true, true, true, true);
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.disableDepth();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.colorMask(true, true, true, false);
+        DrawContextUtils.fill(x, y, x + SLOT_SIZE, y + SLOT_SIZE, 0x80FFFFFF);
+        GlStateManagerCompat.colorMask(true, true, true, true);
+        GlStateManagerCompat.disableBlend();
     }
 
     private void renderPlayerInventory(int mouseX, int mouseY) {
-        ItemStack[] playerItems = Minecraft.getMinecraft().thePlayer.inventory.mainInventory;
+        ItemStack[] playerItems = InventoryCompat.getMainInventory(MinecraftCompat.getLocalPlayer());
 
         drawInventoryBackground();
         renderInventorySlots(playerItems, mouseX, mouseY);
 
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        GlStateManager.disableBlend();
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.disableBlend();
     }
 
     private void drawInventoryBackground() {
@@ -439,7 +461,7 @@ public class StorageRenderer extends Gui {
 
         int scrollbarWidth = 4;
 
-        drawRect(sbX, sbTrackY, sbX + scrollbarWidth, sbTrackY + sbTrackHeight, 0x80000000);
+        DrawContextUtils.fill(sbX, sbTrackY, sbX + scrollbarWidth, sbTrackY + sbTrackHeight, 0x80000000);
 
         int visibleHeight = storageAreaH - NINE_SLICE_CORNER * 2;
         int totalHeight = visibleHeight + maxScroll;
@@ -449,7 +471,7 @@ public class StorageRenderer extends Gui {
         float scrollRatio = scrollOffset / maxScroll;
         int thumbY = sbTrackY + (int) ((sbTrackHeight - thumbHeight) * scrollRatio);
 
-        drawRect(sbX, thumbY, sbX + scrollbarWidth, thumbY + thumbHeight, 0xFFAAAAAA);
+        DrawContextUtils.fill(sbX, thumbY, sbX + scrollbarWidth, thumbY + thumbHeight, 0xFFAAAAAA);
     }
 
     public boolean isMouseOverScrollbar(int mouseX, int mouseY) {
@@ -533,6 +555,10 @@ public class StorageRenderer extends Gui {
         targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
 
         scrollTarget = targetScroll;
+    }
+
+    public boolean isSearchFocused() {
+        return searchField != null && searchField.isFocused();
     }
 
     public void requestScrollToActive() {
@@ -641,19 +667,21 @@ public class StorageRenderer extends Gui {
     private void drawContainer(int index, int mouseX, int mouseY, FontRenderer fr, boolean isActive, boolean dimMode) {
         ContainerLayout layout = cachedLayouts[index];
         SContainer container = filteredContainers.get(index);
+        boolean hovering = isHovering(mouseX, mouseY, layout.x, layout.y, layout.width, layout.height);
 
-        drawContainerBackground(layout, isActive, mouseX, mouseY, dimMode);
+        drawContainerBackground(layout, isActive, hovering, dimMode);
         drawContainerTitle(container, layout, fr, isActive, dimMode);
         drawContainerSlots(container, layout, mouseX, mouseY);
 
         // Draw dim overlay on inactive containers (merged into first pass)
         if (dimMode && !isActive && layout.isVisible) {
-            GlStateManager.enableBlend();
-            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-            GlStateManager.disableTexture2D();
-            drawRect(layout.x, layout.y, layout.x + layout.width, layout.y + layout.height, 0x55000000);
-            GlStateManager.enableTexture2D();
-            GlStateManager.disableBlend();
+            GlStateManagerCompat.enableBlend();
+            GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+            GlStateManagerCompat.disableTexture2D();
+            DrawContextUtils.fill(layout.x, layout.y, layout.x + layout.width, layout.y + layout.height,
+                    hovering ? 0x2A000000 : 0x55000000);
+            GlStateManagerCompat.enableTexture2D();
+            GlStateManagerCompat.disableBlend();
         }
     }
 
@@ -681,33 +709,24 @@ public class StorageRenderer extends Gui {
         return getContainerLayout(index);
     }
 
-    private void drawContainerBackground(ContainerLayout info, boolean isActive, int mouseX, int mouseY, boolean dimMode) {
-        boolean hovering = isHovering(mouseX, mouseY, info.x, info.y, info.width, info.height);
+    private void drawContainerBackground(ContainerLayout info, boolean isActive, boolean hovering, boolean dimMode) {
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManagerCompat.disableLighting();
 
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.disableLighting();
-
-        if (isActive) {
-            if (dimMode) {
-                GlStateManager.color(1.4f, 1.4f, 0.7f, 1f);
-            } else {
-                GlStateManager.color(1.2f, 1.2f, 0.8f, 1f);
-            }
-        } else if (hovering && !dimMode) {
-            GlStateManager.color(1.3f, 1.3f, 1.3f, 1f);
-        } else if (hovering) {
-            GlStateManager.color(1.1f, 1.1f, 1.1f, 1f);
+        if (!dimMode && !isActive) {
+            float shade = hovering ? 0.92f : 0.84f;
+            GlStateManagerCompat.color(shade, shade, shade, 1f);
         }
 
         NineSliceUtils.draw(getContainerBg(), info.x, info.y, info.width, info.height, NINE_SLICE_CORNER, NINE_SLICE_SIZE);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
     }
 
     private void drawContainerTitle(SContainer container, ContainerLayout info, FontRenderer fr, boolean isActive, boolean dimMode) {
         String title = buildContainerTitle(container, isActive, dimMode);
-        drawCenteredString(fr, title, info.x + info.width / 2, info.y + 4, Color.WHITE.getRGB());
+        TextRenderUtils.drawCenteredStringScaleAware(title, info.x + info.width / 2, info.y + TITLE_HEIGHT / 2f, Color.WHITE.getRGB(), 1f, false);
     }
 
     private String buildContainerTitle(SContainer container, boolean isActive, boolean dimMode) {
@@ -735,10 +754,10 @@ public class StorageRenderer extends Gui {
     private void drawContainerSlots(SContainer container, ContainerLayout info, int mouseX, int mouseY) {
         int gridWidth = SLOT_SIZE * SLOTS_PER_ROW;
         int startX = info.x + (info.width - gridWidth) / 2;
-        int startY = info.y + 18;
+        int startY = info.y + TITLE_HEIGHT;
 
-        GlStateManager.enableBlend();
-        GlStateManager.disableLighting();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableLighting();
 
         for (int i = 0; i < container.slotCount; i++) {
             int col = i % SLOTS_PER_ROW;
@@ -752,9 +771,9 @@ public class StorageRenderer extends Gui {
             drawSlotItem(xPos, yPos, stack, mouseX, mouseY, false);
         }
 
-        GlStateManager.color(1f, 1f, 1f, 1f);
-        GlStateManager.disableBlend();
-        GlStateManager.disableLighting();
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.disableBlend();
+        GlStateManagerCompat.disableLighting();
     }
 
     private boolean isHovering(int mouseX, int mouseY, int xStart, int yStart, int width, int height) {
@@ -825,7 +844,7 @@ public class StorageRenderer extends Gui {
     private boolean checkActiveContainerSlotHover(net.minecraft.inventory.Slot slot, int mouseX, int mouseY, ContainerLayout pos) {
         int gridWidth = SLOT_SIZE * SLOTS_PER_ROW;
         int startX = pos.x + (containerW - gridWidth) / 2;
-        int startY = pos.y + 18;
+        int startY = pos.y + TITLE_HEIGHT;
 
         int slotIndex = slot.getSlotIndex();
         int storageSlotIndex = slotIndex - 9;

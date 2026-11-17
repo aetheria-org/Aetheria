@@ -2,28 +2,30 @@ package io.hamlook.aetheria.utils.data;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+import io.hamlook.aetheria.api.event.HandleEvent;
+import io.hamlook.aetheria.events.ASMTickEvent;
+import io.hamlook.aetheria.events.ASMWorldLoadEvent;
+import io.hamlook.aetheria.events.ASMWorldUnloadEvent;
+import io.hamlook.aetheria.events.TickPhase;
 import io.hamlook.aetheria.features.farming.FarmingApi;
 import io.hamlook.aetheria.features.scoreboard.BankParser;
 import io.hamlook.aetheria.init.RegisterEvents;
+import io.hamlook.aetheria.mixins.accessors.GuiPlayerTabOverlayAccessor;
 import io.hamlook.aetheria.utils.ColorUtils;
 import io.hamlook.aetheria.utils.ElectionUtils;
+import io.hamlook.aetheria.utils.compat.EntityCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TextCompat;
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiPlayerTabOverlay;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.scoreboard.ScorePlayerTeam;
-import net.minecraft.world.WorldSettings;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraft.util.IChatComponent;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -69,7 +71,7 @@ public class TablistParser {
     @Getter
     private static SkyblockData.Environment scoreboardEnvironment = SkyblockData.Environment.UNKNOWN;
     @Setter
-    private static java.util.function.BiConsumer<Long, Long> gemstonePowderChangeListener = null;
+    private static BiConsumer<Long, Long> gemstonePowderChangeListener = null;
     private int tickCounter = 0;
     private long worldJoinTime = -1;
 
@@ -82,31 +84,74 @@ public class TablistParser {
      * alphabetical). Debug dumps must use this, not raw getPlayerInfoMap() order.
      */
     public static List<NetworkPlayerInfo> getParserOrderedInfos(Minecraft mc) {
-        return PLAYER_ORDERING.sortedCopy(mc.thePlayer.sendQueue.getPlayerInfoMap());
+        return PLAYER_ORDERING.sortedCopy(MinecraftCompat.getPlayerListEntries());
     }
 
-    private static net.minecraft.util.IChatComponent getTabFooter() {
-        try {
-            Minecraft mc = Minecraft.getMinecraft();
-            if (mc.thePlayer == null) return null;
-            java.lang.reflect.Field f = mc.ingameGUI.getTabList().getClass().getDeclaredField("field_175255_h");
-            f.setAccessible(true);
-            return (net.minecraft.util.IChatComponent) f.get(mc.ingameGUI.getTabList());
-        } catch (Exception e) {
-            return null;
+    private static String footerRawCache;
+    private static String footerTextCache;
+    private static int footerCacheTick = -1;
+
+    public static IChatComponent getTabFooter() {
+        Minecraft mc = clientWithPlayer();
+        if (mc == null) return null;
+        return ((GuiPlayerTabOverlayAccessor) mc.ingameGUI.getTabList()).ATHR$getFooter();
+    }
+
+    private static void refreshFooterCache() {
+        Minecraft mc = clientWithPlayer();
+        if (mc == null) {
+            footerRawCache = null;
+            footerTextCache = null;
+            footerCacheTick = -1;
+            return;
         }
+        int tick = MinecraftCompat.getLocalPlayer().ticksExisted;
+        if (tick == footerCacheTick) return;
+        footerCacheTick = tick;
+        IChatComponent footer = getTabFooter();
+        footerRawCache = footer == null ? null : TextCompat.getFormattedTextWithResets(footer);
+        footerTextCache = footerRawCache == null ? null : ColorUtils.stripColor(footerRawCache);
+    }
+
+    public static String getTabFooterText() {
+        refreshFooterCache();
+        return footerTextCache;
+    }
+
+    private static String getTabFooterRaw() {
+        refreshFooterCache();
+        return footerRawCache;
+    }
+
+    public static List<String> readBoosters() {
+        String text = getTabFooterRaw();
+        if (text == null) return Collections.emptyList();
+        List<String> boosters = new ArrayList<>();
+        for (String line : text.split("\n")) {
+            String raw = line.trim();
+            if (ColorUtils.stripColor(raw).trim().startsWith("2x ")) {
+                boosters.add(raw);
+            }
+        }
+        return boosters;
+    }
+
+    private static Minecraft clientWithPlayer() {
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        return MinecraftCompat.getLocalPlayer() != null ? mc : null;
     }
 
     public static String readGems() {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null) return null;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (MinecraftCompat.getLocalPlayer() == null) return null;
         GuiPlayerTabOverlay tab = mc.ingameGUI.getTabList();
-        List<NetworkPlayerInfo> infos = PLAYER_ORDERING.sortedCopy(mc.thePlayer.sendQueue.getPlayerInfoMap());
+        List<NetworkPlayerInfo> infos =
+            PLAYER_ORDERING.sortedCopy(MinecraftCompat.getPlayerListEntries());
         boolean inServer = false;
         for (NetworkPlayerInfo info : infos) {
-            String raw = tab.getPlayerName(info);
-            if (raw == null || raw.isEmpty()) continue;
-            String line = net.minecraft.util.StringUtils.stripControlCodes(raw).trim();
+            String raw = TextCompat.codedString(tab.getPlayerName(info));
+            if (raw.isEmpty()) continue;
+            String line = ColorUtils.stripColor(raw).trim();
             if (line.isEmpty()) continue;
             if (line.equals("Server Info") || raw.contains("Server Info")) {
                 inServer = true;
@@ -121,20 +166,23 @@ public class TablistParser {
         return null;
     }
 
+    private static final String COOKIE_LABEL = "Cookie Buff";
+
     public static String readCookieBuff() {
-        net.minecraft.util.IChatComponent footer = getTabFooter();
-        if (footer == null) return null;
-        String[] lines = net.minecraft.util.StringUtils.stripControlCodes(footer.getFormattedText()).split("\n");
-        boolean sawCookie = false;
-        for (String line : lines) {
+        String text = getTabFooterText();
+        if (text == null) return null;
+        boolean afterLabel = false;
+        for (String line : text.split("\n")) {
             String l = line.trim();
             if (l.isEmpty()) continue;
-            if (!sawCookie && l.contains("Cookie Buff")) {
-                sawCookie = true;
+            if (!afterLabel && l.contains(COOKIE_LABEL)) {
+                String inline = l.substring(l.indexOf(COOKIE_LABEL) + COOKIE_LABEL.length()).trim();
+                if (inline.startsWith(":")) inline = inline.substring(1).trim();
+                if (!inline.isEmpty()) return inline;
+                afterLabel = true;
                 continue;
             }
-            if (sawCookie && l.contains("Active")) continue;
-            if (sawCookie) return l;
+            if (afterLabel && !l.contains("Active")) return l;
         }
         return null;
     }
@@ -155,12 +203,12 @@ public class TablistParser {
         String pendingEvent = null;
 
         for (NetworkPlayerInfo info : infos) {
-            String raw = tab.getPlayerName(info);
-            if (raw == null || raw.isEmpty()) continue;
+            String raw = TextCompat.codedString(tab.getPlayerName(info));
+            if (raw.isEmpty()) continue;
 
-            String line = net.minecraft.util.StringUtils.stripControlCodes(raw).trim();
+            String line = ColorUtils.stripColor(raw).trim();
 
-            if (raw.contains("§3§l Server Info§r")) {
+            if (raw.contains("§3§l Server Info§r") || line.equals("Server Info")) {
                 inServerSection = true;
                 inAccountSection = false;
                 expectEventTime = false;
@@ -438,27 +486,27 @@ public class TablistParser {
         return -1;
     }
 
-    @SubscribeEvent
-    public void onTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    @HandleEvent
+    public void onTick(ASMTickEvent event) {
+        if (event.phase != TickPhase.END) return;
         int interval = worldJoinTime > 0 && System.currentTimeMillis() - worldJoinTime < FAST_PARSE_WINDOW_MS
                 ? FAST_PARSE_INTERVAL
                 : TICK_INTERVAL;
         if ((tickCounter = (tickCounter + 1) % interval) != 0) return;
 
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null) return;
+        Minecraft mc = MinecraftCompat.getMinecraft();
+        if (MinecraftCompat.getLocalPlayer() == null) return;
 
         parseTablist(mc);
     }
 
-    @SubscribeEvent
-    public void onWorldLoad(WorldEvent.Load event) {
+    @HandleEvent
+    public void onWorldLoad(ASMWorldLoadEvent event) {
         worldJoinTime = System.currentTimeMillis();
     }
 
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event) {
+    @HandleEvent
+    public void onWorldUnload(ASMWorldUnloadEvent event) {
         currentLocation = SkyblockData.Location.NONE;
         activeEvent = null;
         activeEventTimeLeft = null;
@@ -486,7 +534,7 @@ public class TablistParser {
         public int compare(NetworkPlayerInfo o1, NetworkPlayerInfo o2) {
             ScorePlayerTeam t1 = o1.getPlayerTeam();
             ScorePlayerTeam t2 = o2.getPlayerTeam();
-            return ComparisonChain.start().compareTrueFirst(o1.getGameType() != WorldSettings.GameType.SPECTATOR, o2.getGameType() != WorldSettings.GameType.SPECTATOR).compare(t1 != null ? t1.getRegisteredName() : "", t2 != null ? t2.getRegisteredName() : "").compare(o1.getGameProfile().getName(), o2.getGameProfile().getName()).result();
+            return ComparisonChain.start().compareTrueFirst(!EntityCompat.isSpectator(o1), !EntityCompat.isSpectator(o2)).compare(t1 != null ? t1.getRegisteredName() : "", t2 != null ? t2.getRegisteredName() : "").compare(o1.getGameProfile().getName(), o2.getGameProfile().getName()).result();
         }
     }
 }

@@ -1,26 +1,31 @@
 package io.hamlook.aetheria;
 
 import io.hamlook.aetheria.core.ATHRConfig;
-import io.hamlook.aetheria.features.chat.globalchat.ui.ChatUI;
-import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.features.capes.ui.CapeSelectorGUI;
+import io.hamlook.aetheria.features.chat.globalchat.ui.ChatUI;
 import io.hamlook.aetheria.repo.ATHRRepo;
 import io.hamlook.aetheria.repo.RepoHandler;
+import io.hamlook.aetheria.repo.RepoLinks;
 import io.hamlook.aetheria.repo.data.UpdateData;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.renderer.GlStateManager;
+import io.hamlook.aetheria.utils.compat.AetheriaBaseScreen;
+import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
+import io.hamlook.aetheria.utils.compat.MinecraftCompat;
+import io.hamlook.aetheria.utils.compat.TessellatorCompat;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
+import io.hamlook.aetheria.utils.compat.VertexBuilder;
+import io.hamlook.aetheria.utils.render.RenderUtils;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
 
 import java.awt.*;
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class OptionsMenu extends GuiScreen {
+public class OptionsMenu extends AetheriaBaseScreen {
 
     private static final String TITLE = "Aetheria's Skyblock Mod";
     private static final Random RNG = new Random();
@@ -30,13 +35,21 @@ public class OptionsMenu extends GuiScreen {
     private static final int BTN_W = 180;
     private static final int BTN_H = 22;
     private static final int BTN_GAP = 6;
-    private static final String[] BTN_LABELS = {"⚙ Config", "Waypoints", "Cape Selector", "Chat Filters", "Global Chat"};
+    private static final String[] BTN_LABELS = {"⚙ Config", "Waypoints & Routes", "Cape Selector", "Chat Filters", "Global Chat"};
 
     // Social icon strip
     private static final int ICON_SIZE = 24;
     private static final int ICON_GAP = 10;
     private static final ResourceLocation[] SOCIAL_ICONS = {Resources.DISCORD, Resources.GITHUB, Resources.MODRINTH, Resources.SKYATLAS};
-    private static final String[] SOCIAL_URLS = {"https://discord.gg/HHf5yqSy9R", "https://github.com/aetheria-org/Aetheria", "https://modrinth.com/mod/aetheriamod","https://skyatlas.lol"};
+
+    private static String socialUrl(int index) {
+        switch (index) {
+            case 0: return RepoLinks.discord();
+            case 1: return RepoLinks.github();
+            case 2: return RepoLinks.modrinth();
+            default: return RepoLinks.skyatlas();
+        }
+    }
 
     private final List<Particle> particles = new ArrayList<>();
     private float globalTime = 0f;
@@ -68,8 +81,7 @@ public class OptionsMenu extends GuiScreen {
     }
 
     @Override
-    public void initGui() {
-        super.initGui();
+    public void onInitGui() {
         openProgress = 0f;
         particles.clear();
         for (int i = 0; i < PARTICLE_COUNT; i++) particles.add(new Particle(width, height));
@@ -80,18 +92,20 @@ public class OptionsMenu extends GuiScreen {
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    public void onDrawScreen(int mouseX, int mouseY, float partialTicks) {
         globalTime += 0.018f;
         splashBounce = (splashBounce + 0.02f) % (float) (Math.PI * 2);
         openProgress = Math.min(1f, openProgress + 0.045f);
 
+        //#if MC < 1.21
         drawDefaultBackground();
-        drawRect(0, 0, width, height, 0x90000000);
+        //#endif
+        DrawContextUtils.fill(0, 0, width, height, 0x90000000);
 
         // Particles (additive blend)
-        GlStateManager.disableTexture2D();
-        GlStateManager.enableBlend();
-        GlStateManager.disableDepth();
+        GlStateManagerCompat.disableTexture2D();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.disableDepth();
         GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE, GL11.GL_ONE);
         drawSoftBloom(width / 2f, height / 2f, Math.min(width, height) * 0.55f);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
@@ -99,24 +113,23 @@ public class OptionsMenu extends GuiScreen {
             p.tick(width, height);
             Color col = Color.getHSBColor(p.hue, 0.70f, 1f);
             float alpha = p.alpha() * openProgress * 0.65f;
-            GL11.glColor4f(col.getRed() / 255f, col.getGreen() / 255f, col.getBlue() / 255f, alpha);
-            drawDot(p.x, p.y, p.currentSize());
+            drawDot(p.x, p.y, p.currentSize(), col.getRed() / 255f, col.getGreen() / 255f, col.getBlue() / 255f, alpha);
         }
-        GlStateManager.enableTexture2D();
-        GlStateManager.enableBlend();
-        GlStateManager.enableDepth();
+        GlStateManagerCompat.enableTexture2D();
+        GlStateManagerCompat.enableBlend();
+        GlStateManagerCompat.enableDepth();
         GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         // Animated title
         float scale = Math.max(1.8f, Math.min(2.8f, width / 155f));
-        float scaledW = fontRendererObj.getStringWidth(TITLE) * scale;
+        float scaledW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), TITLE) * scale;
         float titleX = (width - scaledW) / 2f;
         float titleY = height * 0.22f;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(titleX, titleY, 0f);
-        GlStateManager.scale(scale, scale, 1f);
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(titleX, titleY, 0f);
+        GlStateManagerCompat.scale(scale, scale, 1f);
         int curX = 0;
         for (int i = 0; i < TITLE.length(); i++) {
             float t = (float) i / Math.max(1, TITLE.length() - 1);
@@ -126,26 +139,26 @@ public class OptionsMenu extends GuiScreen {
             Color col = Color.getHSBColor(hue, 0.75f - shimmer * 0.20f, 0.85f + shimmer * 0.15f);
             int argb = (0xFF << 24) | (col.getRed() << 16) | (col.getGreen() << 8) | col.getBlue();
             float bob = (float) (Math.sin(globalTime * 0.9f + i * 0.35f) * 0.6f);
-            GlStateManager.pushMatrix();
-            GlStateManager.translate(0f, bob, 0f);
+            GlStateManagerCompat.pushMatrix();
+            GlStateManagerCompat.translate(0f, bob, 0f);
             String ch = String.valueOf(TITLE.charAt(i));
-            fontRendererObj.drawStringWithShadow(ch, curX, 0, argb);
-            GlStateManager.popMatrix();
-            curX += fontRendererObj.getStringWidth(ch);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), ch, curX, 0, argb);
+            GlStateManagerCompat.popMatrix();
+            curX += DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), ch);
         }
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.popMatrix();
 
         // Version string
         String ver = "v" + Aetheria.VERSION;
-        float verX = (width - fontRendererObj.getStringWidth(ver)) / 2f;
-        float verY = titleY + fontRendererObj.FONT_HEIGHT * scale + 5f;
-        fontRendererObj.drawStringWithShadow(ver, verX, verY, blendColor(openProgress));
+        float verX = (width - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), ver)) / 2f;
+        float verY = titleY + MinecraftCompat.getFontRenderer().FONT_HEIGHT * scale + 5f;
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), ver, verX, verY, blendColor(openProgress));
 
         // Update badge
         if (updateVersion != null) drawUpdateBadge();
 
         GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
 
         int btnX = width / 2 - BTN_W / 2;
         int btnBaseY = height / 2 + 10;
@@ -154,11 +167,11 @@ public class OptionsMenu extends GuiScreen {
             boolean hov = mouseX >= btnX && mouseX <= btnX + BTN_W && mouseY >= by && mouseY <= by + BTN_H;
 
             RenderUtils.drawFloatingRectDark(btnX, by, BTN_W, BTN_H, false);
-            if (hov) drawRect(btnX, by, btnX + BTN_W, by + BTN_H, 0x18FFFFFF);
+            if (hov) DrawContextUtils.fill(btnX, by, btnX + BTN_W, by + BTN_H, 0x18FFFFFF);
 
             int labelColor = hov ? 0x00C8C8 : 0xA0A0A0;
             String lbl = BTN_LABELS[i];
-            fontRendererObj.drawStringWithShadow(lbl, btnX + (BTN_W - fontRendererObj.getStringWidth(lbl)) / 2f, by + (BTN_H - fontRendererObj.FONT_HEIGHT) / 2f, labelColor);
+            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), lbl, btnX + (BTN_W - DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), lbl)) / 2f, by + (BTN_H - MinecraftCompat.getFontRenderer().FONT_HEIGHT) / 2f, labelColor);
         }
 
         int iconY = height - ICON_SIZE - 8;
@@ -167,24 +180,22 @@ public class OptionsMenu extends GuiScreen {
             int ix = iconStripX() + i * (ICON_SIZE + ICON_GAP);
             boolean hov = mouseX >= ix && mouseX <= ix + ICON_SIZE && mouseY >= iconY && mouseY <= iconY + ICON_SIZE;
 
-            GlStateManager.enableBlend();
+            GlStateManagerCompat.enableBlend();
             GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
-            GlStateManager.color(1f, 1f, 1f, hov ? 1f : 0.65f);
-            mc.getTextureManager().bindTexture(SOCIAL_ICONS[i]);
-            RenderUtils.drawTexturedRect(ix, iconY, ICON_SIZE, ICON_SIZE, GL11.GL_LINEAR);
+            GlStateManagerCompat.color(1f, 1f, 1f, hov ? 1f : 0.65f);
+            TextureCompat.drawBoundTextured(SOCIAL_ICONS[i], ix, iconY, ICON_SIZE, ICON_SIZE, 0, 0, 1, 1);
         }
 
-        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManagerCompat.color(1f, 1f, 1f, 1f);
         GL14.glBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
-        super.mouseClicked(mouseX, mouseY, mouseButton);
+    protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
 
         // Update badge
         if (updateVersion != null && mouseX >= updateButtonX && mouseX <= updateButtonX + updateButtonW && mouseY >= updateButtonY && mouseY <= updateButtonY + updateButtonH) {
-            tryBrowse("https://modrinth.com/mod/aetheriamod");
+            tryBrowse(RepoLinks.modrinth());
             return;
         }
 
@@ -218,10 +229,10 @@ public class OptionsMenu extends GuiScreen {
         // Social icons
         int iconBaseX = iconStripX();
         int iconY = height - ICON_SIZE - 8;
-        for (int i = 0; i < SOCIAL_URLS.length; i++) {
+        for (int i = 0; i < SOCIAL_ICONS.length; i++) {
             int ix = iconBaseX + i * (ICON_SIZE + ICON_GAP);
             if (mouseX >= ix && mouseX <= ix + ICON_SIZE && mouseY >= iconY && mouseY <= iconY + ICON_SIZE) {
-                tryBrowse(SOCIAL_URLS[i]);
+                tryBrowse(socialUrl(i));
                 return;
             }
         }
@@ -236,47 +247,46 @@ public class OptionsMenu extends GuiScreen {
         float titleScale = Math.max(1.8f, Math.min(2.8f, width / 155f));
         float splashScale = titleScale * 0.52f;
         float bounce = 1f - (float) (Math.abs(Math.sin(splashBounce)) * 0.06f);
-        float scaledW = fontRendererObj.getStringWidth(TITLE) * titleScale;
+        float scaledW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), TITLE) * titleScale;
         float anchorX = (width - scaledW) / 2f + scaledW + 10f;
-        float anchorY = height * 0.22f + fontRendererObj.FONT_HEIGHT * titleScale * 0.3f + 15f;
+        float anchorY = height * 0.22f + MinecraftCompat.getFontRenderer().FONT_HEIGHT * titleScale * 0.3f + 15f;
 
-        float renderedW = fontRendererObj.getStringWidth(updateText) * splashScale * bounce;
-        float renderedH = fontRendererObj.FONT_HEIGHT * splashScale * bounce;
+        float renderedW = DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), updateText) * splashScale * bounce;
+        float renderedH = MinecraftCompat.getFontRenderer().FONT_HEIGHT * splashScale * bounce;
         updateButtonX = anchorX - renderedW / 2f;
         updateButtonY = anchorY - renderedH / 2f;
         updateButtonW = renderedW;
         updateButtonH = renderedH;
 
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(anchorX, anchorY, 0f);
-        GlStateManager.rotate(-12f, 0f, 0f, 1f);
-        GlStateManager.scale(splashScale * bounce, splashScale * bounce, 1f);
-        fontRendererObj.drawStringWithShadow(updateText, -fontRendererObj.getStringWidth(updateText) / 2f, -fontRendererObj.FONT_HEIGHT / 2f, 0xFF00FFB3);
-        GlStateManager.popMatrix();
+        GlStateManagerCompat.pushMatrix();
+        GlStateManagerCompat.translate(anchorX, anchorY, 0f);
+        GlStateManagerCompat.rotate(-12f, 0f, 0f, 1f);
+        GlStateManagerCompat.scale(splashScale * bounce, splashScale * bounce, 1f);
+        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), updateText, -DrawContextUtils.getStringWidth(MinecraftCompat.getFontRenderer(), updateText) / 2f, -MinecraftCompat.getFontRenderer().FONT_HEIGHT / 2f, 0xFF00FFB3);
+        GlStateManagerCompat.popMatrix();
     }
 
-    private void drawDot(float cx, float cy, float r) {
-        GL11.glBegin(GL11.GL_TRIANGLE_FAN);
-        GL11.glVertex2f(cx, cy);
+    private void drawDot(float cx, float cy, float r, float red, float green, float blue, float alpha) {
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.TRIANGLE_FAN, TessellatorCompat.POSITION_COLOR);
+        vb.pos(cx, cy, 0).color(red, green, blue, alpha).endVertex();
         int segs = Math.max(8, (int) (r * 4));
         for (int i = 0; i <= segs; i++) {
             double a = i * Math.PI * 2 / segs;
-            GL11.glVertex2f(cx + (float) (Math.cos(a) * r), cy + (float) (Math.sin(a) * r));
+            vb.pos(cx + (float) (Math.cos(a) * r), cy + (float) (Math.sin(a) * r), 0).color(red, green, blue, alpha).endVertex();
         }
-        GL11.glEnd();
+        vb.draw();
     }
 
     private void drawSoftBloom(float cx, float cy, float r) {
         Color inner = Color.getHSBColor((float) 0.56, 0.40f, 0.20f);
-        GL11.glBegin(GL11.GL_TRIANGLE_FAN);
-        GL11.glColor4f(inner.getRed() / 255f, inner.getGreen() / 255f, inner.getBlue() / 255f, (float) 0.04);
-        GL11.glVertex2f(cx, cy);
-        GL11.glColor4f(0f, 0f, 0f, 0f);
+        float ir = inner.getRed() / 255f, ig = inner.getGreen() / 255f, ib = inner.getBlue() / 255f;
+        VertexBuilder vb = TessellatorCompat.beginDraw(TessellatorCompat.TRIANGLE_FAN, TessellatorCompat.POSITION_COLOR);
+        vb.pos(cx, cy, 0).color(ir, ig, ib, 0.04f).endVertex();
         for (int i = 0; i <= 48; i++) {
             double a = i * Math.PI * 2 / 48;
-            GL11.glVertex2f(cx + (float) (Math.cos(a) * r), cy + (float) (Math.sin(a) * r));
+            vb.pos(cx + (float) (Math.cos(a) * r), cy + (float) (Math.sin(a) * r), 0).color(0f, 0f, 0f, 0f).endVertex();
         }
-        GL11.glEnd();
+        vb.draw();
     }
 
     private int blendColor(float alphaMul) {
@@ -297,7 +307,7 @@ public class OptionsMenu extends GuiScreen {
     }
 
     @Override
-    public void onGuiClosed() {
+    public void guiClosed() {
         particles.clear();
     }
 
