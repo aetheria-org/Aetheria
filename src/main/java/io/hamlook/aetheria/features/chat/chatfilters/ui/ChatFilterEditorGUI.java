@@ -67,9 +67,14 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
             this.action = FilterAction.CANCEL;
         } else {
             this.filter = filter;
-            this.words = new ArrayList<>(filter.filterWords);
-            this.mode = filter.filterType;
-            this.filterCase = filter.filterCase;
+            this.words = new ArrayList<>();
+            if (filter.filterWords != null) {
+                for (String word : filter.filterWords) {
+                    if (word != null && !word.isEmpty()) this.words.add(word);
+                }
+            }
+            this.mode = filter.filterType != null ? filter.filterType : FilterMode.CONTAINS;
+            this.filterCase = filter.filterCase != null ? filter.filterCase : FilterCase.SENSITIVE;
             this.action = filter.action != null ? filter.action : (filter.replace ? FilterAction.REPLACE : FilterAction.CANCEL);
         }
     }
@@ -167,7 +172,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         l.y = wordsListY();
         l.width = rw();
         l.height = wordsListHeight();
-        l.itemHeight = getScaledY(38);
+        l.itemHeight = Math.max(1, getScaledY(38));
         l.totalHeight = words.size() * l.itemHeight;
         l.maxScroll = Math.max(0, l.totalHeight - l.height);
         return l;
@@ -178,8 +183,8 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         l.x = rx();
         l.y = secPreviewY() + getScaledY(LABEL_H + ROW_GAP);
         l.width = rw();
-        l.height = bottomBtnY() - getScaledY(ROW_GAP) - l.y;
-        l.itemHeight = getScaledY(28);
+        l.height = Math.max(0, bottomBtnY() - getScaledY(ROW_GAP) - l.y);
+        l.itemHeight = Math.max(1, getScaledY(28));
         l.totalHeight = words.size() * l.itemHeight;
         l.maxScroll = Math.max(0, l.totalHeight - l.height);
         return l;
@@ -221,6 +226,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
     }
 
     private void saveFilter() {
+        if (words.isEmpty()) return;
         if (isNew) {
             ChatFilterManager.chatFilters.add(new ChatFilter(words, mode, filterCase, action));
         } else {
@@ -244,19 +250,19 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
     @Override
     protected void onKeyTyped(char typedChar, int keyCode) {
         if (KeybindHelper.isEscapeKey(keyCode)) {
-            if (addWordField.isFocused()) {
+            if (activeTab == TAB_SETUP && addWordField.isFocused()) {
                 addWordField.setFocused(false);
                 return;
             }
-            if (customPreviewField.isFocused()) {
+            if (activeTab == TAB_PREVIEW && customPreviewField.isFocused()) {
                 customPreviewField.setFocused(false);
                 return;
             }
         }
-        if (addWordField.isFocused()) {
+        if (activeTab == TAB_SETUP && addWordField.isFocused()) {
             GuiScreenUtils.typeTextField(addWordField, typedChar, keyCode);
             if (KeybindHelper.isEnterKey(keyCode)) addWord();
-        } else if (customPreviewField.isFocused()) {
+        } else if (activeTab == TAB_PREVIEW && customPreviewField.isFocused()) {
             GuiScreenUtils.typeTextField(customPreviewField, typedChar, keyCode);
             if (KeybindHelper.isEnterKey(keyCode)) testCustomSentence();
         }
@@ -266,6 +272,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         String text = customPreviewField.getText();
         if (text.isEmpty()) {
             customPreviewResult = "";
+            cachedRight = null;
             return;
         }
         String result = new ChatFilter(words, mode, filterCase, action).applyFilter(text);
@@ -281,6 +288,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
             previewDirty = true;
             cachedLeft = null;
             cachedRight = null;
+            scrollY = Math.max(0, words.size() * Math.max(1, getScaledY(38)) - wordsListHeight());
         }
     }
 
@@ -305,7 +313,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         if (cachedRight == null) cachedRight = buildRightLayout();
 
         updateScrollDragging(mouseY, cachedLeft, cachedRight);
-        handleMouseWheel(mouseX, cachedLeft, cachedRight);
+        handleMouseWheel(mouseX, mouseY, cachedLeft, cachedRight);
 
         drawSectionBackgrounds(cachedLeft, cachedRight, fade);
         drawHeader();
@@ -573,14 +581,19 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         previewsScrollY = clampScroll(previewsScrollY, right.maxScroll);
     }
 
-    private void handleMouseWheel(int mouseX, ListLayout left, ListLayout right) {
+    private void handleMouseWheel(int mouseX, int mouseY, ListLayout left, ListLayout right) {
         int dWheel = MouseCompat.getDWheel();
         if (dWheel == 0) return;
-        if (activeTab == TAB_SETUP) {
+        if (activeTab == TAB_SETUP && inside(mouseX, mouseY, left)) {
             scrollY = clampScroll(scrollY - Integer.signum(dWheel) * getScaledY(20), left.maxScroll);
-        } else if (activeTab == TAB_PREVIEW) {
+        } else if (activeTab == TAB_PREVIEW && inside(mouseX, mouseY, right)) {
             previewsScrollY = clampScroll(previewsScrollY - Integer.signum(dWheel) * getScaledY(20), right.maxScroll);
         }
+    }
+
+    private boolean inside(int mouseX, int mouseY, ListLayout layout) {
+        return layout.height > 0 && mouseX >= layout.x && mouseX < layout.x + layout.width
+                && mouseY >= layout.y && mouseY < layout.y + layout.height;
     }
 
     private void drawRightPreviewList(ListLayout layout) {
@@ -676,17 +689,23 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
         int y = bottomBtnY();
         ThemeContext.button(buttonHits, font, "Cancel", right - cancelW, y, cancelW, footerH, false, false,
                 () -> mc.displayGuiScreen(parent), null);
-        ThemeContext.button(buttonHits, font, "Save", right - cancelW - gap - saveW, y, saveW, footerH,
-                true, false, () -> {
-                    saveFilter();
-                    mc.displayGuiScreen(parent);
-                }, null);
+        int saveX = right - cancelW - gap - saveW;
+        if (words.isEmpty()) {
+            ThemeContext.buttonDisabled(font, "Save", saveX, y, saveW, footerH);
+        } else {
+            ThemeContext.button(buttonHits, font, "Save", saveX, y, saveW, footerH,
+                    true, false, () -> {
+                        if (words.isEmpty()) return;
+                        saveFilter();
+                        mc.displayGuiScreen(parent);
+                    }, null);
+        }
     }
 
     @Override
     protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
-        addWordField.mouseClicked(mouseX, mouseY, mouseButton);
-        customPreviewField.mouseClicked(mouseX, mouseY, mouseButton);
+        if (activeTab == TAB_SETUP) addWordField.mouseClicked(mouseX, mouseY, mouseButton);
+        else if (activeTab == TAB_PREVIEW) customPreviewField.mouseClicked(mouseX, mouseY, mouseButton);
 
         if (mouseButton == 0 && clickThemeButton(mouseX, mouseY)) return;
 
@@ -696,6 +715,8 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
             return;
         }
 
+        if (mouseButton != 0) return;
+
         if (cachedLeft == null) cachedLeft = buildLeftLayout();
         if (cachedRight == null) cachedRight = buildRightLayout();
 
@@ -704,6 +725,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
     }
 
     private void handleRightClick(int mouseX, int mouseY, ListLayout layout) {
+        if (layout.height <= 0 || layout.maxScroll <= 0) return;
         if (tryStartScrollbarDrag(mouseX, mouseY, layout.x + layout.width - getScaledX(6), layout.y, layout.height, layout.totalHeight, previewsScrollY, layout.maxScroll)) {
             dragModeRight = 1;
             dragStartYRight = mouseY;
@@ -718,6 +740,7 @@ public class ChatFilterEditorGUI extends ChatFilterBaseGUI {
     }
 
     private void handleLeftClick(int mouseX, int mouseY, ListLayout layout) {
+        if (layout.height <= 0 || layout.maxScroll <= 0) return;
         if (tryStartScrollbarDrag(mouseX, mouseY, layout.x + layout.width - getScaledX(6), layout.y, layout.height, layout.totalHeight, scrollY, layout.maxScroll)) {
             dragModeLeft = 1;
             dragStartYLeft = mouseY;

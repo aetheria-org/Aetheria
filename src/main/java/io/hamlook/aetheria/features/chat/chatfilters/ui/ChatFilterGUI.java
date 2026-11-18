@@ -19,6 +19,7 @@ import net.minecraft.client.gui.GuiTextField;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -42,7 +43,8 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
 
     @Override
     protected void onInitGui() {
-        chatFilters = new ArrayList<>(ChatFilterManager.chatFilters);
+        chatFilters = ChatFilterManager.chatFilters == null
+                ? new ArrayList<>() : new ArrayList<>(ChatFilterManager.chatFilters);
 
         boxW = Math.min(getScaledX(1280), width - getScaledX(32));
         boxH = Math.min(getScaledY(840), height - getScaledY(32));
@@ -93,17 +95,21 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
     }
 
     private List<ChatFilter> getDisplayedFilters() {
-        String search = searchField.getText().toLowerCase();
+        String search = searchField.getText().toLowerCase(Locale.ROOT);
 
         return chatFilters.stream().filter(cf -> {
-            if (cf.filterType == FilterMode.STARTS && !showStarts) return false;
-            if (cf.filterType == FilterMode.ENDS && !showEnds) return false;
-            if (cf.filterType == FilterMode.CONTAINS && !showContains) return false;
-            if (cf.filterCase == FilterCase.SENSITIVE && !showSensitive) return false;
-            if (cf.filterCase == FilterCase.INSENSITIVE && !showInsensitive) return false;
+            if (cf == null) return false;
+            FilterMode type = cf.filterType != null ? cf.filterType : FilterMode.CONTAINS;
+            FilterCase filterCase = cf.filterCase != null ? cf.filterCase : FilterCase.SENSITIVE;
+            if (type == FilterMode.STARTS && !showStarts) return false;
+            if (type == FilterMode.ENDS && !showEnds) return false;
+            if (type == FilterMode.CONTAINS && !showContains) return false;
+            if (filterCase == FilterCase.SENSITIVE && !showSensitive) return false;
+            if (filterCase == FilterCase.INSENSITIVE && !showInsensitive) return false;
             if (search.isEmpty()) return true;
 
-            return cf.filterWords.stream().anyMatch(w -> w.toLowerCase().contains(search));
+            return cf.filterWords != null && cf.filterWords.stream().filter(w -> w != null)
+                    .anyMatch(w -> w.toLowerCase(Locale.ROOT).contains(search));
         }).collect(Collectors.toList());
     }
 
@@ -286,7 +292,8 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
             ThemeContext.rect(rowX, rowY, rowW, rowH, rowColor);
             ThemeContext.border(rowX, rowY, rowW, rowH, ThemeContext.BTN_BORDER);
             ThemeContext.rect(rowX, rowY, getScaledX(2), rowH, hovered ? ThemeContext.ACCENT : ThemeContext.LINE);
-            String preview = String.join(", ", cf.filterWords);
+            String preview = cf.filterWords == null ? "" : cf.filterWords.stream()
+                    .filter(word -> word != null).collect(Collectors.joining(", "));
 
             if (preview.length() > 55) {
                 preview = preview.substring(0, 55) + "...";
@@ -294,7 +301,9 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
 
             String action = cf.action != null ? cf.action.name() : (cf.replace ? "REPLACE" : "CANCEL");
             action = action.substring(0, 1) + action.substring(1).toLowerCase();
-            String info = cf.filterType.name + "  ·  " + (cf.filterCase == FilterCase.SENSITIVE ? "Case sensitive" : "Ignore case") + "  ·  " + action;
+            FilterMode type = cf.filterType != null ? cf.filterType : FilterMode.CONTAINS;
+            FilterCase filterCase = cf.filterCase != null ? cf.filterCase : FilterCase.SENSITIVE;
+            String info = type.name + "  ·  " + (filterCase == FilterCase.SENSITIVE ? "Case sensitive" : "Ignore case") + "  ·  " + action;
             int buttonStart = rowX + rowW - rightPad - editW - gap - delW;
             int textX = rowX + getScaledX(12);
             int textRight = buttonStart - getScaledX(10);
@@ -319,6 +328,7 @@ public class ChatFilterGUI extends ChatFilterBaseGUI {
     protected void onMouseClicked(int mouseX, int mouseY, int mouseButton) {
         if (mouseButton == 0 && clickThemeButton(mouseX, mouseY)) return;
         searchField.mouseClicked(mouseX, mouseY, mouseButton);
+        if (mouseButton != 0) return;
 
         List<ChatFilter> displayed = getDisplayedFilters();
         ListLayout l = cachedLayout != null ? cachedLayout : buildLayout(displayed);

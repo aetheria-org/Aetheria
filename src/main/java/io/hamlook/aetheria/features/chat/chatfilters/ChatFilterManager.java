@@ -32,8 +32,10 @@ public class ChatFilterManager {
 
     public static IChatComponent applyFilters(IChatComponent message) {
         if (message == null) return null;
+        if (chatFilters == null || chatFilters.isEmpty()) return message;
         String msg = TextCompat.getFormattedTextWithResets(message);
         for (ChatFilter filter : chatFilters) {
+            if (filter == null) continue;
             msg = filter.applyFilter(msg);
             if (msg == null) return null;
         }
