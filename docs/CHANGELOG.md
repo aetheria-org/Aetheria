@@ -11,6 +11,7 @@ Aetheria's Skyblock Mod 2.0.0: now available for Minecraft 1.21.1 (Fabric) along
 - Added Secret Chime
 - Added Garden Plot Warp Grid
 - Added New Waypoint Menu
+- Added New Chat Filter menu
 - Added New ASM waypoint format
 - Added Bal Timer & Alert
 - Added Personal Booster lines to scoreboard
@@ -32,6 +33,7 @@ Aetheria's Skyblock Mod 2.0.0: now available for Minecraft 1.21.1 (Fabric) along
 - Improved Dungeon Map performance (~30 more FPS)
 - Ghost Tracker overlay is now only visible in the Mist
 - Added marquee text for Fetchur in the scoreboard
+- Added new Cylinder mode for Gyrowand
 - Added compact booster cookie time in the scoreboard
 - New scoreboard lines are now added automatically to existing configs
 - Improved Chat and Enchant Parser config UX
