@@ -43,13 +43,18 @@ public class CapeManager {
         ThreadUtils.run(() -> {
             if (!pushCapeToAPI(playerName, cape.id)) {
                 Aetheria.logger.info("[CapeManager] Failed to push cape for " + playerName);
-                activeCapes.put(playerName, "none");
             }
         });
     }
 
     public static void removeCape(String playerName) {
         activeCapes.put(playerName, "none");
+        lastFetched = System.currentTimeMillis();
+        EntityPlayer self = MinecraftCompat.getLocalPlayer();
+        if (self != null && playerName != null
+                && playerName.equalsIgnoreCase(self.getGameProfile().getName())) {
+            CLIENT_SIDE_CAPE_ID = "";
+        }
         ThreadUtils.run(() -> deleteCapeFromAPI(playerName));
     }
 

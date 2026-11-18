@@ -1,175 +1,173 @@
 package io.hamlook.aetheria.features.capes.ui;
 
-import io.hamlook.aetheria.Aetheria;
-import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.features.capes.Cape;
 import io.hamlook.aetheria.features.capes.CapeManager;
-import io.hamlook.aetheria.utils.compat.DrawContext;
-import io.hamlook.aetheria.utils.compat.DrawContextUtils;
+import io.hamlook.aetheria.utils.LerpUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
-import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import io.hamlook.aetheria.utils.render.NineSliceUtils;
-import io.hamlook.aetheria.utils.render.ResolutionUtils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.ModelBase;
-import net.minecraft.client.model.ModelRenderer;
-import net.minecraft.util.ResourceLocation;
-//#if MC > 1.21
-//$$ import net.minecraft.client.model.ModelData;
-//$$ import net.minecraft.client.model.ModelPartBuilder;
-//$$ import net.minecraft.client.model.ModelTransform;
-//$$ import net.minecraft.client.model.TexturedModelData;
-//$$ import net.minecraft.client.render.LightmapTextureManager;
-//$$ import net.minecraft.client.render.OverlayTexture;
-//$$ import net.minecraft.client.render.RenderLayer;
-//#endif
+import io.hamlook.aetheria.utils.render.PlayerRenderer;
+import net.minecraft.client.gui.FontRenderer;
 
+/** A cape entry and its independent player-preview rotation state. */
 public class CapeDisplay {
 
-    private static final float FIXED_ANGLE = 310f;
-
-    /**
-     * GUI depth for the cape model. 1.8.9 flushed capes immediately with GUI
-     * depth testing effectively inactive, so the old value of 50 was inert.
-     * 1.21+ buffers the geometry and flushes it with the entity layer's depth
-     * test active, where 50 lands behind the card chrome emitted at z 0.
-     */
-    //#if MC < 1.21
-    private static final float GUI_DEPTH = 50f;
-    //#else
-    //$$ private static final float GUI_DEPTH = 1f;
-    //#endif
-
-    private static final ResourceLocation SLOT_BG = Resources.CAPES_UI;
-    private static long lastNullTextureWarnMs = 0L;
-    private static int nullTextureSkipped = 0;
-    private final ModelRenderer capeModel;
-    public String capeID;
-    public int width, height;
-    public int xPos = -1, yPos = -1;
+    private final LerpUtils.LerpingFloat hover = new LerpUtils.LerpingFloat(0f, 140);
+    private float yaw = 180f;
+    private long lastRotationTime = System.currentTimeMillis();
+    private int dragStartX;
+    private float dragStartYaw;
+    private int modelX, modelY, modelW, modelH;
+    private boolean dragging;
+    private boolean manualRotation;
+    public final String capeID;
+    public int xPos = -1, yPos = -1, width, height;
 
     public CapeDisplay(Cape cape) {
         this.capeID = cape.id;
-        this.width = (int) ResolutionUtils.getXStatic(150);
-        this.height = (int) ResolutionUtils.getYStatic(250);
-
-        //#if MC < 1.21
-        this.capeModel = new ModelRenderer(new ModelBase() {
-        }, 0, 0);
-        this.capeModel.setTextureSize(64, 32);
-        this.capeModel.addBox(-5.0F, 0.0F, -1.0F, 10, 16, 1);
-        //#else
-        //$$ ModelData capeData = new ModelData();
-        //$$ capeData.getRoot().addChild("cape", ModelPartBuilder.create().uv(0, 0).cuboid(-5.0F, 0.0F, -1.0F, 10.0F, 16.0F, 1.0F), ModelTransform.NONE);
-        //$$ this.capeModel = TexturedModelData.of(capeData, 64, 32).createModel();
-        //#endif
     }
 
-    public void draw(int xPos, int yPos, boolean hovering, boolean selected, Minecraft mc) {
-        this.xPos = xPos;
-        this.yPos = yPos;
-
-        GlStateManagerCompat.pushMatrix();
-        GlStateManagerCompat.disableLighting();
-        GlStateManagerCompat.disableDepth();
-
-        NineSliceUtils.draw(SLOT_BG, xPos, yPos, width, height, 6, 18);
-
-        if (hovering || selected) {
-            GlStateManagerCompat.enableBlend();
-            GlStateManagerCompat.color(1f, 1f, 1f, selected ? 0.25f : 0.10f);
-            NineSliceUtils.draw(SLOT_BG, xPos, yPos, width, height, 6, 18);
-            GlStateManagerCompat.color(1f, 1f, 1f, 1f);
-        }
-
-        GlStateManagerCompat.enableDepth();
-        GlStateManagerCompat.enableLighting();
-        GlStateManagerCompat.popMatrix();
-
-        int modelX = xPos + width / 2;
-        // Move the render origin exactly to the vertical center of the card
-        int modelY = yPos + (height / 2);
-
-        // Scale it up significantly (From 90 to 140)
-        int modelScale = (int) ResolutionUtils.getYStatic(140);
-
-        drawStaticCape(mc, modelX, modelY, modelScale);
-
-        GlStateManagerCompat.pushMatrix();
-        GlStateManagerCompat.disableDepth();
-        GlStateManagerCompat.disableLighting();
-        String label = CapeManager.getCape(capeID) != null ? CapeManager.getCape(capeID).name : capeID;
-        int labelX = xPos + (width / 2) - (MinecraftCompat.getFontRenderer().getStringWidth(label) / 2);
-        DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), label, labelX, yPos + height - 14, selected ? 0xFFD700 : 0xFFFFFF);
-        GlStateManagerCompat.enableDepth();
-        GlStateManagerCompat.enableLighting();
-        GlStateManagerCompat.popMatrix();
-    }
-
-    private void drawStaticCape(Minecraft mc, int x, int y, int scale) {
+    public String name() {
         Cape cape = CapeManager.getCape(capeID);
-        if (cape == null || cape.resourceLocation == null) {
-            nullTextureSkipped++;
-            long now = System.currentTimeMillis();
-            if (now - lastNullTextureWarnMs > 30000L) {
-                lastNullTextureWarnMs = now;
-                Aetheria.logger.warning(
-                        "CapeDisplay: skipped " + nullTextureSkipped + " card(s) with no uploaded texture (fetch pending or failed).");
-                nullTextureSkipped = 0;
-            }
-            int pw = width / 3;
-            int ph = height / 2;
-            DrawContextUtils.fill(x - pw / 2, y - ph / 2, x + pw / 2, y + ph / 2, 0xFF2A2A2A);
-            DrawContextUtils.drawTextWithShadow(MinecraftCompat.getFontRenderer(), "?",
-                    x - MinecraftCompat.getFontRenderer().getStringWidth("?") / 2, y - 4, 0xFF888888);
-            return;
+        return cape == null || cape.name == null || cape.name.trim().isEmpty() ? capeID : cape.name;
+    }
+
+    public float rotation(long now, boolean allowManualRotation) {
+        long elapsed = Math.max(0L, Math.min(100L, now - lastRotationTime));
+        lastRotationTime = now;
+        if ((!allowManualRotation || !manualRotation) && !dragging) yaw = (yaw + elapsed * 0.01f) % 360f;
+        return yaw;
+    }
+
+    public void beginRotationDrag(int mouseX) {
+        dragging = true;
+        dragStartX = mouseX;
+        dragStartYaw = yaw;
+        lastRotationTime = System.currentTimeMillis();
+    }
+
+    public void dragRotation(int mouseX) {
+        if (!dragging) return;
+        yaw = (dragStartYaw - (mouseX - dragStartX) * 0.45f) % 360f;
+        if (yaw < 0f) yaw += 360f;
+        manualRotation = true;
+    }
+
+    public void endRotationDrag() {
+        dragging = false;
+        lastRotationTime = System.currentTimeMillis();
+    }
+
+    public void resumeAutoRotation() {
+        manualRotation = false;
+        lastRotationTime = System.currentTimeMillis();
+    }
+
+    public boolean isManuallyRotated() {
+        return manualRotation;
+    }
+
+    public void draw(int x, int y, int w, int h, boolean hovering, boolean equipped,
+                     String playerName, float partialTicks, FontRenderer font,
+                     ThemeContext.HitList hits, Runnable equipAction) {
+        xPos = x;
+        yPos = y;
+        width = w;
+        height = h;
+
+        float target = hovering ? 1f : 0f;
+        if (hover.getTarget() != target) {
+            hover.resetTimer();
+            hover.setTarget(target);
+        }
+        hover.tick();
+
+        float hoverAmount = LerpUtils.sigmoidZeroOne(hover.getValue());
+        ThemeContext.rect(x, y, w, h, ThemeContext.mixArgb(ThemeContext.PANEL, 0xFF303030,
+                0.10f + hoverAmount * 0.34f));
+        ThemeContext.border(x, y, w, h, equipped ? ThemeContext.ACCENT : ThemeContext.LINE);
+        if (equipped || hovering) {
+            ThemeContext.rect(x, y, w, 2,
+                    ThemeContext.withAlpha(ThemeContext.ACCENT, equipped ? 1f : hoverAmount * 0.7f));
         }
 
-        GlStateManagerCompat.color(1.0f, 1.0f, 1.0f, 1.0f);
-        GlStateManagerCompat.pushMatrix();
+        int modelBaseY = y + h - 54;
+        int modelScale = Math.max(28, Math.min(52, (h - 56) / 2));
+        ThemeContext.rect(x + 5, y + 5, w - 10, h - 54,
+                ThemeContext.mixArgb(ThemeContext.PANEL, ThemeContext.BTN_HOVER, 0.25f));
+        ThemeContext.border(x + 5, y + 5, w - 10, h - 54, ThemeContext.LINE);
+        if (playerName != null && !playerName.isEmpty()) {
+            Cape cape = CapeManager.getCape(capeID);
+            if (cape != null && cape.isLoaded()) {
+                drawModel(playerName, cape, x, y, w, h - 34, modelBaseY, modelScale, partialTicks, false);
+            } else {
+                ThemeContext.textCenter(font, "Loading cape...", x + w / 2, y + h / 2, ThemeContext.MUTED);
+            }
+        } else {
+            ThemeContext.textCenter(font, "Join a world to preview", x + w / 2, y + h / 2, ThemeContext.MUTED);
+        }
 
-        // Both renderers apply their own 1/16 internally (legacy
-        // ModelRenderer.render(0.0625F), modern ModelPart's cuboid and pivot
-        // division), so the matrix scale is the raw model scale on either
-        // version. Scaling by 0.0625 here as well shrinks the cape 16x.
-        GlStateManagerCompat.translate(x, y, GUI_DEPTH);
-        GlStateManagerCompat.scale(scale, scale, scale);
-
-        //#if MC < 1.21
-        GlStateManagerCompat.rotate(CapeDisplay.FIXED_ANGLE, 0f, 1f, 0f);
-        //#else
-        //$$ GlStateManagerCompat.rotate(180f, 0f, 1f, 0f);
-        //#endif
-
-        // The cape therefore hangs the same eight model units below the pivot on
-        // both versions, so the lift back to centre applies to both.
-        GlStateManagerCompat.translate(0f, -8f * 0.0625f, 0f);
-
-        //#if MC < 1.21
-        mc.getTextureManager().bindTexture(cape.resourceLocation);
-        capeModel.render(0.0625F);
-        //#else
-        //$$ DrawContext ctx;
-        //$$ try {
-        //$$     ctx = DrawContextUtils.getDrawContext();
-        //$$ } catch (IllegalStateException unbound) {
-        //$$     GlStateManagerCompat.popMatrix();
-        //$$     return;
-        //$$ }
-        //$$ capeModel.render(ctx.getMatrices(),
-        //$$         ctx.getVertexConsumers().getBuffer(RenderLayer.getEntityCutoutNoCull(cape.resourceLocation)),
-        //$$         LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV);
-        //$$ ctx.draw();
-        //#endif
-
-        GlStateManagerCompat.popMatrix();
+        String label = hovering ? "Click to View More" : name();
+        label = ThemeContext.fit(font, label, w - 20);
+        ThemeContext.textCenter(font, label, x + w / 2, y + h - 46, ThemeContext.TEXT);
+        // Text rendering can restore depth testing after the player model was drawn.
+        GlStateManagerCompat.disableDepth();
+        if (equipAction != null) {
+            if (equipped) {
+                ThemeContext.button(hits, font, "Unequip", x + 8, y + h - 29, w - 16,
+                        ThemeContext.FIELD_H, false, true, equipAction, null);
+            } else {
+                drawEquipButton(font, hits, x + 8, y + h - 29, w - 16, equipAction);
+            }
+        } else {
+            String disabledLabel = playerName == null || playerName.isEmpty()
+                    ? "Join a world to equip" : "Loading cape...";
+            ThemeContext.buttonDisabled(font, disabledLabel, x + 8, y + h - 29,
+                    w - 16, ThemeContext.FIELD_H);
+        }
+        if (equipped) {
+            ThemeContext.text(font, "Worn", x + 9, y + 8, ThemeContext.ACCENT);
+        }
     }
 
-    public boolean isOver(int mouseX, int mouseY) {
-        return xPos >= 0 && yPos >= 0 && mouseX >= xPos && mouseX <= xPos + width && mouseY >= yPos && mouseY <= yPos + height;
+    private void drawEquipButton(FontRenderer font, ThemeContext.HitList hits,
+                                 int x, int y, int w, Runnable action) {
+        boolean hovered = hits.hover(x, y, w, ThemeContext.FIELD_H);
+        GlStateManagerCompat.resetColor();
+        GlStateManagerCompat.disableLighting();
+        GlStateManagerCompat.disableDepth();
+        GlStateManagerCompat.depthMask(false);
+        ThemeContext.rect(x, y, w, ThemeContext.FIELD_H,
+                hovered ? ThemeContext.ACCENT_HOVER : ThemeContext.ACCENT);
+        ThemeContext.border(x, y, w, ThemeContext.FIELD_H, ThemeContext.ACCENT_HOVER);
+        ThemeContext.textCenter(font, "Equip", x + w / 2,
+                y + (ThemeContext.FIELD_H - 8) / 2, ThemeContext.ACCENT_ON);
+        GlStateManagerCompat.depthMask(true);
+        GlStateManagerCompat.enableDepth();
+        hits.add(x, y, w, ThemeContext.FIELD_H, null, action);
     }
 
-    public boolean isOverClamped(int mouseX, int mouseY, int clipX1, int clipY1, int clipX2, int clipY2) {
-        return isOver(mouseX, mouseY) && mouseX >= clipX1 && mouseX <= clipX2 && mouseY >= clipY1 && mouseY <= clipY2;
+    public void drawModel(String playerName, Cape cape, int x, int y, int w, int h,
+                          int baseY, int scale, float partialTicks, boolean allowManualRotation) {
+        modelX = x + 4;
+        modelY = y + 4;
+        modelW = Math.max(0, w - 8);
+        modelH = Math.max(0, h - 4);
+        GlStateManagerCompat.enableDepth();
+        try {
+            PlayerRenderer.renderCapePreview(playerName, cape, x + w / 2, baseY,
+                    scale, rotation(System.currentTimeMillis(), allowManualRotation), partialTicks);
+        } finally {
+            GlStateManagerCompat.disableDepth();
+        }
+    }
+
+    public boolean contains(int mouseX, int mouseY) {
+        return xPos >= 0 && mouseX >= xPos && mouseX < xPos + width
+                && mouseY >= yPos && mouseY < yPos + height;
+    }
+
+    public boolean containsModel(int mouseX, int mouseY) {
+        return mouseX >= modelX && mouseX < modelX + modelW
+                && mouseY >= modelY && mouseY < modelY + modelH;
     }
 }
