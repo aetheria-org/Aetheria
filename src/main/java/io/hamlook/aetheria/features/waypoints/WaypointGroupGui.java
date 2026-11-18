@@ -8,7 +8,7 @@ import io.hamlook.aetheria.features.waypoints.ui.Modals;
 import io.hamlook.aetheria.features.waypoints.ui.RoutesTab;
 import io.hamlook.aetheria.features.waypoints.ui.SettingsTab;
 import io.hamlook.aetheria.features.waypoints.ui.WaypointField;
-import io.hamlook.aetheria.features.waypoints.ui.WaypointUi;
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
@@ -35,7 +35,7 @@ public class WaypointGroupGui extends GuiElement {
     private static WaypointGroupGui INSTANCE;
 
     private final MenuTab[] tabs = {new RoutesTab(), new EditorTab(), new SettingsTab(), new HelpTab()};
-    private final WaypointUi.HitList hits = new WaypointUi.HitList();
+    private final ThemeContext.HitList hits = new ThemeContext.HitList();
     private final List<WaypointField> fields = new ArrayList<>();
     private final List<Modals.Modal> modals = new ArrayList<>();
 
@@ -47,10 +47,10 @@ public class WaypointGroupGui extends GuiElement {
     private boolean toastOk;
     private long toastUntil;
 
-    private WaypointUi.Hit tooltipSource;
+    private ThemeContext.Hit tooltipSource;
     private long tooltipSince;
     private boolean tooltipSuppressed;
-    private WaypointUi.SliderDrag sliderDrag;
+    private ThemeContext.SliderDrag sliderDrag;
 
     private LerpUtils.LerpingFloat tabHighlightX;
     private LerpUtils.LerpingFloat tabHighlightW;
@@ -89,19 +89,19 @@ public class WaypointGroupGui extends GuiElement {
     }
 
     public int contentX() {
-        return px + WaypointUi.SIDE_PAD;
+        return px + ThemeContext.SIDE_PAD;
     }
 
     public int contentY() {
-        return py + WaypointUi.HEADER_H + WaypointUi.ACTIVE_H + WaypointUi.TAB_H + WaypointUi.PAD;
+        return py + ThemeContext.HEADER_H + ThemeContext.ACTIVE_H + ThemeContext.TAB_H + ThemeContext.PAD;
     }
 
     public int contentW() {
-        return pw - WaypointUi.SIDE_PAD * 2;
+        return pw - ThemeContext.SIDE_PAD * 2;
     }
 
     public int contentH() {
-        return py + ph - WaypointUi.FOOT_H - TOAST_H - WaypointUi.PAD - contentY();
+        return py + ph - ThemeContext.FOOT_H - TOAST_H - ThemeContext.PAD - contentY();
     }
 
     public FontRenderer font() {
@@ -221,7 +221,7 @@ public class WaypointGroupGui extends GuiElement {
         return modals.isEmpty() ? null : modals.get(modals.size() - 1);
     }
 
-    public void startSliderDrag(WaypointUi.SliderDrag drag, int mouseX) {
+    public void startSliderDrag(ThemeContext.SliderDrag drag, int mouseX) {
         sliderDrag = drag;
         if (drag != null) drag.applyAt(mouseX);
     }
@@ -249,11 +249,11 @@ public class WaypointGroupGui extends GuiElement {
         panelFade.tick();
         float pa = panelFade.getValue();
 
-        WaypointUi.rect(0, 0, GuiScreenUtils.getScaledWindowWidth(),
-                GuiScreenUtils.getScaledWindowHeight(), WaypointUi.withAlpha(WaypointUi.DIM, pa));
-        WaypointUi.rect(px - 1, py - 1, pw + 2, ph + 2, WaypointUi.withAlpha(WaypointUi.EDGE, pa));
-        WaypointUi.rect(px, py, pw, ph, WaypointUi.withAlpha(WaypointUi.PANEL, pa));
-        WaypointUi.border(px, py, pw, ph, WaypointUi.LINE);
+        ThemeContext.rect(0, 0, GuiScreenUtils.getScaledWindowWidth(),
+                GuiScreenUtils.getScaledWindowHeight(), ThemeContext.withAlpha(ThemeContext.DIM, pa));
+        ThemeContext.rect(px - 1, py - 1, pw + 2, ph + 2, ThemeContext.withAlpha(ThemeContext.EDGE, pa));
+        ThemeContext.rect(px, py, pw, ph, ThemeContext.withAlpha(ThemeContext.PANEL, pa));
+        ThemeContext.border(px, py, pw, ph, ThemeContext.LINE);
 
         renderHeader(fr, hits);
         renderActiveBar(fr, hits);
@@ -269,7 +269,7 @@ public class WaypointGroupGui extends GuiElement {
         if (modalOpen) hits.setMouse(mx, my);
         renderModals(fr, hits);
 
-        WaypointUi.Hit hovered = hits.topAt(mx, my);
+        ThemeContext.Hit hovered = hits.topAt(mx, my);
         long now = System.currentTimeMillis();
         if (hovered != tooltipSource) {
             tooltipSource = hovered;
@@ -285,11 +285,11 @@ public class WaypointGroupGui extends GuiElement {
         }
     }
 
-    private void renderHeader(FontRenderer fr, WaypointUi.HitList hits) {
-        int y = py + (WaypointUi.HEADER_H - 8) / 2;
-        WaypointUi.text(fr, Strings.HEADER_TITLE, px + WaypointUi.SIDE_PAD, y, WaypointUi.TEXT);
-        WaypointUi.divider(px + WaypointUi.SIDE_PAD, py + WaypointUi.HEADER_H - 1,
-                pw - WaypointUi.SIDE_PAD * 2);
+    private void renderHeader(FontRenderer fr, ThemeContext.HitList hits) {
+        int y = py + (ThemeContext.HEADER_H - 8) / 2;
+        ThemeContext.text(fr, Strings.HEADER_TITLE, px + ThemeContext.SIDE_PAD, y, ThemeContext.TEXT);
+        ThemeContext.divider(px + ThemeContext.SIDE_PAD, py + ThemeContext.HEADER_H - 1,
+                pw - ThemeContext.SIDE_PAD * 2);
 
         WaypointState state = WaypointState.getInstance();
         if (setupAnim == null) setupAnim = new LerpUtils.LerpingFloat(state.setupMode ? 1 : 0, 100);
@@ -304,7 +304,7 @@ public class WaypointGroupGui extends GuiElement {
             enabledAnim.resetTimer();
         }
         enabledAnim.tick();
-        int right = px + pw - WaypointUi.SIDE_PAD;
+        int right = px + pw - ThemeContext.SIDE_PAD;
         right = headerSwitch(fr, hits, Strings.TOGGLE_SETUP, setupAnim.getValue(), right,
                 Strings.TOOLTIP_SETUP,
                 () -> toast(WaypointActions.setSetupMode(!state.setupMode)));
@@ -313,36 +313,36 @@ public class WaypointGroupGui extends GuiElement {
                 () -> toast(WaypointActions.setEnabled(!state.enabled)));
     }
 
-    private int headerSwitch(FontRenderer fr, WaypointUi.HitList hits, String label, float frac,
+    private int headerSwitch(FontRenderer fr, ThemeContext.HitList hits, String label, float frac,
                              int right, String tooltip, Runnable action) {
         int toggleX = right - 30;
         int labelRight = toggleX - 6;
-        int labelW = WaypointUi.width(fr, label);
-        int y = py + (WaypointUi.HEADER_H - 16) / 2;
-        WaypointUi.textRight(fr, label, labelRight, y + 4, WaypointUi.TEXT);
-        WaypointUi.toggle(hits, toggleX, y, frac, action, tooltip);
+        int labelW = ThemeContext.width(fr, label);
+        int y = py + (ThemeContext.HEADER_H - 16) / 2;
+        ThemeContext.textRight(fr, label, labelRight, y + 4, ThemeContext.TEXT);
+        ThemeContext.toggle(hits, toggleX, y, frac, action, tooltip);
         hits.add(labelRight - labelW, y, labelW, 16, tooltip, action);
         return labelRight - labelW - 16;
     }
 
-    private void renderActiveBar(FontRenderer fr, WaypointUi.HitList hits) {
-        int x = px + WaypointUi.SIDE_PAD;
-        int y = py + WaypointUi.HEADER_H;
-        int w = pw - WaypointUi.SIDE_PAD * 2;
-        int h = WaypointUi.ACTIVE_H;
-        WaypointUi.rect(x, y, w, h, WaypointUi.INSET);
-        WaypointUi.border(x, y, w, h, WaypointUi.LINE);
+    private void renderActiveBar(FontRenderer fr, ThemeContext.HitList hits) {
+        int x = px + ThemeContext.SIDE_PAD;
+        int y = py + ThemeContext.HEADER_H;
+        int w = pw - ThemeContext.SIDE_PAD * 2;
+        int h = ThemeContext.ACTIVE_H;
+        ThemeContext.rect(x, y, w, h, ThemeContext.INSET);
+        ThemeContext.border(x, y, w, h, ThemeContext.LINE);
 
         WaypointState state = WaypointState.getInstance();
         int lineY = y + 12;
 
         if (!state.hasGroup()) {
-            WaypointUi.text(fr, Strings.ACTIVE_BAR_NONE, x + 8, lineY, WaypointUi.MUTED);
+            ThemeContext.text(fr, Strings.ACTIVE_BAR_NONE, x + 8, lineY, ThemeContext.MUTED);
             return;
         }
 
         int right = x + w - 8;
-        int btnY = y + (h - WaypointUi.SMALL_H) / 2 - 2;
+        int btnY = y + (h - ThemeContext.SMALL_H) / 2 - 2;
         right = barButton(fr, hits, Strings.BTN_UNLOAD, right, btnY, true,
                 () -> toast(WaypointActions.unloadRoute()), Strings.TOOLTIP_UNLOAD);
         right = barButton(fr, hits, Strings.BTN_RESTART, right, btnY, false,
@@ -354,10 +354,10 @@ public class WaypointGroupGui extends GuiElement {
 
         int nameX = x + 8;
         String pos = (state.currentIndex + 1) + " / " + state.size();
-        int posW = WaypointUi.width(fr, pos);
+        int posW = ThemeContext.width(fr, pos);
         int nameMax = right - 12 - nameX - posW;
-        WaypointUi.text(fr, WaypointUi.fit(fr, state.loadedGroup.name, nameMax), nameX, lineY, WaypointUi.TEXT);
-        WaypointUi.textRight(fr, pos, right - 6, lineY, WaypointUi.MUTED);
+        ThemeContext.text(fr, ThemeContext.fit(fr, state.loadedGroup.name, nameMax), nameX, lineY, ThemeContext.TEXT);
+        ThemeContext.textRight(fr, pos, right - 6, lineY, ThemeContext.MUTED);
 
         float target = (state.currentIndex + 1) / (float) Math.max(1, state.size());
         if (progressFill == null) {
@@ -371,27 +371,27 @@ public class WaypointGroupGui extends GuiElement {
         }
         progressFill.tick();
         int progressLine = h - 2;
-        WaypointUi.rect(x + 1, y + progressLine, w - 2, 1, WaypointUi.LINE);
+        ThemeContext.rect(x + 1, y + progressLine, w - 2, 1, ThemeContext.LINE);
         int filled = (int) ((w - 2) * progressFill.getValue());
-        WaypointUi.rect(x + 1, y + progressLine, Math.max(0, filled), 1, WaypointUi.ACCENT);
+        ThemeContext.rect(x + 1, y + progressLine, Math.max(0, filled), 1, ThemeContext.ACCENT);
     }
 
-    private int barButton(FontRenderer fr, WaypointUi.HitList hits, String label, int right, int y,
+    private int barButton(FontRenderer fr, ThemeContext.HitList hits, String label, int right, int y,
                           boolean danger, Runnable action, String tooltip) {
-        int w = WaypointUi.buttonWidth(fr, label);
+        int w = ThemeContext.buttonWidth(fr, label);
         int x = right - w;
-        WaypointUi.button(hits, fr, label, x, y, w, WaypointUi.SMALL_H, false, danger, action, tooltip);
+        ThemeContext.button(hits, fr, label, x, y, w, ThemeContext.SMALL_H, false, danger, action, tooltip);
         return x - 6;
     }
 
-    private void renderTabs(FontRenderer fr, WaypointUi.HitList hits) {
-        int y = py + WaypointUi.HEADER_H + WaypointUi.ACTIVE_H;
-        int x = px + WaypointUi.SIDE_PAD;
-        WaypointUi.divider(x, y + WaypointUi.TAB_H - 1, pw - WaypointUi.SIDE_PAD * 2);
+    private void renderTabs(FontRenderer fr, ThemeContext.HitList hits) {
+        int y = py + ThemeContext.HEADER_H + ThemeContext.ACTIVE_H;
+        int x = px + ThemeContext.SIDE_PAD;
+        ThemeContext.divider(x, y + ThemeContext.TAB_H - 1, pw - ThemeContext.SIDE_PAD * 2);
 
         int activeX = x, activeW = 0, cursor = x;
         for (int i = 0; i < tabs.length; i++) {
-            int w = Math.max(48, WaypointUi.width(fr, tabs[i].title()) + 24);
+            int w = Math.max(48, ThemeContext.width(fr, tabs[i].title()) + 24);
             if (i == activeTab) {
                 activeX = cursor;
                 activeW = w;
@@ -414,24 +414,24 @@ public class WaypointGroupGui extends GuiElement {
         tabHighlightW.tick();
         int highlightX = Math.round(tabHighlightX.getValue());
         int highlightW = Math.round(tabHighlightW.getValue());
-        WaypointUi.rect(highlightX, y, highlightW, WaypointUi.TAB_H - 1, WaypointUi.ACCENT);
+        ThemeContext.rect(highlightX, y, highlightW, ThemeContext.TAB_H - 1, ThemeContext.ACCENT);
 
         for (int i = 0; i < tabs.length; i++) {
-            int w = Math.max(48, WaypointUi.width(fr, tabs[i].title()) + 24);
-            boolean hover = hits.hover(x, y, w, WaypointUi.TAB_H - 1);
+            int w = Math.max(48, ThemeContext.width(fr, tabs[i].title()) + 24);
+            boolean hover = hits.hover(x, y, w, ThemeContext.TAB_H - 1);
             if (i != activeTab && hover) {
-                WaypointUi.rect(x, y, w, 1, WaypointUi.LINE);
+                ThemeContext.rect(x, y, w, 1, ThemeContext.LINE);
             }
-            WaypointUi.textCenter(fr, tabs[i].title(), x + w / 2, y + 7,
-                    i == activeTab ? WaypointUi.ACCENT_ON : WaypointUi.MUTED);
+            ThemeContext.textCenter(fr, tabs[i].title(), x + w / 2, y + 7,
+                    i == activeTab ? ThemeContext.ACCENT_ON : ThemeContext.MUTED);
             int index = i;
-            hits.add(x, y, w, WaypointUi.TAB_H - 1, null, () -> openTab(index));
+            hits.add(x, y, w, ThemeContext.TAB_H - 1, null, () -> openTab(index));
             x += w;
         }
     }
 
-    private void renderFooter(FontRenderer fr, WaypointUi.HitList hits) {
-        int footerTop = py + ph - WaypointUi.FOOT_H;
+    private void renderFooter(FontRenderer fr, ThemeContext.HitList hits) {
+        int footerTop = py + ph - ThemeContext.FOOT_H;
 
         if (toastAlpha == null) toastAlpha = new LerpUtils.LerpingFloat(0, 150);
         long now = System.currentTimeMillis();
@@ -446,39 +446,39 @@ public class WaypointGroupGui extends GuiElement {
         int ta255 = (int) (ta * 255);
         if (toastText != null) {
             if (ta255 >= 8) {
-                int color = WaypointUi.withAlpha(toastOk ? WaypointUi.SUCCESS : WaypointUi.DANGER, ta);
-                int x = px + WaypointUi.SIDE_PAD;
-                int max = pw - WaypointUi.SIDE_PAD * 2 - (WaypointActions.hasUndo() ? 44 : 0);
-                WaypointUi.text(fr, WaypointUi.fit(fr, toastText, max), x, footerTop - 12, color);
+                int color = ThemeContext.withAlpha(toastOk ? ThemeContext.SUCCESS : ThemeContext.DANGER, ta);
+                int x = px + ThemeContext.SIDE_PAD;
+                int max = pw - ThemeContext.SIDE_PAD * 2 - (WaypointActions.hasUndo() ? 44 : 0);
+                ThemeContext.text(fr, ThemeContext.fit(fr, toastText, max), x, footerTop - 12, color);
             }
             if (!live && ta <= 0.02f) toastText = null;
         }
 
         if (WaypointActions.hasUndo()) {
-            int undoW = WaypointUi.buttonWidth(fr, Strings.BTN_UNDO);
-            WaypointUi.button(hits, fr, Strings.BTN_UNDO, px + pw - WaypointUi.SIDE_PAD - undoW,
-                    footerTop - 15, undoW, WaypointUi.SMALL_H, false, false,
+            int undoW = ThemeContext.buttonWidth(fr, Strings.BTN_UNDO);
+            ThemeContext.button(hits, fr, Strings.BTN_UNDO, px + pw - ThemeContext.SIDE_PAD - undoW,
+                    footerTop - 15, undoW, ThemeContext.SMALL_H, false, false,
                     () -> toast(WaypointActions.undo()), Strings.TOOLTIP_UNDO);
         }
 
         if (!WaypointLinks.hasSite9()) return;
 
-        WaypointUi.divider(px + WaypointUi.SIDE_PAD, footerTop - 2, pw - WaypointUi.SIDE_PAD * 2);
+        ThemeContext.divider(px + ThemeContext.SIDE_PAD, footerTop - 2, pw - ThemeContext.SIDE_PAD * 2);
         int y = footerTop + 6;
-        int x = px + WaypointUi.SIDE_PAD;
+        int x = px + ThemeContext.SIDE_PAD;
         String lead = Strings.FOOTER_LEAD;
-        WaypointUi.text(fr, lead, x, y, WaypointUi.MUTED);
-        int linkX = x + WaypointUi.width(fr, lead);
+        ThemeContext.text(fr, lead, x, y, ThemeContext.MUTED);
+        int linkX = x + ThemeContext.width(fr, lead);
         String link = Strings.SITE_9_TEXT;
-        int linkW = WaypointUi.width(fr, link);
-        boolean hover = hits.hover(linkX, y, linkW, WaypointUi.LINE_H);
-        WaypointUi.text(fr, link, linkX, y, WaypointUi.ACCENT);
-        if (hover) WaypointUi.rect(linkX, y + 9, linkW, 1, WaypointUi.ACCENT);
-        hits.add(linkX, y, linkW, WaypointUi.LINE_H, Strings.TOOLTIP_OPEN_SITE9,
+        int linkW = ThemeContext.width(fr, link);
+        boolean hover = hits.hover(linkX, y, linkW, ThemeContext.LINE_H);
+        ThemeContext.text(fr, link, linkX, y, ThemeContext.ACCENT);
+        if (hover) ThemeContext.rect(linkX, y + 9, linkW, 1, ThemeContext.ACCENT);
+        hits.add(linkX, y, linkW, ThemeContext.LINE_H, Strings.TOOLTIP_OPEN_SITE9,
                 () -> toast(WaypointLinks.openSite9()));
     }
 
-    private void renderModals(FontRenderer fr, WaypointUi.HitList hits) {
+    private void renderModals(FontRenderer fr, ThemeContext.HitList hits) {
         Modals.Modal modal = topModal();
         if (modal == null) return;
         if (modalFade == null) {
@@ -488,8 +488,8 @@ public class WaypointGroupGui extends GuiElement {
         modalFade.setTarget(1);
         modalFade.tick();
         float ma = modalFade.getValue();
-        WaypointUi.rect(0, 0, GuiScreenUtils.getScaledWindowWidth(),
-                GuiScreenUtils.getScaledWindowHeight(), WaypointUi.withAlpha(WaypointUi.OVERLAY, ma));
+        ThemeContext.rect(0, 0, GuiScreenUtils.getScaledWindowWidth(),
+                GuiScreenUtils.getScaledWindowHeight(), ThemeContext.withAlpha(ThemeContext.OVERLAY, ma));
         hits.add(0, 0, GuiScreenUtils.getScaledWindowWidth(), GuiScreenUtils.getScaledWindowHeight(),
                 null, this::closeModal);
         modal.render(this, fr, hits);

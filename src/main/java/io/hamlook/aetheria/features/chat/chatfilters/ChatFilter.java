@@ -29,6 +29,8 @@ public class ChatFilter {
     }
 
     public String applyFilter(String message) {
+        if (message == null || filterWords == null || filterWords.isEmpty()) return message;
+
         String[] parts = splitPrefixAndBody(message);
         String prefix = parts[0];
         String body = parts[1];
@@ -36,17 +38,20 @@ public class ChatFilter {
         boolean matched = false;
 
         FilterAction currentAction = action != null ? action : (replace ? FilterAction.REPLACE : FilterAction.CANCEL);
+        FilterMode currentMode = filterType != null ? filterType : FilterMode.CONTAINS;
 
-        List<String> sortedWords = new ArrayList<>(filterWords);
+        List<String> sortedWords = new ArrayList<>();
+        for (String word : filterWords) {
+            if (word != null && !word.isEmpty()) sortedWords.add(word);
+        }
+        if (sortedWords.isEmpty()) return message;
         sortedWords.sort((a, b) -> Integer.compare(b.length(), a.length()));
 
         for (String word : sortedWords) {
-            if (word == null || word.isEmpty()) continue;
-
-            String regexStr = buildRegex(word, filterType);
+            String regexStr = buildRegex(word, currentMode);
             int flags = 0;
             if (filterCase == FilterCase.INSENSITIVE) {
-                flags |= Pattern.CASE_INSENSITIVE;
+                flags |= Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
             }
 
             Pattern pattern = Pattern.compile(regexStr, flags);

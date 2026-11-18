@@ -1,5 +1,7 @@
 package io.hamlook.aetheria.features.waypoints.ui;
 
+import io.hamlook.aetheria.ThemeContext;
+
 import io.hamlook.aetheria.features.waypoints.*;
 import io.hamlook.aetheria.features.waypoints.text.WaypointText;
 import io.hamlook.aetheria.utils.LerpUtils;
@@ -100,7 +102,7 @@ public final class EditorTab implements MenuTab {
     }
 
     @Override
-    public void render(WaypointGroupGui gui, FontRenderer fr, WaypointUi.HitList hits, int mouseX, int mouseY) {
+    public void render(WaypointGroupGui gui, FontRenderer fr, ThemeContext.HitList hits, int mouseX, int mouseY) {
         ensureFields(gui);
         rows.clear();
 
@@ -110,10 +112,10 @@ public final class EditorTab implements MenuTab {
 
         if (g == null) {
             int cy = gui.contentY() + gui.contentH() / 2 - 20;
-            WaypointUi.textCenter(fr, Strings.EDITOR_PICK, x + w / 2, cy, WaypointUi.MUTED);
-            int bw = WaypointUi.buttonWidth(fr, Strings.BTN_GO_TO_ROUTES);
-            WaypointUi.button(hits, fr, Strings.BTN_GO_TO_ROUTES, x + w / 2 - bw / 2, cy + 18, bw,
-                    WaypointUi.BTN_H, false, false, () -> gui.openTab(WaypointGroupGui.TAB_ROUTES), null);
+            ThemeContext.textCenter(fr, Strings.EDITOR_PICK, x + w / 2, cy, ThemeContext.MUTED);
+            int bw = ThemeContext.buttonWidth(fr, Strings.BTN_GO_TO_ROUTES);
+            ThemeContext.button(hits, fr, Strings.BTN_GO_TO_ROUTES, x + w / 2 - bw / 2, cy + 18, bw,
+                    ThemeContext.BTN_H, false, false, () -> gui.openTab(WaypointGroupGui.TAB_ROUTES), null);
             return;
         }
 
@@ -123,82 +125,82 @@ public final class EditorTab implements MenuTab {
         }
 
         int y = gui.contentY() + 4;
-        int addW = WaypointUi.buttonWidth(fr, Strings.BTN_ADD_HERE);
-        int exportW = WaypointUi.buttonWidth(fr, Strings.BTN_EXPORT);
-        int renameW = WaypointUi.buttonWidth(fr, Strings.BTN_RENAME);
-        int pickerW = Math.max(70, Math.min(w / 3, WaypointUi.width(fr, g.name) + 22));
-        int btnH = WaypointUi.BTN_H;
+        int addW = ThemeContext.buttonWidth(fr, Strings.BTN_ADD_HERE);
+        int exportW = ThemeContext.buttonWidth(fr, Strings.BTN_EXPORT);
+        int renameW = ThemeContext.buttonWidth(fr, Strings.BTN_RENAME);
+        int pickerW = Math.max(70, Math.min(w / 3, ThemeContext.width(fr, g.name) + 22));
+        int btnH = ThemeContext.BTN_H;
 
         int moreX = x + w - addW - 6 - BTN_W;
         int exportX = moreX - 6 - exportW;
         int renameX = exportX - 6 - renameW;
         int menuY = y + btnH;
 
-        WaypointUi.button(hits, fr, Strings.BTN_ADD_HERE, x + w - addW, y, addW, btnH, true, false,
+        ThemeContext.button(hits, fr, Strings.BTN_ADD_HERE, x + w - addW, y, addW, btnH, true, false,
                 () -> gui.toast(WaypointActions.addHere(g, null)), Strings.TOOLTIP_ADD_HERE);
-        WaypointUi.button(hits, fr, "...", moreX, y, BTN_W, btnH, false, false,
+        ThemeContext.button(hits, fr, "...", moreX, y, BTN_W, btnH, false, false,
                 () -> openMoreMenu(gui, g, moreX - 110, menuY), Strings.TOOLTIP_MORE);
-        WaypointUi.button(hits, fr, Strings.BTN_EXPORT, exportX, y, exportW, btnH, false, false,
+        ThemeContext.button(hits, fr, Strings.BTN_EXPORT, exportX, y, exportW, btnH, false, false,
                 () -> gui.toast(WaypointActions.exportRoute(g.name)), Strings.TOOLTIP_EXPORT);
-        WaypointUi.button(hits, fr, Strings.BTN_RENAME, renameX, y, renameW, btnH, false, false,
+        ThemeContext.button(hits, fr, Strings.BTN_RENAME, renameX, y, renameW, btnH, false, false,
                 () -> openRename(gui, g), null);
 
         if (renameField.isActive()) {
             renameField.bounds(x, y, pickerW, btnH);
         } else {
             boolean hover = hits.hover(x, y, pickerW, btnH);
-            WaypointUi.rect(x, y, pickerW, btnH, hover ? WaypointUi.BTN_HOVER : WaypointUi.BTN);
-            WaypointUi.border(x, y, pickerW, btnH, WaypointUi.BTN_BORDER);
-            WaypointUi.text(fr, WaypointUi.fit(fr, g.name, pickerW - 18), x + 6, y + 4, WaypointUi.TEXT);
-            WaypointUi.textRight(fr, "v", x + pickerW - 8, y + 4, WaypointUi.MUTED);
+            ThemeContext.rect(x, y, pickerW, btnH, hover ? ThemeContext.BTN_HOVER : ThemeContext.BTN);
+            ThemeContext.border(x, y, pickerW, btnH, ThemeContext.BTN_BORDER);
+            ThemeContext.text(fr, ThemeContext.fit(fr, g.name, pickerW - 18), x + 6, y + 4, ThemeContext.TEXT);
+            ThemeContext.textRight(fr, "v", x + pickerW - 8, y + 4, ThemeContext.MUTED);
             hits.add(x, y, pickerW, btnH, Strings.TOOLTIP_PICKER, () -> openPicker(gui));
         }
-        WaypointUi.text(fr, g.waypoints.size() + (g.waypoints.size() == 1 ? " waypoint" : " waypoints"),
-                x + pickerW + 8, y + 4, WaypointUi.MUTED);
+        ThemeContext.text(fr, g.waypoints.size() + (g.waypoints.size() == 1 ? " waypoint" : " waypoints"),
+                x + pickerW + 8, y + 4, ThemeContext.MUTED);
         y += 22;
 
         if (descField.isActive()) {
-            descField.bounds(x, y, w, WaypointUi.FIELD_H);
+            descField.bounds(x, y, w, ThemeContext.FIELD_H);
         } else {
             boolean empty = g.description == null || g.description.isEmpty();
             String desc = empty ? Strings.DESC_PLACEHOLDER : g.description;
-            boolean hover = hits.hover(x, y, w, WaypointUi.FIELD_H);
+            boolean hover = hits.hover(x, y, w, ThemeContext.FIELD_H);
             if (hover) {
-                WaypointUi.rect(x, y, w, WaypointUi.FIELD_H, WaypointUi.INSET);
-                WaypointUi.border(x, y, w, WaypointUi.FIELD_H, WaypointUi.LINE);
+                ThemeContext.rect(x, y, w, ThemeContext.FIELD_H, ThemeContext.INSET);
+                ThemeContext.border(x, y, w, ThemeContext.FIELD_H, ThemeContext.LINE);
             }
-            WaypointUi.text(fr, WaypointUi.fit(fr, desc, w - 8), x + 4, y + 8,
-                    empty ? WaypointUi.MUTED : WaypointUi.TEXT);
-            hits.add(x, y, w, WaypointUi.FIELD_H, null, () -> {
+            ThemeContext.text(fr, ThemeContext.fit(fr, desc, w - 8), x + 4, y + 8,
+                    empty ? ThemeContext.MUTED : ThemeContext.TEXT);
+            hits.add(x, y, w, ThemeContext.FIELD_H, null, () -> {
                 descField.text(g.description == null ? "" : g.description);
                 gui.activateField(descField);
             });
         }
-        y += WaypointUi.FIELD_H + 6;
+        y += ThemeContext.FIELD_H + 6;
 
         boolean active = gui.isRouteActive(g);
         if (!active) {
-            WaypointUi.text(fr, Strings.EDITOR_NOT_LOADED, x, y + 3, WaypointUi.MUTED);
-            int loadW = WaypointUi.buttonWidth(fr, Strings.BTN_LOAD);
-            WaypointUi.button(hits, fr, Strings.BTN_LOAD, x + w - loadW, y, loadW, WaypointUi.SMALL_H, false, false,
+            ThemeContext.text(fr, Strings.EDITOR_NOT_LOADED, x, y + 3, ThemeContext.MUTED);
+            int loadW = ThemeContext.buttonWidth(fr, Strings.BTN_LOAD);
+            ThemeContext.button(hits, fr, Strings.BTN_LOAD, x + w - loadW, y, loadW, ThemeContext.SMALL_H, false, false,
                     () -> gui.toast(WaypointActions.loadRoute(g.name)), Strings.TOOLTIP_LOAD);
-            y += WaypointUi.SMALL_H + 6;
+            y += ThemeContext.SMALL_H + 6;
         }
 
         int nameW = nameColumnWidth(w);
         int colX = x + NUM_W + nameW;
-        WaypointUi.text(fr, Strings.COL_NUM, x + 4, y, WaypointUi.MUTED);
-        WaypointUi.text(fr, Strings.COL_NAME, x + NUM_W + 4, y, WaypointUi.MUTED);
-        WaypointUi.textRight(fr, Strings.COL_X, colX + COORD_W - 6, y, WaypointUi.MUTED);
-        WaypointUi.textRight(fr, Strings.COL_Y, colX + COORD_W * 2 - 6, y, WaypointUi.MUTED);
-        WaypointUi.textRight(fr, Strings.COL_Z, colX + COORD_W * 3 - 6, y, WaypointUi.MUTED);
+        ThemeContext.text(fr, Strings.COL_NUM, x + 4, y, ThemeContext.MUTED);
+        ThemeContext.text(fr, Strings.COL_NAME, x + NUM_W + 4, y, ThemeContext.MUTED);
+        ThemeContext.textRight(fr, Strings.COL_X, colX + COORD_W - 6, y, ThemeContext.MUTED);
+        ThemeContext.textRight(fr, Strings.COL_Y, colX + COORD_W * 2 - 6, y, ThemeContext.MUTED);
+        ThemeContext.textRight(fr, Strings.COL_Z, colX + COORD_W * 3 - 6, y, ThemeContext.MUTED);
         y += 12;
-        WaypointUi.divider(x, y, w);
+        ThemeContext.divider(x, y, w);
         y += 2;
 
         int listTop = y;
         int listH = Math.max(0, gui.contentY() + gui.contentH() - 12 - listTop);
-        int total = g.waypoints.size() * WaypointUi.TABLE_H;
+        int total = g.waypoints.size() * ThemeContext.TABLE_H;
         int maxScroll = Math.max(0, total - listH);
         scroll = Math.max(0, Math.min(scroll, maxScroll));
         if (shownScroll == null) {
@@ -214,7 +216,7 @@ public final class EditorTab implements MenuTab {
         int shown = Math.round(shownScroll.getValue());
 
         if (g.waypoints.isEmpty()) {
-            WaypointUi.textCenter(fr, Strings.EDITOR_EMPTY, x + w / 2, listTop + 16, WaypointUi.MUTED);
+            ThemeContext.textCenter(fr, Strings.EDITOR_EMPTY, x + w / 2, listTop + 16, ThemeContext.MUTED);
             return;
         }
 
@@ -228,12 +230,12 @@ public final class EditorTab implements MenuTab {
             r.x = x;
             r.y = rowY;
             r.w = w;
-            r.h = WaypointUi.TABLE_H;
+            r.h = ThemeContext.TABLE_H;
             rows.add(r);
-            if (rowY + WaypointUi.TABLE_H > listTop && rowY < listTop + listH) {
+            if (rowY + ThemeContext.TABLE_H > listTop && rowY < listTop + listH) {
                 drawRow(gui, fr, hits, g, i, rowY, x, w, active, current);
             }
-            rowY += WaypointUi.TABLE_H;
+            rowY += ThemeContext.TABLE_H;
         }
         DrawContextUtils.disableScissor();
         hits.unclip();
@@ -241,8 +243,8 @@ public final class EditorTab implements MenuTab {
         if (maxScroll > 0) {
             int barH = Math.max(16, (int) ((long) listH * listH / Math.max(1, total)));
             int barY = listTop + (int) ((long) (listH - barH) * shown / maxScroll);
-            WaypointUi.rect(x + w - 3, listTop, 3, listH, WaypointUi.LINE);
-            WaypointUi.rect(x + w - 3, barY, 3, barH, WaypointUi.MUTED);
+            ThemeContext.rect(x + w - 3, listTop, 3, listH, ThemeContext.LINE);
+            ThemeContext.rect(x + w - 3, barY, 3, barH, ThemeContext.MUTED);
         }
     }
 
@@ -251,63 +253,63 @@ public final class EditorTab implements MenuTab {
         return Math.max(60, w - NUM_W - COORD_W * 3 - buttons);
     }
 
-    private void drawRow(WaypointGroupGui gui, FontRenderer fr, WaypointUi.HitList hits, WaypointGroup g,
+    private void drawRow(WaypointGroupGui gui, FontRenderer fr, ThemeContext.HitList hits, WaypointGroup g,
                          int index, int rowY, int x, int w, boolean active, int current) {
         WaypointPoint p = g.waypoints.get(index);
         boolean isCurrent = active && index == current;
         boolean selected = index == selectedIndex;
-        boolean hover = hits.hover(x, rowY, w, WaypointUi.TABLE_H);
-        if (isCurrent || selected) WaypointUi.rect(x, rowY, w, WaypointUi.TABLE_H, WaypointUi.INSET);
+        boolean hover = hits.hover(x, rowY, w, ThemeContext.TABLE_H);
+        if (isCurrent || selected) ThemeContext.rect(x, rowY, w, ThemeContext.TABLE_H, ThemeContext.INSET);
 
-        WaypointUi.textRight(fr, String.valueOf(index + 1), x + NUM_W - 8, rowY + 7,
-                isCurrent ? WaypointUi.ACCENT : WaypointUi.MUTED);
+        ThemeContext.textRight(fr, String.valueOf(index + 1), x + NUM_W - 8, rowY + 7,
+                isCurrent ? ThemeContext.ACCENT : ThemeContext.MUTED);
 
         int nameW = nameColumnWidth(w);
         int nameX = x + NUM_W;
         int colX = nameX + nameW;
 
-        hits.add(x, rowY, w, WaypointUi.TABLE_H, null, () -> selectedIndex = index);
+        hits.add(x, rowY, w, ThemeContext.TABLE_H, null, () -> selectedIndex = index);
 
-        drawCell(hits, gui, g, index, 0, nameX, rowY, nameW, p.name, WaypointUi.TEXT);
-        drawCell(hits, gui, g, index, 1, colX, rowY, COORD_W, num(p.x), WaypointUi.MUTED);
-        drawCell(hits, gui, g, index, 2, colX + COORD_W, rowY, COORD_W, num(p.y), WaypointUi.MUTED);
-        drawCell(hits, gui, g, index, 3, colX + COORD_W * 2, rowY, COORD_W, num(p.z), WaypointUi.MUTED);
+        drawCell(hits, gui, g, index, 0, nameX, rowY, nameW, p.name, ThemeContext.TEXT);
+        drawCell(hits, gui, g, index, 1, colX, rowY, COORD_W, num(p.x), ThemeContext.MUTED);
+        drawCell(hits, gui, g, index, 2, colX + COORD_W, rowY, COORD_W, num(p.y), ThemeContext.MUTED);
+        drawCell(hits, gui, g, index, 3, colX + COORD_W * 2, rowY, COORD_W, num(p.z), ThemeContext.MUTED);
 
         if (hover || selected) {
             int bx = x + w - 6 - BTN_W;
-            int by = rowY + (WaypointUi.TABLE_H - WaypointUi.SMALL_H) / 2;
-            WaypointUi.button(hits, fr, "x", bx, by, BTN_W, WaypointUi.SMALL_H, false, true,
+            int by = rowY + (ThemeContext.TABLE_H - ThemeContext.SMALL_H) / 2;
+            ThemeContext.button(hits, fr, "x", bx, by, BTN_W, ThemeContext.SMALL_H, false, true,
                     () -> remove(gui, g, index), Strings.TOOLTIP_REMOVE);
             if (index < g.waypoints.size() - 1) {
-                WaypointUi.button(hits, fr, "v", bx - BTN_W - 4, by, BTN_W, WaypointUi.SMALL_H, false, false,
+                ThemeContext.button(hits, fr, "v", bx - BTN_W - 4, by, BTN_W, ThemeContext.SMALL_H, false, false,
                         () -> gui.toast(WaypointActions.movePoint(g, index, 1)), Strings.TOOLTIP_MOVE_DOWN);
             } else {
-                WaypointUi.buttonDisabled(fr, "v", bx - BTN_W - 4, by, BTN_W, WaypointUi.SMALL_H);
+                ThemeContext.buttonDisabled(fr, "v", bx - BTN_W - 4, by, BTN_W, ThemeContext.SMALL_H);
             }
             if (index > 0) {
-                WaypointUi.button(hits, fr, "^", bx - (BTN_W + 4) * 2, by, BTN_W, WaypointUi.SMALL_H, false, false,
+                ThemeContext.button(hits, fr, "^", bx - (BTN_W + 4) * 2, by, BTN_W, ThemeContext.SMALL_H, false, false,
                         () -> gui.toast(WaypointActions.movePoint(g, index, -1)), Strings.TOOLTIP_MOVE_UP);
             } else {
-                WaypointUi.buttonDisabled(fr, "^", bx - (BTN_W + 4) * 2, by, BTN_W, WaypointUi.SMALL_H);
+                ThemeContext.buttonDisabled(fr, "^", bx - (BTN_W + 4) * 2, by, BTN_W, ThemeContext.SMALL_H);
             }
-            int hereW = WaypointUi.width(fr, Strings.BTN_HERE) + 10;
-            WaypointUi.button(hits, fr, Strings.BTN_HERE, bx - (BTN_W + 4) * 2 - hereW - 4, by, hereW,
-                    WaypointUi.SMALL_H, false, false, () -> gui.toast(WaypointActions.setHere(g, index)),
+            int hereW = ThemeContext.width(fr, Strings.BTN_HERE) + 10;
+            ThemeContext.button(hits, fr, Strings.BTN_HERE, bx - (BTN_W + 4) * 2 - hereW - 4, by, hereW,
+                    ThemeContext.SMALL_H, false, false, () -> gui.toast(WaypointActions.setHere(g, index)),
                     Strings.TOOLTIP_HERE);
         }
 
-        WaypointUi.divider(x, rowY + WaypointUi.TABLE_H - 1, w);
+        ThemeContext.divider(x, rowY + ThemeContext.TABLE_H - 1, w);
     }
 
-    private void drawCell(WaypointUi.HitList hits, WaypointGroupGui gui, WaypointGroup g, int index, int col,
+    private void drawCell(ThemeContext.HitList hits, WaypointGroupGui gui, WaypointGroup g, int index, int col,
                           int x, int rowY, int w, String text, int color) {
         FontRenderer fr = gui.font();
         if (col == 0) {
-            WaypointUi.text(fr, WaypointUi.fit(fr, text == null ? "" : text, w - 8), x + 4, rowY + 7, color);
+            ThemeContext.text(fr, ThemeContext.fit(fr, text == null ? "" : text, w - 8), x + 4, rowY + 7, color);
         } else {
-            WaypointUi.textRight(fr, text, x + w - 6, rowY + 7, color);
+            ThemeContext.textRight(fr, text, x + w - 6, rowY + 7, color);
         }
-        hits.add(x, rowY + 1, w, WaypointUi.TABLE_H - 2, Strings.TOOLTIP_EDIT_CELL,
+        hits.add(x, rowY + 1, w, ThemeContext.TABLE_H - 2, Strings.TOOLTIP_EDIT_CELL,
                 () -> openCell(gui, g, index, col, x, rowY, w));
     }
 
@@ -409,8 +411,8 @@ public final class EditorTab implements MenuTab {
     }
 
     private void openRename(WaypointGroupGui gui, WaypointGroup g) {
-        int pickerW = Math.max(70, Math.min(gui.contentW() / 3, WaypointUi.width(gui.font(), g.name) + 22));
-        renameField.bounds(gui.contentX(), gui.contentY() + 4, pickerW, WaypointUi.BTN_H);
+        int pickerW = Math.max(70, Math.min(gui.contentW() / 3, ThemeContext.width(gui.font(), g.name) + 22));
+        renameField.bounds(gui.contentX(), gui.contentY() + 4, pickerW, ThemeContext.BTN_H);
         renameField.text(g.name);
         gui.activateField(renameField);
     }

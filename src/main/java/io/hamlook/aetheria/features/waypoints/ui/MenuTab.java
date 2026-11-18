@@ -1,5 +1,7 @@
 package io.hamlook.aetheria.features.waypoints.ui;
 
+import io.hamlook.aetheria.ThemeContext;
+
 import io.hamlook.aetheria.features.waypoints.WaypointGroupGui;
 import net.minecraft.client.gui.FontRenderer;
 
@@ -7,7 +9,7 @@ public interface MenuTab {
 
     String title();
 
-    void render(WaypointGroupGui gui, FontRenderer fr, WaypointUi.HitList hits, int mouseX, int mouseY);
+    void render(WaypointGroupGui gui, FontRenderer fr, ThemeContext.HitList hits, int mouseX, int mouseY);
 
     default void onShow(WaypointGroupGui gui) {
     }

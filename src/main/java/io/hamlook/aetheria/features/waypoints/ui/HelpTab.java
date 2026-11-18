@@ -1,5 +1,7 @@
 package io.hamlook.aetheria.features.waypoints.ui;
 
+import io.hamlook.aetheria.ThemeContext;
+
 import io.hamlook.aetheria.features.waypoints.Strings;
 import io.hamlook.aetheria.features.waypoints.WaypointGroupGui;
 import io.hamlook.aetheria.features.waypoints.WaypointLinks;
@@ -60,7 +62,7 @@ public final class HelpTab implements MenuTab {
             link.lines = DrawContextUtils.wrapFormattedText(fr, Strings.HELP_SITE_TEXT, w - BUTTON_SPACE);
             link.button = Strings.BTN_OPEN;
             link.run = () -> gui.toast(WaypointLinks.openSite9());
-            link.height = link.lines.size() * WaypointUi.LINE_H + TEXT_GAP;
+            link.height = link.lines.size() * ThemeContext.LINE_H + TEXT_GAP;
         }
 
         title(Strings.HELP_QUICK);
@@ -99,7 +101,7 @@ public final class HelpTab implements MenuTab {
     private void text(FontRenderer fr, String text, int w) {
         Item item = base(KIND_TEXT, 0);
         item.lines = DrawContextUtils.wrapFormattedText(fr, text, w);
-        item.height = item.lines.size() * WaypointUi.LINE_H + TEXT_GAP;
+        item.height = item.lines.size() * ThemeContext.LINE_H + TEXT_GAP;
     }
 
     private void step(FontRenderer fr, String number, String text, int w, String button, Runnable run) {
@@ -108,11 +110,11 @@ public final class HelpTab implements MenuTab {
         item.lines = DrawContextUtils.wrapFormattedText(fr, text, w - BUTTON_SPACE - 16);
         item.button = button;
         item.run = run;
-        item.height = Math.max(WaypointUi.BTN_H, item.lines.size() * WaypointUi.LINE_H) + TEXT_GAP;
+        item.height = Math.max(ThemeContext.BTN_H, item.lines.size() * ThemeContext.LINE_H) + TEXT_GAP;
     }
 
     @Override
-    public void render(WaypointGroupGui gui, FontRenderer fr, WaypointUi.HitList hits, int mouseX, int mouseY) {
+    public void render(WaypointGroupGui gui, FontRenderer fr, ThemeContext.HitList hits, int mouseX, int mouseY) {
         int x = gui.contentX();
         int w = gui.contentW();
         int top = gui.contentY();
@@ -148,44 +150,44 @@ public final class HelpTab implements MenuTab {
         if (maxScroll > 0) {
             int barH = Math.max(16, (int) ((long) height * height / Math.max(1, total)));
             int barY = top + (int) ((long) (height - barH) * shown / maxScroll);
-            WaypointUi.rect(x + w - 3, top, 3, height, WaypointUi.LINE);
-            WaypointUi.rect(x + w - 3, barY, 3, barH, WaypointUi.MUTED);
+            ThemeContext.rect(x + w - 3, top, 3, height, ThemeContext.LINE);
+            ThemeContext.rect(x + w - 3, barY, 3, barH, ThemeContext.MUTED);
         }
     }
 
-    private void drawItem(WaypointGroupGui gui, FontRenderer fr, WaypointUi.HitList hits, Item item,
+    private void drawItem(WaypointGroupGui gui, FontRenderer fr, ThemeContext.HitList hits, Item item,
                           int x, int y, int w) {
         if (item.kind == KIND_TITLE) {
-            WaypointUi.text(fr, item.lines.get(0), x, y + 8, WaypointUi.ACCENT);
+            ThemeContext.text(fr, item.lines.get(0), x, y + 8, ThemeContext.ACCENT);
             return;
         }
 
-        int btnW = item.button == null ? 0 : WaypointUi.buttonWidth(fr, item.button);
+        int btnW = item.button == null ? 0 : ThemeContext.buttonWidth(fr, item.button);
         int btnX = x + w - btnW;
         int btnY = item.kind == KIND_COMMAND ? y + 1 : y + 2;
 
         if (item.kind == KIND_COMMAND) {
-            WaypointUi.text(fr, item.command, x, y + 4, WaypointUi.TEXT);
-            int actionX = x + Math.max(WaypointUi.width(fr, item.command) + 12, w / 3);
-            WaypointUi.text(fr, WaypointUi.fit(fr, item.action, btnX - 8 - actionX), actionX, y + 4,
-                    WaypointUi.MUTED);
+            ThemeContext.text(fr, item.command, x, y + 4, ThemeContext.TEXT);
+            int actionX = x + Math.max(ThemeContext.width(fr, item.command) + 12, w / 3);
+            ThemeContext.text(fr, ThemeContext.fit(fr, item.action, btnX - 8 - actionX), actionX, y + 4,
+                    ThemeContext.MUTED);
         } else {
             int textX = x;
             if (item.number != null) {
-                WaypointUi.text(fr, item.number, x, y + 3, WaypointUi.ACCENT);
+                ThemeContext.text(fr, item.number, x, y + 3, ThemeContext.ACCENT);
                 textX = x + 14;
             }
             int lineY = y + 3;
             for (String line : item.lines) {
-                WaypointUi.text(fr, line, textX, lineY, WaypointUi.MUTED);
-                lineY += WaypointUi.LINE_H;
+                ThemeContext.text(fr, line, textX, lineY, ThemeContext.MUTED);
+                lineY += ThemeContext.LINE_H;
             }
         }
 
         if (item.button == null) return;
 
         boolean primary = item.kind != KIND_COMMAND;
-        WaypointUi.button(hits, fr, item.button, btnX, btnY, btnW, WaypointUi.SMALL_H, primary, false,
+        ThemeContext.button(hits, fr, item.button, btnX, btnY, btnW, ThemeContext.SMALL_H, primary, false,
                 () -> run(gui, item), Strings.TOOLTIP_COPY);
     }
 

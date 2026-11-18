@@ -1,5 +1,7 @@
 package io.hamlook.aetheria.features.waypoints.ui;
 
+import io.hamlook.aetheria.ThemeContext;
+
 import io.hamlook.aetheria.utils.LerpUtils;
 import io.hamlook.aetheria.utils.render.TextFieldUtils;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
@@ -186,12 +188,12 @@ public final class WaypointField {
         GuiScreenUtils.setY(f, y);
         GuiScreenUtils.setW(f, drawW);
         GuiScreenUtils.setH(f, h);
-        WaypointUi.rect(x, y, drawW, h, WaypointUi.INSET);
+        ThemeContext.rect(x, y, drawW, h, ThemeContext.INSET);
         int border;
-        if (error) border = WaypointUi.DANGER;
-        else if (closing) border = WaypointUi.mixArgb(WaypointUi.LINE, WaypointUi.ACCENT, e);
-        else border = WaypointUi.ACCENT;
-        WaypointUi.border(x, y, drawW, h, border);
+        if (error) border = ThemeContext.DANGER;
+        else if (closing) border = ThemeContext.mixArgb(ThemeContext.LINE, ThemeContext.ACCENT, e);
+        else border = ThemeContext.ACCENT;
+        ThemeContext.border(x, y, drawW, h, border);
         FontRenderer fr = MinecraftCompat.getFontRenderer();
         scrollX = TextFieldUtils.computeScrollX(fr, f.getText(), GuiScreenUtils.getTextFieldCursor(f), drawW, scrollX);
         DrawContextUtils.enableScissor(x, y, drawW, h);
@@ -199,7 +201,7 @@ public final class WaypointField {
             TextFieldUtils.renderInput(fr, f, x, y, drawW, h, scrollX);
             String text = f.getText();
             if ((text == null || text.isEmpty()) && placeholder != null && drawW > 24) {
-                WaypointUi.text(fr, placeholder, x + 4, y + (h - 8) / 2, WaypointUi.MUTED);
+                ThemeContext.text(fr, placeholder, x + 4, y + (h - 8) / 2, ThemeContext.MUTED);
             }
         } finally {
             DrawContextUtils.disableScissor();
