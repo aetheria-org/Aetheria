@@ -1,5 +1,7 @@
 package io.hamlook.aetheria.features.waypoints.ui;
 
+import io.hamlook.aetheria.ThemeContext;
+
 import io.hamlook.aetheria.core.ATHRConfig;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElementColour;
 import io.hamlook.aetheria.features.waypoints.Strings;
@@ -28,7 +30,7 @@ public final class SettingsTab implements MenuTab {
     }
 
     @Override
-    public void render(WaypointGroupGui gui, FontRenderer fr, WaypointUi.HitList hits, int mouseX, int mouseY) {
+    public void render(WaypointGroupGui gui, FontRenderer fr, ThemeContext.HitList hits, int mouseX, int mouseY) {
         boolean editorOpen = colourEditor != null;
         if (editorOpen) hits.setMouse(-1, -1);
         int x = gui.contentX();
@@ -55,8 +57,8 @@ public final class SettingsTab implements MenuTab {
         }
 
         y += 6;
-        int resetW = WaypointUi.buttonWidth(fr, Strings.SETTINGS_RESET);
-        WaypointUi.button(hits, fr, Strings.SETTINGS_RESET, x, y, resetW, WaypointUi.BTN_H, false, true, () ->
+        int resetW = ThemeContext.buttonWidth(fr, Strings.SETTINGS_RESET);
+        ThemeContext.button(hits, fr, Strings.SETTINGS_RESET, x, y, resetW, ThemeContext.BTN_H, false, true, () ->
                         gui.openModal(new Modals.Confirm(Strings.SETTINGS_RESET_TITLE,
                                 Strings.SETTINGS_RESET_BODY,
                                 "Reset", true, () -> {
@@ -64,8 +66,8 @@ public final class SettingsTab implements MenuTab {
                             gui.toast("Reset settings to defaults.", true);
                         })),
                 Strings.TOOLTIP_SETTINGS_RESET);
-        int openW = WaypointUi.buttonWidth(fr, Strings.OPEN_CONFIG);
-        WaypointUi.button(hits, fr, Strings.OPEN_CONFIG, x + resetW + 6, y, openW, WaypointUi.BTN_H, false, false,
+        int openW = ThemeContext.buttonWidth(fr, Strings.OPEN_CONFIG);
+        ThemeContext.button(hits, fr, Strings.OPEN_CONFIG, x + resetW + 6, y, openW, ThemeContext.BTN_H, false, false,
                 () -> ATHRConfig.openCategory("Waypoints"), Strings.TOOLTIP_OPEN_CONFIG);
 
         if (editorOpen) hits.setMouse(mouseX, mouseY);
@@ -82,37 +84,37 @@ public final class SettingsTab implements MenuTab {
     }
 
     private int section(FontRenderer fr, int x, int y, int w, String title) {
-        WaypointUi.text(fr, title, x, y, WaypointUi.ACCENT);
+        ThemeContext.text(fr, title, x, y, ThemeContext.ACCENT);
         y += 11;
-        WaypointUi.divider(x, y, w);
+        ThemeContext.divider(x, y, w);
         return y + 4;
     }
 
-    private int sliderRow(FontRenderer fr, WaypointUi.HitList hits, WaypointGroupGui gui, int x, int y, int w,
+    private int sliderRow(FontRenderer fr, ThemeContext.HitList hits, WaypointGroupGui gui, int x, int y, int w,
                           String label, String description, double value,
                           double min, double max, double step, String unit,
                           java.util.function.Consumer<Double> apply) {
         int sliderW = 150;
         int sliderX = x + w - sliderW - 54;
-        WaypointUi.text(fr, label, x, y + 2, WaypointUi.TEXT);
-        WaypointUi.text(fr, WaypointUi.fit(fr, description, sliderX - x - 8), x, y + 13, WaypointUi.MUTED);
-        WaypointUi.textRight(fr, WaypointUi.valueLabel(value) + unit, x + w, y + 6, WaypointUi.MUTED);
-        WaypointUi.slider(sliderX, y + 4, sliderW, value, min, max);
-        WaypointUi.SliderDrag drag = new WaypointUi.SliderDrag(sliderX, sliderW, min, max, step, apply::accept);
+        ThemeContext.text(fr, label, x, y + 2, ThemeContext.TEXT);
+        ThemeContext.text(fr, ThemeContext.fit(fr, description, sliderX - x - 8), x, y + 13, ThemeContext.MUTED);
+        ThemeContext.textRight(fr, ThemeContext.valueLabel(value) + unit, x + w, y + 6, ThemeContext.MUTED);
+        ThemeContext.slider(sliderX, y + 4, sliderW, value, min, max);
+        ThemeContext.SliderDrag drag = new ThemeContext.SliderDrag(sliderX, sliderW, min, max, step, apply::accept);
         hits.add(sliderX, y + 4, sliderW, 16, null, () -> gui.startSliderDrag(drag, hits.mouseX()));
         return y + 26;
     }
 
-    private int colourRow(FontRenderer fr, WaypointUi.HitList hits, WaypointGroupGui gui, int x, int y, int w,
+    private int colourRow(FontRenderer fr, ThemeContext.HitList hits, WaypointGroupGui gui, int x, int y, int w,
                           String key, Map<String, String> defaults) {
         String value = WaypointActions.getColor(key);
         String name = WaypointActions.colorName(key);
-        WaypointUi.text(fr, name, x, y + 4, WaypointUi.TEXT);
+        ThemeContext.text(fr, name, x, y + 4, ThemeContext.TEXT);
         int swX = x + w - 40;
-        WaypointUi.rect(swX, y + 1, 40, 14, WaypointUi.argbOf(value));
-        WaypointUi.border(swX, y + 1, 40, 14, WaypointUi.LINE);
+        ThemeContext.rect(swX, y + 1, 40, 14, ThemeContext.argbOf(value));
+        ThemeContext.border(swX, y + 1, 40, 14, ThemeContext.LINE);
         boolean changed = !value.equals(defaults.get(key));
-        if (changed) WaypointUi.text(fr, Strings.COLOR_RESET, swX - 34, y + 4, WaypointUi.ACCENT);
+        if (changed) ThemeContext.text(fr, Strings.COLOR_RESET, swX - 34, y + 4, ThemeContext.ACCENT);
         hits.add(swX, y + 1, 40, 14, "Change the " + name.toLowerCase() + " color.", () -> {
             if (colourEditor != null) return;
             colourEditor = new GuiElementColour(swX - 80, y + 18, WaypointActions.getColor(key),

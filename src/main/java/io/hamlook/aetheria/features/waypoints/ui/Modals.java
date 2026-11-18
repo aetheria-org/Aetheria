@@ -1,5 +1,7 @@
 package io.hamlook.aetheria.features.waypoints.ui;
 
+import io.hamlook.aetheria.ThemeContext;
+
 import io.hamlook.aetheria.features.waypoints.*;
 import io.hamlook.aetheria.features.waypoints.text.WaypointText;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
@@ -19,7 +21,7 @@ public final class Modals {
 
     public abstract static class Modal {
 
-        public abstract void render(WaypointGroupGui gui, FontRenderer fr, WaypointUi.HitList hits);
+        public abstract void render(WaypointGroupGui gui, FontRenderer fr, ThemeContext.HitList hits);
 
         public boolean key(WaypointGroupGui gui, char typedChar, int keyCode) {
             return false;
@@ -41,9 +43,9 @@ public final class Modals {
         }
 
         void frame(int[] b, float alpha) {
-            WaypointUi.rect(b[0] - 1, b[1] - 1, b[2] + 2, b[3] + 2, WaypointUi.withAlpha(WaypointUi.EDGE, alpha));
-            WaypointUi.rect(b[0], b[1], b[2], b[3], WaypointUi.withAlpha(WaypointUi.PANEL, alpha));
-            WaypointUi.border(b[0], b[1], b[2], b[3], WaypointUi.LINE);
+            ThemeContext.rect(b[0] - 1, b[1] - 1, b[2] + 2, b[3] + 2, ThemeContext.withAlpha(ThemeContext.EDGE, alpha));
+            ThemeContext.rect(b[0], b[1], b[2], b[3], ThemeContext.withAlpha(ThemeContext.PANEL, alpha));
+            ThemeContext.border(b[0], b[1], b[2], b[3], ThemeContext.LINE);
         }
 
         List<String> wrap(FontRenderer fr, String text, int width) {
@@ -75,29 +77,29 @@ public final class Modals {
         }
 
         @Override
-        public void render(WaypointGroupGui gui, FontRenderer fr, WaypointUi.HitList hits) {
+        public void render(WaypointGroupGui gui, FontRenderer fr, ThemeContext.HitList hits) {
             List<String> lines = lines(fr);
-            int h = 12 + 12 + lines.size() * WaypointUi.LINE_H + 10 + WaypointUi.BTN_H + 12;
+            int h = 12 + 12 + lines.size() * ThemeContext.LINE_H + 10 + ThemeContext.BTN_H + 12;
             int[] b = box(300, h);
             frame(b, gui.modalAlpha());
 
             int x = b[0] + 20;
             int y = b[1] + 12;
-            WaypointUi.text(fr, title, x, y, WaypointUi.TEXT);
+            ThemeContext.text(fr, title, x, y, ThemeContext.TEXT);
             y += 12;
             for (String line : lines) {
-                WaypointUi.text(fr, line, x, y, WaypointUi.MUTED);
-                y += WaypointUi.LINE_H;
+                ThemeContext.text(fr, line, x, y, ThemeContext.MUTED);
+                y += ThemeContext.LINE_H;
             }
-            int btnY = b[1] + b[3] - 12 - WaypointUi.BTN_H;
-            int confirmW = WaypointUi.buttonWidth(fr, confirmLabel);
-            int cancelW = WaypointUi.buttonWidth(fr, Strings.BTN_CANCEL);
+            int btnY = b[1] + b[3] - 12 - ThemeContext.BTN_H;
+            int confirmW = ThemeContext.buttonWidth(fr, confirmLabel);
+            int cancelW = ThemeContext.buttonWidth(fr, Strings.BTN_CANCEL);
             int right = b[0] + b[2] - 20;
-            WaypointUi.button(hits, fr, confirmLabel, right - confirmW, btnY, confirmW, WaypointUi.BTN_H, !danger, danger, () -> {
+            ThemeContext.button(hits, fr, confirmLabel, right - confirmW, btnY, confirmW, ThemeContext.BTN_H, !danger, danger, () -> {
                 gui.closeModal();
                 if (onConfirm != null) onConfirm.run();
             }, null);
-            WaypointUi.button(hits, fr, Strings.BTN_CANCEL, right - confirmW - 6 - cancelW, btnY, cancelW, WaypointUi.BTN_H, false, false, gui::closeModal, null);
+            ThemeContext.button(hits, fr, Strings.BTN_CANCEL, right - confirmW - 6 - cancelW, btnY, cancelW, ThemeContext.BTN_H, false, false, gui::closeModal, null);
         }
 
         @Override
@@ -144,25 +146,25 @@ public final class Modals {
         }
 
         @Override
-        public void render(WaypointGroupGui gui, FontRenderer fr, WaypointUi.HitList hits) {
+        public void render(WaypointGroupGui gui, FontRenderer fr, ThemeContext.HitList hits) {
             if (entries.isEmpty()) return;
             int w = 120;
-            for (Entry e : entries) w = Math.max(w, WaypointUi.width(fr, e.label) + 24);
+            for (Entry e : entries) w = Math.max(w, ThemeContext.width(fr, e.label) + 24);
             int h = entries.size() * 18 + 4;
             int sw = GuiScreenUtils.getScaledWindowWidth();
             int sh = GuiScreenUtils.getScaledWindowHeight();
             int bx = Math.min(x, sw - w - 4);
             int by = Math.min(y, sh - h - 4);
 
-            WaypointUi.rect(bx - 1, by - 1, w + 2, h + 2, WaypointUi.withAlpha(WaypointUi.EDGE, gui.modalAlpha()));
-            WaypointUi.rect(bx, by, w, h, WaypointUi.withAlpha(WaypointUi.INSET, gui.modalAlpha()));
-            WaypointUi.border(bx, by, w, h, WaypointUi.LINE);
+            ThemeContext.rect(bx - 1, by - 1, w + 2, h + 2, ThemeContext.withAlpha(ThemeContext.EDGE, gui.modalAlpha()));
+            ThemeContext.rect(bx, by, w, h, ThemeContext.withAlpha(ThemeContext.INSET, gui.modalAlpha()));
+            ThemeContext.border(bx, by, w, h, ThemeContext.LINE);
 
             int rowY = by + 2;
             for (Entry e : entries) {
                 boolean hover = hits.hover(bx + 2, rowY, w - 4, 18);
-                if (hover) WaypointUi.rect(bx + 2, rowY, w - 4, 18, WaypointUi.BTN_HOVER);
-                WaypointUi.text(fr, e.label, bx + 8, rowY + 5, e.danger ? WaypointUi.DANGER : WaypointUi.TEXT);
+                if (hover) ThemeContext.rect(bx + 2, rowY, w - 4, 18, ThemeContext.BTN_HOVER);
+                ThemeContext.text(fr, e.label, bx + 8, rowY + 5, e.danger ? ThemeContext.DANGER : ThemeContext.TEXT);
                 Runnable action = e.action;
                 hits.add(bx + 2, rowY, w - 4, 18, null, () -> {
                     gui.closeModal();
@@ -189,9 +191,9 @@ public final class Modals {
         }
 
         @Override
-        public void render(WaypointGroupGui gui, FontRenderer fr, WaypointUi.HitList hits) {
+        public void render(WaypointGroupGui gui, FontRenderer fr, ThemeContext.HitList hits) {
             int w = 200;
-            for (String n : names) w = Math.max(w, WaypointUi.width(fr, n) + 24);
+            for (String n : names) w = Math.max(w, ThemeContext.width(fr, n) + 24);
             int rows = Math.max(1, visible());
             int h = rows * 18 + 8;
             int[] b = box(w, h);
@@ -205,9 +207,9 @@ public final class Modals {
                 if (index >= names.size()) break;
                 String name = names.get(index);
                 boolean hover = hits.hover(b[0] + 4, rowY, w - 8, 18);
-                if (hover) WaypointUi.rect(b[0] + 4, rowY, w - 8, 18, WaypointUi.BTN_HOVER);
+                if (hover) ThemeContext.rect(b[0] + 4, rowY, w - 8, 18, ThemeContext.BTN_HOVER);
                 boolean active = gui.isRouteActive(WaypointStorage.getInstance().getGroup(name));
-                WaypointUi.text(fr, name, b[0] + 10, rowY + 5, active ? WaypointUi.ACCENT : WaypointUi.TEXT);
+                ThemeContext.text(fr, name, b[0] + 10, rowY + 5, active ? ThemeContext.ACCENT : ThemeContext.TEXT);
                 hits.add(b[0] + 4, rowY, w - 8, 18, null, () -> {
                     gui.closeModal();
                     if (onPick != null) onPick.accept(name);
@@ -285,7 +287,7 @@ public final class Modals {
         }
 
         @Override
-        public void render(WaypointGroupGui gui, FontRenderer fr, WaypointUi.HitList hits) {
+        public void render(WaypointGroupGui gui, FontRenderer fr, ThemeContext.HitList hits) {
             int w = 320;
             boolean ok = valid();
             int h = ok ? 164 : 150;
@@ -295,61 +297,61 @@ public final class Modals {
 
             int x = b[0] + 16;
             int y = b[1] + 12;
-            WaypointUi.text(fr, Strings.IMPORT_TITLE, x, y, WaypointUi.TEXT);
+            ThemeContext.text(fr, Strings.IMPORT_TITLE, x, y, ThemeContext.TEXT);
             y += 18;
 
             if (!ok) {
                 String msg = parsed == null || parsed.getError() == null ? Strings.IMPORT_EMPTY : parsed.getError();
                 for (String line : wrap(fr, msg, w - 32)) {
-                    WaypointUi.text(fr, line, x, y, WaypointUi.DANGER);
-                    y += WaypointUi.LINE_H;
+                    ThemeContext.text(fr, line, x, y, ThemeContext.DANGER);
+                    y += ThemeContext.LINE_H;
                 }
                 y += 4;
-                WaypointUi.text(fr, Strings.IMPORT_READS, x, y, WaypointUi.MUTED);
-                y += WaypointUi.LINE_H;
-                WaypointUi.text(fr, Strings.IMPORT_TRY, x, y, WaypointUi.MUTED);
+                ThemeContext.text(fr, Strings.IMPORT_READS, x, y, ThemeContext.MUTED);
+                y += ThemeContext.LINE_H;
+                ThemeContext.text(fr, Strings.IMPORT_TRY, x, y, ThemeContext.MUTED);
             } else {
-                WaypointUi.text(fr, Strings.IMPORT_FOUND + parsed.getGroup().waypoints.size() + " waypoints", x, y, WaypointUi.TEXT);
-                y += WaypointUi.LINE_H;
-                WaypointUi.text(fr, Strings.IMPORT_FORMAT + formatLabel(), x, y, WaypointUi.MUTED);
-                y += WaypointUi.LINE_H;
+                ThemeContext.text(fr, Strings.IMPORT_FOUND + parsed.getGroup().waypoints.size() + " waypoints", x, y, ThemeContext.TEXT);
+                y += ThemeContext.LINE_H;
+                ThemeContext.text(fr, Strings.IMPORT_FORMAT + formatLabel(), x, y, ThemeContext.MUTED);
+                y += ThemeContext.LINE_H;
                 if (parsed.getSkipped() > 0) {
-                    WaypointUi.text(fr, parsed.getSkipped() + Strings.IMPORT_SKIPPED, x, y, WaypointUi.MUTED);
-                    y += WaypointUi.LINE_H;
+                    ThemeContext.text(fr, parsed.getSkipped() + Strings.IMPORT_SKIPPED, x, y, ThemeContext.MUTED);
+                    y += ThemeContext.LINE_H;
                 }
                 y += 6;
-                WaypointUi.text(fr, Strings.IMPORT_NAME, x, y, WaypointUi.MUTED);
+                ThemeContext.text(fr, Strings.IMPORT_NAME, x, y, ThemeContext.MUTED);
                 y += 11;
 
                 int fieldY = y, fieldW = w - 32;
-                WaypointUi.rect(x, fieldY, fieldW, WaypointUi.FIELD_H, WaypointUi.INSET);
-                WaypointUi.border(x, fieldY, fieldW, WaypointUi.FIELD_H, error ? WaypointUi.DANGER : WaypointUi.LINE);
+                ThemeContext.rect(x, fieldY, fieldW, ThemeContext.FIELD_H, ThemeContext.INSET);
+                ThemeContext.border(x, fieldY, fieldW, ThemeContext.FIELD_H, error ? ThemeContext.DANGER : ThemeContext.LINE);
                 GuiScreenUtils.setX(nameField, x + 4);
                 GuiScreenUtils.setY(nameField, fieldY + 4);
                 GuiScreenUtils.setW(nameField, fieldW - 8);
                 GuiScreenUtils.setH(nameField, 10);
                 GuiScreenUtils.tickTextField(nameField);
                 GuiScreenUtils.renderTextField(nameField, mx, my);
-                y += WaypointUi.FIELD_H + 6;
+                y += ThemeContext.FIELD_H + 6;
 
                 boolean nameTaken = !WaypointActions.normalizeName(typedName()).isEmpty() && WaypointStorage.getInstance().getGroup(WaypointActions.normalizeName(typedName())) != null;
                 if (nameTaken) {
                     String free = WaypointActions.uniqueName(WaypointActions.normalizeName(typedName()));
-                    int bw1 = WaypointUi.buttonWidth(fr, "Replace " + WaypointActions.normalizeName(typedName()));
-                    int bw2 = WaypointUi.buttonWidth(fr, "Save as " + free);
-                    WaypointUi.button(hits, fr, "Replace " + WaypointActions.normalizeName(typedName()), x, y, bw1, WaypointUi.SMALL_H, replaceChosen, true, () -> replaceChosen = true, null);
-                    WaypointUi.button(hits, fr, "Save as " + free, x + bw1 + 6, y, bw2, WaypointUi.SMALL_H, !replaceChosen, false, () -> replaceChosen = false, null);
+                    int bw1 = ThemeContext.buttonWidth(fr, "Replace " + WaypointActions.normalizeName(typedName()));
+                    int bw2 = ThemeContext.buttonWidth(fr, "Save as " + free);
+                    ThemeContext.button(hits, fr, "Replace " + WaypointActions.normalizeName(typedName()), x, y, bw1, ThemeContext.SMALL_H, replaceChosen, true, () -> replaceChosen = true, null);
+                    ThemeContext.button(hits, fr, "Save as " + free, x + bw1 + 6, y, bw2, ThemeContext.SMALL_H, !replaceChosen, false, () -> replaceChosen = false, null);
                 }
             }
 
-            int btnY = b[1] + b[3] - 12 - WaypointUi.BTN_H;
-            int importW = WaypointUi.buttonWidth(fr, Strings.BTN_IMPORT);
-            int cancelW = WaypointUi.buttonWidth(fr, Strings.BTN_CANCEL);
+            int btnY = b[1] + b[3] - 12 - ThemeContext.BTN_H;
+            int importW = ThemeContext.buttonWidth(fr, Strings.BTN_IMPORT);
+            int cancelW = ThemeContext.buttonWidth(fr, Strings.BTN_CANCEL);
             int right = b[0] + b[2] - 16;
             if (valid()) {
-                WaypointUi.button(hits, fr, Strings.BTN_IMPORT, right - importW, btnY, importW, WaypointUi.BTN_H, true, false, () -> doImport(gui), null);
+                ThemeContext.button(hits, fr, Strings.BTN_IMPORT, right - importW, btnY, importW, ThemeContext.BTN_H, true, false, () -> doImport(gui), null);
             }
-            WaypointUi.button(hits, fr, Strings.BTN_CANCEL, right - importW - 6 - cancelW, btnY, cancelW, WaypointUi.BTN_H, false, false, gui::closeModal, null);
+            ThemeContext.button(hits, fr, Strings.BTN_CANCEL, right - importW - 6 - cancelW, btnY, cancelW, ThemeContext.BTN_H, false, false, gui::closeModal, null);
         }
 
         @Override

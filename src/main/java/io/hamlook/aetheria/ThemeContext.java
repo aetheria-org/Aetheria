@@ -1,4 +1,4 @@
-package io.hamlook.aetheria.features.waypoints.ui;
+package io.hamlook.aetheria;
 
 import io.hamlook.aetheria.core.moulconfig.editors.ChromaColour;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
@@ -11,7 +11,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.function.DoubleConsumer;
 
-public final class WaypointUi {
+public final class ThemeContext {
 
     public static final int DIM = 0xCC000000;
     public static final int PANEL = 0xFF202020;
@@ -44,7 +44,7 @@ public final class WaypointUi {
     public static final int FIELD_H = 24;
     public static final int LINE_H = 10;
 
-    private WaypointUi() {
+    private ThemeContext() {
     }
 
     public static int width(FontRenderer fr, String text) {
@@ -87,6 +87,28 @@ public final class WaypointUi {
         rect(x, y + h - 1, w, 1, color);
         rect(x, y, 1, h, color);
         rect(x + w - 1, y, 1, h, color);
+    }
+
+    /** Draws the shared raised surface used by cards and grouped controls. */
+    public static void panel(int x, int y, int w, int h) {
+        rect(x, y, w, h, PANEL);
+        border(x, y, w, h, LINE);
+    }
+
+    public static void panel(int x, int y, int w, int h, float alpha) {
+        rect(x, y, w, h, withAlpha(PANEL, alpha));
+        border(x, y, w, h, withAlpha(LINE, alpha));
+    }
+
+    /** Draws the inset surface used for lists, text fields and preview areas. */
+    public static void inset(int x, int y, int w, int h) {
+        rect(x, y, w, h, INSET);
+        border(x, y, w, h, LINE);
+    }
+
+    public static void inset(int x, int y, int w, int h, float alpha) {
+        rect(x, y, w, h, withAlpha(INSET, alpha));
+        border(x, y, w, h, withAlpha(LINE, alpha));
     }
 
     public static void divider(int x, int y, int w) {
