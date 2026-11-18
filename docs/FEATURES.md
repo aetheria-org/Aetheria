@@ -1,5 +1,7 @@
 # Aetheria Features
 
+Available for Minecraft 1.8.9 (Forge) and 1.21.1 (Fabric).
+
 
 ## QoL
 
@@ -16,17 +18,19 @@
 - **Chat State Restore** — Restores your chat text when server closes chat.
 - **Anvil Combine Helper** — Highlights matching items when one anvil slot is filled.
 - **Slot Binds** — Bind inventory slots to hotbar slots for quick swapping on any container (unidirectional N:1, bind key to set/remove).
-- **Better Containers** — Improved SkyBlock menu backgrounds with multiple styles and a watermark.
+- **Better Containers** — Improved SkyBlock menu backgrounds with multiple styles and a watermark. The **Hide Empty Pane Hover** option gives empty panes no hover highlight, tooltip or clicks.
 - **Damage Formatter** — Shortens large damage numbers (e.g., 1,234,567 → 1.2M).
 - **Profile Parser (SkyAtlas)** — Parse your skyblock profiles for SkyAtlas. A web-based profile viewer.
 - **Rare Drop Tracker** — Search the full item database with `/rdt add <name>` (min. 3 letters) and get a chat/title/sound alert the instant you pick up a tracked item. Manage your list with `/rdt list`, `/rdt remove`, and `/rdt clear`.
+- **Tooltip Scale** — Scale all tooltips (0.25–2, default 1). Hold the scale key (default Left Ctrl) and scroll to temporarily zoom a tooltip.
+- **Tooltip Scroll** — Scroll tall tooltips that don't fit on screen with the mouse wheel. Smooth scroll animation; speed and duration configurable.
 
 
 
 ## Misc
 
 - **Performance HUD** — Shows FPS, TPS, ping, coords, and rotation in a small overlay.
-- **Search Bar** — Adds a search bar to inventory GUIs with item highlighting.
+- **Search Bar** — Adds a search bar to inventory GUIs. Supports `/` command execution, recent searches and the Hover Item Copy Key.
 - **Item Cooldowns** — Tracks cooldowns for abilities and invincibility timers with a HUD overlay.
 - **Current Pet** — Shows your active pet as a HUD overlay.
 - **Item Pickup Log** — Shows recently picked up or dropped items in a HUD.
@@ -34,7 +38,6 @@
 - **Item Stack Tips** — Shows enchant levels on books and floor numbers on Catacombs passes.
 - **Party Finder Floor Labels** — Shows F1–F7, M1–M7, or ENT on listings in the Party Finder.
 - **Skill XP Display** — Hold Shift on a skill item to see XP remaining to max.
-- **No Swap Animation** — Removes the item lowering animation when switching hotbar slots.
 - **Show Own Nametag** — Shows your own nametag in third person.
 - **Disable Entity Fire** — Hides the fire overlay on burning entities.
 - **SkyBlock XP in Chat** — Sends SkyBlock XP gains from the action bar into chat. *(Needs server support)*
@@ -46,11 +49,12 @@
 - **Item List & Recipe Viewer** — Browse SkyBlock items and view their crafting recipes in-game.
 - **Player Join/Leave Notifier** — Alerts when watched players join or leave; custom messages per player.
 - **Bazaar Order Highlights** — Highlights filled sell orders in gold and buy orders in green.
-- **Ghost Tracker** — `/ghosttracker` — Tracks ghost kills, drops (Sorrow, Volta, Plasma, etc.), magic find, and scavenger coins in the Dwarven Mines / The Mist with a configurable HUD overlay.
+- **Ghost Tracker** — `/ghosttracker` — Tracks ghost kills, drops (Sorrow, Volta, Plasma, etc.), magic find, and scavenger coins in The Mist with a configurable HUD overlay.
 - **Item Log Alerts** — On-screen alerts when configured items are picked up; choose Always or First-Time-Only mode.
 - **Item Prices** — Community-driven price database. Dynamically fetches and displays item prices from the community API (auction & bazaar). Configurable detail level (Latest / 24h / 1 Week / 1 Month), optionally show prices only while holding a key, and optionally submit parsed data to the shared price database. Powers profit estimates across the mod.
 - **Kill Combo Tracker** — `/killcombo` — Tracks your current and highest kill combo with magic find, coins per kill, and combat wisdom lines.
 - **Incompatible Mods Warning** — Notifies when incompatible mods are installed and what they break (SkyblockAddons breaks the enchant parser and enchant chroma; Patcher may break enchant chroma). `/athrignoreincompat ignore|reset|list [modId]` hides or manages warnings.
+- **Bug Fixes** — Vanilla bug workarounds: **Bow Draw Fix** (keeps the bow draw going through inventory updates; 1.8.9 only) and **Swap Animation Fix** (no swap replay when the held item's data changes, e.g. mending/fuel).
 
 
 ## Dungeons
@@ -67,6 +71,9 @@
 - **Dungeon Leap Menu** — Replaces the Spirit Leap/InfiniLeap chest with a full dungeon map. Click player heads or grid buttons to leap to them. Optional player list, arrow icons, and self-exclusion from the map.
 - **Dungeon Chest Price Estimator** — Estimates profit or loss on dungeon reward chests using the community price API, with an analyzer overlay that highlights the best-value chest.
 - **Secret Reports** — `/report-secret` — Report a wrong secret location from the current dungeon room.
+- **Secret Highlights** — Highlights uncollected secrets: levers, essence skulls, bats and dropped secret items.
+- **Secret Chime** — Chime when you collect a secret (sound, volume, pitch configurable).
+- **Dungeon Alerts** — Blood Room / Room / Secrets cleared alerts. Customize banner text, chat message and sound per alert.
 
 
 ## Mining
@@ -84,6 +91,8 @@
   - Powder and essence lines, each with an amount threshold
   - Gemstone drops with a tier filter (Rough / Flawed / etc.)
   - Special drops: Oil Barrel, Ascension Rope, Wishing Compass, Jungle Heart, Prehistoric Egg, Pickonimbus 2000, Sludge Juice, Yoggie, Robot Parts, Treasurite
+- **Mining Progress Fix** — Keep block-breaking progress when the held drill's data updates (fuel, durability).
+- **Bal Alert** — Crystal Hollows Bal respawn tracker: chat, on-screen banner and scoreboard warning before Bal respawns.
 
 
 ## Fishing
@@ -129,6 +138,7 @@
 - **Precise Yaw/Pitch Overlay** — Live pitch/yaw HUD; configurable label color, position, and scale.
 - **Visitor Shopping List** — Tracks what each Garden visitor wants and gives. Panel and overlay show prices, profit, have/need counts, and farming time estimates. Sign fill for Bazaar amount signs. Configurable copper deal quality display with confirm-click protection. Custom tooltips replace vanilla Accept Offer lore with prices and profit. Panel shown on visitor menus, Bazaar, inventory, and signs.
 - **Garden Plot Numbers** — Shows plot numbers on Configure Plots chest slots. Color-coded by state (unlocked, buyable, no materials, locked). Optional slot highlights for unlocked and buyable plots.
+- **Garden Plot Warp Grid** — Clickable grid of Garden plots over your inventory for quick `/tptoplot` warps.
 
 ### Pests
 
@@ -154,15 +164,19 @@
 - **Chat Timestamps** — Prepends timestamps to chat; choose 12/24-hour and whether to show seconds.
 - **Chat Heads** — Shows a player's head next to their messages; hides repeats on consecutive messages.
 - **Chat Copy** — Click or CTRL+click to copy a chat line with or without color codes.
-- **Transparent Chat** — Makes the chat background fully transparent.
+- **Chat Background Opacity** — Slider for the chat background opacity; 0 is fully transparent (replaces the old Transparent Chat toggle).
 - **Animated Chat** — New messages slide into view.
 - **Chat Ping** - Play a sound and highlight the message when your name is mentioned in chat.
 - **Emojis** — Renders `:emoji_name:` tokens as emoji textures in chat, with a suggestion popup while typing and selectable Discord/Google/iOS themes.
+- **Chat Tabs** — ALL, PARTY, PLAYER, MSG, GUILD, COOP tabs above the chat box. Click to filter by message type. Per-tab toggles, unread badges and hover preview.
+- **Extended Chat History** — Keep up to 16384 chat lines instead of vanilla's 100.
+- **Player Buttons** — Click a player's name in chat to open a menu: Whisper, View Profile, Auction House, Party Invite, Add Friend, Ignore, Visit Island, Visit Garden. Toggleable per message type (public, party, guild, whisper, donate, coop).
 
 
 ## Cosmetics
 
 - **Capes** — Visible to any player using Aetheria. Manage capes in `/capes`
+- **Item Animations** — Customize the held item in first person: position offsets, rotation (pitch/yaw/roll), scale, swing range, swing speed (0 = no swing) and No Swap Animation.
 
 
 ## Storage
@@ -174,8 +188,8 @@
 
 ## Waypoints
 
-- **Ordered Waypoints** — `/athrw guide`
-- **Waypoint Manager** — GUI to manage waypoint groups.
+- **Routes** — Waypoints you follow in order: add, move, insert, skip, and auto-advance to the next when you reach one.
+- **Waypoint Menu** — `/jw` (aliases `/athrw`, `/waypoints`, `/asmw`).
 - **Auto Advance** — Automatically moves to the next waypoint when you're close enough for long enough.
 
 
@@ -187,6 +201,7 @@
   - Max image/GIF quality (240p–4K)
   - Mention notifications: toast on `@username` / `@everyone`
   - Smart Connection: only connect while in use, disconnect after 10 minutes of inactivity (off by default)
+  - MC Chat Integration — sends a limited version of Global Chat messages to Minecraft chat
 - **Network Controls** — Manage how much internet access the mod gets.
   - Offline Mode: disable all internet access (most features stop working)
   - Disable API Calls: turn off features that use the mod API (capes, profile viewer, profile parser, /sync)

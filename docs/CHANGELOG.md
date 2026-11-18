@@ -1,49 +1,50 @@
-# Aetheria 1.2.0 - 1.3.0
+# Aetheria 1.3.0 - 2.0.0
 
-Aetheria's Skyblock Mod 1.3.0: major performance improvements, farming features, and a reworked Dungeon Map.
+Aetheria's Skyblock Mod 2.0.0: now available for Minecraft 1.21.1 (Fabric) alongside 1.8.9 (Forge), with more features and better optimization.
 
 ### New Features
 
-- Added Pest Finder
-- Added Gold Tracker
-- Added Pest Cooldown Alert (`/asmpest`)
-- Added Pest Tracker (`/pesttracker`)
-- Added Visitor Shopping list
-- Added Custom Visitor tooltips
-- Added Coins Per Copper
-- Added Pest Plot Warp
-- Added Dungeon Leap Menu with Dungeon Map
-- Added Network Notice Screen which shows you what network I/O you've disabled and what it breaks
-- Added Garden Plot numbers in Configure Plots chest
-
-
-
-### Internal Changes
-
-- Improved data saving to prevent config resets from corruption, with better performance
-- Added Aetheria custom Crash logging (config/Aetheria/logs) for data saving crashes
-- Repo Data now caches in config to speed up launch times
-
+- Added Item Animations (swing range, speed & position)
+- Added Chat Tabs
+- Added Player Buttons
+- Added Secret Highlights (Lever, Bat, Dropped Item & Essence)
+- Added Secret Chime
+- Added Garden Plot Warp Grid
+- Added New Waypoint Menu
+- Added New ASM waypoint format
+- Added Bal Timer & Alert
+- Added Personal Booster lines to scoreboard
+- Added Room, Secrets & Blood cleared alerts
+- Added Tooltip Scaling & Scrolling
+- Added Extended Chat History
 
 ### Bug Fixes & Improvements
 
-- Added Global Chat keybind and improved UX (`/globalchat`)
-- Fixed Rare Drop Tracker (`/rdt`) not functioning
-- Fixed lag on GUI open/close with Storage Overlay enabled
-- Storage Overlay fixes and optimization
-- Optimized websocket connection
-- Fixed Profile Viewer crash
-- Fixed Price Tooltip and added Show Price in Short Number Format
-- Fixed Dungeon Reward Estimator
-- Added Global Chat option in Main Menu
-- Fixed and improved Organic Matter Tracker, Farming Tracker and BPS overlay
-- Fixed emoji renderer and emojis being redacted
-- Fixed Dungeon Map showing random players, added new icons and rendering fixes
-- Fixed GL leaks
-- Fixed and improved Sync
-- Fixed and improved Trevor Solver
-- Improved launch times by up to 1 minute
-- Fixed calculator edge cases
+**Additions**
+- Better Containers: added "Hide Empty Pane Hover" option (no hover highlight, tooltip or clicks on empty panes)
+- Search Bar: added clear button, `/` command execution, recent searches dropdown, hover item copy key & configurable submit key
+- Global Chat is now integrated with Minecraft chat
+- You can now change chat background opacity via slider
 
+**Improvements**
+- Improved config UX and performance (auto-open first subcategory, smoother scrolling, persistent menu state)
+- Rewrote the Secret Waypoint system; fixed bugs and improved performance
+- Improved Dungeon Map performance (~30 more FPS)
+- Ghost Tracker overlay is now only visible in the Mist
+- Added marquee text for Fetchur in the scoreboard
+- Added compact booster cookie time in the scoreboard
+- New scoreboard lines are now added automatically to existing configs
+- Improved Chat and Enchant Parser config UX
+- Improved loading times and RAM usage
+- All formatted numbers now display to 2 decimal places (e.g. 1.68m instead of 2m)
+
+**Fixes**
+- Fixed calculator applying thousands-separator commas back into the search bar
+- Fixed NEF (NotEnoughFakepixel) middle clicks breaking the Current Pet Tracker
+- Fixed vanilla mining progress resetting on item updates, bow draws being cancelled by quiver updates, and swap animation replaying
+- Fixed broken chat features
+- Fixed CrashLog recursively failing
+- Fixed Emojis not loading correctly
+- Fixed map calibration anchoring only to the entrance room
 
 The full changelog can be found [here](https://github.com/aetheria-org/Aetheria/commits/main/).
