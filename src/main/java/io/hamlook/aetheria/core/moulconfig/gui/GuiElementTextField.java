@@ -118,7 +118,7 @@ public class GuiElementTextField {
     }
 
     public int getCursorPos(int mouseX, int mouseY) {
-        if ((options & SCISSOR_TEXT) != 0 && !isScaling()
+        if ((options & SCISSOR_TEXT) != 0 && (options & COLOUR) == 0 && !isScaling()
                 && org.apache.commons.lang3.StringUtils.countMatches(textField.getText(), "\n") == 0) {
             String line = prependText + textField.getText();
             int cursor = Math.min(line.length(), GuiScreenUtils.getTextFieldCursor(textField) + prependText.length());
@@ -300,7 +300,8 @@ public class GuiElementTextField {
         int xStartOffset = 5;
         float scale = 1;
         String[] texts = text.split("\n");
-        boolean horizontalView = (options & SCISSOR_TEXT) != 0 && !isScaling() && texts.length == 1;
+        boolean horizontalView = (options & SCISSOR_TEXT) != 0 && (options & COLOUR) == 0
+                && !isScaling() && texts.length == 1;
         int cursorInRenderedText = GuiScreenUtils.getTextFieldCursor(tf) + prependText.length();
         if ((options & COLOUR) != 0) {
             String cursorPrefix = textNoColor.substring(0, Math.min(textNoColor.length(), cursorInRenderedText));

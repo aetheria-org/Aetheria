@@ -64,7 +64,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
 
         int height = getHeight();
 
-        int addWidth = Math.max(1, Math.min(80, width / 3 - 10));
+        int addWidth = Math.max(1, Math.min(48, width / 3 - 10));
         int addY = y + controlY(0, 45, 16);
         ThemeContext.buttonVisual(MinecraftCompat.getFontRenderer(), "Add", controlCenterX(x, width) - addWidth / 2,
                 addY, addWidth, 16, true, false, false);
@@ -232,7 +232,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
                 return true;
             }
 
-            int addWidth = Math.max(1, Math.min(80, width / 3 - 10));
+            int addWidth = Math.max(1, Math.min(48, width / 3 - 10));
             int addX = controlCenterX(x, width) - addWidth / 2;
             int addY = y + controlY(0, 45, 16);
             if (activeText.size() < exampleText.length && mouseX > addX && mouseX < addX + addWidth && mouseY > addY && mouseY < addY + 16) {
