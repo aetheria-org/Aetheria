@@ -149,16 +149,23 @@ public final class ThemeContext {
 
     public static int button(HitList hits, FontRenderer fr, String label, int x, int y, int w, int h, boolean primary, boolean danger, Runnable action, String tooltip) {
         boolean hover = hits.hover(x, y, w, h);
+        buttonVisual(fr, label, x, y, w, h, primary, danger, hover);
+        hits.add(x, y, w, h, tooltip, action);
+        return w;
+    }
+
+    /** Draws a themed button when the owning UI handles its own input. */
+    public static void buttonVisual(FontRenderer fr, String label, int x, int y, int w, int h,
+                                    boolean primary, boolean danger, boolean hover) {
         if (primary) {
             rect(x, y, w, h, hover ? ACCENT_HOVER : ACCENT);
+            border(x, y, w, h, ACCENT_HOVER);
         } else {
             rect(x, y, w, h, hover ? BTN_HOVER : BTN);
             border(x, y, w, h, BTN_BORDER);
         }
         int color = primary ? ACCENT_ON : danger ? DANGER : TEXT;
-        textCenter(fr, label, x + w / 2, y + (h - 8) / 2, color);
-        hits.add(x, y, w, h, tooltip, action);
-        return w;
+        textCenter(fr, fit(fr, label, w - 8), x + w / 2, y + (h - 8) / 2, color);
     }
 
     public static void buttonDisabled(FontRenderer fr, String label, int x, int y, int w, int h) {

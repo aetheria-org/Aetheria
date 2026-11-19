@@ -3,6 +3,7 @@
 
 package io.hamlook.aetheria.core.moulconfig.editors;
 
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElementTextField;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
@@ -16,7 +17,7 @@ public class GuiOptionEditorText extends GuiOptionEditor {
     public GuiOptionEditorText(ConfigProcessor.ProcessedOption option) {
         super(option);
         Object value = option.get();
-        textField = new GuiElementTextField(value instanceof String ? (String) value : "", 0);
+        textField = new GuiElementTextField(value instanceof String ? (String) value : "", GuiElementTextField.SCISSOR_TEXT);
     }
 
     @Override
@@ -24,16 +25,16 @@ public class GuiOptionEditorText extends GuiOptionEditor {
         super.render(x, y, width);
         int height = getHeight();
 
-        int fullWidth = Math.min(width / 3 - 10, 80);
-
-        int textFieldX = x + width / 6 - fullWidth / 2;
+        int maxWidth = Math.max(1, width / 3 - 10);
+        int fullWidth = Math.max(1, Math.min(maxWidth, 80));
         if (textField.getFocus()) {
-            fullWidth = Math.max(fullWidth, MinecraftCompat.getFontRenderer().getStringWidth(textField.getText()) + 10);
+            fullWidth = Math.min(maxWidth, Math.max(fullWidth, MinecraftCompat.getFontRenderer().getStringWidth(textField.getText()) + 10));
         }
 
+        int textFieldX = controlCenterX(x, width) - fullWidth / 2;
         textField.setSize(fullWidth, 16);
 
-        textField.render(textFieldX, y + height - 7 - 14);
+        textField.render(textFieldX, controlY(y, height, 16));
     }
 
     @Override
@@ -45,15 +46,15 @@ public class GuiOptionEditorText extends GuiOptionEditor {
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
         int height = getHeight();
 
-        int fullWidth = Math.min(width / 3 - 10, 80);
-
-        int textFieldX = x + width / 6 - fullWidth / 2;
+        int maxWidth = Math.max(1, width / 3 - 10);
+        int fullWidth = Math.max(1, Math.min(maxWidth, 80));
 
         if (textField.getFocus()) {
-            fullWidth = Math.max(fullWidth, MinecraftCompat.getFontRenderer().getStringWidth(textField.getText()) + 10);
+            fullWidth = Math.min(maxWidth, Math.max(fullWidth, MinecraftCompat.getFontRenderer().getStringWidth(textField.getText()) + 10));
         }
 
-        int textFieldY = y + height - 7 - 14;
+        int textFieldX = controlCenterX(x, width) - fullWidth / 2;
+        int textFieldY = controlY(y, height, 16);
         textField.setSize(fullWidth, 16);
 
         if (pressed && (button == 0 || button == 1)) {
@@ -84,10 +85,10 @@ public class GuiOptionEditorText extends GuiOptionEditor {
             textField.keyTyped(typedChar, keyCode);
 
             try {
-                textField.setCustomBorderColour(0xffffffff);
+                textField.setCustomBorderColour(ThemeContext.ACCENT);
                 option.set(textField.getText());
             } catch (Exception e) {
-                textField.setCustomBorderColour(0xffff0000);
+                textField.setCustomBorderColour(ThemeContext.DANGER);
             }
 
             return true;

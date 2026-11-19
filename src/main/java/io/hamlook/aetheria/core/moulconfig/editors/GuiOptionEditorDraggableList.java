@@ -3,6 +3,7 @@
 
 package io.hamlook.aetheria.core.moulconfig.editors;
 
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.LerpUtils;
@@ -13,17 +14,14 @@ import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
-import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.util.EnumChatFormatting;
-import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static io.hamlook.aetheria.Resources.DELETE;
-import static io.hamlook.aetheria.Resources.button_tex;
 
 public class GuiOptionEditorDraggableList extends GuiOptionEditor {
 
@@ -66,10 +64,10 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
 
         int height = getHeight();
 
-        GlStateManagerCompat.color(1, 1, 1, 1);
-        TextureCompat.drawBoundTextured(button_tex, x + width / 6 - 24, y + 45 - 7 - 14, 48, 16, 0, 0, 1, 1);
-
-        TextRenderUtils.drawStringCenteredScaledMaxWidth("Add", MinecraftCompat.getFontRenderer(), x + width / 6, y + 45 - 7 - 6, false, 44, 0xFF303030);
+        int addWidth = Math.max(1, Math.min(80, width / 3 - 10));
+        int addY = y + controlY(0, 45, 16);
+        ThemeContext.buttonVisual(MinecraftCompat.getFontRenderer(), "Add", controlCenterX(x, width) - addWidth / 2,
+                addY, addWidth, 16, true, false, false);
 
         long currentTime = System.currentTimeMillis();
         if (trashHoverTime < 0) {
@@ -79,11 +77,11 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
             float greenBlue = LerpUtils.clampZeroOne((250 + trashHoverTime - currentTime) / 250f);
             GlStateManagerCompat.color(1, greenBlue, greenBlue, 1);
         }
-        TextureCompat.drawBoundTextured(DELETE, x + width / 6 + 27, y + 45 - 7 - 13, 11, 14, 0, 0, 1, 1);
+        int trashY = y + controlY(0, 45, 14);
+        TextureCompat.drawBoundTextured(DELETE, controlCenterX(x, width) + 27, trashY, 11, 14, 0, 0, 1, 1);
         GlStateManagerCompat.resetColor();
 
-        DrawContextUtils.fill(x + 5, y + 45, x + width - 5, y + height - 5, 0xffdddddd);
-        DrawContextUtils.fill(x + 6, y + 46, x + width - 6, y + height - 6, 0xff000000);
+        ThemeContext.inset(x + 5, y + 45, width - 10, height - 50);
 
         int i = 0;
         int yOff = 0;
@@ -101,9 +99,9 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
             if (i++ != dragStartIndex) {
                 for (int multilineIndex = 0; multilineIndex < multilines.length; multilineIndex++) {
                     String line = multilines[multilineIndex];
-                    Utils.drawStringScaledMaxWidth(line + EnumChatFormatting.RESET, MinecraftCompat.getFontRenderer(), x + 20, y + 50 + yOff + multilineIndex * 10, true, width - 20, 0xffffffff);
+                    Utils.drawStringScaledMaxWidth(line + EnumChatFormatting.RESET, MinecraftCompat.getFontRenderer(), x + 20, y + 50 + yOff + multilineIndex * 10, true, width - 20, ThemeContext.TEXT);
                 }
-                DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "≡", x + 10, y + 50 + yOff + ySize / 2 - 4, 0xffffff, true);
+                DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), "≡", x + 10, y + 50 + yOff + ySize / 2 - 4, ThemeContext.ACCENT, true);
             }
 
             yOff += ySize;
@@ -128,8 +126,8 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
 
             int dropdownHeight = -1 + 12 * remaining.size();
 
-            int main = 0xff202026;
-            int outline = 0xff404046;
+            int main = ThemeContext.PANEL;
+            int outline = ThemeContext.ACCENT;
             DrawContextUtils.fill(left, top, left + 1, top + dropdownHeight, outline); //Left
             DrawContextUtils.fill(left + 1, top, left + dropdownWidth, top + 1, outline); //Top
             DrawContextUtils.fill(left + dropdownWidth - 1, top + 1, left + dropdownWidth, top + dropdownHeight, outline); //Right
@@ -142,7 +140,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
                 if (str.isEmpty()) {
                     str = "<NONE>";
                 }
-                TextRenderUtils.drawStringScaledMaxWidth(str.replaceAll("(\n.*)+", " ..."), fr, left + 3, top + 3 + dropdownY, false, dropdownWidth - 6, 0xffa0a0a0);
+                TextRenderUtils.drawStringScaledMaxWidth(str.replaceAll("(\n.*)+", " ..."), fr, left + 3, top + 3 + dropdownY, false, dropdownWidth - 6, ThemeContext.TEXT);
                 dropdownY += 12;
             }
         } else if (currentDragging >= 0) {
@@ -184,7 +182,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
-        if (!pressed && !dropdownOpen && dragStartIndex >= 0 && button == 0 && mouseX >= x + width / 6 + 27 - 3 && mouseX <= x + width / 6 + 27 + 11 + 3 && mouseY >= y + 45 - 7 - 13 - 3 && mouseY <= y + 45 - 7 - 13 + 14 + 3) {
+        if (!pressed && !dropdownOpen && dragStartIndex >= 0 && button == 0 && mouseX >= controlCenterX(x, width) + 27 - 3 && mouseX <= controlCenterX(x, width) + 27 + 11 + 3 && mouseY >= y + controlY(0, 45, 14) - 3 && mouseY <= y + controlY(0, 45, 14) + 17) {
             activeText.remove(dragStartIndex);
             currentDragging = -1;
             dragStartIndex = -1;
@@ -195,7 +193,7 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
             currentDragging = -1;
             dragStartIndex = -1;
             if (trashHoverTime > 0) trashHoverTime = -System.currentTimeMillis();
-        } else if (currentDragging >= 0 && mouseX >= x + width / 6 + 27 - 3 && mouseX <= x + width / 6 + 27 + 11 + 3 && mouseY >= y + 45 - 7 - 13 - 3 && mouseY <= y + 45 - 7 - 13 + 14 + 3) {
+        } else if (currentDragging >= 0 && mouseX >= controlCenterX(x, width) + 27 - 3 && mouseX <= controlCenterX(x, width) + 27 + 11 + 3 && mouseY >= y + controlY(0, 45, 14) - 3 && mouseY <= y + controlY(0, 45, 14) + 17) {
             if (trashHoverTime < 0) trashHoverTime = System.currentTimeMillis();
         } else {
             if (trashHoverTime > 0) trashHoverTime = -System.currentTimeMillis();
@@ -234,7 +232,10 @@ public class GuiOptionEditorDraggableList extends GuiOptionEditor {
                 return true;
             }
 
-            if (activeText.size() < exampleText.length && mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24 && mouseY > y + 45 - 7 - 14 && mouseY < y + 45 - 7 + 2) {
+            int addWidth = Math.max(1, Math.min(80, width / 3 - 10));
+            int addX = controlCenterX(x, width) - addWidth / 2;
+            int addY = y + controlY(0, 45, 16);
+            if (activeText.size() < exampleText.length && mouseX > addX && mouseX < addX + addWidth && mouseY > addY && mouseY < addY + 16) {
                 dropdownOpen = !dropdownOpen;
                 dragOffsetX = mouseX;
                 dragOffsetY = mouseY;

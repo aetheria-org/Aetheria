@@ -4,6 +4,7 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElementColour;
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
@@ -42,8 +43,10 @@ public class GuiOptionEditorColour extends GuiOptionEditor {
         int b = argb & 0xFF;
         int a = (argb >> 24) & 0xFF;
         GlStateManagerCompat.color(r / 255f, g / 255f, b / 255f, a / 255f);
-        TextureCompat.drawBoundTextured(button_white, x + width / 6 - 24, y + height - 7 - 14, 48, 16, 0, 0, 1, 1);
+        int swatchY = controlY(y, height, 16);
+        TextureCompat.drawBoundTextured(button_white, controlCenterX(x, width) - 24, swatchY, 48, 16, 0, 0, 1, 1);
         GlStateManagerCompat.resetColor();
+        ThemeContext.border(controlCenterX(x, width) - 24, swatchY, 48, 16, ThemeContext.LINE);
     }
 
     @Override
@@ -71,7 +74,8 @@ public class GuiOptionEditorColour extends GuiOptionEditor {
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
         int height = getHeight();
 
-        if (pressed && button == 0 && mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24 && mouseY > y + height - 7 - 14 && mouseY < y + height - 7 + 2) {
+        int swatchY = controlY(y, height, 16);
+        if (pressed && button == 0 && mouseX > controlCenterX(x, width) - 24 && mouseX < controlCenterX(x, width) + 24 && mouseY > swatchY && mouseY < swatchY + 16) {
             colourElement = new GuiElementColour(mouseX, mouseY, chromaColour, val -> {
                 setter.accept(val);
                 chromaColour = val;

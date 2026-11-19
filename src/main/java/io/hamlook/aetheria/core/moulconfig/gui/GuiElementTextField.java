@@ -3,6 +3,7 @@
 
 package io.hamlook.aetheria.core.moulconfig.gui;
 
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.utils.StringUtils;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
@@ -14,7 +15,6 @@ import lombok.Setter;
 import net.minecraft.client.gui.GuiTextField;
 
 
-import java.awt.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,6 +37,7 @@ public class GuiElementTextField {
     private int options;
     private boolean focus = false;
     private int x, y;
+    private int horizontalScrollStart;
     @Setter
     private String prependText = "";
     @Setter
@@ -117,6 +118,27 @@ public class GuiElementTextField {
     }
 
     public int getCursorPos(int mouseX, int mouseY) {
+        if ((options & SCISSOR_TEXT) != 0 && !isScaling()
+                && org.apache.commons.lang3.StringUtils.countMatches(textField.getText(), "\n") == 0) {
+            String line = prependText + textField.getText();
+            int cursor = Math.min(line.length(), GuiScreenUtils.getTextFieldCursor(textField) + prependText.length());
+            int visibleWidth = Math.max(1, searchBarXSize - 10);
+            int start = updateHorizontalScroll(line, cursor, visibleWidth, focus);
+            String visible = MinecraftCompat.getFontRenderer().trimStringToWidth(line.substring(start), visibleWidth);
+            int mouseOffset = Math.max(0, mouseX - (x + 5));
+            int visibleIndex = MinecraftCompat.getFontRenderer().trimStringToWidth(visible, mouseOffset).length();
+            if (visibleIndex < visible.length()) {
+                char next = visible.charAt(visibleIndex);
+                if (MinecraftCompat.getFontRenderer().getStringWidth(visible.substring(0, visibleIndex))
+                        + DrawContextUtils.getCharWidth(MinecraftCompat.getFontRenderer(), next) / 2 < mouseOffset) {
+                    visibleIndex++;
+                }
+            }
+            int textIndex = Math.min(line.length(), start + visibleIndex);
+            int prependLength = StringUtils.cleanColour(prependText).length();
+            return Math.max(0, textIndex - prependLength);
+        }
+
         int xComp = mouseX - x, yComp = mouseY - y;
         int extraSize = (searchBarYSize - 8) / 2 + 8;
         String renderText = prependText + textField.getText();
@@ -220,7 +242,30 @@ public class GuiElementTextField {
     public void render(int x, int y) {
         this.x = x;
         this.y = y;
+        if (!focus) horizontalScrollStart = 0;
         drawTextbox(x, y, searchBarXSize, searchBarYSize, searchBarPadding, textField, focus);
+    }
+
+    private int updateHorizontalScroll(String line, int cursor, int visibleWidth, boolean keepCaretVisible) {
+        if (!keepCaretVisible) {
+            horizontalScrollStart = 0;
+            return 0;
+        }
+
+        cursor = Math.max(0, Math.min(line.length(), cursor));
+        net.minecraft.client.gui.FontRenderer font = MinecraftCompat.getFontRenderer();
+        int low = 0;
+        int high = cursor;
+        while (low < high) {
+            int middle = (low + high) >>> 1;
+            if (font.getStringWidth(line.substring(middle, cursor)) <= visibleWidth) {
+                high = middle;
+            } else {
+                low = middle + 1;
+            }
+        }
+        horizontalScrollStart = low;
+        return horizontalScrollStart;
     }
 
     private void drawTextbox(int x, int y, int sizeX, int sizeY, int padding, GuiTextField tf, boolean focused) {
@@ -234,9 +279,9 @@ public class GuiElementTextField {
         int bottomTextBox = y + sizeY + extraSize * (numLines - 1);
 
         if ((options & DISABLE_BG) == 0) {
-            int borderColour = customBorderColour != -1 ? customBorderColour : (focused ? Color.GREEN.getRGB() : Color.WHITE.getRGB());
+            int borderColour = customBorderColour != -1 ? customBorderColour : (focused ? ThemeContext.ACCENT : ThemeContext.LINE);
             DrawContextUtils.fill(x - paddingUnscaled, y - paddingUnscaled, x + sizeX + paddingUnscaled, bottomTextBox + paddingUnscaled, borderColour);
-            DrawContextUtils.fill(x, y, x + sizeX, bottomTextBox, Color.BLACK.getRGB());
+            DrawContextUtils.fill(x, y, x + sizeX, bottomTextBox, ThemeContext.INSET);
         }
 
         String text = renderText, textNoColor = renderText;
@@ -255,9 +300,31 @@ public class GuiElementTextField {
         int xStartOffset = 5;
         float scale = 1;
         String[] texts = text.split("\n");
+        boolean horizontalView = (options & SCISSOR_TEXT) != 0 && !isScaling() && texts.length == 1;
+        int cursorInRenderedText = GuiScreenUtils.getTextFieldCursor(tf) + prependText.length();
+        if ((options & COLOUR) != 0) {
+            String cursorPrefix = textNoColor.substring(0, Math.min(textNoColor.length(), cursorInRenderedText));
+            cursorInRenderedText += org.apache.commons.lang3.StringUtils.countMatches(cursorPrefix, "¶") * 2;
+        }
+        int horizontalStart = horizontalView
+                ? updateHorizontalScroll(texts[0], cursorInRenderedText, Math.max(1, sizeX - 10), focused)
+                : 0;
+        String horizontalVisibleText = horizontalView
+                ? MinecraftCompat.getFontRenderer().trimStringToWidth(texts[0].substring(horizontalStart), Math.max(1, sizeX - 10))
+                : "";
         for (int i = 0; i < texts.length; i++) {
             int yOff = i * extraSize;
-            if (isScaling() && MinecraftCompat.getFontRenderer().getStringWidth(texts[i]) > sizeX - 10) {
+            if (horizontalView) {
+                if ((options & SCISSOR_TEXT) != 0) {
+                    GlScissorStack.push(x + 5, 0, x + sizeX, GuiScreenUtils.getScaledWindowHeight(), scaleFactor);
+                    DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), horizontalVisibleText,
+                            x + 5, y + (sizeY - 8) / 2 + yOff, customTextColour, false);
+                    GlScissorStack.pop(scaleFactor);
+                } else {
+                    DrawContextUtils.drawText(MinecraftCompat.getFontRenderer(), horizontalVisibleText,
+                            x + 5, y + (sizeY - 8) / 2 + yOff, customTextColour, false);
+                }
+            } else if (isScaling() && MinecraftCompat.getFontRenderer().getStringWidth(texts[i]) > sizeX - 10) {
                 scale = (sizeX - 2) / (float) MinecraftCompat.getFontRenderer().getStringWidth(texts[i]);
                 if (scale > 1) scale = 1;
                 xStartOffset = (int) ((sizeX - MinecraftCompat.getFontRenderer().getStringWidth(texts[i]) * scale) / 2f);
@@ -275,14 +342,28 @@ public class GuiElementTextField {
         }
 
         if (focused && System.currentTimeMillis() % 1000 > 500) {
+            if ((options & SCISSOR_TEXT) != 0) {
+                GlScissorStack.push(x + 5, y, x + sizeX, bottomTextBox, scaleFactor);
+            }
             String tNC = textNoColor.substring(0, GuiScreenUtils.getTextFieldCursor(tf) + prependText.length());
             int cc = org.apache.commons.lang3.StringUtils.countMatches(tNC, "¶");
             String tBC = text.substring(0, GuiScreenUtils.getTextFieldCursor(tf) + prependText.length() + (((options & COLOUR) != 0) ? cc * 2 : 0));
             int numLinesBC = org.apache.commons.lang3.StringUtils.countMatches(tBC, "\n");
             int yOff = numLinesBC * extraSize;
             String[] split = tBC.split("\n");
-            int tBCW = (split.length <= numLinesBC || split.length == 0) ? 0 : (int) (MinecraftCompat.getFontRenderer().getStringWidth(split[split.length - 1]) * scale);
-            DrawContextUtils.fill(x + xStartOffset + tBCW, y + (sizeY - 8) / 2 - 1 + yOff, x + xStartOffset + tBCW + 1, y + (sizeY - 8) / 2 + 9 + yOff, Color.WHITE.getRGB());
+            int tBCW;
+            if (horizontalView) {
+                int cursorInLine = Math.max(0, cursorInRenderedText - horizontalStart);
+                String visiblePrefix = horizontalVisibleText.substring(0, Math.min(horizontalVisibleText.length(), cursorInLine));
+                tBCW = MinecraftCompat.getFontRenderer().getStringWidth(visiblePrefix);
+                xStartOffset = 5;
+            } else {
+                tBCW = (split.length <= numLinesBC || split.length == 0) ? 0 : (int) (MinecraftCompat.getFontRenderer().getStringWidth(split[split.length - 1]) * scale);
+            }
+            DrawContextUtils.fill(x + xStartOffset + tBCW, y + (sizeY - 8) / 2 - 1 + yOff, x + xStartOffset + tBCW + 1, y + (sizeY - 8) / 2 + 9 + yOff, ThemeContext.TEXT);
+            if ((options & SCISSOR_TEXT) != 0) {
+                GlScissorStack.pop(scaleFactor);
+            }
         }
     }
 

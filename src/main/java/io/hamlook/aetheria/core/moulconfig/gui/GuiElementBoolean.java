@@ -3,14 +3,9 @@
 
 package io.hamlook.aetheria.core.moulconfig.gui;
 
-import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.utils.LerpUtils;
-import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
-import io.hamlook.aetheria.utils.compat.TextureCompat;
-import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
-import io.hamlook.aetheria.utils.render.RenderUtils;
-import net.minecraft.util.ResourceLocation;
 
 import java.util.function.Consumer;
 
@@ -25,8 +20,8 @@ public class GuiElementBoolean extends GuiElement {
     private int animation = 0;
     private long lastMillis = 0;
 
-    private static final int xSize = 48;
-    private static final int ySize = 14;
+    private static final int xSize = 30;
+    private static final int ySize = 16;
 
     public GuiElementBoolean(int x, int y, boolean value, Consumer<Boolean> toggleCallback) {
         this(x, y, value, 0, toggleCallback);
@@ -44,10 +39,6 @@ public class GuiElementBoolean extends GuiElement {
 
     @Override
     public void render() {
-        GlStateManagerCompat.color(1, 1, 1, 1);
-        TextureCompat.drawBoundTextured(Resources.BAR, x, y, xSize, ySize, 0, 0, 1, 1);
-
-        ResourceLocation buttonLoc = Resources.ON;
         long currentMillis = System.currentTimeMillis();
         long deltaMillis = currentMillis - lastMillis;
         lastMillis = currentMillis;
@@ -68,13 +59,12 @@ public class GuiElementBoolean extends GuiElement {
             animation = previewValue ? Math.max(12, animation) : Math.min(24, animation);
         }
 
-        int anim = (int) (LerpUtils.sigmoidZeroOne(this.animation / 36f) * 36);
-        if      (anim < 3)  buttonLoc = Resources.OFF;
-        else if (anim < 13) buttonLoc = Resources.ONE;
-        else if (anim < 23) buttonLoc = Resources.TWO;
-        else if (anim < 33) buttonLoc = Resources.THREE;
-
-        TextureCompat.drawBoundTextured(buttonLoc, x + anim, y, 12, 14, 0, 0, 1, 1);
+        float anim = LerpUtils.sigmoidZeroOne(this.animation / 36f);
+        int trackOn = ThemeContext.mixArgb(ThemeContext.INSET, ThemeContext.ACCENT, 0.35f);
+        ThemeContext.rect(x, y, 30, 16, ThemeContext.mixArgb(ThemeContext.INSET, trackOn, anim));
+        ThemeContext.border(x, y, 30, 16, ThemeContext.LINE);
+        int knobX = x + 2 + Math.round(anim * 14);
+        ThemeContext.rect(knobX, y + 3, 12, 10, ThemeContext.mixArgb(ThemeContext.MUTED, ThemeContext.ACCENT, anim));
     }
 
     @Override

@@ -3,10 +3,8 @@
 
 package io.hamlook.aetheria.core.moulconfig.gui;
 
-import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.utils.KeybindHelper;
-import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
-import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.compat.GuiScreenUtils;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
 import lombok.Setter;
@@ -38,37 +36,14 @@ public class GuiElementSlider extends GuiElement {
     @Override
     public void render() {
         int screenW = GuiScreenUtils.getScaledWindowWidth();
-        int screenH = GuiScreenUtils.getScaledWindowHeight();
-        int mouseX = KeybindHelper.getMouseCoords(screenW, screenH)[0];
+        int mouseX = KeybindHelper.getMouseCoords(screenW, GuiScreenUtils.getScaledWindowHeight())[0];
 
         float v = value;
         if (clicked) {
             v = snap((mouseX - x) * (maxValue - minValue) / width + minValue);
         }
 
-        float sliderAmt = Math.max(0, Math.min(1, (v - minValue) / (maxValue - minValue)));
-        int   sliderAmtI = (int) (width * sliderAmt);
-
-        GlStateManagerCompat.color(1, 1, 1, 1);
-
-        TextureCompat.drawBoundTextured(Resources.slider_on_cap, x, y, 4, HEIGHT, 0, 0, 1, 1);
-        TextureCompat.drawBoundTextured(Resources.slider_off_cap, x + width - 4, y, 4, HEIGHT, 0, 0, 1, 1);
-
-        if (sliderAmtI > 5) {
-            TextureCompat.drawBoundTextured(Resources.slider_on_segment, x + 4, y, sliderAmtI - 4, HEIGHT, 0, 0, 1, 1);
-        }
-        if (sliderAmtI < width - 5) {
-            TextureCompat.drawBoundTextured(Resources.slider_off_segment, x + sliderAmtI, y, width - 4 - sliderAmtI, HEIGHT, 0, 0, 1, 1);
-        }
-
-        for (int i = 1; i < 4; i++) {
-            int notchX = x + width * i / 4 - 1;
-            TextureCompat.drawBoundTextured(
-                    notchX > x + sliderAmtI ? Resources.slider_off_notch : Resources.slider_on_notch,
-                    notchX, y + (HEIGHT - 4f) / 2, 2, 4, 0, 0, 1, 1);
-        }
-
-        TextureCompat.drawBoundTextured(Resources.slider_button_new, x + sliderAmtI - 4, y, 8, HEIGHT, 0, 0, 1, 1);
+        ThemeContext.slider(x, y, width, v, minValue, maxValue);
     }
 
     @Override

@@ -4,18 +4,16 @@
 package io.hamlook.aetheria.core.moulconfig.editors;
 
 import io.hamlook.aetheria.Resources;
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.KeybindHelper;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.KeyboardCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import io.hamlook.aetheria.utils.compat.TextureCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
-import io.hamlook.aetheria.utils.render.TextRenderUtils;
+import io.hamlook.aetheria.utils.compat.TextureCompat;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.input.Keyboard;
-
-import static io.hamlook.aetheria.Resources.button_tex;
 
 public class GuiOptionEditorKeybind extends GuiOptionEditor {
 
@@ -38,15 +36,16 @@ public class GuiOptionEditorKeybind extends GuiOptionEditor {
         super.render(x, y, width);
 
         int height = getHeight();
+        int buttonWidth = keybindButtonWidth(width);
+        int groupWidth = buttonWidth + 13;
+        int buttonX = controlCenterX(x, width) - groupWidth / 2;
+        int buttonY = controlY(y, height, 16);
+
+        ThemeContext.buttonVisual(MinecraftCompat.getFontRenderer(), editingKeycode ? CAPTURING_LABEL : KeybindHelper.getKeyName(keyCode),
+                buttonX, buttonY, buttonWidth, 16, true, false, editingKeycode);
 
         GlStateManagerCompat.color(1, 1, 1, 1);
-        TextureCompat.drawBoundTextured(button_tex, x + width / 6 - 24, y + height - 7 - 14, 48, 16, 0, 0, 1, 1);
-
-        String text = editingKeycode ? CAPTURING_LABEL : KeybindHelper.getKeyName(keyCode);
-        TextRenderUtils.drawStringCenteredScaledMaxWidth(text, MinecraftCompat.getFontRenderer(), x + width / 6, y + height - 7 - 6, false, 40, 0xFF303030);
-
-        GlStateManagerCompat.color(1, 1, 1, 1);
-        TextureCompat.drawBoundTextured(RESET, x + width / 6 - 24 + 48 + 3, y + height - 7 - 14 + 3, 10, 11, 0, 0, 1, 1);
+        TextureCompat.drawBoundTextured(RESET, buttonX + buttonWidth + 3, buttonY + 3, 10, 11, 0, 0, 1, 1);
     }
 
     @Override
@@ -56,14 +55,24 @@ public class GuiOptionEditorKeybind extends GuiOptionEditor {
 
     private boolean isOverButton(int x, int y, int width, int mouseX, int mouseY) {
         int height = getHeight();
-        return mouseX > x + width / 6 - 24 && mouseX < x + width / 6 + 24
-                && mouseY > y + height - 7 - 14 && mouseY < y + height - 7 + 2;
+        int buttonWidth = keybindButtonWidth(width);
+        int buttonX = controlCenterX(x, width) - (buttonWidth + 13) / 2;
+        int buttonY = controlY(y, height, 16);
+        return mouseX > buttonX && mouseX < buttonX + buttonWidth
+                && mouseY > buttonY && mouseY < buttonY + 16;
     }
 
     private boolean isOverReset(int x, int y, int width, int mouseX, int mouseY) {
         int height = getHeight();
-        return mouseX > x + width / 6 - 24 + 48 + 3 && mouseX < x + width / 6 - 24 + 48 + 13
-                && mouseY > y + height - 7 - 14 + 3 && mouseY < y + height - 7 - 14 + 3 + 11;
+        int buttonWidth = keybindButtonWidth(width);
+        int buttonX = controlCenterX(x, width) - (buttonWidth + 13) / 2;
+        int buttonY = controlY(y, height, 16);
+        return mouseX > buttonX + buttonWidth + 3 && mouseX < buttonX + buttonWidth + 13
+                && mouseY > buttonY + 3 && mouseY < buttonY + 14;
+    }
+
+    private int keybindButtonWidth(int width) {
+        return Math.max(1, Math.min(60, width / 3 - 23));
     }
 
     @Override

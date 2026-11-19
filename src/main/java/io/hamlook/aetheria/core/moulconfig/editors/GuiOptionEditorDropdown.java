@@ -3,11 +3,11 @@
 
 package io.hamlook.aetheria.core.moulconfig.editors;
 
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
 import io.hamlook.aetheria.utils.compat.MouseCompat;
-import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 
@@ -30,11 +30,11 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
     }
 
     private int dropdownLeft(int x, int width) {
-        return x + width / 6 - dropdownWidth(width) / 2;
+        return controlCenterX(x, width) - dropdownWidth(width) / 2;
     }
 
     private int dropdownTop(int y, int height) {
-        return y + height - 7 - 14;
+        return controlY(y, height, 14);
     }
 
     @Override
@@ -54,10 +54,10 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
                 selectedString = values[selected];
             }
 
-            RenderUtils.drawFloatingRectDark(left, top, dropdownWidth, 14, false);
-            TextRenderUtils.drawStringScaled("\u25BC", fr, left + dropdownWidth - 10, y + height - 7 - 15, false, 0xffa0a0a0, 2);
+            ThemeContext.inset(left, top, dropdownWidth, 14);
+            TextRenderUtils.drawStringScaled("\u25BC", fr, left + dropdownWidth - 10, top - 1, false, ThemeContext.ACCENT, 2);
 
-            TextRenderUtils.drawStringScaledMaxWidth(selectedString, fr, left + 3, top + 3, false, dropdownWidth - 16, 0xffa0a0a0);
+            TextRenderUtils.drawStringScaledMaxWidth(selectedString, fr, left + 3, top + 3, false, dropdownWidth - 16, ThemeContext.TEXT);
         }
     }
 
@@ -78,8 +78,8 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
 
             int dropdownHeight = 13 + 12 * values.length;
 
-            int main = 0xff202026;
-            int blue = 0xff2355ad;
+            int main = ThemeContext.PANEL;
+            int blue = ThemeContext.ACCENT;
             DrawContextUtils.fill(left, top, left + 1, top + dropdownHeight, blue); //Left
             DrawContextUtils.fill(left + 1, top, left + dropdownWidth, top + 1, blue); //Top
             DrawContextUtils.fill(left + dropdownWidth - 1, top + 1, left + dropdownWidth, top + dropdownHeight, blue); //Right
@@ -93,13 +93,13 @@ public class GuiOptionEditorDropdown extends GuiOptionEditor {
                 if (option.isEmpty()) {
                     option = "<NONE>";
                 }
-                TextRenderUtils.drawStringScaledMaxWidth(option, fr, left + 3, top + 3 + dropdownY, false, dropdownWidth - 6, 0xffa0a0a0);
+                TextRenderUtils.drawStringScaledMaxWidth(option, fr, left + 3, top + 3 + dropdownY, false, dropdownWidth - 6, ThemeContext.TEXT);
                 dropdownY += 12;
             }
 
-            TextRenderUtils.drawStringScaled("\u25B2", fr, left + dropdownWidth - 10, y + height - 7 - 15, false, 0xffa0a0a0, 2);
+            TextRenderUtils.drawStringScaled("\u25B2", fr, left + dropdownWidth - 10, top - 1, false, ThemeContext.ACCENT, 2);
 
-            TextRenderUtils.drawStringScaledMaxWidth(selectedString, fr, left + 3, top + 3, false, dropdownWidth - 16, 0xffa0a0a0);
+            TextRenderUtils.drawStringScaledMaxWidth(selectedString, fr, left + 3, top + 3, false, dropdownWidth - 16, ThemeContext.TEXT);
         }
     }
 

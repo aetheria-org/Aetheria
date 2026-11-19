@@ -3,9 +3,9 @@
 
 package io.hamlook.aetheria.core.moulconfig.editors;
 
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.compat.*;
-import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 
@@ -31,7 +31,7 @@ public class GuiOptionEditorAccordion extends GuiOptionEditor {
     @Override
     public void render(int x, int y, int width) {
         int height = getHeight();
-        RenderUtils.drawFloatingRectDark(x, y, width, height, true);
+        ThemeContext.panel(x, y, width, height);
 
         GlStateManagerCompat.enableBlend();
         GlStateManagerCompat.disableTexture2D();
@@ -52,7 +52,8 @@ public class GuiOptionEditorAccordion extends GuiOptionEditor {
         GlStateManagerCompat.disableBlend();
 
         FontRenderer fr = MinecraftCompat.getFontRenderer();
-        TextRenderUtils.drawStringScaledMaxWidth(option.name, fr, x + 18, y + 13, true, width / 3 - 18, 0xc0c0c0);
+        ThemeContext.rect(x, y, 2, height, accordionToggled ? ThemeContext.ACCENT : ThemeContext.LINE);
+        TextRenderUtils.drawStringScaledMaxWidth(option.name, fr, x + 18, y + 13, true, width / 3 - 18, ThemeContext.TEXT);
         renderDescription(x, y, width);
     }
 

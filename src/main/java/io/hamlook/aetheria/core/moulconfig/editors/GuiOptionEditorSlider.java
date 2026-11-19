@@ -3,6 +3,7 @@
 
 package io.hamlook.aetheria.core.moulconfig.editors;
 
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElementSlider;
 import io.hamlook.aetheria.core.moulconfig.gui.GuiElementTextField;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
@@ -53,8 +54,9 @@ public class GuiOptionEditorSlider extends GuiOptionEditor {
         int sliderWidth = (fullWidth - 5) * 3 / 4;
         int textFieldWidth = (fullWidth - 5) / 4;
 
-        slider.x = x + width / 6 - fullWidth / 2;
-        slider.y = y + height - 7 - 14;
+        slider.x = controlCenterX(x, width) - fullWidth / 2;
+        int controlY = controlY(y, height, 16);
+        slider.y = controlY;
         slider.width = sliderWidth;
         slider.render();
 
@@ -66,7 +68,7 @@ public class GuiOptionEditorSlider extends GuiOptionEditor {
             textField.setOptions(GuiElementTextField.NO_SPACE | GuiElementTextField.NUM_ONLY | GuiElementTextField.SCALE_TEXT);
         }
 
-        textField.render(x + width / 6 - fullWidth / 2 + sliderWidth + 5, y + height - 7 - 14);
+        textField.render(controlCenterX(x, width) - fullWidth / 2 + sliderWidth + 5, controlY);
     }
 
     @Override
@@ -82,8 +84,9 @@ public class GuiOptionEditorSlider extends GuiOptionEditor {
         int sliderWidth = (fullWidth - 5) * 3 / 4;
         int textFieldWidth = (fullWidth - 5) / 4;
 
-        slider.x = x + width / 6 - fullWidth / 2;
-        slider.y = y + height - 7 - 14;
+        slider.x = controlCenterX(x, width) - fullWidth / 2;
+        int controlY = controlY(y, height, 16);
+        slider.y = controlY;
         slider.width = sliderWidth;
         if (slider.mouseInput(mouseX, mouseY, button, pressed)) {
             textField.unfocus();
@@ -94,8 +97,8 @@ public class GuiOptionEditorSlider extends GuiOptionEditor {
             textFieldWidth = MinecraftCompat.getFontRenderer().getStringWidth(textField.getText()) + 10;
         }
 
-        int textFieldX = x + width / 6 - fullWidth / 2 + sliderWidth + 5;
-        int textFieldY = y + height - 7 - 14;
+        int textFieldX = controlCenterX(x, width) - fullWidth / 2 + sliderWidth + 5;
+        int textFieldY = controlY;
         textField.setSize(textFieldWidth, 16);
 
         if (pressed && (button == 0 || button == 1)) {
@@ -131,16 +134,16 @@ public class GuiOptionEditorSlider extends GuiOptionEditor {
 
         Float parsed = parseValue(textField.getText());
         if (parsed == null) {
-            textField.setCustomBorderColour(0xffff0000);
+            textField.setCustomBorderColour(ThemeContext.DANGER);
             return true;
         }
 
         float clamped = clamp(parsed);
         if (option.set(clamped)) {
             slider.setValue(clamped);
-            textField.setCustomBorderColour(0xffffffff);
+            textField.setCustomBorderColour(ThemeContext.ACCENT);
         } else {
-            textField.setCustomBorderColour(0xff0000ff);
+            textField.setCustomBorderColour(ThemeContext.LINE);
         }
         return true;
     }

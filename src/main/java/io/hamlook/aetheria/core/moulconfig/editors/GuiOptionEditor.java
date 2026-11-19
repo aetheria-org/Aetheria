@@ -3,11 +3,11 @@
 
 package io.hamlook.aetheria.core.moulconfig.editors;
 
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.core.moulconfig.gui.config.ConfigProcessor;
 import io.hamlook.aetheria.utils.compat.DrawContextUtils;
 import io.hamlook.aetheria.utils.compat.GlStateManagerCompat;
 import io.hamlook.aetheria.utils.compat.MinecraftCompat;
-import io.hamlook.aetheria.utils.render.RenderUtils;
 import io.hamlook.aetheria.utils.render.TextRenderUtils;
 import net.minecraft.client.gui.FontRenderer;
 
@@ -20,36 +20,53 @@ public abstract class GuiOptionEditor {
         this.option = option;
     }
 
+    protected int controlCenterX(int x, int width) {
+        return x + width * 5 / 6;
+    }
+
+    protected int controlLeft(int x, int width, int controlWidth) {
+        return controlCenterX(x, width) - controlWidth / 2;
+    }
+
+    protected int controlY(int y, int height, int controlHeight) {
+        return y + Math.max(0, (height - controlHeight) / 2);
+    }
+
     public void render(int x, int y, int width) {
         int height = getHeight();
 
         FontRenderer fr = MinecraftCompat.getFontRenderer();
-        RenderUtils.drawFloatingRectDark(x, y, width, height, true);
-        TextRenderUtils.drawStringCenteredScaledMaxWidth(option.name, fr, x + width / 6, y + 13, true, width / 3 - 10, 0xc0c0c0);
+        ThemeContext.panel(x, y, width, height);
+        ThemeContext.rect(x, y, 2, height, ThemeContext.ACCENT);
+        TextRenderUtils.drawStringScaledMaxWidth(option.name, fr, x + 10, y + 6, false, width * 2 / 3 - 18, ThemeContext.TEXT);
         renderDescription(x, y, width);
     }
 
     protected void renderDescription(int x, int y, int width) {
         FontRenderer fr = MinecraftCompat.getFontRenderer();
-        int maxLines = 5;
         float scale = 1;
-        int lineCount = DrawContextUtils.wrapFormattedText(fr, option.desc, width * 2 / 3 - 10).size();
+        int descWidth = Math.max(20, width * 2 / 3 - 18);
+        int lineCount = DrawContextUtils.wrapFormattedText(fr, option.desc, descWidth).size();
 
         if (lineCount <= 0) return;
 
         float paraHeight = 9 * lineCount - 1;
 
-        while (paraHeight >= HEIGHT - 10) {
+        while (paraHeight > HEIGHT - 27 && scale > 0.5f) {
             scale -= 1 / 8f;
-            lineCount = DrawContextUtils.wrapFormattedText(fr, option.desc, (int) (width * 2 / 3 / scale - 10)).size();
+            lineCount = DrawContextUtils.wrapFormattedText(fr, option.desc, (int) (descWidth / scale)).size();
             paraHeight = (int) (9 * scale * lineCount - 1 * scale);
+        }
+        if (paraHeight > HEIGHT - 27) {
+            scale *= (HEIGHT - 27f) / paraHeight;
+            paraHeight = HEIGHT - 27f;
         }
 
         GlStateManagerCompat.pushMatrix();
-        GlStateManagerCompat.translate(x + 5 + width / 3f, y + HEIGHT / 2f - paraHeight / 2, 0);
+        GlStateManagerCompat.translate(x + 10, y + 23, 0);
         GlStateManagerCompat.scale(scale, scale, 1);
 
-        DrawContextUtils.drawSplitString(fr, option.desc, 0, 0, (int) (width * 2 / 3 / scale - 10), 0xc0c0c0);
+        DrawContextUtils.drawSplitString(fr, option.desc, 0, 0, (int) (descWidth / scale), ThemeContext.MUTED);
 
         GlStateManagerCompat.popMatrix();
     }

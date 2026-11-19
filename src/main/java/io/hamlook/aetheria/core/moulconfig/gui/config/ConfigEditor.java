@@ -5,7 +5,7 @@ package io.hamlook.aetheria.core.moulconfig.gui.config;
 
 import com.google.common.collect.Lists;
 import io.hamlook.aetheria.Aetheria;
-import io.hamlook.aetheria.core.ATHRConfig;
+import io.hamlook.aetheria.ThemeContext;
 import io.hamlook.aetheria.core.moulconfig.editors.GuiOptionEditor;
 import io.hamlook.aetheria.core.moulconfig.editors.GuiOptionEditorAccordion;
 import io.hamlook.aetheria.core.moulconfig.gui.GlScissorStack;
@@ -28,13 +28,16 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
-import java.net.URI;
 import java.util.*;
 import java.util.List;
 
 import static io.hamlook.aetheria.Resources.*;
 
 public class ConfigEditor extends GuiElement {
+    private static final int MAX_WIDTH = 620;
+    private static final int SIDEBAR_WIDTH = 170;
+    private static final int RIGHT_PANEL_OFFSET = SIDEBAR_WIDTH + 9;
+    private static final int RIGHT_PANEL_GAP = 5;
     private static final ResourceLocation[] socialsIco = new ResourceLocation[]{DISCORD, GITHUB, MODRINTH, SKYATLAS};
 
     private static String socialUrl(int index) {
@@ -517,9 +520,9 @@ public class ConfigEditor extends GuiElement {
         handleDragScroll(mouseX, mouseY);
 
         float opacityFactor = LerpUtils.sigmoidZeroOne(delta / 500f);
-        RenderUtils.drawGradientRect(0, 0, 0, width, height, (int) (0x80 * opacityFactor) << 24 | 0x101010, (int) (0x90 * opacityFactor) << 24 | 0x101010);
+        RenderUtils.drawGradientRect(0, 0, 0, width, height, ThemeContext.withAlpha(ThemeContext.DIM, opacityFactor), ThemeContext.withAlpha(ThemeContext.DIM, opacityFactor));
 
-        int xSize = Math.min(screenW - 100 / scaleFactor, 540);
+        int xSize = Math.min(screenW - 100 / scaleFactor, MAX_WIDTH);
         int ySize = Math.min(screenH - 100 / scaleFactor, 400);
 
         int x = (screenW - xSize) / 2;
@@ -535,28 +538,25 @@ public class ConfigEditor extends GuiElement {
         } else if (delta < 300) {
             openingYSize = 5 + (int) (delta - 150) * (ySize - 5) / 150;
         }
-        RenderUtils.drawFloatingRectDark((screenW - openingXSize) / 2, (screenH - openingYSize) / 2, openingXSize, openingYSize);
+        ThemeContext.panel((screenW - openingXSize) / 2, (screenH - openingYSize) / 2, openingXSize, openingYSize, opacityFactor);
         GlScissorStack.clear();
         GlScissorStack.push((screenW - openingXSize) / 2, (screenH - openingYSize) / 2, (screenW + openingXSize) / 2, (screenH + openingYSize) / 2, scaleFactor);
 
-        RenderUtils.drawFloatingRectDark(x + 5, y + 5, xSize - 10, 20, false);
+        ThemeContext.rect(x + 1, y + 1, xSize - 2, 2, ThemeContext.ACCENT);
+        ThemeContext.panel(x + 5, y + 5, xSize - 10, 20);
 
         FontRenderer fr = MinecraftCompat.getFontRenderer();
-        TextRenderUtils.drawStringCenteredScaledMaxWidth("Aetheria" + " " + Aetheria.VERSION + " by " + EnumChatFormatting.RED + "h4mlock", fr, x + xSize / 2f, y + 15, false, 380, 0xa0a0a0);
-        RenderUtils.drawFloatingRectDark(x + 4, y + 49 - 20, 180, ySize - 54 + 20, false);
+        TextRenderUtils.drawStringCenteredScaledMaxWidth("Aetheria" + " " + Aetheria.VERSION + " by " + EnumChatFormatting.RED + "h4mlock", fr, x + xSize / 2f, y + 15, false, 380, ThemeContext.MUTED);
+        ThemeContext.panel(x + 4, y + 29, SIDEBAR_WIDTH, ySize - 34);
 
         int innerPadding = 20 / adjScaleFactor;
         int innerLeft = x + 4 + innerPadding;
-        int innerRight = x + 184 - innerPadding;
+        int innerRight = x + 4 + SIDEBAR_WIDTH - innerPadding;
         int innerTop = y + 49 + innerPadding;
         int innerBottom = y + ySize - 5 - innerPadding;
-        DrawContextUtils.fill(innerLeft, innerTop, innerLeft + 1, innerBottom, 0xff080808);
-        DrawContextUtils.fill(innerLeft + 1, innerTop, innerRight, innerTop + 1, 0xff080808);
-        DrawContextUtils.fill(innerRight - 1, innerTop + 1, innerRight, innerBottom, 0xff282828);
-        DrawContextUtils.fill(innerLeft + 1, innerBottom - 1, innerRight - 1, innerBottom, 0xff282828);
-        DrawContextUtils.fill(innerLeft + 1, innerTop + 1, innerRight - 1, innerBottom - 1, 0x60080808);
+        ThemeContext.inset(innerLeft, innerTop, innerRight - innerLeft, innerBottom - innerTop);
 
-        GlScissorStack.push(0, innerTop + 1, screenW, innerBottom - 1, scaleFactor);
+        GlScissorStack.push(innerLeft + 1, innerTop + 1, innerRight - 1, innerBottom - 1, scaleFactor);
 
         int catY = -categoryScroll.getValue();
 
@@ -570,19 +570,17 @@ public class ConfigEditor extends GuiElement {
             boolean isSelectedRoot = catKey.equals(selectedCategory);
 
             boolean isViewingCategoryDirectly = selectedSubcategoryPath.isEmpty();
-            String catName;
-            if (isSelectedRoot && isViewingCategoryDirectly) {
-                catName = EnumChatFormatting.DARK_AQUA + "" + EnumChatFormatting.UNDERLINE + cat.name;
-            } else if (isSelectedRoot) {
-                catName = EnumChatFormatting.AQUA + cat.name;
-            } else {
-                catName = EnumChatFormatting.GRAY + cat.name;
-            }
+            int categoryColor = isSelectedRoot ? ThemeContext.ACCENT : ThemeContext.MUTED;
             boolean hasChildren = !cat.subcategories.isEmpty();
             boolean catOpen = categoriesWithTreeOpen.contains(catKey);
             String indicator = hasChildren ? (catOpen ? "▼ " : "▶ ") : "  ";
-            String indicatorColor = hasChildren ? (catOpen ? EnumChatFormatting.WHITE.toString() : EnumChatFormatting.GRAY.toString()) : EnumChatFormatting.RESET.toString();
-            DrawContextUtils.drawText(fr, indicatorColor + indicator + catName, innerLeft + 9 + BASE_INDENT, y + 70 + catY, -1, false);
+            int rowY = y + 70 + catY;
+            if (isSelectedRoot) {
+                ThemeContext.rect(innerLeft + 8, rowY - 3, innerRight - innerLeft - 18, 14,
+                        ThemeContext.withAlpha(ThemeContext.ACCENT, isViewingCategoryDirectly ? 0.24f : 0.12f));
+                ThemeContext.rect(innerLeft + 8, rowY - 3, 2, 14, ThemeContext.ACCENT);
+            }
+            ThemeContext.text(fr, indicator + cat.name, innerLeft + 9 + BASE_INDENT, rowY, categoryColor);
             catY += 15;
 
             Set<List<String>> paths = getExpandedPaths(catKey);
@@ -603,16 +601,16 @@ public class ConfigEditor extends GuiElement {
             categoryScroll.setValue((int) Math.ceil(categoryTotal - catBarSize * categoryTotal));
         }
         int catDist = innerBottom - innerTop - 12;
-        DrawContextUtils.fill(innerLeft + 2, innerTop + 5, innerLeft + 7, innerBottom - 5, 0xff0d0d0d);
-        DrawContextUtils.fill(innerLeft + 3, innerTop + 6 + (int) (catDist * catBarStart), innerLeft + 6, innerTop + 6 + (int) (catDist * catBarEnd), 0xff3a3a3a);
+        DrawContextUtils.fill(innerLeft + 2, innerTop + 5, innerLeft + 7, innerBottom - 5, ThemeContext.INSET);
+        DrawContextUtils.fill(innerLeft + 3, innerTop + 6 + (int) (catDist * catBarStart), innerLeft + 6, innerTop + 6 + (int) (catDist * catBarEnd), ThemeContext.ACCENT);
 
         GlScissorStack.pop(scaleFactor);
 
-        TextRenderUtils.drawStringCenteredScaledMaxWidth("Categories", fr, x + 95, y + 44, false, 120, 0x00b8b8);
+        TextRenderUtils.drawStringCenteredScaledMaxWidth("Categories", fr, x + 4 + SIDEBAR_WIDTH / 2f, y + 44, false, 120, ThemeContext.ACCENT);
 
-        RenderUtils.drawFloatingRectDark(x + 189, y + 29, xSize - 194, ySize - 34, false);
+        ThemeContext.panel(x + RIGHT_PANEL_OFFSET, y + 29, xSize - RIGHT_PANEL_OFFSET - RIGHT_PANEL_GAP, ySize - 34);
 
-        innerLeft = x + 189 + innerPadding;
+        innerLeft = x + RIGHT_PANEL_OFFSET + innerPadding;
         innerRight = x + xSize - 5 - innerPadding;
         innerBottom = y + ySize - 5 - innerPadding;
 
@@ -645,48 +643,63 @@ public class ConfigEditor extends GuiElement {
 
         if (getSelectedCategory() != null && currentConfigEditing.containsKey(getSelectedCategory())) {
             ConfigProcessor.ProcessedCategory cat = currentConfigEditing.get(getSelectedCategory());
-            TextRenderUtils.drawStringScaledMaxWidth(breadcrumb(cat), fr, innerLeft + 5, y + 32, false, innerRight - innerLeft - 20, -1);
-            TextRenderUtils.drawStringScaledMaxWidth(cat.desc, fr, innerLeft + 5, y + 43, true, innerRight - innerLeft - rightStuffLen - 10, 0xb0b0b0);
+            TextRenderUtils.drawStringScaledMaxWidth(breadcrumb(cat), fr, innerLeft + 5, y + 32, false, innerRight - innerLeft - 20, ThemeContext.TEXT);
+            TextRenderUtils.drawStringScaledMaxWidth(cat.desc, fr, innerLeft + 5, y + 43, true, innerRight - innerLeft - rightStuffLen - 10, ThemeContext.MUTED);
         }
 
-        DrawContextUtils.fill(innerLeft, innerTop, innerLeft + 1, innerBottom, 0xff080808);
-        DrawContextUtils.fill(innerLeft + 1, innerTop, innerRight, innerTop + 1, 0xff080808);
-        DrawContextUtils.fill(innerRight - 1, innerTop + 1, innerRight, innerBottom, 0xff303030);
-        DrawContextUtils.fill(innerLeft + 1, innerBottom - 1, innerRight - 1, innerBottom, 0xff303030);
-        DrawContextUtils.fill(innerLeft + 1, innerTop + 1, innerRight - 1, innerBottom - 1, 0x60080808);
+        ThemeContext.inset(innerLeft, innerTop, innerRight - innerLeft, innerBottom - innerTop);
 
         GlScissorStack.push(innerLeft + 1, innerTop + 1, innerRight - 1, innerBottom - 1, scaleFactor);
         float barSize = 1;
-        int optionY = -optionsScroll.getValue();
+
         if (getSelectedCategory() != null && currentConfigEditing.containsKey(getSelectedCategory())) {
             ConfigProcessor.ProcessedCategory cat = currentConfigEditing.get(getSelectedCategory());
             int optionWidthDefault = innerRight - innerLeft - 20;
             GlStateManagerCompat.enableDepth();
-            optionY = forEachOption(cat, -optionsScroll.getValue(), innerLeft, innerRight, innerTop, innerBottom, innerPadding, optionWidthDefault, (ed, edX, edY, edW) -> {
+            forEachOption(cat, -optionsScroll.getValue(), innerLeft, innerRight, innerTop, innerBottom, innerPadding, optionWidthDefault, (ed, edX, edY, edW) -> {
                 ed.render(edX, edY, edW);
                 return false;
             });
             GlStateManagerCompat.disableDepth();
-            if (optionY > 0) {
-                barSize = LerpUtils.clampZeroOne((float) (innerBottom - innerTop - 2) / (optionY + 5 + optionsScroll.getValue()));
+            int contentHeight = optionContentHeight();
+            if (contentHeight > 0) {
+                barSize = LerpUtils.clampZeroOne((float) (innerBottom - innerTop - 2) / (contentHeight + 5));
             }
         }
 
         if (searchedOptions != null && searchedOptions.isEmpty()) {
             TextRenderUtils.drawStringCenteredScaledMaxWidth("No options match \"" + searchField.getText().trim() + "\"",
-                    fr, (innerLeft + innerRight) / 2f, innerTop + 20, false, innerRight - innerLeft - 20, 0xa0a0a0);
+                    fr, (innerLeft + innerRight) / 2f, innerTop + 20, false, innerRight - innerLeft - 20, ThemeContext.MUTED);
         } else if (searchedOptions == null
                 && getSelectedCategory() != null
                 && currentConfigEditing.containsKey(getSelectedCategory())) {
             ConfigProcessor.ProcessedCategory cat = currentConfigEditing.get(getSelectedCategory());
             if (visibleOptions(cat).isEmpty()) {
                 TextRenderUtils.drawStringCenteredScaledMaxWidth("No options here - open a category on the left",
-                        fr, (innerLeft + innerRight) / 2f, innerTop + 20, false, innerRight - innerLeft - 20, 0xa0a0a0);
+                        fr, (innerLeft + innerRight) / 2f, innerTop + 20, false, innerRight - innerLeft - 20, ThemeContext.MUTED);
             }
         }
 
         GlScissorStack.pop(scaleFactor);
 
+        float optionsTotal = optionContentHeight();
+        optionsBarStart = optionsTotal > 0 ? optionsScroll.getValue() / optionsTotal : 0f;
+        optionsBarend = optionsBarStart + barSize;
+        if (optionsBarend > 1) {
+            optionsBarend = 1;
+            if (optionsTotal > 0 && optionsScroll.getTarget() / optionsTotal + barSize < 1) {
+                int target = optionsScroll.getTarget();
+                optionsScroll.setValue((int) Math.ceil(optionsTotal - barSize * optionsTotal));
+                optionsScroll.setTarget(target);
+            } else {
+                optionsScroll.setValue((int) Math.ceil(optionsTotal - barSize * optionsTotal));
+            }
+        }
+        int dist = innerBottom - innerTop - 12;
+        DrawContextUtils.fill(innerRight - 10, innerTop + 5, innerRight - 5, innerBottom - 5, ThemeContext.INSET);
+        DrawContextUtils.fill(innerRight - 9, innerTop + 6 + (int) (dist * optionsBarStart), innerRight - 6, innerTop + 6 + (int) (dist * optionsBarend), ThemeContext.ACCENT);
+
+        // Draw popovers after scrollbars so color pickers and dropdowns own the top render layer.
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
         if (getSelectedCategory() != null && currentConfigEditing.containsKey(getSelectedCategory())) {
             ConfigProcessor.ProcessedCategory cat = currentConfigEditing.get(getSelectedCategory());
@@ -702,23 +715,6 @@ public class ConfigEditor extends GuiElement {
             GlStateManagerCompat.translate(0, 0, -10);
         }
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-
-        float optionsTotal = optionY + optionsScroll.getValue();
-        optionsBarStart = optionsTotal > 0 ? optionsScroll.getValue() / optionsTotal : 0f;
-        optionsBarend = optionsBarStart + barSize;
-        if (optionsBarend > 1) {
-            optionsBarend = 1;
-            if (optionsTotal > 0 && optionsScroll.getTarget() / optionsTotal + barSize < 1) {
-                int target = optionsScroll.getTarget();
-                optionsScroll.setValue((int) Math.ceil((optionY + 5 + optionsScroll.getValue()) - barSize * (optionY + 5 + optionsScroll.getValue())));
-                optionsScroll.setTarget(target);
-            } else {
-                optionsScroll.setValue((int) Math.ceil((optionY + 5 + optionsScroll.getValue()) - barSize * (optionY + 5 + optionsScroll.getValue())));
-            }
-        }
-        int dist = innerBottom - innerTop - 12;
-        DrawContextUtils.fill(innerRight - 10, innerTop + 5, innerRight - 5, innerBottom - 5, 0xff0d0d0d);
-        DrawContextUtils.fill(innerRight - 9, innerTop + 6 + (int) (dist * optionsBarStart), innerRight - 6, innerTop + 6 + (int) (dist * optionsBarend), 0xff3a3a3a);
 
         for (int socialIndex = 0; socialIndex < socialsIco.length; socialIndex++) {
             GlStateManagerCompat.color(1, 1, 1, 1);
@@ -773,14 +769,16 @@ public class ConfigEditor extends GuiElement {
                 lastAncestorY = currentCatY;
             }
 
-            int hColor = thisInSelection ? 0xff00b8b8 : 0xff606060;
+            int hColor = thisInSelection ? ThemeContext.ACCENT : ThemeContext.LINE;
             DrawContextUtils.fill(lineX, itemCenterY + 4, textBaseX - 2, itemCenterY + 5, hColor);
 
             boolean hasChildren = !subEntry.getValue().subcategories.isEmpty();
             String indicator = hasChildren ? (inPath ? "▼ " : "▶ ") : "  ";
-            String name = isDeepest ? EnumChatFormatting.DARK_AQUA + "" + EnumChatFormatting.UNDERLINE + subEntry.getValue().name : EnumChatFormatting.DARK_GRAY + subEntry.getValue().name;
-            String prefix = hasChildren ? (inPath ? EnumChatFormatting.GRAY.toString() : EnumChatFormatting.DARK_GRAY.toString()) : EnumChatFormatting.RESET.toString();
-            DrawContextUtils.drawText(fr, prefix + indicator + name, textBaseX, y + 70 + currentCatY, -1, false);
+            if (isDeepest) {
+                ThemeContext.rect(textBaseX - 3, itemCenterY - 2, 2, 12, ThemeContext.ACCENT);
+            }
+            int textColor = isDeepest ? ThemeContext.ACCENT : hasChildren && inPath ? ThemeContext.TEXT : ThemeContext.MUTED;
+            ThemeContext.text(fr, indicator + subEntry.getValue().name, textBaseX, itemCenterY, textColor);
             currentCatY += 13;
 
             if (inPath && hasChildren) {
@@ -797,12 +795,12 @@ public class ConfigEditor extends GuiElement {
             if (subtreeContainsSelection && firstAncestorY != -1) {
                 int cyanStart = trunkStart;
                 int cyanEnd = y + 70 + lastAncestorY + 4;
-                DrawContextUtils.fill(lineX, cyanStart, lineX + 1, cyanEnd, 0xff00b8b8);
+                DrawContextUtils.fill(lineX, cyanStart, lineX + 1, cyanEnd, ThemeContext.ACCENT);
                 if (cyanEnd < trunkEnd) {
-                    DrawContextUtils.fill(lineX, cyanEnd, lineX + 1, trunkEnd, 0xff606060);
+                    DrawContextUtils.fill(lineX, cyanEnd, lineX + 1, trunkEnd, ThemeContext.LINE);
                 }
             } else {
-                DrawContextUtils.fill(lineX, trunkStart, lineX + 1, trunkEnd, 0xff606060);
+                DrawContextUtils.fill(lineX, trunkStart, lineX + 1, trunkEnd, ThemeContext.LINE);
             }
         }
 
@@ -854,7 +852,7 @@ public class ConfigEditor extends GuiElement {
         int width = screenW2;
         int height = screenH2;
 
-        int xSize = Math.min(width - 100 / scaleFactor2, 540);
+        int xSize = Math.min(width - 100 / scaleFactor2, MAX_WIDTH);
         int ySize = Math.min(height - 100 / scaleFactor2, 400);
 
         int x = (screenW2 - xSize) / 2;
@@ -865,7 +863,7 @@ public class ConfigEditor extends GuiElement {
         int innerPadding = 20 / adjScaleFactor;
         int innerTop = y + 49 + innerPadding;
         int innerBottom = y + ySize - 5 - innerPadding;
-        int innerLeft = x + 189 + innerPadding;
+        int innerLeft = x + RIGHT_PANEL_OFFSET + innerPadding;
         int innerRight = x + xSize - 5 - innerPadding;
         float searchFieldCenterY = innerTop - (20 + innerPadding) / 2f;
 
@@ -977,7 +975,7 @@ public class ConfigEditor extends GuiElement {
         } else if (lastMousePressed && lastMouseButton == 0) {
             int catY = -categoryScroll.getValue();
             int treeClickLeft = x + 4 + innerPadding + 8;
-            int treeClickRight = x + 184 - innerPadding;
+            int treeClickRight = x + 4 + SIDEBAR_WIDTH - innerPadding;
             for (Map.Entry<String, ConfigProcessor.ProcessedCategory> entry : getCurrentConfigEditing().entrySet()) {
                 if (getSelectedCategory() == null) setSelectedCategory(entry.getKey());
 
@@ -1119,11 +1117,17 @@ public class ConfigEditor extends GuiElement {
         if (getSelectedCategory() != null && getCurrentConfigEditing().containsKey(getSelectedCategory())) {
             ConfigProcessor.ProcessedCategory cat = getCurrentConfigEditing().get(getSelectedCategory());
             for (VisibleOption visible : visibleOptions(cat)) {
-                h += visible.option.editor.getHeight() + 5;
+                GuiOptionEditor editor = visible.option.editor;
+                if (editor != null) h += editor.getHeight() + 5;
             }
         }
         return h;
     }
+
+    private int optionContentHeight() {
+        return Math.max(0, computeOptionHeight() - 5);
+    }
+
 
     @Override
     public boolean capturesEscape() {
@@ -1158,12 +1162,12 @@ public class ConfigEditor extends GuiElement {
         int scaleFactor3 = GuiScreenUtils.getScaleFactor();
         int width = GuiScreenUtils.getScaledWindowWidth();
 
-        int xSize = Math.min(width - 100 / scaleFactor3, 540);
+        int xSize = Math.min(width - 100 / scaleFactor3, MAX_WIDTH);
 
         int adjScaleFactor = Math.max(2, scaleFactor3);
 
         int innerPadding = 20 / adjScaleFactor;
-        int innerWidth = xSize - 194 - innerPadding * 2;
+        int innerWidth = xSize - RIGHT_PANEL_OFFSET - RIGHT_PANEL_GAP - innerPadding * 2;
 
         boolean searchFocused = searchField.getFocus();
 
@@ -1257,7 +1261,7 @@ public class ConfigEditor extends GuiElement {
                 int sw = GuiScreenUtils.getScaledWindowWidth();
                 int sh = GuiScreenUtils.getScaledWindowHeight();
                 int sf = GuiScreenUtils.getScaleFactor();
-                int xSize = Math.min(sw - 100 / sf, 540);
+                int xSize = Math.min(sw - 100 / sf, MAX_WIDTH);
                 int ySize = Math.min(sh - 100 / sf, 400);
                 int x = (sw - xSize) / 2;
                 int y = (sh - ySize) / 2;
@@ -1265,7 +1269,7 @@ public class ConfigEditor extends GuiElement {
                 int innerPadding = 20 / adjScaleFactor;
                 int innerTop = y + 49 + innerPadding;
                 int innerBottom = y + ySize - 5 - innerPadding;
-                int innerLeft = x + 189 + innerPadding;
+                int innerLeft = x + RIGHT_PANEL_OFFSET + innerPadding;
                 keyboardScrollXCutoff = innerLeft - 10;
                 int catBarStartX = x + innerPadding + 7;
                 int catBarEndX = x + innerPadding + 12;

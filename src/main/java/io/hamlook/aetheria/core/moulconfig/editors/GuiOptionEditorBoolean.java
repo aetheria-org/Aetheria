@@ -20,24 +20,24 @@ public class GuiOptionEditorBoolean extends GuiOptionEditor {
         super.render(x, y, width);
         int height = getHeight();
 
-        bool.x = x + width / 6 - 24;
-        bool.y = y + height - 7 - 14;
+        bool.x = controlCenterX(x, width) - 15;
+        bool.y = controlY(y, height, 16);
         bool.render();
     }
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY) {
         int height = getHeight();
-        bool.x = x + width / 6 - 24;
-        bool.y = y + height - 7 - 14;
+        bool.x = controlCenterX(x, width) - 15;
+        bool.y = controlY(y, height, 16);
         return bool.mouseInput(mouseX, mouseY);
     }
 
     @Override
     public boolean mouseInput(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
         int height = getHeight();
-        bool.x = x + width / 6 - 24;
-        bool.y = y + height - 7 - 14;
+        bool.x = controlCenterX(x, width) - 15;
+        bool.y = controlY(y, height, 16);
         return bool.mouseInput(mouseX, mouseY, button, pressed);
     }
 

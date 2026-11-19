@@ -23,8 +23,8 @@ public class GuiOptionEditorStyle extends GuiOptionEditorDropdown {
     public boolean mouseInputOverlay(int x, int y, int width, int mouseX, int mouseY, int button, boolean pressed) {
         int height = getHeight();
 
-        int left = x + width / 6 - 40;
-        int top = y + height - 7 - 14;
+        int left = controlCenterX(x, width) - 40;
+        int top = controlY(y, height, 14);
 
         if (pressed && button == 0) {
             if (!(mouseX >= left && mouseX <= left + 80 && mouseY >= top && mouseY <= top + 14) && open) {
