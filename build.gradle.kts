@@ -105,6 +105,34 @@ val buildPathsFile = file("buildpaths-excluded.txt")
 excludeBuildPaths(buildPathsFile, sourceSets.main)
 excludeBuildPaths(buildPathsFile, sourceSets.test)
 
+val versionSourceDir = layout.buildDirectory.dir("generated/sources/version/java")
+
+val generateBuildVersion = tasks.register("generateBuildVersion") {
+    val versionFile = versionSourceDir.map { it.file("io/hamlook/aetheria/BuildVersion.java") }
+    outputs.file(versionFile)
+    doLast {
+        val file = versionFile.get().asFile
+        file.parentFile.mkdirs()
+        file.writeText(
+            "package io.hamlook.aetheria;\n" +
+                "\n" +
+                "public final class BuildVersion {\n" +
+                "    public static final String VERSION = \"${project.version}\";\n" +
+                "}\n"
+        )
+    }
+}
+
+tasks.named<JavaCompile>("compileJava") {
+    source(versionSourceDir)
+    dependsOn(generateBuildVersion)
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    source(versionSourceDir)
+    dependsOn(generateBuildVersion)
+}
+
 // Dependencies:
 
 repositories {
